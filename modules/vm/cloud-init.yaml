@@ -1,0 +1,425 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - curl
+  - wget
+  - jq
+  - htop
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - python3.12
+  - python3.12-venv
+  - python3-pip
+  - debian-keyring
+  - debian-archive-keyring
+  - apt-transport-https
+  - docker.io
+
+users:
+  - name: ${admin_username}
+    groups: sudo,docker
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys: []
+
+write_files:
+  - path: /etc/leann-memory/env
+    permissions: "0600"
+    content: |
+      OPENAI_API_KEY=${foundry_api_key}
+      OPENAI_API_BASE=${foundry_base_url}
+      OPENAI_BASE_URL=${foundry_base_url}
+      LEANN_EMBEDDING_DEVICE=cpu
+      LEANN_INDEX_DIR=/var/lib/leann-memory/indexes
+      EMBEDDING_MODEL=${embedding_model}
+      EMBEDDING_FALLBACK=text-embedding-3-small
+      CHAT_MODEL=${chat_model}
+      CONSOLIDATE_INTERVAL_MIN=30
+      IMPORTANCE_THRESHOLD=0.3
+      MCP_BEARER_TOKEN=${mcp_bearer_token}
+      MCP_HOST=127.0.0.1
+      MCP_PORT=8787
+
+  - path: /opt/leann-memory/server.py
+    permissions: "0644"
+    content: |
+      import os, json, hashlib, asyncio, logging
+      from pathlib import Path
+      from datetime import datetime, timezone, timedelta
+      from contextlib import asynccontextmanager
+      from typing import Optional
+      from fastapi import FastAPI, Request, HTTPException, Depends
+      from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+      from pydantic import BaseModel, Field
+
+      logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+      log = logging.getLogger("memory")
+      BEARER_TOKEN       = os.environ["MCP_BEARER_TOKEN"]
+      INDEX_DIR          = Path(os.environ.get("LEANN_INDEX_DIR", "/var/lib/leann-memory/indexes"))
+      MEMORY_DIR         = Path("/var/lib/leann-memory/memories")
+      CONSOL_DIR         = Path("/var/lib/leann-memory/consolidations")
+      OPENAI_BASE        = os.environ.get("OPENAI_API_BASE", "")
+      OPENAI_KEY         = os.environ.get("OPENAI_API_KEY", "")
+      EMB_MODEL          = os.environ.get("EMBEDDING_MODEL", "embed-v-4-0")
+      EMB_FALLBACK       = os.environ.get("EMBEDDING_FALLBACK", "text-embedding-3-small")
+      CHAT_MODEL         = os.environ.get("CHAT_MODEL", "gpt-4.1-mini")
+      CONSOL_MINS        = int(os.environ.get("CONSOLIDATE_INTERVAL_MIN", "30"))
+      IMP_THRESH         = float(os.environ.get("IMPORTANCE_THRESHOLD", "0.3"))
+      SM_KEY             = os.environ.get("SUPERMEMORY_API_KEY", "")
+      for d in [INDEX_DIR, MEMORY_DIR, CONSOL_DIR]:
+          d.mkdir(parents=True, exist_ok=True)
+      INDEX_PATH = str(INDEX_DIR / "memory.leann")
+
+      _oai = None
+      def oai():
+          global _oai
+          if _oai is None:
+              from openai import OpenAI
+              _oai = OpenAI(api_key=OPENAI_KEY, base_url=OPENAI_BASE)
+          return _oai
+
+      def chat(system, user, model=None, max_tok=800, temp=0.2):
+          try:
+              r = oai().chat.completions.create(
+                  model=model or CHAT_MODEL,
+                  messages=[{"role":"system","content":system},{"role":"user","content":user}],
+                  max_tokens=max_tok, temperature=temp)
+              return r.choices[0].message.content.strip()
+          except Exception as e:
+              log.error(f"chat error: {e}")
+              return ""
+
+      _srch = None
+      def searcher():
+          global _srch
+          if (INDEX_DIR / "memory.leann").exists() and _srch is None:
+              from leann import LeannSearcher
+              _srch = LeannSearcher(INDEX_PATH, embedding_model=EMB_MODEL, embedding_mode="openai")
+          return _srch
+
+      def rebuild_index():
+          global _srch; _srch = None
+          files = sorted(MEMORY_DIR.glob("*.md")) + sorted(CONSOL_DIR.glob("*.md"))
+          if not files: return 0
+          from leann import LeannBuilder
+          b = LeannBuilder(backend_name="hnsw", embedding_model=EMB_MODEL, embedding_mode="openai")
+          n = 0
+          for f in files:
+              for chunk in [c.strip() for c in f.read_text("utf-8").split("\n\n") if c.strip()]:
+                  b.add_text(chunk); n += 1
+          b.build_index(INDEX_PATH)
+          _srch = None; searcher()
+          log.info(f"Index: {n} chunks from {len(files)} files")
+          return n
+
+      async def cold_search(q, limit=5):
+          if not SM_KEY: return []
+          try:
+              import httpx
+              async with httpx.AsyncClient(timeout=8) as c:
+                  r = await c.post("https://api.supermemory.ai/v3/memories/search",
+                      headers={"Authorization":f"Bearer {SM_KEY}","Content-Type":"application/json"},
+                      json={"query":q,"limit":limit})
+                  if r.status_code == 200:
+                      d = r.json()
+                      return [{"content":m.get("content",m.get("text",str(m))),"score":float(m.get("score",0.5)),"source":"cold"}
+                              for m in d.get("results",d.get("memories",[]))]
+          except Exception as e: log.warning(f"Cold: {e}")
+          return []
+
+      sec = HTTPBearer()
+      async def verify(c: HTTPAuthorizationCredentials = Depends(sec)):
+          if c.credentials != BEARER_TOKEN: raise HTTPException(401)
+
+      class RetainReq(BaseModel):
+          content: str
+          tags: list[str] = Field(default_factory=list)
+          source: str = "manual"
+          skip_scoring: bool = False
+      class RecallReq(BaseModel):
+          query: str
+          top_k: int = Field(default=5, ge=1, le=20)
+      class ReflectReq(BaseModel):
+          query: str
+      class MemResult(BaseModel):
+          content: str; score: float = 0; source: str = ""
+
+      INGEST_SYS = """Extract from content:
+      1. importance: 0.0-1.0 (0-0.3 trivial, 0.3-0.6 useful, 0.6-0.8 important, 0.8-1.0 critical)
+      2. summary: 1-2 sentence distillation
+      3. entities: named entities (people, projects, tech, companies)
+      4. topics: topic tags
+      JSON only, no fences: {"importance":0.7,"summary":"...","entities":["..."],"topics":["..."]}"""
+
+      async def ingest(content):
+          raw = chat(INGEST_SYS, content[:4000], max_tok=400)
+          try: return json.loads(raw)
+          except: return {"importance":0.5,"summary":content[:200],"entities":[],"topics":[]}
+
+      CONSOL_SYS = """You are a memory consolidation agent. Like a brain during sleep, find non-obvious
+      connections between memories and generate insights.
+      JSON only: {"connections":[{"a":"...","b":"...","link":"..."}],"insights":["..."],"patterns":["..."]}"""
+
+      async def consolidate_cycle():
+          recent = []
+          for f in sorted(MEMORY_DIR.glob("*.md"), reverse=True)[:7]:
+              entries = [e.strip() for e in f.read_text("utf-8").split("\n\n") if e.strip()]
+              recent.extend(entries[-20:])
+          if len(recent) < 3:
+              log.info(f"Consolidation skip: {len(recent)} memories"); return
+          raw = chat(CONSOL_SYS, "\n---\n".join(recent[:30]), max_tok=1000, temp=0.3)
+          try: result = json.loads(raw)
+          except: result = {"insights":[raw],"connections":[],"patterns":[]}
+          ts = datetime.now(timezone.utc)
+          parts = [f"## Consolidation [{ts:%Y-%m-%d %H:%M:%S} UTC]"]
+          for i, ins in enumerate(result.get("insights",[]),1): parts.append(f"**Insight {i}:** {ins}")
+          for c in result.get("connections",[])[:5]:
+              parts.append(f"- {c.get('a','?')} <> {c.get('b','?')}: {c.get('link','')}")
+          for p in result.get("patterns",[]): parts.append(f"- Pattern: {p}")
+          out = CONSOL_DIR / f"{ts:%Y-%m-%d}.md"
+          with open(out,"a") as fh: fh.write("\n".join(parts)+"\n\n")
+          rebuild_index()
+          log.info(f"Consolidated: {len(result.get('insights',[]))} insights")
+
+      async def consol_loop():
+          while True:
+              await asyncio.sleep(CONSOL_MINS * 60)
+              try: await consolidate_cycle()
+              except Exception as e: log.error(f"Consolidation: {e}")
+
+      @asynccontextmanager
+      async def lifespan(app: FastAPI):
+          try: n = rebuild_index(); log.info(f"Startup: {n} chunks")
+          except Exception as e: log.warning(f"No index: {e}")
+          task = asyncio.create_task(consol_loop())
+          log.info(f"Consolidation loop: every {CONSOL_MINS}m")
+          yield
+          task.cancel()
+
+      app = FastAPI(title="Always-On Memory Server", version="2.0.0", lifespan=lifespan)
+
+      @app.get("/health")
+      async def health():
+          return {"status":"ok","arch":"always-on-memory-agent-v2",
+              "index": (INDEX_DIR/"memory.leann").exists(),
+              "memories": len(list(MEMORY_DIR.glob("*.md"))),
+              "consolidations": len(list(CONSOL_DIR.glob("*.md"))),
+              "models":{"embed":EMB_MODEL,"embed_fallback":EMB_FALLBACK,"chat":CHAT_MODEL,
+                  "sector7":["Kimi-K2.5","gpt-4.1-mini","Kimi-K2-Thinking",
+                             "grok-4-fast-reasoning","Mistral-Large-3",EMB_MODEL,EMB_FALLBACK]},
+              "consolidation_interval_min":CONSOL_MINS,"importance_threshold":IMP_THRESH,
+              "cold_storage":"supermemory.ai" if SM_KEY else "disabled"}
+
+      @app.post("/mcp/retain", dependencies=[Depends(verify)])
+      async def retain(req: RetainReq):
+          ts = datetime.now(timezone.utc)
+          if not req.skip_scoring:
+              ext = await ingest(req.content)
+              imp = ext.get("importance",0.5); summ = ext.get("summary",req.content[:200])
+              ents = ext.get("entities",[]); tops = ext.get("topics",[])
+              if imp < IMP_THRESH:
+                  return {"status":"skipped","importance":imp,"summary":summ}
+          else:
+              imp=0.5; summ=req.content[:200]; ents=[]; tops=[]
+          tags = " ".join(f"#{t}" for t in set(req.tags+tops))
+          entry = (f"## [{ts:%H:%M:%S} UTC] {req.source} | imp={imp:.2f}\n"
+                   f"**Summary:** {summ}\n**Entities:** {', '.join(ents)}\n{tags}\n\n{req.content}\n\n")
+          with open(MEMORY_DIR/f"{ts:%Y-%m-%d}.md","a") as fh: fh.write(entry)
+          n = rebuild_index()
+          return {"status":"stored","id":f"{ts:%Y-%m-%d}/{hashlib.sha256(req.content.encode()).hexdigest()[:12]}",
+                  "importance":imp,"summary":summ,"entities":ents,"topics":list(set(req.tags+tops)),"chunks":n}
+
+      @app.post("/mcp/recall", dependencies=[Depends(verify)])
+      async def recall(req: RecallReq):
+          results = []
+          s = searcher()
+          if s:
+              try:
+                  for r in s.search(req.query, top_k=req.top_k):
+                      results.append(MemResult(content=r.get("text",r.get("content",str(r))),
+                                               score=float(r.get("score",0)),source="hot"))
+              except Exception as e: log.error(f"LEANN: {e}")
+          if len(results)<2 or max((r.score for r in results),default=0)<0.6:
+              for cr in await cold_search(req.query, req.top_k):
+                  results.append(MemResult(content=cr["content"],score=cr["score"],source="cold"))
+          seen=set(); uniq=[]
+          for r in sorted(results,key=lambda x:x.score,reverse=True):
+              k=r.content[:100]
+              if k not in seen: seen.add(k); uniq.append(r)
+          return {"results":[m.model_dump() for m in uniq[:req.top_k]],
+                  "sources":{"hot":sum(1 for r in uniq if r.source=="hot"),
+                             "cold":sum(1 for r in uniq if r.source=="cold")}}
+
+      REFLECT_SYS = """Synthesize memories about the topic. Structure:
+      1. Key decisions + rationale  2. Patterns  3. Open questions  4. Next steps
+      Be direct, cite specific memories."""
+
+      @app.post("/mcp/reflect", dependencies=[Depends(verify)])
+      async def reflect(req: ReflectReq):
+          rr = await recall(RecallReq(query=req.query, top_k=10))
+          mems = [r["content"] for r in rr.get("results",[])]
+          if not mems: return {"synthesis":"No memories found.","topic":req.query}
+          syn = chat(REFLECT_SYS, f"Topic: {req.query}\n\n"+"\n---\n".join(mems[:10]), max_tok=1200, temp=0.3)
+          return {"topic":req.query,"synthesis":syn,"memory_count":len(mems),
+                  "model":CHAT_MODEL,"sources":rr.get("sources",{})}
+
+      @app.post("/mcp/consolidate", dependencies=[Depends(verify)])
+      async def manual_consol():
+          await consolidate_cycle()
+          return {"status":"done"}
+
+      @app.get("/mcp/memories", dependencies=[Depends(verify)])
+      async def list_mems():
+          m=[{"date":f.stem,"size":f.stat().st_size,"type":"memory"} for f in sorted(MEMORY_DIR.glob("*.md"),reverse=True)[:30]]
+          c=[{"date":f.stem,"size":f.stat().st_size,"type":"consolidation"} for f in sorted(CONSOL_DIR.glob("*.md"),reverse=True)[:30]]
+          return {"files":m+c}
+
+      @app.post("/mcp/rebuild", dependencies=[Depends(verify)])
+      async def do_rebuild():
+          return {"status":"rebuilt","chunks":rebuild_index()}
+
+      @app.post("/mcp")
+      async def mcp(request: Request):
+          auth=request.headers.get("Authorization","")
+          if not auth.startswith("Bearer ") or auth[7:]!=BEARER_TOKEN: raise HTTPException(401)
+          body=await request.json(); method=body.get("method",""); params=body.get("params",{})
+          if method=="tools/list":
+              return {"tools":[
+                  {"name":"retain","description":"Store memory with importance scoring + entity extraction via gpt-4.1-mini. Auto-skips trivial content.",
+                   "inputSchema":{"type":"object","properties":{"content":{"type":"string"},"tags":{"type":"array","items":{"type":"string"}},"source":{"type":"string","default":"claude-ai"},"skip_scoring":{"type":"boolean","default":False}},"required":["content"]}},
+                  {"name":"recall","description":"Semantic search: LEANN hot (embed-v-4-0) + supermemory cold fallback.",
+                   "inputSchema":{"type":"object","properties":{"query":{"type":"string"},"top_k":{"type":"integer","default":5}},"required":["query"]}},
+                  {"name":"reflect","description":"Deep synthesis via gpt-4.1-mini: decisions, patterns, open questions.",
+                   "inputSchema":{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}},
+                  {"name":"consolidate","description":"Manual trigger: brain-sleep-style cross-memory insight generation.",
+                   "inputSchema":{"type":"object","properties":{}}},
+              ]}
+          elif method=="tools/call":
+              nm=params.get("name",""); args=params.get("arguments",{})
+              if nm=="retain": res=await retain(RetainReq(**args))
+              elif nm=="recall": res=await recall(RecallReq(**args))
+              elif nm=="reflect": res=await reflect(ReflectReq(**args))
+              elif nm=="consolidate": res=await manual_consol()
+              else: raise HTTPException(400,f"Unknown: {nm}")
+              return {"content":[{"type":"text","text":json.dumps(res,default=str)}]}
+          return {"error":f"Unknown method: {method}"}
+
+      if __name__=="__main__":
+          import uvicorn; uvicorn.run(app, host="127.0.0.1", port=8787)
+
+  - path: /opt/leann-memory/requirements.txt
+    permissions: "0644"
+    content: |
+      fastapi>=0.115.0
+      uvicorn[standard]>=0.34.0
+      pydantic>=2.0
+      openai>=1.50.0
+      httpx>=0.27.0
+
+  - path: /etc/systemd/system/leann-mcp.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Always-On Memory Server
+      After=network-online.target docker.service
+      Wants=network-online.target
+      [Service]
+      Type=simple
+      User=leann
+      Group=leann
+      EnvironmentFile=/etc/leann-memory/env
+      WorkingDirectory=/opt/leann-memory
+      ExecStart=/opt/leann-memory/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8787
+      Restart=always
+      RestartSec=5
+      ProtectSystem=strict
+      ReadWritePaths=/var/lib/leann-memory
+      ProtectHome=yes
+      PrivateTmp=yes
+      NoNewPrivileges=yes
+      ProtectKernelTunables=yes
+      ProtectKernelModules=yes
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/caddy/Caddyfile
+    permissions: "0644"
+    content: |
+      ${vm_fqdn} {
+        handle /mcp* {
+          reverse_proxy 127.0.0.1:8787
+        }
+        handle /health {
+          reverse_proxy 127.0.0.1:8787
+        }
+        handle {
+          respond "Always-On Memory Server v2 - sector-7" 200
+        }
+        log {
+          output file /var/log/caddy/access.log
+          format json
+        }
+      }
+
+  - path: /etc/sysctl.d/99-hardening.conf
+    permissions: "0644"
+    content: |
+      net.ipv4.conf.all.accept_redirects = 0
+      net.ipv4.conf.default.accept_redirects = 0
+      net.ipv4.conf.all.send_redirects = 0
+      net.ipv4.conf.default.send_redirects = 0
+      net.ipv4.conf.all.accept_source_route = 0
+      net.ipv4.tcp_syncookies = 1
+      net.ipv4.icmp_echo_ignore_broadcasts = 1
+      kernel.randomize_va_space = 2
+
+  - path: /etc/fail2ban/jail.local
+    permissions: "0644"
+    content: |
+      [DEFAULT]
+      bantime = 1h
+      findtime = 10m
+      maxretry = 3
+      [sshd]
+      enabled = true
+      port = 22
+      maxretry = 3
+
+runcmd:
+  - sysctl -p /etc/sysctl.d/99-hardening.conf
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable
+  - systemctl enable --now fail2ban
+  - systemctl enable --now unattended-upgrades
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+  - apt-get update && apt-get install -y caddy
+  - mkdir -p /var/log/caddy
+  - curl -LsSf https://astral.sh/uv/install.sh | sh
+  - export PATH="/root/.local/bin:$PATH"
+  - systemctl enable --now docker
+  - useradd -r -m -d /opt/leann-memory -s /usr/sbin/nologin leann
+  - usermod -aG docker leann
+  - mkdir -p /var/lib/leann-memory/{indexes,memories,consolidations}
+  - chown -R leann:leann /var/lib/leann-memory
+  - chown -R leann:leann /opt/leann-memory
+  - |
+    cd /opt/leann-memory
+    /root/.local/bin/uv venv .venv --python python3.12
+    /root/.local/bin/uv pip install --python .venv/bin/python -r requirements.txt
+    /root/.local/bin/uv pip install --python .venv/bin/python leann
+    chown -R leann:leann /opt/leann-memory
+  - docker pull ruvnet/ruvector-postgres &
+  - systemctl daemon-reload
+  - systemctl enable --now leann-mcp
+  - systemctl restart caddy
+  - sleep 5
+  - curl -s http://127.0.0.1:8787/health | jq .
+  - echo "=== Always-On Memory Server v2 bootstrap complete ==="

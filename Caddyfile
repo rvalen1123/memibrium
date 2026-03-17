@@ -1,0 +1,21 @@
+leann-memory-prod.southcentralus.cloudapp.azure.com {
+  handle /mcp* {
+    reverse_proxy 127.0.0.1:8787
+  }
+  handle /health {
+    reverse_proxy 127.0.0.1:8787
+  }
+  handle {
+    respond "Always-On Memory Server v2" 200
+  }
+}
+
+http://:9999 {
+  reverse_proxy https://azuregateway.azure-api.net {
+    header_up api-key f7bde2a1985d4e8d95c22f4eef1874ab
+    header_up Host azuregateway.azure-api.net
+    transport http {
+      tls
+    }
+  }
+}

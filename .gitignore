@@ -1,0 +1,11 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+terraform.tfvars
+*.pem
+*.key
+.DS_Store
+.credentials
