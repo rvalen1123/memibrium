@@ -17,39 +17,13 @@ Adapted from [Google's Always-On Memory Agent](https://research.google/blog/) re
 
 ## Architecture
 
+![Technical Architecture](assets/technical-architecture.png)
+
 ```
-┌─────────────┐  ┌─────────────┐  ┌──────────────┐
-│  Claude.ai   │  │ Claude Code  │  │  Other MCP   │
-│  (browser)   │  │  (terminal)  │  │   clients    │
-└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-       │                 │                  │
-       └────────┬────────┴──────────────────┘
-                │  MCP (HTTP + SSE)
-       ┌────────▼────────┐
-       │  Caddy (TLS)     │  ← terminates HTTPS, injects api-key
-       │  :443 → :9999    │
-       └────────┬─────────┘
-       ┌────────▼────────────────────────────────┐
-       │  server.py — CT Lifecycle Engine         │
-       │  ┌─────────────────────────────────────┐ │
-       │  │ IngestAgent   → score, embed, store │ │
-       │  │ ConsolidateAgent → δ-decay, shed    │ │
-       │  │ QueryAgent    → hot/cold search     │ │
-       │  └─────────────────────────────────────┘ │
-       │  ┌────────────┐  ┌────────────────┐   │
-       │  │ HOT TIER   │  │ COLD TIER      │   │
-       │  │ pgvector   │  │ pgvector       │   │
-       │  │ observation │  │ crystallized   │   │
-       │  │ consider.   │  │ shed           │   │
-       │  │ accepted    │  │ (LEANN Phase3) │   │
-       │  │(RuVector 2.5│  │                │   │
-       │  └─────┬───────┘  └────────┬───────┘   │
-       │        └───────┬───────────┘            │
-       │         PostgreSQL + pgvector            │
-       ├─────────────────────────────────────────┤
-       │  LLM Provider (any OpenAI-compatible)    │
-       │  embedding model · chat/synthesis model  │
-       └──────────────────────────────────────────┘
+MCP Clients → Caddy TLS → Memibrium (server.py)
+  → CT Lifecycle Engine (the patent layer)
+  → pgvector dual-tier (hot=working, cold=crystallized)
+  → Any OpenAI-compatible LLM provider
 ```
 
 **Tiering policy = lifecycle state.** That's the paper.
@@ -127,6 +101,8 @@ This stack doesn't just store memories. It governs knowledge.
 | `/mcp/tools` | GET | MCP tool manifest for auto-discovery | — |
 
 ### Lifecycle Flow
+
+![Lifecycle Flow](assets/lifecycle-flow.png)
 
 ```
 Content arrives
