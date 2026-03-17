@@ -237,6 +237,6 @@ The VM bootstraps via cloud-init: Python, Caddy, PostgreSQL + pgvector, the CT m
 
 *Adapted from [Google's Always-On Memory Agent](https://research.google/blog/) research.*
 *Hot tier: [RuVector](https://github.com/ruvnet/ruvector) by [rUv](https://github.com/ruvnet) · Cold tier: [LEANN](https://github.com/yichuan-w/LEANN) by Berkeley SkyLab.*
-*Memibrium — Crystallization Theory by Ricky Valentine / Orchard Holdings LLC.*
+*Memibrium — Crystallization Theory by Richard "Ricky" Valentine*
 
 > "The system gets wiser—not merely smarter—because the wisdom is human wisdom, accumulated through deliberate consensus and preserved through sovereign governance."
