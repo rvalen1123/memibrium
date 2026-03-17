@@ -80,7 +80,7 @@ DB_PASS = os.environ.get("DB_PASSWORD", "memory")
 
 # CT Parameters
 IMPORTANCE_THRESHOLD = float(os.environ.get("IMPORTANCE_THRESHOLD", "0.4"))
-SHEDDING_THRESHOLD = float(os.environ.get("SHEDDING_THRESHOLD", "0.15"))
+SHEDDING_THRESHOLD = float(os.environ.get("SHEDDING_THRESHOLD", "0.05"))
 CONSOLIDATE_INTERVAL = int(os.environ.get("CONSOLIDATE_INTERVAL_MIN", "30"))
 DECAY_RATE = float(os.environ.get("DECAY_RATE", "0.02"))  # δ per consolidation cycle
 CRYSTALLIZE_CONFIRMATIONS = int(os.environ.get("CRYSTALLIZE_CONFIRMATIONS", "3"))
