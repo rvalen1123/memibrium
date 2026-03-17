@@ -45,6 +45,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
+from urllib.parse import urlparse
 
 import asyncpg
 from openai import OpenAI, AzureOpenAI
@@ -62,7 +63,13 @@ EMBED_MODEL = os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small")
 CHAT_MODEL = os.environ.get("CHAT_MODEL", "gpt-4.1-mini")
 
 # Auto-detect Azure vs standard OpenAI-compatible provider
-USE_AZURE = bool(os.environ.get("AZURE_OPENAI_ENDPOINT")) or "openai.azure.com" in FOUNDRY_BASE
+_azure_env_enabled = bool(os.environ.get("AZURE_OPENAI_ENDPOINT"))
+_foundry_parsed = urlparse(FOUNDRY_BASE) if FOUNDRY_BASE else None
+_foundry_host = _foundry_parsed.hostname if _foundry_parsed else None
+USE_AZURE = _azure_env_enabled or (
+    bool(_foundry_host)
+    and (_foundry_host == "openai.azure.com" or _foundry_host.endswith(".openai.azure.com"))
+)
 AZURE_API_VERSION = os.environ.get("AZURE_API_VERSION", "2024-12-01-preview")
 
 DB_HOST = os.environ.get("DB_HOST", "localhost")
