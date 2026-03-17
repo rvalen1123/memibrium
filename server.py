@@ -17,7 +17,7 @@ Architecture:
   MCP endpoint (retain/recall/reflect/confirm/freeze/revert/dashboard)
   → CT Lifecycle Engine (state machine, W(k,t), δ-decay, witness chains)
   → Dual-tier pgvector (hot: recent working set / cold: crystallized history)
-  → Azure Foundry (sector-7) for embeddings + synthesis
+  → Any OpenAI-compatible LLM provider for embeddings + synthesis
 
   Phase 2.5: swap hot tier pgvector → RuVector (Rust HNSW, <1ms, SONA)
   Phase 3:   LEANN compression on cold tier for Cognitum edge (<15W)
@@ -47,7 +47,7 @@ from enum import Enum
 from typing import Optional
 
 import asyncpg
-from openai import AzureOpenAI
+from openai import OpenAI, AzureOpenAI
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -60,6 +60,10 @@ FOUNDRY_KEY = os.environ.get("OPENAI_API_KEY", "")
 FOUNDRY_BASE = os.environ.get("OPENAI_BASE_URL", "")
 EMBED_MODEL = os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small")
 CHAT_MODEL = os.environ.get("CHAT_MODEL", "gpt-4.1-mini")
+
+# Auto-detect Azure vs standard OpenAI-compatible provider
+USE_AZURE = bool(os.environ.get("AZURE_OPENAI_ENDPOINT")) or "openai.azure.com" in FOUNDRY_BASE
+AZURE_API_VERSION = os.environ.get("AZURE_API_VERSION", "2024-12-01-preview")
 
 DB_HOST = os.environ.get("DB_HOST", "localhost")
 DB_PORT = int(os.environ.get("DB_PORT", "5432"))
@@ -375,15 +379,23 @@ class ColdStore:
 
 
 # ══════════════════════════════════════════════════════════════════
-# §3  LLM CLIENTS — Azure Foundry (sector-7)
+# §3  LLM CLIENTS — Any OpenAI-compatible provider
 # ══════════════════════════════════════════════════════════════════
+
+def _make_llm_client():
+    """Create OpenAI or AzureOpenAI client based on env config."""
+    if USE_AZURE:
+        return AzureOpenAI(
+            api_key=FOUNDRY_KEY,
+            azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", FOUNDRY_BASE),
+            api_version=AZURE_API_VERSION,
+        )
+    return OpenAI(api_key=FOUNDRY_KEY, base_url=FOUNDRY_BASE or None)
+
 
 class EmbedClient:
     def __init__(self):
-        self.client = AzureOpenAI(
-            api_key=FOUNDRY_KEY, azure_endpoint=FOUNDRY_BASE,
-            api_version="2024-12-01-preview",
-        )
+        self.client = _make_llm_client()
 
     def embed(self, text: str) -> list[float]:
         resp = self.client.embeddings.create(input=[text], model=EMBED_MODEL)
@@ -392,10 +404,7 @@ class EmbedClient:
 
 class ChatClient:
     def __init__(self):
-        self.client = AzureOpenAI(
-            api_key=FOUNDRY_KEY, azure_endpoint=FOUNDRY_BASE,
-            api_version="2024-12-01-preview",
-        )
+        self.client = _make_llm_client()
 
     def score_importance(self, content: str) -> dict:
         """LLM importance assessment — INFORMATIONAL ONLY. Does NOT gate lifecycle transitions."""
@@ -783,6 +792,7 @@ async def handle_dashboard(request: Request) -> JSONResponse:
             "cold_tier": "pgvector + LEANN compression (Phase 3)",
             "embeddings": EMBED_MODEL,
             "synthesis": CHAT_MODEL,
+            "provider": "azure" if USE_AZURE else "openai-compatible",
             "sovereignty": "full — no cloud memory dependencies",
         },
     })

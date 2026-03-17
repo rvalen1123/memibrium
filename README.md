@@ -10,7 +10,7 @@ Adapted from [Google's Always-On Memory Agent](https://research.google/blog/) re
 
 [![Status](https://img.shields.io/badge/status-production-green)]()
 [![MCP](https://img.shields.io/badge/protocol-MCP-blue)]()
-[![Azure](https://img.shields.io/badge/infra-Azure%20Foundry-0078D4)]()
+[![LLM](https://img.shields.io/badge/LLM-any%20OpenAI--compatible-orange)]()
 [![Sovereign](https://img.shields.io/badge/sovereignty-full-darkgreen)]()
 
 ---
@@ -47,9 +47,8 @@ Adapted from [Google's Always-On Memory Agent](https://research.google/blog/) re
        │        └───────┬───────────┘            │
        │         PostgreSQL + pgvector            │
        ├─────────────────────────────────────────┤
-       │  Azure Foundry (sector-7)                │
-       │  embed-v-4-0 · text-embedding-3-small    │
-       │  gpt-4.1-mini (synthesis)                │
+       │  LLM Provider (any OpenAI-compatible)    │
+       │  embedding model · chat/synthesis model  │
        └──────────────────────────────────────────┘
 ```
 
@@ -133,7 +132,7 @@ This stack doesn't just store memories. It governs knowledge.
 Content arrives
   │
   ├─ IngestAgent: score importance (LLM, informational only)
-  ├─ Embed via Azure Foundry (sector-7)
+  ├─ Embed via configured LLM provider (OpenAI-compatible)
   ├─ Store as OBSERVATION → gate → ACCEPTED (or stay in observation)
   ├─ Extract entities → update world-state graph
   │
@@ -156,24 +155,48 @@ QueryAgent:
 
 ## Deploy
 
-### Prerequisites
+### Local (any machine)
 
-- Azure subscription with Foundry (sector-7) access
-- Terraform ≥ 1.5
-- SSH key pair
+```bash
+# Requires: Python 3.11+, PostgreSQL with pgvector extension
+pip install asyncpg openai starlette uvicorn
 
-### Quick Start
+# Configure any OpenAI-compatible provider (OpenAI, Azure, Ollama, etc.)
+export OPENAI_API_KEY="your-key"
+export OPENAI_BASE_URL="https://api.openai.com/v1"  # or your provider
+export EMBEDDING_MODEL="text-embedding-3-small"
+export CHAT_MODEL="gpt-4.1-mini"
+
+# Database
+export DB_HOST=localhost DB_NAME=memory DB_USER=memory DB_PASSWORD=memory
+
+python server.py
+```
+
+### Cloud (Terraform + Azure VM)
 
 ```bash
 cd memibrium
 cp terraform.tfvars.example terraform.tfvars
-# Edit: subscription_id, existing_cognitive_resource_group, allowed_ssh_cidrs
+# Edit: subscription_id, resource_group, allowed_ssh_cidrs
 
 export TF_VAR_foundry_api_key="your-key-here"
 terraform init && terraform plan && terraform apply
 ```
 
-The VM bootstraps via cloud-init: Python, Caddy, PostgreSQL + pgvector, the CT memory server. Caddy handles TLS + Foundry auth injection.
+The VM bootstraps via cloud-init: Python, Caddy, PostgreSQL + pgvector, Memibrium. Caddy handles TLS termination.
+
+### Supported LLM Providers
+
+Any OpenAI-compatible API works out of the box:
+
+| Provider | `OPENAI_BASE_URL` | Notes |
+|---|---|---|
+| OpenAI | `https://api.openai.com/v1` | Default |
+| Azure OpenAI / Foundry | `https://your-resource.openai.azure.com/` | Use `AzureOpenAI` client |
+| Ollama | `http://localhost:11434/v1` | Local, no API key needed |
+| OpenRouter | `https://openrouter.ai/api/v1` | Multi-model access |
+| vLLM / TGI | `http://localhost:8000/v1` | Self-hosted inference |
 
 ---
 
@@ -185,7 +208,7 @@ The VM bootstraps via cloud-init: Python, Caddy, PostgreSQL + pgvector, the CT m
 | `Caddyfile` | TLS termination + local `:9999` proxy with Foundry auth injection |
 | `main.tf` | Root Terraform — VM + network + cognitive modules |
 | `modules/vm/cloud-init.yaml` | Full bootstrap: server, Caddy, PostgreSQL, hardening, systemd |
-| `modules/cognitive/main.tf` | sector-7 data source + embedding deployment |
+| `modules/cognitive/main.tf` | LLM provider config (Azure Foundry example, swap for your provider) |
 | `modules/network/main.tf` | VNet, subnet, NSG (443/80/22) |
 
 ---
@@ -200,7 +223,7 @@ The VM bootstraps via cloud-init: Python, Caddy, PostgreSQL + pgvector, the CT m
 
 4. **Entity graph as world state.** "I moved to Berlin" updates a Location entity, doesn't just store a new vector. The `entities` table enables contradiction detection during consolidation.
 
-5. **Fully sovereign.** No supermemory. No cloud memory services. PostgreSQL + pgvector + Azure Foundry embeddings. Everything runs on your VM. Future: RuVector + LEANN on Cognitum hardware when available.
+5. **Fully sovereign.** No cloud memory services. PostgreSQL + pgvector + any OpenAI-compatible LLM provider for embeddings and synthesis. Everything runs on your infrastructure. Future: RuVector + LEANN on Cognitum hardware when available.
 
 6. **Witness chains everywhere.** Every state transition — ingest, decay, shed, crystallize, freeze, revert — produces a hash-linked provenance entry. Tamper-evident. Append-only. This is how you prove a memory's lineage in a regulated environment (healthcare, finance).
 
