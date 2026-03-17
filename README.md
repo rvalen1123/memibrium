@@ -12,7 +12,7 @@ Adapted from [Google's Always-On Memory Agent](https://research.google/blog/) re
 [![MCP](https://img.shields.io/badge/protocol-MCP-blue)]()
 [![LLM](https://img.shields.io/badge/LLM-any%20OpenAI--compatible-orange)]()
 [![Sovereign](https://img.shields.io/badge/sovereignty-full-darkgreen)]()
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18150324.svg)](https://doi.org/10.5281/zenodo.18150324)
 ---
 
 ## Architecture
