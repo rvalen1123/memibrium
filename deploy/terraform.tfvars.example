@@ -1,0 +1,15 @@
+# Memibrium Deploy Configuration
+# Copy this to terraform.tfvars and fill in your values
+
+subscription_id                  = "your-azure-subscription-id"
+existing_cognitive_resource_group = "your-cognitive-rg"
+cognitive_account_name           = "sector-7"
+foundry_endpoint                 = "https://sector-7.openai.azure.com/"
+foundry_api_key                  = "your-azure-openai-key"
+
+# Optional overrides
+# location        = "eastus2"
+# vm_size         = "Standard_D2s_v3"
+# embedding_model = "text-embedding-3-small"
+# chat_model      = "gpt-4.1-mini"
+# allowed_ssh_cidrs = ["your.ip.here/32"]
