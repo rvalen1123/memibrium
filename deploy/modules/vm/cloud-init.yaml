@@ -1,0 +1,188 @@
+#cloud-config
+# Memibrium — Sovereign AI Memory Server
+# Cloud-init bootstrap for Azure VM
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - curl
+  - wget
+  - jq
+  - htop
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - python3.12
+  - python3.12-venv
+  - python3-pip
+  - apt-transport-https
+  - postgresql
+  - postgresql-contrib
+
+users:
+  - name: ${admin_username}
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys: []
+
+write_files:
+  - path: /etc/memibrium/env
+    permissions: "0600"
+    content: |
+      OPENAI_API_KEY=${foundry_api_key}
+      AZURE_OPENAI_ENDPOINT=${foundry_openai_base}
+      OPENAI_BASE_URL=${foundry_openai_base}
+      EMBEDDING_MODEL=${embedding_model}
+      CHAT_MODEL=${chat_model}
+      DB_HOST=127.0.0.1
+      DB_PORT=5432
+      DB_NAME=memibrium
+      DB_USER=memibrium
+      DB_PASSWORD=${db_password}
+      IMPORTANCE_THRESHOLD=0.4
+      SHEDDING_THRESHOLD=0.15
+      CONSOLIDATE_INTERVAL_MIN=30
+      DECAY_RATE=0.02
+      CRYSTALLIZE_CONFIRMATIONS=3
+
+  - path: /opt/memibrium/requirements.txt
+    permissions: "0644"
+    content: |
+      asyncpg>=0.29.0
+      openai>=1.50.0
+      starlette>=0.41.0
+      uvicorn[standard]>=0.34.0
+      httpx>=0.27.0
+
+  - path: /etc/systemd/system/memibrium.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Memibrium — Sovereign AI Memory Server
+      After=network-online.target postgresql.service
+      Wants=network-online.target
+      Requires=postgresql.service
+      [Service]
+      Type=simple
+      EnvironmentFile=/etc/memibrium/env
+      WorkingDirectory=/opt/memibrium
+      ExecStart=/opt/memibrium/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 9999
+      Restart=always
+      RestartSec=5
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/caddy/Caddyfile
+    permissions: "0644"
+    content: |
+      ${vm_fqdn} {
+        handle /mcp* {
+          reverse_proxy 127.0.0.1:9999
+        }
+        handle /health {
+          reverse_proxy 127.0.0.1:9999
+        }
+        handle {
+          respond "Memibrium v3 — CT Lifecycle Engine" 200
+        }
+        log {
+          output file /var/log/caddy/access.log
+          format json
+        }
+      }
+
+  - path: /etc/sysctl.d/99-hardening.conf
+    permissions: "0644"
+    content: |
+      net.ipv4.conf.all.accept_redirects = 0
+      net.ipv4.conf.default.accept_redirects = 0
+      net.ipv4.conf.all.send_redirects = 0
+      net.ipv4.conf.default.send_redirects = 0
+      net.ipv4.conf.all.accept_source_route = 0
+      net.ipv4.tcp_syncookies = 1
+      net.ipv4.icmp_echo_ignore_broadcasts = 1
+      kernel.randomize_va_space = 2
+
+  - path: /etc/fail2ban/jail.local
+    permissions: "0644"
+    content: |
+      [DEFAULT]
+      bantime = 1h
+      findtime = 10m
+      maxretry = 3
+      [sshd]
+      enabled = true
+      port = 22
+      maxretry = 3
+
+  - path: /opt/memibrium/setup-db.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      set -e
+      sudo -u postgres psql <<DBEOF
+      CREATE USER memibrium WITH PASSWORD '${db_password}';
+      CREATE DATABASE memibrium OWNER memibrium;
+      \c memibrium
+      CREATE EXTENSION IF NOT EXISTS vector;
+      DBEOF
+      echo "PostgreSQL + pgvector ready"
+
+runcmd:
+  # Security hardening
+  - sysctl -p /etc/sysctl.d/99-hardening.conf
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable
+  - systemctl enable --now fail2ban
+  - systemctl enable --now unattended-upgrades
+
+  # Install Caddy
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+  - apt-get update && apt-get install -y caddy
+  - mkdir -p /var/log/caddy
+
+  # PostgreSQL + pgvector
+  - systemctl enable --now postgresql
+  - |
+    # Enable TCP listening
+    PG_CONF=$(find /etc/postgresql -name postgresql.conf | head -1)
+    sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/" $PG_CONF
+    # Enable md5 auth for TCP
+    PG_HBA=$(find /etc/postgresql -name pg_hba.conf | head -1)
+    echo "host all all 127.0.0.1/32 md5" >> $PG_HBA
+    systemctl restart postgresql
+  - |
+    apt-get install -y postgresql-16-pgvector || \
+    apt-get install -y postgresql-15-pgvector || \
+    apt-get install -y postgresql-14-pgvector || \
+    echo "pgvector: check install"
+  - bash /opt/memibrium/setup-db.sh
+
+  # Python venv + dependencies
+  - python3 -m venv /opt/memibrium/.venv
+  - /opt/memibrium/.venv/bin/pip install -r /opt/memibrium/requirements.txt
+
+  # Clone Memibrium from GitHub
+  - |
+    cd /opt/memibrium
+    git clone https://github.com/rvalen1123/memibrium.git repo
+    cp repo/server.py .
+    rm -rf repo
+
+  # Start services
+  - systemctl daemon-reload
+  - systemctl enable --now memibrium
+  - systemctl restart caddy
+
+  # Health check
+  - sleep 5
+  - curl -s http://127.0.0.1:9999/health | jq .
+  - echo "=== Memibrium bootstrap complete ==="
