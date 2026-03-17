@@ -50,13 +50,13 @@ resource "tls_private_key" "ssh" {
 
 resource "local_file" "ssh_private_key" {
   content         = tls_private_key.ssh.private_key_pem
-  filename        = pathexpand("~/.ssh/leann_memory")
+  filename        = pathexpand("~/.ssh/memibrium")
   file_permission = "0600"
 }
 
 resource "local_file" "ssh_public_key" {
   content  = tls_private_key.ssh.public_key_openssh
-  filename = pathexpand("~/.ssh/leann_memory.pub")
+  filename = pathexpand("~/.ssh/memibrium.pub")
 }
 
 resource "azurerm_public_ip" "main" {

@@ -33,8 +33,8 @@ write_files:
     permissions: "0600"
     content: |
       OPENAI_API_KEY=${foundry_api_key}
-      AZURE_OPENAI_ENDPOINT=${foundry_openai_base}
-      OPENAI_BASE_URL=${foundry_openai_base}
+      AZURE_OPENAI_ENDPOINT=${foundry_base_url}
+      OPENAI_BASE_URL=${foundry_base_url}
       EMBEDDING_MODEL=${embedding_model}
       CHAT_MODEL=${chat_model}
       DB_HOST=127.0.0.1

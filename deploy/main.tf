@@ -24,13 +24,21 @@ module "network" {
   project_name        = var.project_name
   environment         = var.environment
   tags                = local.common_tags
+  allowed_ssh_cidrs   = var.allowed_ssh_cidrs
 }
 
 module "cognitive" {
-  source              = "./modules/cognitive"
-  resource_group_name = var.existing_cognitive_resource_group
-  cognitive_name      = var.cognitive_account_name
-  embedding_model     = var.embedding_model
+  source                           = "./modules/cognitive"
+  resource_group_name              = azurerm_resource_group.main.name
+  location                         = azurerm_resource_group.main.location
+  project_name                     = var.project_name
+  environment                      = var.environment
+  embedding_model                  = var.embedding_model
+  tags                             = local.common_tags
+  existing_cognitive_account_name  = var.cognitive_account_name
+  existing_cognitive_resource_group = var.existing_cognitive_resource_group
+  foundry_endpoint                 = var.foundry_endpoint
+  foundry_api_key                  = var.foundry_api_key
 }
 
 module "vm" {
