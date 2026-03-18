@@ -19,8 +19,9 @@
 │  │  MCP SERVER (server.py on :9999)          │  │
 │  │  ─────────────────────────                │  │
 │  │  Execution layer                          │  │
-│  │  CT lifecycle, W(k,t), δ-decay, pgvector  │  │
-│  │  8 tools called via standard MCP protocol │  │
+│  │  CT lifecycle, W(k,t), δ-decay             │  │
+│  │  Hot: ruvector/pgvector  Cold: LEANN       │  │
+│  │  8 tools called via standard MCP protocol  │  │
 │  └───────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
