@@ -10,3 +10,5 @@ terraform.tfvars
 *.key
 .DS_Store
 .credentials
+__pycache__/
+*.pyc

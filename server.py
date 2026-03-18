@@ -89,6 +89,10 @@ USE_RUVECTOR = os.environ.get("USE_RUVECTOR", "false").lower() in ("true", "1", 
 RUVECTOR_GNN = os.environ.get("RUVECTOR_GNN", "true").lower() in ("true", "1", "yes")
 VECTOR_EXTENSION = "ruvector" if USE_RUVECTOR else "vector"
 
+# Type + operator mapping: ruvector uses its own type name, same operators
+VECTOR_TYPE = "ruvector" if USE_RUVECTOR else "vector"
+VECTOR_COSINE_OPS = "ruvector_cosine_ops" if USE_RUVECTOR else "vector_cosine_ops"
+
 # CT Parameters
 IMPORTANCE_THRESHOLD = float(os.environ.get("IMPORTANCE_THRESHOLD", "0.4"))
 SHEDDING_THRESHOLD = float(os.environ.get("SHEDDING_THRESHOLD", "0.05"))
@@ -180,6 +184,8 @@ class ColdStore:
     def __init__(self):
         self.pool: Optional[asyncpg.Pool] = None
         self.vector_ext: str = VECTOR_EXTENSION
+        self.vtype: str = VECTOR_TYPE
+        self.vcosine_ops: str = VECTOR_COSINE_OPS
 
     async def initialize(self):
         self.pool = await asyncpg.create_pool(
@@ -196,15 +202,17 @@ class ColdStore:
                 if self.vector_ext == "ruvector":
                     log.warning(f"ruvector extension not available, falling back to pgvector: {e}")
                     self.vector_ext = "vector"
+                    self.vtype = "vector"
+                    self.vcosine_ops = "vector_cosine_ops"
                     await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
                 else:
                     raise
-            await conn.execute("""
+            await conn.execute(f"""
                 CREATE TABLE IF NOT EXISTS memories (
                     id                  TEXT PRIMARY KEY,
                     content             TEXT NOT NULL,
                     source              TEXT NOT NULL DEFAULT 'unknown',
-                    embedding           vector(1536),
+                    embedding           {self.vtype}(1536),
                     state               TEXT NOT NULL DEFAULT 'observation',
                     domain              TEXT NOT NULL DEFAULT 'default',
                     confirmation_count  INTEGER NOT NULL DEFAULT 0,
@@ -230,7 +238,7 @@ class ColdStore:
                 log.info("RuVector HNSW index with GNN re-ranking enabled")
             await conn.execute(f"""
                 CREATE INDEX IF NOT EXISTS memories_embedding_idx
-                ON memories USING hnsw (embedding vector_cosine_ops)
+                ON memories USING hnsw (embedding {self.vcosine_ops})
                 {hnsw_params};
             """)
             await conn.execute(
@@ -262,10 +270,10 @@ class ColdStore:
                             importance: float, entities: list, topics: list,
                             witness_chain: list) -> None:
         async with self.pool.acquire() as conn:
-            await conn.execute("""
+            await conn.execute(f"""
                 INSERT INTO memories (id, content, embedding, state, source, domain,
                                      importance_score, entities, topics, witness_chain)
-                VALUES ($1, $2, $3::vector, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb)
+                VALUES ($1, $2, $3::{self.vtype}, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb)
                 ON CONFLICT (id) DO UPDATE SET
                     content = EXCLUDED.content, embedding = EXCLUDED.embedding,
                     state = EXCLUDED.state, importance_score = EXCLUDED.importance_score,
@@ -293,9 +301,9 @@ class ColdStore:
 
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(f"""
-                SELECT *, 1 - (embedding <=> $1::vector) AS cosine_score
+                SELECT *, 1 - (embedding <=> $1::{self.vtype}) AS cosine_score
                 FROM memories {where}
-                ORDER BY embedding <=> $1::vector LIMIT $2
+                ORDER BY embedding <=> $1::{self.vtype} LIMIT $2
             """, *params)
 
         now = datetime.now(timezone.utc)
