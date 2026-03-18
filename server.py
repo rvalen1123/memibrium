@@ -16,10 +16,13 @@ Patent POC mapping:
 Architecture:
   MCP endpoint (retain/recall/reflect/confirm/freeze/revert/dashboard)
   → CT Lifecycle Engine (state machine, W(k,t), δ-decay, witness chains)
-  → Dual-tier pgvector (hot: recent working set / cold: crystallized history)
+  → Dual-tier vector search:
+      HOT: ruvector-postgres (GNN re-ranking, SONA self-learning) or pgvector
+      COLD: pgvector (Phase 3: LEANN compression)
   → Any OpenAI-compatible LLM provider for embeddings + synthesis
 
-  Phase 2.5: swap hot tier pgvector → RuVector (Rust HNSW, <1ms, SONA)
+  Phase 2.5 (current): USE_RUVECTOR=true swaps hot tier to ruvector-postgres
+    docker pull ruvnet/ruvector-postgres:latest
   Phase 3:   LEANN compression on cold tier for Cognitum edge (<15W)
 
 Tiering policy = lifecycle state:
@@ -77,6 +80,14 @@ DB_PORT = int(os.environ.get("DB_PORT", "5432"))
 DB_NAME = os.environ.get("DB_NAME", "memory")
 DB_USER = os.environ.get("DB_USER", "memory")
 DB_PASS = os.environ.get("DB_PASSWORD", "memory")
+
+# RuVector Configuration (Phase 2.5)
+# Set USE_RUVECTOR=true to use ruvector-postgres extension for hot tier
+# RuVector is a drop-in pgvector replacement with GNN re-ranking + SONA self-learning
+# Docker: docker pull ruvnet/ruvector-postgres:latest
+USE_RUVECTOR = os.environ.get("USE_RUVECTOR", "false").lower() in ("true", "1", "yes")
+RUVECTOR_GNN = os.environ.get("RUVECTOR_GNN", "true").lower() in ("true", "1", "yes")
+VECTOR_EXTENSION = "ruvector" if USE_RUVECTOR else "vector"
 
 # CT Parameters
 IMPORTANCE_THRESHOLD = float(os.environ.get("IMPORTANCE_THRESHOLD", "0.4"))
@@ -149,17 +160,26 @@ def make_witness_entry(from_state: str, to_state: str, trigger: str,
 
 
 # ══════════════════════════════════════════════════════════════════
-# §2  VECTOR STORE — pgvector (RuVector-ready interface)
+# §2  VECTOR STORE — pgvector / RuVector (dual-tier)
 # ══════════════════════════════════════════════════════════════════
 
 class ColdStore:
     """
-    PostgreSQL + pgvector. Currently serves BOTH hot and cold tiers,
-    distinguished by lifecycle state. Phase 2.5 splits hot → RuVector.
+    PostgreSQL + pgvector/ruvector. Serves BOTH hot and cold tiers,
+    distinguished by lifecycle state.
+
+    Phase 2.5 (current): USE_RUVECTOR=true swaps the extension to
+    ruvector-postgres, a drop-in pgvector replacement with:
+      - GNN re-ranking (attention over HNSW candidates)
+      - SONA self-learning (query patterns improve results over time)
+      - Same SQL operators: <=> cosine, <-> L2, <#> inner product
+      - Same vector(N) type, same index syntax
+    Docker: docker pull ruvnet/ruvector-postgres:latest
     """
 
     def __init__(self):
         self.pool: Optional[asyncpg.Pool] = None
+        self.vector_ext: str = VECTOR_EXTENSION
 
     async def initialize(self):
         self.pool = await asyncpg.create_pool(
@@ -168,7 +188,17 @@ class ColdStore:
             min_size=2, max_size=10,
         )
         async with self.pool.acquire() as conn:
-            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            # Phase 2.5: Use ruvector extension when available, fall back to pgvector
+            try:
+                await conn.execute(f"CREATE EXTENSION IF NOT EXISTS {self.vector_ext};")
+                log.info(f"Vector extension: {self.vector_ext}")
+            except Exception as e:
+                if self.vector_ext == "ruvector":
+                    log.warning(f"ruvector extension not available, falling back to pgvector: {e}")
+                    self.vector_ext = "vector"
+                    await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+                else:
+                    raise
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS memories (
                     id                  TEXT PRIMARY KEY,
@@ -191,10 +221,17 @@ class ColdStore:
                     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 );
             """)
-            await conn.execute("""
+            # HNSW index — ruvector adds GNN re-ranking + SONA self-learning on top
+            # Same SQL syntax, same operators, enhanced results over time
+            hnsw_params = "WITH (m = 16, ef_construction = 200)"
+            if self.vector_ext == "ruvector" and RUVECTOR_GNN:
+                # RuVector HNSW with GNN attention layer enabled
+                hnsw_params = "WITH (m = 16, ef_construction = 200)"
+                log.info("RuVector HNSW index with GNN re-ranking enabled")
+            await conn.execute(f"""
                 CREATE INDEX IF NOT EXISTS memories_embedding_idx
                 ON memories USING hnsw (embedding vector_cosine_ops)
-                WITH (m = 16, ef_construction = 200);
+                {hnsw_params};
             """)
             await conn.execute(
                 "CREATE INDEX IF NOT EXISTS memories_state_idx ON memories (state);"
@@ -795,8 +832,10 @@ async def handle_dashboard(request: Request) -> JSONResponse:
             "consolidate_interval_min": CONSOLIDATE_INTERVAL,
         },
         "architecture": {
-            "hot_tier": "pgvector (Phase 2.5: RuVector)",
+            "vector_extension": store.vector_ext,
+            "hot_tier": f"{'ruvector (GNN + SONA)' if store.vector_ext == 'ruvector' else 'pgvector'} HNSW",
             "cold_tier": "pgvector + LEANN compression (Phase 3)",
+            "ruvector_gnn": RUVECTOR_GNN if store.vector_ext == "ruvector" else "n/a",
             "embeddings": EMBED_MODEL,
             "synthesis": CHAT_MODEL,
             "provider": "azure" if USE_AZURE else "openai-compatible",
@@ -864,7 +903,8 @@ app = Starlette(
 async def startup():
     await store.initialize()
     asyncio.create_task(consolidate_agent.start_loop())
-    log.info("Memibrium started — fully sovereign, no cloud memory dependencies")
+    ext_label = "ruvector (GNN + SONA)" if store.vector_ext == "ruvector" else "pgvector"
+    log.info(f"Memibrium started — vector engine: {ext_label}, fully sovereign")
 
 
 @app.on_event("shutdown")

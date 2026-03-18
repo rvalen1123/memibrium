@@ -107,6 +107,7 @@ memibrium/
 │           └── crystallization-memory/
 │               └── SKILL.md                # The governance skill
 ├── server.py                               # MCP server (8 tools)
+├── docker-compose.ruvector.yml             # One-command RuVector deploy
 ├── deploy/                                 # Terraform for cloud deploy
 └── DISTRIBUTION.md                         # This file
 ```

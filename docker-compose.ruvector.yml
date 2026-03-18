@@ -1,0 +1,49 @@
+# docker-compose.ruvector.yml
+# Memibrium with RuVector-postgres (Phase 2.5)
+# Usage: docker compose -f docker-compose.ruvector.yml up -d
+#
+# RuVector-postgres is a drop-in pgvector replacement with:
+#   - GNN re-ranking (attention over HNSW candidates, <1ms)
+#   - SONA self-learning (query patterns improve results over time)
+#   - Same SQL operators, same vector(N) type, same index syntax
+#   - https://github.com/ruvnet/ruvector
+
+version: '3.8'
+
+services:
+  ruvector-db:
+    image: ruvnet/ruvector-postgres:latest
+    container_name: memibrium-ruvector-db
+    environment:
+      POSTGRES_DB: memory
+      POSTGRES_USER: memory
+      POSTGRES_PASSWORD: memory
+    ports:
+      - "5432:5432"
+    volumes:
+      - ruvector_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  memibrium:
+    build: .
+    container_name: memibrium-server
+    depends_on:
+      - ruvector-db
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      CHAT_MODEL: ${CHAT_MODEL:-gpt-4.1-mini}
+      DB_HOST: ruvector-db
+      DB_PORT: "5432"
+      DB_NAME: memory
+      DB_USER: memory
+      DB_PASSWORD: memory
+      USE_RUVECTOR: "true"
+      RUVECTOR_GNN: "true"
+    ports:
+      - "9999:9999"
+    restart: unless-stopped
+
+volumes:
+  ruvector_data:

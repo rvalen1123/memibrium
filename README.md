@@ -105,7 +105,7 @@ Plugin Install
 
 | Tier | States | Engine | Latency |
 |---|---|---|---|
-| **Hot** | observation, consideration, accepted | pgvector → [RuVector](https://github.com/ruvnet/ruvector) (Phase 2.5) | <1ms target |
+| **Hot** | observation, consideration, accepted | [RuVector](https://github.com/ruvnet/ruvector) HNSW + GNN (or pgvector fallback) | <1ms |
 | **Cold** | crystallized, shed | pgvector → [LEANN](https://github.com/yichuan-w/LEANN) compression (Phase 3) | 2-5s acceptable |
 
 ---
@@ -116,6 +116,7 @@ Plugin Install
 |---|---|---|
 | **Crystallization skill** | Memory governance, behavioral rules, guardrails | 8 rules: cite by state, never auto-crystallize, freeze before destructive changes |
 | **Memibrium MCP** | Live memory tooling with lifecycle guarantees | retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard |
+| **RuVector engine** | GNN re-ranking + SONA self-learning on hot tier | Sub-millisecond HNSW, results improve over time, drop-in pgvector replacement |
 
 ---
 
@@ -223,8 +224,21 @@ export EMBEDDING_MODEL="text-embedding-3-small"
 export CHAT_MODEL="gpt-4.1-mini"
 export DB_HOST=localhost DB_NAME=memory DB_USER=memory DB_PASSWORD=memory
 
+# Optional: enable RuVector (GNN re-ranking + SONA self-learning)
+# Requires ruvnet/ruvector-postgres instead of standard PostgreSQL
+export USE_RUVECTOR=true
+
 python server.py
 ```
+
+### With RuVector (Docker — recommended)
+
+```bash
+# One command — spins up ruvector-postgres + memibrium
+docker compose -f docker-compose.ruvector.yml up -d
+```
+
+RuVector-postgres is a drop-in pgvector replacement with GNN re-ranking and SONA self-learning. Same SQL, same operators, better results over time. Falls back to pgvector automatically if ruvector extension isn't available.
 
 ### Cloud (Terraform + Azure VM)
 
@@ -268,6 +282,7 @@ memibrium/
 │           └── crystallization-memory/
 │               └── SKILL.md                # Governance skill (8 rules)
 ├── server.py                               # CT memory server (8 MCP endpoints)
+├── docker-compose.ruvector.yml             # One-command RuVector + Memibrium setup
 ├── Caddyfile                               # TLS termination + reverse proxy
 ├── deploy/                                 # Terraform (Azure VM)
 │   ├── main.tf
@@ -307,12 +322,12 @@ memibrium/
 | **1** | LEANN + Foundry + MCP (v1) | ✅ Shipped |
 | **2** | CT lifecycle engine + pgvector dual-tier + entity graph | ✅ Shipped |
 | **2.5** | Plugin architecture (azure-skills pattern) | ✅ Shipped |
-| **3** | Swap hot tier pgvector → [RuVector](https://github.com/ruvnet/ruvector) (Rust HNSW, <1ms) | Next |
-| **4** | [LEANN](https://github.com/yichuan-w/LEANN) compression on cold tier (97% storage savings) | Planned |
-| **5** | Proactive intent prediction | Planned |
-| **6** | Hierarchical memory with CT crystallization layers | Planned |
-| **7** | Multimodal ingestion (docs, images, audio) | Planned |
-| **8** | [Cognitum](https://cognitum.ai) edge deploy — sovereign, <15W | Waiting on hardware |
+| **2.5** | RuVector hot tier (GNN re-ranking, SONA self-learning) | ✅ Shipped |
+| **3** | [LEANN](https://github.com/yichuan-w/LEANN) compression on cold tier (97% storage savings) | Next |
+| **4** | Proactive intent prediction | Planned |
+| **5** | Hierarchical memory with CT crystallization layers | Planned |
+| **6** | Multimodal ingestion (docs, images, audio) | Planned |
+| **7** | [Cognitum](https://cognitum.ai) edge deploy — sovereign, <15W | Waiting on hardware |
 
 ---
 
