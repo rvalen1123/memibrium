@@ -1,0 +1,21 @@
+{
+  "name": "memibrium",
+  "version": "1.0.0",
+  "description": "Sovereign AI memory with Crystallization Theory governance. Ships one skill (crystallization-memory) and one MCP server (Memibrium). Human-gated crystallization, δ-decay, witness chains, freeze/revert.",
+  "author": {
+    "name": "Ricky Valentine / Orchard Holdings LLC",
+    "email": "ricky@orchardholdings.io"
+  },
+  "repository": "https://github.com/rvalen1123/memibrium",
+  "license": "Proprietary",
+  "keywords": [
+    "memory",
+    "knowledge-governance",
+    "crystallization-theory",
+    "mcp",
+    "sovereign-ai",
+    "knowledge-lifecycle",
+    "witness-chains",
+    "decay"
+  ]
+}

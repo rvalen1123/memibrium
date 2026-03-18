@@ -181,6 +181,11 @@ Any OpenAI-compatible API works out of the box:
 | File | What |
 |---|---|
 | `server.py` | CT memory server — lifecycle engine, W(k,t), δ-decay, witness chains, 8 MCP endpoints |
+| `.claude-plugin/marketplace.json` | Plugin marketplace registry (Claude Code / Copilot CLI) |
+| `plugins/memibrium/.claude-plugin/plugin.json` | Plugin manifest — name, version, metadata |
+| `plugins/memibrium/.mcp.json` | MCP server config — auto-wired when plugin is installed |
+| `plugins/memibrium/skills/crystallization-memory/SKILL.md` | Governance skill — 8 behavioral rules, anti-patterns, tool reference |
+| `DISTRIBUTION.md` | Plugin architecture docs, all install paths, MemSkill comparison |
 | `Caddyfile` | TLS termination + local `:9999` proxy with Foundry auth injection |
 | `main.tf` | Root Terraform — VM + network + cognitive modules |
 | `modules/vm/cloud-init.yaml` | Full bootstrap: server, Caddy, PostgreSQL, hardening, systemd |
@@ -231,6 +236,35 @@ Any OpenAI-compatible API works out of the box:
 | STG Claim 6: witness chains | `make_witness_entry()` — hash-linked, append-only | §1 |
 | STG Claim 7: freeze/revert | `ColdStore.freeze()` / `revert()` — COW snapshots | §2 |
 | Entity graph | `entities` table + `upsert_entity()` — world state management | §2 |
+
+---
+
+## Skills-Over-MCP Distribution (Plugin Architecture)
+
+Memibrium ships as a **plugin** — one skill + one MCP server, auto-wired on install.
+Follows the same pattern as [microsoft/azure-skills](https://github.com/microsoft/azure-skills).
+
+```
+.claude-plugin/marketplace.json           → Marketplace registry
+plugins/memibrium/.claude-plugin/plugin.json → Plugin manifest
+plugins/memibrium/.mcp.json                → MCP server config (auto-wired)
+plugins/memibrium/skills/crystallization-memory/SKILL.md → Governance skill
+server.py on :9999                         → Execution layer (8 MCP tools)
+```
+
+**Install (Claude Code):**
+```bash
+claude plugin marketplace add rvalen1123/memibrium
+claude plugin install memibrium@memibrium
+```
+
+**Install (Copilot CLI):**
+```bash
+/plugin marketplace add rvalen1123/memibrium
+/plugin install memibrium@memibrium
+```
+
+See [DISTRIBUTION.md](DISTRIBUTION.md) for Cursor, generic MCP client, and manual install paths.
 
 ---
 

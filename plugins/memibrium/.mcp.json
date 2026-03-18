@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "memibrium": {
+      "type": "url",
+      "url": "http://localhost:9999/mcp",
+      "name": "memibrium",
+      "description": "Sovereign AI memory server with Crystallization Theory lifecycle. 8 tools: retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard."
+    }
+  }
+}
