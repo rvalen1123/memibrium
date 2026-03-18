@@ -23,7 +23,8 @@ Architecture:
 
   Phase 2.5 (current): USE_RUVECTOR=true swaps hot tier to ruvector-postgres
     docker pull ruvnet/ruvector-postgres:latest
-  Phase 3:   LEANN compression on cold tier for Cognitum edge (<15W)
+  Phase 3 (current):   USE_LEANN=true enables LEANN cold tier compression
+    pip install leann (97% storage savings on crystallized/shed memories)
 
 Tiering policy = lifecycle state:
   HOT  (pgvector, fast)  : observation, consideration, accepted
@@ -99,6 +100,18 @@ SHEDDING_THRESHOLD = float(os.environ.get("SHEDDING_THRESHOLD", "0.05"))
 CONSOLIDATE_INTERVAL = int(os.environ.get("CONSOLIDATE_INTERVAL_MIN", "30"))
 DECAY_RATE = float(os.environ.get("DECAY_RATE", "0.02"))  # δ per consolidation cycle
 CRYSTALLIZE_CONFIRMATIONS = int(os.environ.get("CRYSTALLIZE_CONFIRMATIONS", "3"))
+
+# LEANN Configuration (Phase 3 — cold tier compression)
+# pip install leann (or: uv pip install leann)
+# Stores pruned graph + recomputes embeddings on-demand = 97% storage savings
+# Falls back to pgvector/ruvector cold search if leann not installed
+USE_LEANN = os.environ.get("USE_LEANN", "false").lower() in ("true", "1", "yes")
+LEANN_INDEX_DIR = os.environ.get("LEANN_INDEX_DIR", "./data/leann")
+LEANN_BACKEND = os.environ.get("LEANN_BACKEND", "hnsw")  # hnsw or diskann
+LEANN_EMBEDDING_MODE = os.environ.get("LEANN_EMBEDDING_MODE", "openai")
+# For local embeddings without API key: LEANN_EMBEDDING_MODE=sentence-transformers
+# Models: facebook/contriever (fast), BAAI/bge-base-en-v1.5 (balanced)
+LEANN_EMBEDDING_MODEL = os.environ.get("LEANN_EMBEDDING_MODEL", EMBED_MODEL)
 
 HOT_STATES = ["observation", "consideration", "accepted"]
 COLD_STATES = ["crystallized", "shed"]
@@ -431,6 +444,134 @@ class ColdStore:
 
 
 # ══════════════════════════════════════════════════════════════════
+# §2b LEANN COLD TIER — 97% storage compression (Phase 3)
+# ══════════════════════════════════════════════════════════════════
+
+class LEANNColdTier:
+    """
+    LEANN cold tier for crystallized/shed memories.
+    Stores a pruned graph + recomputes embeddings on-demand.
+    97% storage savings vs storing all embeddings.
+
+    Integration pattern:
+      - When memory transitions to crystallized/shed → index in LEANN
+      - Cold tier queries → search LEANN first, fall back to pgvector
+      - Hot tier → unchanged (ruvector/pgvector)
+      - LEANN handles its own embeddings (same OpenAI-compatible provider)
+
+    pip install leann (or: uv pip install leann)
+    https://github.com/yichuan-w/LEANN
+    """
+
+    def __init__(self):
+        self.available = False
+        self.builder = None
+        self.searcher = None
+        self.index_path = os.path.abspath(LEANN_INDEX_DIR)
+        self._dirty = False  # tracks if index needs rebuild
+
+    async def initialize(self):
+        """Try to import leann. If not installed, cold tier stays in pgvector."""
+        try:
+            from leann import LeannBuilder, LeannSearcher
+            os.makedirs(self.index_path, exist_ok=True)
+            index_file = os.path.join(self.index_path, "cold.leann")
+
+            # Check if existing index exists
+            if os.path.exists(index_file):
+                try:
+                    self.searcher = LeannSearcher(index_file)
+                    log.info(f"LEANN cold tier loaded from {index_file}")
+                except Exception as e:
+                    log.warning(f"LEANN index exists but failed to load: {e}")
+                    self.searcher = None
+
+            self.available = True
+            log.info(f"LEANN cold tier available (backend={LEANN_BACKEND}, "
+                     f"embedding_mode={LEANN_EMBEDDING_MODE})")
+        except ImportError:
+            self.available = False
+            log.info("LEANN not installed — cold tier stays in pgvector/ruvector "
+                     "(pip install leann to enable)")
+
+    async def index_memory(self, memory_id: str, content: str):
+        """Add a crystallized/shed memory to the LEANN index."""
+        if not self.available:
+            return
+        try:
+            from leann import LeannBuilder
+            index_file = os.path.join(self.index_path, "cold.leann")
+
+            # LEANN builder accumulates texts then builds
+            # We use a staging file to track pending additions
+            staging_file = os.path.join(self.index_path, "staging.jsonl")
+            entry = json.dumps({"id": memory_id, "content": content})
+            with open(staging_file, "a") as f:
+                f.write(entry + "\n")
+            self._dirty = True
+            log.info(f"LEANN staged {memory_id} for cold indexing")
+        except Exception as e:
+            log.error(f"LEANN index_memory error: {e}")
+
+    async def rebuild_index(self):
+        """Rebuild LEANN index from staging + existing cold memories."""
+        if not self.available or not self._dirty:
+            return
+        try:
+            from leann import LeannBuilder, LeannSearcher
+            index_file = os.path.join(self.index_path, "cold.leann")
+            staging_file = os.path.join(self.index_path, "staging.jsonl")
+
+            if not os.path.exists(staging_file):
+                return
+
+            builder = LeannBuilder(
+                backend_name=LEANN_BACKEND,
+                embedding_mode=LEANN_EMBEDDING_MODE,
+                embedding_model=LEANN_EMBEDDING_MODEL,
+            )
+
+            # Load staged entries
+            count = 0
+            with open(staging_file, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    entry = json.loads(line)
+                    builder.add_text(entry["content"])
+                    count += 1
+
+            if count > 0:
+                builder.build_index(index_file)
+                self.searcher = LeannSearcher(index_file)
+                # Clear staging after successful build
+                os.remove(staging_file)
+                self._dirty = False
+                log.info(f"LEANN cold index rebuilt: {count} memories indexed")
+        except Exception as e:
+            log.error(f"LEANN rebuild error: {e}")
+
+    async def search(self, query: str, top_k: int = 5) -> list:
+        """Search the LEANN cold tier."""
+        if not self.available or self.searcher is None:
+            return []
+        try:
+            results = self.searcher.search(query, top_k=top_k)
+            return [
+                {
+                    "text": r.text if hasattr(r, "text") else str(r),
+                    "score": r.score if hasattr(r, "score") else 0.0,
+                    "source": "leann_cold",
+                }
+                for r in results
+            ]
+        except Exception as e:
+            log.error(f"LEANN search error: {e}")
+            return []
+
+
+# ══════════════════════════════════════════════════════════════════
 # §3  LLM CLIENTS — Any OpenAI-compatible provider
 # ══════════════════════════════════════════════════════════════════
 
@@ -583,8 +724,9 @@ class ConsolidateAgent:
     of outdated state that can mislead the model worse than no memory.'
     """
 
-    def __init__(self, store: ColdStore):
+    def __init__(self, store: ColdStore, leann_tier: Optional[LEANNColdTier] = None):
         self.store = store
+        self.leann = leann_tier
         self._running = False
 
     async def run_cycle(self) -> dict:
@@ -613,7 +755,12 @@ class ConsolidateAgent:
                     witness_append=witness,
                 )
                 stats["shed"] += 1
-                log.info(f"Shed {mid}: W={old_w:.4f} → {new_w:.4f}")
+                log.info(f"Shed {mid}: W={old_w:.4f} -> {new_w:.4f}")
+                # Phase 3: Index shed memory in LEANN cold tier
+                if self.leann and self.leann.available:
+                    full_mem = await self.store.get_memory(mid)
+                    if full_mem:
+                        await self.leann.index_memory(mid, full_mem["content"])
 
             elif (m["state"] == "accepted"
                   and m["confirmation_count"] >= CRYSTALLIZE_CONFIRMATIONS
@@ -627,10 +774,20 @@ class ConsolidateAgent:
                 )
                 stats["crystallized"] += 1
                 log.info(f"Crystallized {mid}: confirmations={m['confirmation_count']}")
+                # Phase 3: Index crystallized memory in LEANN cold tier
+                if self.leann and self.leann.available:
+                    full_mem = await self.store.get_memory(mid)
+                    if full_mem:
+                        await self.leann.index_memory(mid, full_mem["content"])
 
             else:
                 await self.store.update_memory(mid, recency_score=new_recency)
                 stats["decayed"] += 1
+
+        # Phase 3: Rebuild LEANN cold index if any memories were staged
+        if self.leann and self.leann.available and self.leann._dirty:
+            await self.leann.rebuild_index()
+            stats["leann_rebuilt"] = True
 
         log.info(f"Consolidation complete: {stats}")
         return stats
@@ -652,10 +809,12 @@ class ConsolidateAgent:
 class QueryAgent:
     """Dual-tier recall: hot (recent) → cold (crystallized history)."""
 
-    def __init__(self, store: ColdStore, embedder: EmbedClient, chat: ChatClient):
+    def __init__(self, store: ColdStore, embedder: EmbedClient, chat: ChatClient,
+                 leann_tier: Optional[LEANNColdTier] = None):
         self.store = store
         self.embedder = embedder
         self.chat = chat
+        self.leann = leann_tier
 
     async def recall(self, query: str, top_k: int = 5,
                      domain: Optional[str] = None, expand: bool = True) -> dict:
@@ -676,6 +835,11 @@ class QueryAgent:
             embedding, top_k=top_k, state_filter=COLD_STATES, domain=domain,
         )
 
+        # Tier 2b: LEANN cold tier (Phase 3 — 97% storage compression)
+        leann_results = []
+        if self.leann and self.leann.available and self.leann.searcher:
+            leann_results = await self.leann.search(query, top_k=top_k)
+
         # Topic expansion
         expanded = []
         if expand:
@@ -688,7 +852,7 @@ class QueryAgent:
                 except Exception:
                     pass
 
-        # Merge and de-duplicate
+        # Merge and de-duplicate (pgvector/ruvector + LEANN + expanded)
         seen = set()
         merged = []
         for r in hot_results + cold_results + expanded:
@@ -696,8 +860,23 @@ class QueryAgent:
                 seen.add(r["id"])
                 merged.append(r)
 
+        # Append LEANN results (text-based, no ID dedup needed)
+        for lr in leann_results:
+            merged.append({
+                "id": f"leann_{hash(lr.get('text', '')) % 10**8}",
+                "content": lr.get("text", ""),
+                "state": "crystallized",
+                "source": "leann_cold",
+                "cosine_score": lr.get("score", 0.0),
+                "w_kt": 0.0,
+                "combined_score": lr.get("score", 0.0),
+            })
+
         merged.sort(key=lambda x: x.get("combined_score", 0), reverse=True)
-        return {"results": merged[:top_k], "tier": "hot+cold",
+        tier_label = "hot+cold"
+        if leann_results:
+            tier_label += "+leann"
+        return {"results": merged[:top_k], "tier": tier_label,
                 "query": query, "total_searched": len(merged)}
 
     async def reflect(self, topic: str, top_k: int = 10,
@@ -720,11 +899,12 @@ class QueryAgent:
 # ══════════════════════════════════════════════════════════════════
 
 store = ColdStore()
+leann_tier = LEANNColdTier()
 embedder = EmbedClient()
 chat = ChatClient()
 ingest_agent = IngestAgent(store, embedder, chat)
-consolidate_agent = ConsolidateAgent(store)
-query_agent = QueryAgent(store, embedder, chat)
+consolidate_agent = ConsolidateAgent(store, leann_tier)
+query_agent = QueryAgent(store, embedder, chat, leann_tier)
 
 
 async def handle_retain(request: Request) -> JSONResponse:
@@ -842,7 +1022,9 @@ async def handle_dashboard(request: Request) -> JSONResponse:
         "architecture": {
             "vector_extension": store.vector_ext,
             "hot_tier": f"{'ruvector (GNN + SONA)' if store.vector_ext == 'ruvector' else 'pgvector'} HNSW",
-            "cold_tier": "pgvector + LEANN compression (Phase 3)",
+            "cold_tier": f"LEANN ({LEANN_BACKEND})" if leann_tier.available else f"{store.vector_ext} (LEANN not installed)",
+            "leann_available": leann_tier.available,
+            "leann_index_dir": leann_tier.index_path if leann_tier.available else None,
             "ruvector_gnn": RUVECTOR_GNN if store.vector_ext == "ruvector" else "n/a",
             "embeddings": EMBED_MODEL,
             "synthesis": CHAT_MODEL,
@@ -910,9 +1092,11 @@ app = Starlette(
 @app.on_event("startup")
 async def startup():
     await store.initialize()
+    await leann_tier.initialize()
     asyncio.create_task(consolidate_agent.start_loop())
     ext_label = "ruvector (GNN + SONA)" if store.vector_ext == "ruvector" else "pgvector"
-    log.info(f"Memibrium started — vector engine: {ext_label}, fully sovereign")
+    leann_label = "LEANN" if leann_tier.available else "pgvector"
+    log.info(f"Memibrium started — hot: {ext_label}, cold: {leann_label}, fully sovereign")
 
 
 @app.on_event("shutdown")

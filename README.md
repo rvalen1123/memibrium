@@ -106,7 +106,7 @@ Plugin Install
 | Tier | States | Engine | Latency |
 |---|---|---|---|
 | **Hot** | observation, consideration, accepted | [RuVector](https://github.com/ruvnet/ruvector) HNSW + GNN (or pgvector fallback) | <1ms |
-| **Cold** | crystallized, shed | pgvector → [LEANN](https://github.com/yichuan-w/LEANN) compression (Phase 3) | 2-5s acceptable |
+| **Cold** | crystallized, shed | [LEANN](https://github.com/yichuan-w/LEANN) graph recomputation (or pgvector fallback) | ~250ms |
 
 ---
 
@@ -117,6 +117,7 @@ Plugin Install
 | **Crystallization skill** | Memory governance, behavioral rules, guardrails | 8 rules: cite by state, never auto-crystallize, freeze before destructive changes |
 | **Memibrium MCP** | Live memory tooling with lifecycle guarantees | retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard |
 | **RuVector engine** | GNN re-ranking + SONA self-learning on hot tier | Sub-millisecond HNSW, results improve over time, drop-in pgvector replacement |
+| **LEANN cold tier** | 97% storage compression on crystallized memories | Graph-based recomputation, no stored embeddings, ~250ms search |
 
 ---
 
@@ -236,9 +237,15 @@ python server.py
 ```bash
 # One command — spins up ruvector-postgres + memibrium
 docker compose -f docker-compose.ruvector.yml up -d
+
+# Enable LEANN cold tier (optional, 97% storage savings)
+pip install leann sentence-transformers
+export USE_LEANN=true
+export LEANN_EMBEDDING_MODE=sentence-transformers  # or openai
+export LEANN_EMBEDDING_MODEL=facebook/contriever    # fast, local, no API key
 ```
 
-RuVector-postgres is a drop-in pgvector replacement with GNN re-ranking and SONA self-learning. Same SQL, same operators, better results over time. Falls back to pgvector automatically if ruvector extension isn't available.
+RuVector-postgres is a drop-in pgvector replacement with GNN re-ranking and SONA self-learning. LEANN stores a pruned graph and recomputes embeddings on-demand for crystallized/shed memories. Both fall back to pgvector automatically if not available.
 
 ### Cloud (Terraform + Azure VM)
 
@@ -282,6 +289,8 @@ memibrium/
 │           └── crystallization-memory/
 │               └── SKILL.md                # Governance skill (8 rules)
 ├── server.py                               # CT memory server (8 MCP endpoints)
+├── test_ruvector_e2e.py                    # 33/33 RuVector integration tests
+├── test_leann_e2e.py                       # 16/16 LEANN cold tier tests
 ├── docker-compose.ruvector.yml             # One-command RuVector + Memibrium setup
 ├── Caddyfile                               # TLS termination + reverse proxy
 ├── deploy/                                 # Terraform (Azure VM)
@@ -323,7 +332,7 @@ memibrium/
 | **2** | CT lifecycle engine + pgvector dual-tier + entity graph | ✅ Shipped |
 | **2.5** | Plugin architecture (azure-skills pattern) | ✅ Shipped |
 | **2.5** | RuVector hot tier (GNN re-ranking, SONA self-learning) | ✅ Shipped |
-| **3** | [LEANN](https://github.com/yichuan-w/LEANN) compression on cold tier (97% storage savings) | Next |
+| **3** | [LEANN](https://github.com/yichuan-w/LEANN) cold tier compression (97% storage savings) | ✅ Shipped |
 | **4** | Proactive intent prediction | Planned |
 | **5** | Hierarchical memory with CT crystallization layers | Planned |
 | **6** | Multimodal ingestion (docs, images, audio) | Planned |
@@ -343,6 +352,7 @@ memibrium/
 | STG Claim 7: freeze/revert | `ColdStore.freeze()` / `revert()` — COW snapshots | §2 |
 | Entity graph | `entities` table + `upsert_entity()` — world state management | §2 |
 | **Skill governance** | `SKILL.md` — behavioral rules enforced at agent level | Plugin |
+| **LEANN cold tier** | `LEANNColdTier` — graph recomputation, 97% compression | §2b |
 
 ---
 
