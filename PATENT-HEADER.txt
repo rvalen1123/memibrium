@@ -1,0 +1,43 @@
+# =============================================================================
+# Memibrium — Sovereign AI Memory with Crystallization Theory
+# Copyright (c) 2024-2026 Ricky Valentine, Valentine IP. All rights reserved.
+#
+# Licensed under the Business Source License 1.1 (the "License");
+# you may not use this file for Commercial Purposes without a license.
+# See LICENSE.md in the repository root for full terms.
+#
+# PATENT NOTICE: This software implements methods covered by:
+#   US Provisional Patent #63/953,509 (Crystallization Theory)
+#   US Provisional Patent #63/962,609 (KEOS)
+#   STG Provisional (pending)
+# Commercial practice of these methods requires a patent license
+# from Valentine IP regardless of codebase used.
+#
+# Contact: ricky@valentineip.com
+# =============================================================================
+
+# --- FOR PYTHON FILES (.py), use the block above as-is ---
+
+# --- FOR JAVASCRIPT/JSX/TS FILES, use this version: ---
+# /**
+#  * Memibrium — Sovereign AI Memory with Crystallization Theory
+#  * Copyright (c) 2024-2026 Ricky Valentine, Valentine IP. All rights reserved.
+#  *
+#  * Licensed under the Business Source License 1.1 (the "License");
+#  * you may not use this file for Commercial Purposes without a license.
+#  * See LICENSE.md in the repository root for full terms.
+#  *
+#  * PATENT NOTICE: This software implements methods covered by:
+#  *   US Provisional Patent #63/953,509 (Crystallization Theory)
+#  *   US Provisional Patent #63/962,609 (KEOS)
+#  *   STG Provisional (pending)
+#  * Commercial practice of these methods requires a patent license
+#  * from Valentine IP regardless of codebase used.
+#  *
+#  * Contact: ricky@valentineip.com
+#  */
+
+# --- FOR YAML/TOML/CONFIG FILES, use this version: ---
+# # Memibrium — Sovereign AI Memory with Crystallization Theory
+# # Copyright (c) 2024-2026 Ricky Valentine, Valentine IP.
+# # Licensed under BSL 1.1. See LICENSE.md. Patents: #63/953,509, #63/962,609.
