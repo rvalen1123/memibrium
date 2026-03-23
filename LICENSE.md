@@ -2,9 +2,9 @@
 
 ## Parameters
 
-- **Licensor:** Ricky Valentine, Valentine IP
-- **Licensed Work:** Memibrium — Sovereign AI Memory with Crystallization Theory
-  - The Licensed Work is © 2024–2026 Ricky Valentine. All rights reserved.
+- **Licensor:** Richard "Ricky" Valentine
+- **Licensed Work:** Memibrum — Sovereign AI Memory with Crystallization Theory
+  - The Licensed Work is © 2024–2026 Richard "Ricky" Valentine. All rights reserved.
 - **Additional Use Grant:** You may use the Licensed Work for non-commercial, personal, educational, and evaluation purposes. You may not use the Licensed Work for a Commercial Purpose without obtaining a commercial license from the Licensor.
 - **Change Date:** March 23, 2030
 - **Change License:** Apache License, Version 2.0
