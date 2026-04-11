@@ -59,6 +59,9 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 import uvicorn
 
+from ingest_engine import DocumentIngestEngine, WikiCompiler
+from knowledge_taxonomy import KnowledgeClassifier
+
 # ── Configuration ──────────────────────────────────────────────────
 
 FOUNDRY_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -905,6 +908,9 @@ chat = ChatClient()
 ingest_agent = IngestAgent(store, embedder, chat)
 consolidate_agent = ConsolidateAgent(store, leann_tier)
 query_agent = QueryAgent(store, embedder, chat, leann_tier)
+classifier = KnowledgeClassifier()
+doc_engine = DocumentIngestEngine(ingest_agent, store, classifier)
+wiki_compiler = WikiCompiler(store, chat)
 
 
 async def handle_retain(request: Request) -> JSONResponse:
@@ -1038,6 +1044,87 @@ async def handle_health(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok", "engine": "memibrium"})
 
 
+# ── Ingestion Endpoints ───────────────────────────────────────────
+
+async def handle_ingest_file(request: Request) -> JSONResponse:
+    """Ingest a single file through the document engine."""
+    body = await request.json()
+    filepath = body.get("filepath", "")
+    if not filepath:
+        return JSONResponse({"error": "filepath required"}, status_code=400)
+    if not os.path.isfile(filepath):
+        return JSONResponse({"error": f"File not found: {filepath}"}, status_code=404)
+    from dataclasses import asdict
+    result = await doc_engine.ingest_file(
+        filepath,
+        domain=body.get("domain", "default"),
+        source_label=body.get("source_label"),
+        skip_duplicates=body.get("skip_duplicates", True),
+    )
+    return JSONResponse(asdict(result))
+
+
+async def handle_ingest_directory(request: Request) -> JSONResponse:
+    """Scan and ingest all supported files in a directory."""
+    body = await request.json()
+    dirpath = body.get("directory", "")
+    if not dirpath:
+        return JSONResponse({"error": "directory required"}, status_code=400)
+    if not os.path.isdir(dirpath):
+        return JSONResponse({"error": f"Directory not found: {dirpath}"}, status_code=404)
+    from dataclasses import asdict
+    result = await doc_engine.ingest_directory(
+        dirpath,
+        domain=body.get("domain", "default"),
+        recursive=body.get("recursive", True),
+        skip_duplicates=body.get("skip_duplicates", True),
+    )
+    return JSONResponse(asdict(result))
+
+
+async def handle_ingest_jsonl(request: Request) -> JSONResponse:
+    """Ingest Claude conversation JSONL (RV-Brain format)."""
+    body = await request.json()
+    filepath = body.get("filepath", "")
+    if not filepath:
+        return JSONResponse({"error": "filepath required"}, status_code=400)
+    if not os.path.isfile(filepath):
+        return JSONResponse({"error": f"File not found: {filepath}"}, status_code=404)
+    from dataclasses import asdict
+    result = await doc_engine.ingest_jsonl(
+        filepath,
+        skip_duplicates=body.get("skip_duplicates", True),
+    )
+    return JSONResponse(asdict(result))
+
+
+async def handle_ingest_status(request: Request) -> JSONResponse:
+    """Return ingestion engine stats."""
+    return JSONResponse(doc_engine.get_stats())
+
+
+async def handle_compile(request: Request) -> JSONResponse:
+    """Compile wiki index from ingested memories."""
+    body = await request.json() if request.method == "POST" else {}
+    domain = body.get("domain", "default") if body else "default"
+    output_dir = body.get("output_dir") if body else None
+    if output_dir:
+        from pathlib import Path as P
+        wiki_compiler.output_dir = P(output_dir)
+    result = await wiki_compiler.compile(domain=domain)
+    return JSONResponse(result)
+
+
+async def handle_taxonomy(request: Request) -> JSONResponse:
+    """Return or update the knowledge taxonomy."""
+    if request.method == "GET":
+        return JSONResponse({"categories": classifier.export_taxonomy()})
+    body = await request.json()
+    if "categories" in body:
+        classifier.import_taxonomy(body["categories"])
+    return JSONResponse({"status": "updated", "count": len(classifier.categories)})
+
+
 async def handle_mcp_manifest(request: Request) -> JSONResponse:
     """MCP tool definitions for client auto-discovery."""
     return JSONResponse({
@@ -1067,6 +1154,28 @@ async def handle_mcp_manifest(request: Request) -> JSONResponse:
              "inputSchema": {"type": "object", "properties": {}}},
             {"name": "dashboard", "description": "Lifecycle counts, CT parameters, architecture info.",
              "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "ingest_file", "description": "Ingest a file: read, chunk, classify, embed, store through CT lifecycle.",
+             "inputSchema": {"type": "object", "properties": {
+                 "filepath": {"type": "string", "description": "Absolute path to the file"},
+                 "domain": {"type": "string", "default": "default"},
+                 "source_label": {"type": "string"},
+                 "skip_duplicates": {"type": "boolean", "default": True}}, "required": ["filepath"]}},
+            {"name": "ingest_directory", "description": "Scan directory and ingest all supported files (.md, .txt, .json, .csv, .pdf).",
+             "inputSchema": {"type": "object", "properties": {
+                 "directory": {"type": "string", "description": "Absolute path to directory"},
+                 "domain": {"type": "string", "default": "default"},
+                 "recursive": {"type": "boolean", "default": True},
+                 "skip_duplicates": {"type": "boolean", "default": True}}, "required": ["directory"]}},
+            {"name": "ingest_jsonl", "description": "Ingest Claude conversation JSONL with auto-classification into 28 knowledge categories and CT tier assignment.",
+             "inputSchema": {"type": "object", "properties": {
+                 "filepath": {"type": "string", "description": "Path to JSONL file"},
+                 "skip_duplicates": {"type": "boolean", "default": True}}, "required": ["filepath"]}},
+            {"name": "ingest_status", "description": "Ingestion engine stats: hashes seen, taxonomy categories, config.",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "compile_wiki", "description": "Compile wiki index from ingested memories — generates topic articles and index with backlinks.",
+             "inputSchema": {"type": "object", "properties": {
+                 "domain": {"type": "string", "default": "default"},
+                 "output_dir": {"type": "string"}}, "required": []}},
         ],
     })
 
@@ -1085,6 +1194,12 @@ app = Starlette(
         Route("/mcp/revert", handle_revert, methods=["POST"]),
         Route("/mcp/consolidate", handle_consolidate, methods=["POST"]),
         Route("/mcp/dashboard", handle_dashboard, methods=["GET"]),
+        Route("/mcp/ingest/file", handle_ingest_file, methods=["POST"]),
+        Route("/mcp/ingest/directory", handle_ingest_directory, methods=["POST"]),
+        Route("/mcp/ingest/jsonl", handle_ingest_jsonl, methods=["POST"]),
+        Route("/mcp/ingest/status", handle_ingest_status, methods=["GET"]),
+        Route("/mcp/ingest/compile", handle_compile, methods=["POST"]),
+        Route("/mcp/ingest/taxonomy", handle_taxonomy, methods=["GET", "POST"]),
     ],
 )
 
