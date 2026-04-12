@@ -64,7 +64,7 @@ async def run_tests():
         test("Tools status 200", r.status_code == 200)
         tools = r.json().get("tools", [])
         tool_names = [t["name"] for t in tools]
-        test("8 tools listed", len(tools) == 8, f"got {len(tools)}")
+        test("8+ tools listed", len(tools) >= 8, f"got {len(tools)}")
         for name in ["retain", "recall", "reflect", "confirm",
                       "freeze", "revert", "consolidate", "dashboard"]:
             test(f"Tool '{name}' present", name in tool_names)

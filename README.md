@@ -116,12 +116,15 @@ Plugin Install
 |---|---|---|
 | **Crystallization skill** | Memory governance, behavioral rules, guardrails | 8 rules: cite by state, never auto-crystallize, freeze before destructive changes |
 | **Memibrium MCP** | Live memory tooling with lifecycle guarantees | retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard |
+| **Ingestion engine** | Bulk document/conversation ingest with classification | File/directory/JSONL ingest, 30-category taxonomy, wiki compilation, provenance tracking |
 | **RuVector engine** | GNN re-ranking + SONA self-learning on hot tier | Sub-millisecond HNSW, results improve over time, drop-in pgvector replacement |
 | **LEANN cold tier** | 97% storage compression on crystallized memories | Graph-based recomputation, no stored embeddings, ~250ms search |
 
 ---
 
-## MCP Tools (8 endpoints)
+## MCP Tools (15 endpoints)
+
+### Core Memory (8 tools)
 
 | Endpoint | Method | What | Patent |
 |---|---|---|---|
@@ -134,6 +137,59 @@ Plugin Install
 | `/mcp/consolidate` | POST | Manual trigger: δ-decay + shed + auto-promote | CT δ-decay |
 | `/mcp/dashboard` | GET | Lifecycle counts, CT parameters, architecture | — |
 | `/mcp/tools` | GET | MCP tool manifest for auto-discovery | — |
+
+### Ingestion Engine (7 tools)
+
+| Endpoint | Method | What |
+|---|---|---|
+| `/mcp/ingest/file` | POST | Ingest a single file: read → chunk → classify → embed → CT lifecycle |
+| `/mcp/ingest/directory` | POST | Scan directory, ingest all supported files (.md, .txt, .json, .csv, .pdf) |
+| `/mcp/ingest/jsonl` | POST | Ingest Claude conversation JSONL with auto-classification into 30 knowledge categories |
+| `/mcp/ingest/status` | GET | Ingestion engine stats: hashes seen, taxonomy breakdown, config |
+| `/mcp/ingest/compile` | POST | Compile wiki index from ingested memories — generates topic articles + backlinks |
+| `/mcp/ingest/taxonomy` | GET | View the 30-category knowledge taxonomy with CT tier assignments |
+| `/mcp/ingest/taxonomy` | POST | Update taxonomy categories at runtime |
+
+#### Ingestion Pipeline
+
+```
+Raw Sources
+  │
+  ├─ Files (.md, .txt, .json, .csv, .pdf)
+  │   └─ /mcp/ingest/file or /mcp/ingest/directory
+  │       ├─ Semantic chunking (by headers for .md, paragraphs for .txt, rows for .csv)
+  │       ├─ Provenance hash per chunk (STG Claim 6 alignment)
+  │       ├─ Content dedup (SHA-256, skip already-seen hashes)
+  │       └─ Each chunk → IngestAgent → CT lifecycle
+  │
+  ├─ Claude Conversations (.jsonl)
+  │   └─ /mcp/ingest/jsonl
+  │       ├─ Parse {"messages": [...]} format
+  │       ├─ 30-category keyword classifier → domain assignment
+  │       ├─ CT tier mapping (crystallize | hot | archive)
+  │       ├─ Skip list (dead projects filtered out)
+  │       ├─ Length + dedup filters
+  │       └─ Each conversation → IngestAgent → CT lifecycle
+  │
+  └─ Wiki Compilation
+      └─ /mcp/ingest/compile
+          ├─ Query all active memories by domain
+          ├─ Group by topic → generate topic articles (.md)
+          ├─ Generate index.md with backlinks
+          └─ Output to configurable directory (Obsidian-compatible)
+```
+
+#### Knowledge Taxonomy (30 categories)
+
+The ingestion engine ships with a 30-category taxonomy that maps content to CT lifecycle tiers:
+
+| Tier | Count | Examples |
+|---|---|---|
+| **crystallize** | 16 | Patents (CT/KEOS/STG, Forward Design, Visiting AI), Architecture (Memibrium, Azure, WordPress), IP Deals, Legal/Compliance |
+| **hot** | 13 | Business (Medvinci, LRS, Peptide Ops), Projects (Music, WhaleWatch), Strategy, Fine-Tuning |
+| **archive** | 1 | General Coding / Debugging |
+
+Taxonomy is configurable at runtime via `/mcp/ingest/taxonomy` (GET/POST) or by editing `knowledge_taxonomy.py`.
 
 ### Lifecycle Flow
 
@@ -278,30 +334,49 @@ Any OpenAI-compatible API works out of the box:
 
 ```
 memibrium/
-├── .claude-plugin/
-│   └── marketplace.json                    # Marketplace registry
+├── server.py                               # CT memory server (15 MCP endpoints)
+├── ingest_engine.py                        # Document/JSONL ingestion + wiki compiler
+├── knowledge_taxonomy.py                   # 30-category classifier with CT tier mapping
 ├── plugins/
 │   └── memibrium/
-│       ├── .claude-plugin/
-│       │   └── plugin.json                 # Plugin manifest
 │       ├── .mcp.json                       # MCP config (auto-wired on install)
 │       └── skills/
 │           └── crystallization-memory/
 │               └── SKILL.md                # Governance skill (8 rules)
-├── server.py                               # CT memory server (8 MCP endpoints)
-├── test_ruvector_e2e.py                    # 33/33 RuVector integration tests
-├── test_leann_e2e.py                       # 16/16 LEANN cold tier tests
+├── test_taxonomy.py                        # 40/40 taxonomy classifier tests
+├── test_ingest_unit.py                     # 34/34 chunking + provenance tests
+├── test_ingest_e2e.py                      # Ingestion endpoint E2E tests
+├── test_production_e2e.py                  # Core endpoint E2E tests
+├── test_ruvector_e2e.py                    # RuVector integration tests
+├── test_leann_e2e.py                       # LEANN cold tier tests
 ├── docker-compose.ruvector.yml             # One-command RuVector + Memibrium setup
 ├── Caddyfile                               # TLS termination + reverse proxy
 ├── deploy/                                 # Terraform (Azure VM)
-│   ├── main.tf
-│   ├── modules/vm/cloud-init.yaml
-│   ├── modules/cognitive/main.tf
-│   └── modules/network/main.tf
 ├── assets/                                 # Architecture diagrams
 ├── DISTRIBUTION.md                         # Plugin architecture + install paths
-├── SECURITY.md
-└── README.md                               # This file
+└── SECURITY.md
+```
+
+---
+
+## Testing
+
+### Unit tests (no DB, no LLM)
+
+```bash
+python test_taxonomy.py       # 40/40 — classifier accuracy, tier priority, skip list, export/import
+python test_ingest_unit.py    # 34/34 — markdown/JSON/CSV chunking, provenance, dedup, edge cases
+```
+
+### E2E tests (requires running server)
+
+```bash
+python server.py &
+
+python test_production_e2e.py    # Core 8 endpoints: retain → recall → confirm → crystallize → freeze → revert
+python test_ingest_e2e.py        # Ingestion 6 endpoints: file, directory, JSONL, taxonomy, compile, cross-check recall
+python test_ruvector_e2e.py      # RuVector DB layer (requires ruvector-postgres docker)
+python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
 ```
 
 ---

@@ -1166,7 +1166,7 @@ async def handle_mcp_manifest(request: Request) -> JSONResponse:
                  "domain": {"type": "string", "default": "default"},
                  "recursive": {"type": "boolean", "default": True},
                  "skip_duplicates": {"type": "boolean", "default": True}}, "required": ["directory"]}},
-            {"name": "ingest_jsonl", "description": "Ingest Claude conversation JSONL with auto-classification into 28 knowledge categories and CT tier assignment.",
+            {"name": "ingest_jsonl", "description": "Ingest Claude conversation JSONL with auto-classification into 30 knowledge categories and CT tier assignment.",
              "inputSchema": {"type": "object", "properties": {
                  "filepath": {"type": "string", "description": "Path to JSONL file"},
                  "skip_duplicates": {"type": "boolean", "default": True}}, "required": ["filepath"]}},
