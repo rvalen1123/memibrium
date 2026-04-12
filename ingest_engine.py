@@ -462,6 +462,13 @@ class DocumentIngestEngine:
             if not line:
                 continue
 
+            # Progress logging for large files
+            if line_num > 0 and line_num % 500 == 0:
+                log.info(
+                    f"JSONL progress: {line_num}/{len(lines)} lines, "
+                    f"{result.total_memories} memories so far"
+                )
+
             try:
                 data = json.loads(line)
             except json.JSONDecodeError:

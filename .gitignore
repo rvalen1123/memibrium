@@ -12,3 +12,6 @@ terraform.tfvars
 .credentials
 __pycache__/
 *.pyc
+.env
+wiki/
+data/

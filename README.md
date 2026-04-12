@@ -122,7 +122,7 @@ Plugin Install
 
 ---
 
-## MCP Tools (15 endpoints)
+## MCP Tools (16 endpoints)
 
 ### Core Memory (8 tools)
 
@@ -138,7 +138,7 @@ Plugin Install
 | `/mcp/dashboard` | GET | Lifecycle counts, CT parameters, architecture | — |
 | `/mcp/tools` | GET | MCP tool manifest for auto-discovery | — |
 
-### Ingestion Engine (7 tools)
+### Ingestion Engine (8 tools)
 
 | Endpoint | Method | What |
 |---|---|---|
@@ -149,6 +149,7 @@ Plugin Install
 | `/mcp/ingest/compile` | POST | Compile wiki index from ingested memories — generates topic articles + backlinks |
 | `/mcp/ingest/taxonomy` | GET | View the 30-category knowledge taxonomy with CT tier assignments |
 | `/mcp/ingest/taxonomy` | POST | Update taxonomy categories at runtime |
+| `/mcp/wiki` | GET | List compiled wiki files or read a specific file's content |
 
 #### Ingestion Pipeline
 
@@ -177,6 +178,7 @@ Raw Sources
           ├─ Group by topic → generate topic articles (.md)
           ├─ Generate index.md with backlinks
           └─ Output to configurable directory (Obsidian-compatible)
+              └─ /mcp/wiki?file=index.md → read compiled articles via MCP
 ```
 
 #### Knowledge Taxonomy (30 categories)
@@ -234,7 +236,7 @@ Every other memory system stores everything and hopes retrieval sorts it out. Th
 
 ---
 
-## Competitive Landscape (March 2026)
+## Competitive Landscape (April 2026)
 
 | Capability | mem0 | supermemory | Google Agent | Hindsight | memU | **This** |
 |---|---|---|---|---|---|---|
@@ -249,9 +251,12 @@ Every other memory system stores everything and hopes retrieval sorts it out. Th
 | One-command deploy | ❌ | ✅ | ❌ | ✅ | ⚠️³ | ✅ |
 | LLM-generated summaries | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ |
 | Topic expansion | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Bulk document/conversation ingestion | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Knowledge taxonomy + auto-classification | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Wiki compilation from memory | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Proactive intent prediction | ❌ | ❌ | ❌ | ❌ | ✅ | ❌⁴ |
 | Hierarchical memory (3-layer) | ❌ | ❌ | ❌ | ❌ | ✅ | ❌⁴ |
-| Multimodal ingestion | ❌ | ❌ | ❌ | ❌ | ✅ | ❌⁴ |
+| Multimodal ingestion | ❌ | ❌ | ❌ | ❌ | ✅ | ⚠️⁵ |
 | Benchmark published (Locomo) | ❌ | ❌ | ❌ | ❌ | ✅ | ❌⁴ |
 | **Human-gated crystallization** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Witness chain provenance** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
@@ -259,12 +264,13 @@ Every other memory system stores everything and hopes retrieval sorts it out. Th
 | **W(k,t) mathematical scoring** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Plugin distribution (skill + MCP)** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-**Score** | 4/20 | 4/20 | 5/20 | 5/20 | 10/20 | **16/20** |
+**Score** | 4/23 | 4/23 | 5/23 | 5/23 | 10/23 | **19/23** |
 
 > ¹ memU stores everything then auto-organizes — no LLM gate on ingest.
 > ² memU supports `llm_profiles` for provider switching, not per-operation model routing.
 > ³ memU self-hosted requires Python 3.13+, PostgreSQL + pgvector.
 > ⁴ Roadmap. Proactive prediction = Phase 4. Hierarchical memory = Phase 5.
+> ⁵ Text-based formats (MD, TXT, JSON, CSV, PDF text extraction). Image/audio ingestion planned.
 
 ---
 
@@ -391,6 +397,8 @@ python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
 
 4. **Tiering = lifecycle state.** Observation/consideration/accepted → hot tier. Crystallized/shed → cold tier. The state machine IS the tiering policy.
 
+    > **Note:** The `consideration` state is defined in the schema and transition table but currently unused in code — `IngestAgent` gates directly from `observation` → `accepted`. This state is reserved for the patent's 5-stage lifecycle claims (CT §4) and will be activated when multi-reviewer confirmation workflows ship in Phase 4.
+
 5. **Entity graph as world state.** "I moved to Berlin" updates a Location entity, doesn't just store a new vector.
 
 6. **Fully sovereign.** No cloud memory services. Everything runs on your infrastructure.
@@ -408,9 +416,11 @@ python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
 | **2.5** | Plugin architecture (azure-skills pattern) | ✅ Shipped |
 | **2.5** | RuVector hot tier (GNN re-ranking, SONA self-learning) | ✅ Shipped |
 | **3** | [LEANN](https://github.com/yichuan-w/LEANN) cold tier compression (97% storage savings) | ✅ Shipped |
+| **3.5** | Ingestion engine: bulk file/JSONL ingest, 30-category taxonomy, wiki compiler | ✅ Shipped |
+| **3.5** | Docker container, CI/CD, `.env.example` | ✅ Shipped |
 | **4** | Proactive intent prediction | Planned |
 | **5** | Hierarchical memory with CT crystallization layers | Planned |
-| **6** | Multimodal ingestion (docs, images, audio) | Planned |
+| **6** | Full multimodal ingestion (images, audio, video transcripts) | Planned |
 | **7** | [Cognitum](https://cognitum.ai) edge deploy — sovereign, <15W | Waiting on hardware |
 
 ---

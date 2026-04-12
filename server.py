@@ -49,6 +49,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
+from pathlib import Path
 from urllib.parse import urlparse
 
 import asyncpg
@@ -1125,6 +1126,27 @@ async def handle_taxonomy(request: Request) -> JSONResponse:
     return JSONResponse({"status": "updated", "count": len(classifier.categories)})
 
 
+async def handle_wiki_read(request: Request) -> JSONResponse:
+    """Read compiled wiki files. GET with no params lists files; with ?file=name reads that file."""
+    wiki_dir = wiki_compiler.output_dir
+    if not wiki_dir.is_dir():
+        return JSONResponse({"error": "Wiki not compiled yet. Call /mcp/ingest/compile first.",
+                             "files": []}, status_code=404)
+    filename = request.query_params.get("file")
+    if filename:
+        safe_name = Path(filename).name
+        filepath = wiki_dir / safe_name
+        if not filepath.is_file():
+            return JSONResponse({"error": f"File not found: {safe_name}"}, status_code=404)
+        content = filepath.read_text(encoding="utf-8", errors="replace")
+        return JSONResponse({"file": safe_name, "content": content, "size_chars": len(content)})
+    files = []
+    for f in sorted(wiki_dir.iterdir()):
+        if f.is_file() and f.suffix == ".md":
+            files.append({"name": f.name, "size_chars": f.stat().st_size})
+    return JSONResponse({"wiki_dir": str(wiki_dir), "files": files})
+
+
 async def handle_mcp_manifest(request: Request) -> JSONResponse:
     """MCP tool definitions for client auto-discovery."""
     return JSONResponse({
@@ -1176,6 +1198,9 @@ async def handle_mcp_manifest(request: Request) -> JSONResponse:
              "inputSchema": {"type": "object", "properties": {
                  "domain": {"type": "string", "default": "default"},
                  "output_dir": {"type": "string"}}, "required": []}},
+            {"name": "wiki_read", "description": "List compiled wiki files or read a specific file's content.",
+             "inputSchema": {"type": "object", "properties": {
+                 "file": {"type": "string", "description": "Filename to read (omit to list all files)"}}, "required": []}},
         ],
     })
 
@@ -1200,6 +1225,7 @@ app = Starlette(
         Route("/mcp/ingest/status", handle_ingest_status, methods=["GET"]),
         Route("/mcp/ingest/compile", handle_compile, methods=["POST"]),
         Route("/mcp/ingest/taxonomy", handle_taxonomy, methods=["GET", "POST"]),
+        Route("/mcp/wiki", handle_wiki_read, methods=["GET"]),
     ],
 )
 
