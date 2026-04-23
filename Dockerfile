@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY server.py .
 COPY ingest_engine.py .
 COPY knowledge_taxonomy.py .
+COPY hybrid_retrieval.py .
+COPY memory_hierarchy.py .
 COPY skills/ ./skills/
 
 EXPOSE 9999

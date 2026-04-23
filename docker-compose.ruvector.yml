@@ -8,8 +8,6 @@
 #   - Same SQL operators, same vector(N) type, same index syntax
 #   - https://github.com/ruvnet/ruvector
 
-version: '3.8'
-
 services:
   ruvector-db:
     image: ruvnet/ruvector-postgres:latest
@@ -24,16 +22,43 @@ services:
       - ruvector_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: memibrium-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
   memibrium:
     build: .
     container_name: memibrium-server
     depends_on:
       - ruvector-db
+      - ollama
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
-      CHAT_MODEL: ${CHAT_MODEL:-gpt-4.1-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
+      # Azure OpenAI (optional — set these to use your hosted Azure models)
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-}
+      AZURE_API_VERSION: ${AZURE_API_VERSION:-2024-12-01-preview}
+      # Azure Embeddings (optional — separate from chat endpoint)
+      AZURE_EMBEDDING_ENDPOINT: ${AZURE_EMBEDDING_ENDPOINT:-}
+      AZURE_EMBEDDING_DEPLOYMENT: ${AZURE_EMBEDDING_DEPLOYMENT:-}
+      AZURE_EMBEDDING_API_KEY: ${AZURE_EMBEDDING_API_KEY:-${AZURE_OPENAI_API_KEY:-}}
+      AZURE_CHAT_ENDPOINT: ${AZURE_CHAT_ENDPOINT:-}
+      AZURE_CHAT_DEPLOYMENT: ${AZURE_CHAT_DEPLOYMENT:-}
+      AZURE_CHAT_API_KEY: ${AZURE_CHAT_API_KEY:-${AZURE_OPENAI_API_KEY:-}}
+      # Sovereign local embeddings via Ollama (default)
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://ollama:11434/v1}
+      SLM_MODEL: ${SLM_MODEL:-phi3:mini}
+      SLM_BASE_URL: ${SLM_BASE_URL:-http://ollama:11434/v1}
+      # Sovereign local chat via Ollama (hardcoded — override .env to force local)
+      CHAT_MODEL: gemma4:e4b
       DB_HOST: ruvector-db
       DB_PORT: "5432"
       DB_NAME: memory
@@ -41,9 +66,12 @@ services:
       DB_PASSWORD: memory
       USE_RUVECTOR: "true"
       RUVECTOR_GNN: "true"
+    volumes:
+      - .:/app
     ports:
       - "9999:9999"
     restart: unless-stopped
 
 volumes:
   ruvector_data:
+  ollama_data:

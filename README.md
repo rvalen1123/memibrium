@@ -404,6 +404,42 @@ python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
 6. **Fully sovereign.** No cloud memory services. Everything runs on your infrastructure.
 
 7. **Witness chains everywhere.** Every state transition produces a hash-linked provenance entry. Tamper-evident. Append-only.
+8. **Benchmark discipline over feature churn.** For LOCOMO-style temporal and multi-hop regressions, prefer overlap analysis and failure-mode classification before adding broader retrieval or prompt complexity.
+
+---
+
+## Benchmark Notes
+
+**Current status (April 2026):** `hybrid_retrieval.py` is a reconstruction from pyc metadata + test contracts, on branch `reconstruction-backup`. It passes all tests but is not bit-identical to the historical code state that produced earlier benchmark numbers.
+
+**Reconstructed-baseline temporal accuracy:** 37.7% (n=321, 95% CI ±5.3%) at chunk_size=10, full 10 conversations, gpt-4.1-mini judge/answer. The historical 29.6% baseline is not directly comparable because the codebase changed.
+
+**Failure-mode analysis (condition 4, n=193 failures):**
+
+| Category | Count | % of failures |
+|----------|-------|---------------|
+| retrieval-missing | 107 | 55.4% |
+| relative-date-resolution | 69 | 35.8% |
+| composition | 13 | 6.7% |
+| gold-label-error | 4 | 2.1% |
+
+The dominant failure mode is split between retrieval-missing (55%) and relative-date-resolution (36%). The smoke-test hypothesis that "relative-date dominates" was partially correct — it is the largest *reasoning* failure mode, but retrieval-missing is the overall largest category.
+
+Historical focused LOCOMO experiments produced two practical takeaways:
+
+1. Temporal QA improved meaningfully only after preserving source chronology explicitly:
+   - ingest original `event_at` timestamps
+   - store chronology metadata in `refs` (`session_index`, `chunk_index`, `turn_start`, `turn_end`)
+   - sort temporal recall results chronologically
+   - use smaller chunks (~3 turns) for temporal evaluation
+
+2. Multi-hop retrieval is currently safest with adjacency-only expansion:
+   - session-adjacent chunk expansion was mildly helpful
+   - broad second-hop retrieval using bridge terms consistently reduced focused multi-hop accuracy
+   - constrained second-hop variants also remained worse than adjacency-only
+   - current evidence supports treating retrieval precision loss as the primary observed failure, while answer-composition bottlenecks remain unproven
+
+Practical guidance: keep adjacency-only as the active multi-hop baseline, and do overlap / failure-mode analysis before adding more retrieval breadth.
 
 ---
 

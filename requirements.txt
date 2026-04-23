@@ -2,7 +2,7 @@
 # Core
 asyncpg>=0.29.0
 openai>=1.30.0
-starlette>=0.37.0
+starlette>=0.37.0,<1.0.0
 uvicorn>=0.30.0
 
 # PDF ingestion (optional — install for /mcp/ingest/file PDF support)
