@@ -423,7 +423,11 @@ python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
 | composition | 13 | 6.7% |
 | gold-label-error | 4 | 2.1% |
 
-The dominant failure mode is split between retrieval-missing (55%) and relative-date-resolution (36%). The smoke-test hypothesis that "relative-date dominates" was partially correct — it is the largest *reasoning* failure mode, but retrieval-missing is the overall largest category.
+The dominant failure mode is **retrieval-missing at 55.4%**, followed by relative-date-resolution at 35.8%. The smoke-test hypothesis that "relative-date dominates" was directionally correct for *reasoning* failures, but retrieval-missing is the overall largest category and has the higher ceiling (71.0% vs 59.2% if perfectly fixed).
+
+**Why date normalization is still the right #1 intervention:** It is a prerequisite substrate cleanup, not the biggest bucket. Normalizing relative dates at ingest directly addresses the 35.8% relative-date failures, likely reduces retrieval-missing as a side effect, and creates a cleaner substrate for subsequent retrieval-precision work.
+
+**Eval limitation:** 13.4% of temporal questions have suspicious gold labels, and 2.1% are confirmed contradictions. Any benchmark delta under ~3 points should be treated as noise until labels are cleaned.
 
 Historical focused LOCOMO experiments produced two practical takeaways:
 
