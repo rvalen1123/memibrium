@@ -28,13 +28,16 @@ def _parse_relative(expr: str, now: datetime) -> tuple[Optional[datetime], Optio
         rest = lowered[7:].strip()
         try:
             dt = datetime.fromisoformat(rest.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
             return datetime.min.replace(tzinfo=timezone.utc), dt
         except ValueError:
             pass
         # Try common date formats
         for fmt in ("%Y-%m-%d", "%B %d, %Y", "%d %B %Y", "%b %d, %Y"):
             try:
-                dt = datetime.strptime(rest, fmt).replace(tzinfo=timezone.utc)
+                dt = datetime.strptime(rest, fmt)
+                dt = dt.replace(tzinfo=timezone.utc)
                 return datetime.min.replace(tzinfo=timezone.utc), dt
             except ValueError:
                 continue
@@ -43,13 +46,14 @@ def _parse_relative(expr: str, now: datetime) -> tuple[Optional[datetime], Optio
         rest = lowered[6:].strip()
         try:
             dt = datetime.fromisoformat(rest.replace("Z", "+00:00"))
-            return dt, datetime.max.replace(tzinfo=timezone.utc)
+            # "after 2023-05-08" means from the NEXT day
+            return (dt + timedelta(days=1)).replace(tzinfo=timezone.utc), datetime.max.replace(tzinfo=timezone.utc)
         except ValueError:
             pass
         for fmt in ("%Y-%m-%d", "%B %d, %Y", "%d %B %Y", "%b %d, %Y"):
             try:
                 dt = datetime.strptime(rest, fmt).replace(tzinfo=timezone.utc)
-                return dt, datetime.max.replace(tzinfo=timezone.utc)
+                return (dt + timedelta(days=1)).replace(tzinfo=timezone.utc), datetime.max.replace(tzinfo=timezone.utc)
             except ValueError:
                 continue
     
@@ -260,8 +264,8 @@ class HybridRetriever:
     def extract_bridge_terms(self, query: str, memories: List[dict],
                             exclude_query_terms: Optional[set] = None) -> set:
         """Extract bridge entities/terms connecting query to memories."""
-        # Get entities from memories
-        memory_entities = set()
+        # Get entities from memories (preserve original case)
+        memory_entities = {}
         for m in memories:
             ents = m.get("entities", [])
             if isinstance(ents, str):
@@ -272,18 +276,20 @@ class HybridRetriever:
             for e in ents:
                 name = e.get("name", "") if isinstance(e, dict) else str(e)
                 if name:
-                    memory_entities.add(name.lower())
+                    memory_entities[name.lower()] = name  # map lower->original
         
-        # Get query entities (capitalized words)
+        # Get query entities (capitalized words, preserve case)
         query_entities = set(re.findall(r"\b[A-Z][a-z]+\b", query))
-        query_entities = {e.lower() for e in query_entities}
         
-        # Bridge terms = entities in memories that also appear in query
-        bridge = memory_entities & query_entities
+        # Bridge terms = entities in memories that also appear in query (case-insensitive match, original case returned)
+        bridge = set()
+        for qe in query_entities:
+            if qe.lower() in memory_entities:
+                bridge.add(memory_entities[qe.lower()])
         
         # Exclude common words and query terms if requested
         if exclude_query_terms:
-            bridge -= {t.lower() for t in exclude_query_terms}
+            bridge -= {t for t in bridge if t.lower() in {x.lower() for x in exclude_query_terms}}
         
         return bridge
 
@@ -345,10 +351,13 @@ class HybridRetriever:
 
     def merge_multihop_results(self, first_hop: List[dict],
                               second_hop: List[dict]) -> List[dict]:
-        """Merge first-hop and second-hop results, deduplicating."""
+        """Merge first-hop and second-hop results, filtering by entity/session overlap."""
+        # Filter second-hop to only include candidates related to first-hop
+        filtered_second = self.filter_second_hop_candidates(first_hop, second_hop)
+        
         seen = set()
         merged = []
-        for m in first_hop + second_hop:
+        for m in first_hop + filtered_second:
             if m["id"] not in seen:
                 seen.add(m["id"])
                 merged.append(m)
