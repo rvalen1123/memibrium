@@ -336,25 +336,7 @@ class ColdStore:
             await conn.execute(
                 "CREATE INDEX IF NOT EXISTS temporal_expr_time_idx ON temporal_expressions (start_time, end_time);"
             )
-            # Entity relationships table
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS entity_relationships (
-                    rel_id      TEXT PRIMARY KEY,
-                    entity_a    TEXT NOT NULL REFERENCES entities(entity_id),
-                    entity_b    TEXT NOT NULL REFERENCES entities(entity_id),
-                    rel_type    TEXT NOT NULL DEFAULT 'cooccurs',
-                    weight      FLOAT NOT NULL DEFAULT 1.0,
-                    evidence    JSONB NOT NULL DEFAULT '[]',
-                    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-                );
-            """)
-            await conn.execute(
-                "CREATE INDEX IF NOT EXISTS entity_rel_a_idx ON entity_relationships (entity_a);"
-            )
-            await conn.execute(
-                "CREATE INDEX IF NOT EXISTS entity_rel_b_idx ON entity_relationships (entity_b);"
-            )
+            # Entity relationships table (must come AFTER entities table)
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS memory_snapshots (
                     snapshot_id     TEXT PRIMARY KEY,
@@ -371,6 +353,18 @@ class ColdStore:
                     entity_type TEXT NOT NULL DEFAULT 'unknown',
                     attributes  JSONB NOT NULL DEFAULT '{}',
                     memory_ids  JSONB NOT NULL DEFAULT '[]',
+                    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS entity_relationships (
+                    rel_id      TEXT PRIMARY KEY,
+                    entity_a    TEXT NOT NULL REFERENCES entities(entity_id),
+                    entity_b    TEXT NOT NULL REFERENCES entities(entity_id),
+                    rel_type    TEXT NOT NULL DEFAULT 'cooccurs',
+                    weight      FLOAT NOT NULL DEFAULT 1.0,
+                    evidence    JSONB NOT NULL DEFAULT '[]',
+                    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 );
             """)
