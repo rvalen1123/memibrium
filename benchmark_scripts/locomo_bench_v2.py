@@ -15,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 MCP = "http://localhost:9999/mcp"
 # Use the same Azure Foundry endpoint as Memibrium for judging
 AZURE_CHAT_ENDPOINT = "https://sector-7.services.ai.azure.com/models"
-AZURE_CHAT_KEY = os.environ.get("AZURE_CHAT_API_KEY", "${AZURE_CHAT_API_KEY}")
+AZURE_CHAT_KEY = os.environ.get("AZURE_CHAT_API_KEY", "")
 JUDGE_MODEL = "gpt-4.1-mini"
 ANSWER_MODEL = "gpt-4.1-mini"
 
