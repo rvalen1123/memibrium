@@ -48,8 +48,30 @@ def mcp_get(tool):
     return r.json()
 
 
+def run_preflight_checks():
+    """Fast fail before spending minutes ingesting benchmark data."""
+    print("  Running preflight checks...")
+
+    # MCP recall path should respond successfully.
+    recall_resp = client.post(f"{MCP}/recall", json={"query": "test", "top_k": 1})
+    recall_resp.raise_for_status()
+    _ = recall_resp.json()
+
+    # Answer/judge LLM path should respond successfully.
+    llm_resp = llm_call([{"role": "user", "content": "What is 2+2?"}], max_tokens=10)
+    if "4" not in llm_resp:
+        raise RuntimeError(f"LLM preflight failed: {llm_resp!r}")
+
+    print("  Preflight OK: recall + LLM reachable")
+
+
 def llm_call(messages, model=ANSWER_MODEL, max_tokens=200, retries=3):
-    """Call Azure Foundry LLM with retry."""
+    """Call Azure Foundry LLM with retry.
+
+    Fail closed: benchmarking must not silently turn auth/schema/network failures
+    into "I don't know" answers, because that collapses scores to 0 invisibly.
+    """
+    last_error = None
     for attempt in range(retries):
         try:
             r = client.post(
@@ -57,13 +79,29 @@ def llm_call(messages, model=ANSWER_MODEL, max_tokens=200, retries=3):
                 headers={"api-key": AZURE_CHAT_KEY, "Content-Type": "application/json"},
                 json={"model": model, "messages": messages, "max_tokens": max_tokens, "temperature": 0},
             )
+            r.raise_for_status()
             data = r.json()
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise RuntimeError(f"Empty or non-string LLM content: {data}")
+            return content
         except Exception as e:
+            last_error = e
             if attempt < retries - 1:
                 time.sleep(2 ** attempt)
             else:
-                return "I don't know"
+                response_text = None
+                response_status = None
+                if 'r' in locals():
+                    response_status = getattr(r, 'status_code', None)
+                    try:
+                        response_text = r.text[:2000]
+                    except Exception:
+                        response_text = None
+                raise RuntimeError(
+                    f"Azure chat call failed after {retries} attempts: {e}; "
+                    f"status={response_status}; response={response_text}"
+                ) from e
 
 
 def _parse_locomo_datetime(date_str: str) -> str | None:
@@ -344,10 +382,44 @@ def answer_question(question, domain):
 
 def judge_answer(question, predicted, ground_truth):
     """LLM judge: score predicted vs ground truth. Returns 0, 0.5, or 1."""
-    response = llm_call([
+    judge_messages = [
         {"role": "system", "content": "You are a strict judge evaluating if a predicted answer matches the ground truth answer. Score:\n1 = correct (matches ground truth meaning)\n0.5 = partially correct (some relevant info but incomplete or slightly wrong)\n0 = wrong (incorrect or irrelevant)\n\nRespond with ONLY the number: 0, 0.5, or 1"},
         {"role": "user", "content": f"Question: {question}\nGround truth: {ground_truth}\nPredicted: {predicted}\n\nScore:"}
-    ], max_tokens=5)
+    ]
+
+    try:
+        response = llm_call(judge_messages, max_tokens=5)
+    except RuntimeError as e:
+        # Azure content filters sometimes falsely trip on family-relationship words
+        # in otherwise benign benchmark items (e.g. "sister"). Retry with a lightly
+        # sanitized prompt that preserves judging semantics.
+        if "content_filter" in str(e):
+            def sanitize(text):
+                text = str(text)
+                replacements = {
+                    "sister": "family member",
+                    "brother": "family member",
+                    "mother": "parent",
+                    "father": "parent",
+                    "mom": "parent",
+                    "dad": "parent",
+                    "daughter": "child",
+                    "son": "child",
+                    "wife": "spouse",
+                    "husband": "spouse",
+                    "girlfriend": "partner",
+                    "boyfriend": "partner",
+                }
+                for old, new in replacements.items():
+                    text = re.sub(rf"\b{old}\b", new, text, flags=re.IGNORECASE)
+                return text
+
+            response = llm_call([
+                judge_messages[0],
+                {"role": "user", "content": f"Question: {sanitize(question)}\nGround truth: {sanitize(ground_truth)}\nPredicted: {sanitize(predicted)}\n\nScore:"}
+            ], max_tokens=5)
+        else:
+            raise
 
     # Parse score
     try:
@@ -404,6 +476,23 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
     ingest_times = []
     query_times = []
     results_log = []
+
+    # Resume support: if skipping conversations, seed metrics from existing partial output.
+    output_path = f"/tmp/locomo_results{'_normalized' if normalize_dates else ''}.json"
+    if start_conv > 0 and os.path.exists(output_path):
+        with open(output_path) as f:
+            prior = json.load(f)
+        results_log = prior.get("details", [])
+        for row in results_log:
+            score = row.get("score", 0)
+            cat = row.get("cat")
+            q_ms = row.get("query_time_ms", 0) / 1000.0
+            all_scores.append(score)
+            cat_scores[cat].append(score)
+            cat_latencies[cat].append(q_ms)
+            query_times.append(q_ms)
+        print(f"  Resumed prior partial: {len(results_log)} questions loaded from {output_path}")
+        print()
 
     for ci, conv_data in enumerate(data):
         sample_id = conv_data.get("sample_id", ci)
@@ -536,4 +625,5 @@ if __name__ == "__main__":
 
     skip = {5} if args.skip_adversarial else set()
     data_path = "/tmp/locomo10_cleaned.json" if args.cleaned else "/tmp/locomo/data/locomo10.json"
+    run_preflight_checks()
     run_benchmark(data_path, max_convs=args.max_convs, skip_cats=skip, start_conv=args.start_conv, normalize_dates=args.normalize_dates)

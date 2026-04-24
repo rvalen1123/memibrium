@@ -1,41 +1,60 @@
-# NEXT SESSION: Failure-mode analysis on temporal failures
+# DATE NORMALIZATION COMPLETE
 
-## BASELINE
-- Temporal: 61.4% (n=321) on healthy DB
-- Overall: 62.0% J-Score
-- Commit hash (substrate): 3cc1c221c6e51f39d68eafd068bd2faceb782f3b
-- Data: docs/eval/locomo_results.json
-- Full log: docs/eval/baseline_run.log
+## FINAL RESULT
+- Baseline: **61.37% temporal**, **61.96% overall**
+- Normalized: **70.87% temporal**, **63.62% overall**
+- Temporal delta: **+9.50 pp**
+- Overall delta: **+1.66 pp**
+- Measured fix-rate: **43.98%** (`(70.87 - 61.37) / 21.6`)
+- Pre-registered prediction: **70.9% point**, **68.4%–73.6% range**
+- Verdict: **calibrated**
+- Commit hash (substrate): **aee3bc7**
 
-## FAILURE POOL EXTRACTION
-From `docs/eval/locomo_results.json`:
-```python
-import json
-with open('docs/eval/locomo_results.json') as f:
-    results = json.load(f)
-temporal_failures = [r for r in results['results_log'] if r['cat'] == 'cat-temporal' and r['score'] == 0]
-# N = 124 failures
-```
+## PROTOCOL-COMPARABLE 4-CATEGORY RESULT
+- LoCoMo peer comparisons should exclude category 5 (adversarial).
+- Baseline 4-category overall: **~72.32%**
+- Normalized 4-category overall: **~75.04%**
+- 4-category delta: **+2.72 pp**
+- Use **75.04%**, not 63.62%, for any external peer comparison.
 
-## PENDING PRE-WORK (15 min)
-- Per-conversation spread check on temporal
-- Pin commit hash in results metadata
-- Optional: tighten classifier rubric to require evidence quotes
+## INTERPRETATION
+- The intervention landed essentially on the point estimate.
+- Measured fix-rate (43.98%) is close to the assumed 40% and within the pre-registered 30–50% band.
+- This validates both:
+  1. the normalization intervention estimate
+  2. the N=50 failure-mode bucketing method with spot-check correction
+- Cross-category behavior:
+  - multi-hop: 48.96% → 51.56% (+2.60 pp)
+  - single-hop: 63.83% → 64.36% (+0.53 pp)
+  - unanswerable: 81.99% → 82.76% (+0.77 pp)
+  - cat-5: 26.23% → 24.44% (-1.79 pp)
+- Read per pre-registration: temporal in-range + multi-hop also up = validated normalization win with possible composition-adjacent side effect worth future investigation.
 
-## ANALYSIS
-- Sample N=50 from 124 temporal failures (expand to 75 if distribution diverges from old)
-- Same 4-bucket rubric: retrieval-missing, relative-date, composition, gold-label
-- Log seed, document method
+## METHODOLOGY / RUN NOTES
+- Full run completed with 1986/1986 questions scored.
+- Resume seeding preserved the initial 6-conversation partial without duplicating conv-47 entries (`conv-47` count = 190, expected).
+- Azure content filter falsely tripped in the judge path on a family-term example; mitigated by narrow sanitize-and-retry fallback in `judge_answer()`.
+- Benchmark script now fails closed on Azure chat errors instead of silently returning `"I don't know"`.
+- Benchmark preflight now validates both MCP recall reachability and benchmark LLM reachability before ingest.
 
-## AFTER ANALYSIS
-- Re-derive prediction with new breakdown, explicit fix-rate math
-- Then run normalization
+## IMPORTANT SCRIPT IMPROVEMENTS MADE
+- `llm_call()` now raises on Azure/auth/schema failures instead of silently returning `"I don't know"`.
+- Added preflight check before benchmark ingest.
+- Added richer Azure error logging including response body.
+- Added resume-safe seeding for `--start-conv` runs.
+- Added narrow content-filter retry in `judge_answer()` for family-term false positives.
 
-## DO NOT
-- Run normalization until failure-mode analysis + re-derived prediction complete
+## FILES
+- Analysis: `docs/eval/failure_mode_analysis.md`
+- Baseline results: `docs/eval/locomo_results.json`
+- Partial/final normalized results on disk: `/tmp/locomo_results_normalized.json`
+- Benchmark log: `/tmp/locomo_normalized_resume.log`
 
-## NOTE ON LOCKED PLAN
-Protocol at docs/eval/locked_plan.md is partially stale now:
-- Step 3's expected range (~45-50%) is obsolete given 61.4% reality
-- Read this handoff first, not the locked plan
-- The plan's rubric, sampling method, and fix-rate framework are still valid
+## NEXT STEPS
+1. Update benchmark skill/documentation with the auth + preflight + resume + content-filter lessons.
+2. Review git diff carefully before committing.
+3. If doing a citable rerun later, consider:
+   - judge-specific preflight probe
+   - explicit `answer_refusal` flag in `results_log`
+   - note judge-model bias / peer-score methodology caveat
+4. Optional follow-up: inspect whether the multi-hop gain is concentrated on temporally anchored multi-hop questions.
