@@ -438,7 +438,7 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
                 continue
 
             question = qa["question"]
-            ground_truth = qa["answer"]
+            ground_truth = qa.get("answer", qa.get("adversarial_answer", ""))
 
             t0 = time.monotonic()
             predicted, n_mems = answer_question(question, domain)
