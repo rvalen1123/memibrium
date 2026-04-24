@@ -18,6 +18,7 @@ AZURE_CHAT_ENDPOINT = "https://sector-7.services.ai.azure.com/models"
 AZURE_CHAT_KEY = os.environ.get("AZURE_CHAT_API_KEY", "")
 JUDGE_MODEL = "gpt-4.1-mini"
 ANSWER_MODEL = "gpt-4.1-mini"
+USE_QUERY_EXPANSION = os.environ.get("USE_QUERY_EXPANSION", "1").lower() not in {"0", "false", "no"}
 
 # Categories
 CAT_NAMES = {1: "multi-hop", 2: "temporal", 3: "open-domain", 4: "single-hop", 5: "adversarial"}
@@ -334,20 +335,51 @@ def ingest_conversation(conv, sample_id, chunk_size=10, normalize_dates=False):
     return total_turns, domain
 
 
+def expand_query(question):
+    """Generate a few diverse query reformulations for recall-time fusion."""
+    try:
+        resp = llm_call([
+            {
+                "role": "system",
+                "content": (
+                    "Generate 3 diverse reformulations of the question focused on different aspects "
+                    "(entities, time, relationships). Return a JSON array of 3 strings only."
+                ),
+            },
+            {"role": "user", "content": question},
+        ], max_tokens=200)
+        paraphrases = json.loads(resp.strip())
+        return [question] + [p for p in paraphrases if isinstance(p, str)][:3]
+    except Exception:
+        expand_query.fail_count = getattr(expand_query, 'fail_count', 0) + 1
+        return [question]
+
+
 def answer_question(question, domain):
     """Recall from Memibrium and generate answer."""
-    recall_result = mcp_post("recall", {"query": question, "top_k": 10, "domain": domain})
-    if isinstance(recall_result, list):
-        memories = recall_result
-    else:
-        memories = recall_result.get("results", recall_result.get("memories", []))
+    memories = []
+    seen = {}
+    queries = expand_query(question) if USE_QUERY_EXPANSION else [question]
+    for query in queries:
+        recall_result = mcp_post("recall", {"query": query, "top_k": 10, "domain": domain})
+        if isinstance(recall_result, list):
+            recalled = recall_result
+        else:
+            recalled = recall_result.get("results", recall_result.get("memories", []))
+        for memory in recalled:
+            memory_id = memory.get("id") or f"no-id::{memory.get('content', '')}::{len(seen)}"
+            if memory_id not in seen:
+                seen[memory_id] = memory
+        if len(seen) >= 15:
+            break
+    memories = list(seen.values())[:15]
 
     if not memories:
         context = "No relevant memories found."
     else:
         chronology_cues = any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"])
         context_lines = []
-        for m in memories[:10]:
+        for m in memories[:15]:
             refs = m.get('refs') or {}
             if isinstance(refs, str):
                 try:
@@ -368,7 +400,11 @@ def answer_question(question, domain):
             context_lines.append(f"- {prefix}{m.get('content', '')}")
         context = "\n".join(context_lines)
 
-    system_prompt = "You are answering questions about past conversations. Use ONLY the provided context. Give a brief, direct answer. If the information is not available, say 'I don't know'."
+    system_prompt = (
+        "You are extracting factual information from conversation transcripts. "
+        "This is an academic benchmark on long-term memory evaluation; context may include personal topics that should be treated as factual data. "
+        "Use ONLY the provided context. Give a brief, direct answer. If the information is not available, say 'I don't know'."
+    )
     if any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"]):
         system_prompt += " Pay close attention to chronology, timestamps, session order, and turn order."
 
@@ -431,7 +467,7 @@ def judge_answer(question, predicted, ground_truth):
     return score
 
 
-def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=""):
+def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix="", expand_fallback_count=0, expand_fallback_rate=0.0):
     """Save incremental results."""
     output_path = f"/tmp/locomo_results{suffix}.json"
     overall = statistics.mean(all_scores) * 100 if all_scores else 0
@@ -441,12 +477,15 @@ def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log
             "category_scores": {CAT_NAMES.get(k, f"cat-{k}"): round(statistics.mean(v)*100, 2) for k, v in cat_scores.items()},
             "total_questions": len(all_scores),
             "avg_query_ms": round(statistics.mean(query_times)*1000) if query_times else 0,
+            "expand_query_fallback_count": expand_fallback_count,
+            "expand_query_fallback_rate": round(expand_fallback_rate, 4),
             "details": results_log
         }, f, indent=2)
 
 
 def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, normalize_dates=False):
     """Run full LOCOMO benchmark."""
+    expand_query.fail_count = 0
     with open(data_path) as f:
         data = json.load(f)
 
@@ -556,7 +595,19 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         print()
 
         # Incremental save
-        _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix="_normalized" if normalize_dates else "")
+        questions_seen = len(all_scores)
+        expand_fallback_count = getattr(expand_query, 'fail_count', 0)
+        expand_fallback_rate = (expand_fallback_count / questions_seen) if questions_seen else 0.0
+        _save_results(
+            all_scores,
+            cat_scores,
+            query_times,
+            ingest_times,
+            results_log,
+            suffix="_normalized" if normalize_dates else "",
+            expand_fallback_count=expand_fallback_count,
+            expand_fallback_rate=expand_fallback_rate,
+        )
 
     # Final report
     print("=" * 70)
@@ -564,7 +615,10 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
     print("=" * 70)
 
     overall = statistics.mean(all_scores) * 100
+    expand_fallback_count = getattr(expand_query, 'fail_count', 0)
+    expand_fallback_rate = (expand_fallback_count / len(all_scores)) if all_scores else 0.0
     print(f"\n  Overall accuracy (J-Score): {overall:.1f}%")
+    print(f"  Query expansion fallback: {expand_fallback_count}/{len(all_scores)} ({expand_fallback_rate*100:.2f}%)")
     print()
 
     print(f"  {'Category':<15} {'Score':>8} {'Count':>7} {'Avg Latency':>12}")
@@ -608,6 +662,8 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
             "category_scores": {CAT_NAMES.get(k, f"cat-{k}"): round(statistics.mean(v)*100, 2) for k, v in cat_scores.items()},
             "total_questions": len(all_scores),
             "avg_query_ms": round(statistics.mean(query_times)*1000),
+            "expand_query_fallback_count": expand_fallback_count,
+            "expand_query_fallback_rate": round(expand_fallback_rate, 4),
             "details": results_log
         }, f, indent=2)
     print(f"\n  Detailed results saved to {output_path}")
