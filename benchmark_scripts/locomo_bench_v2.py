@@ -407,8 +407,8 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
 
     for ci, conv_data in enumerate(data):
         sample_id = conv_data.get("sample_id", ci)
-        qa_list = conv_data["qa"]
-        conv = conv_data["conversation"]
+        qa_list = conv_data.get("qa", conv_data.get("qa_list", []))
+        conv = conv_data.get("conversation", conv_data)
 
         print(f"  [{ci+1}/{len(data)}] Conv {sample_id}: {conv.get('speaker_a','?')} & {conv.get('speaker_b','?')}")
 
@@ -430,6 +430,10 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         conv_scores = []
         for qi, qa in enumerate(qa_list):
             cat = qa["category"]
+            # Normalize LOCOMO numeric categories to strings
+            if isinstance(cat, int):
+                cat_map = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "unanswerable"}
+                cat = cat_map.get(cat, str(cat))
             if cat in skip_cats:
                 continue
 
