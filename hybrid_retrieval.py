@@ -165,9 +165,22 @@ def parse_temporal_window(query: str, now: Optional[datetime] = None) -> Optiona
 class HybridRetriever:
     """Hybrid search: semantic + lexical + temporal, with optional reranking."""
 
+    _VECTOR_TYPE_ALIASES = {
+        "pgvector": "vector",
+        "vector": "vector",
+        "ruvector": "ruvector",
+    }
+
+    @classmethod
+    def _normalize_vtype(cls, vtype: str) -> str:
+        try:
+            return cls._VECTOR_TYPE_ALIASES[vtype]
+        except KeyError as exc:
+            raise ValueError(f"Unsupported vector type: {vtype!r}") from exc
+
     def __init__(self, pool=None, vtype: str = "pgvector", embedder=None):
         self.pool = pool
-        self.vtype = vtype
+        self.vtype = self._normalize_vtype(vtype)
         self.embedder = embedder
         self._ce = None  # cross-encoder placeholder
 
@@ -369,49 +382,32 @@ class HybridRetriever:
                                 state_filter: Optional[list] = None,
                                 domain: Optional[str] = None) -> List[dict]:
         """Vector similarity search via pgvector or ruvector."""
-        if not self.pool:
+        if not self.pool or embedding is None:
             return []
-        
+
+        params = [json.dumps(embedding), top_k]
+        where_clauses = ["state != 'shed'"]
+
+        if state_filter:
+            placeholders = ", ".join(f"${i+3}" for i in range(len(state_filter)))
+            where_clauses.append(f"state IN ({placeholders})")
+            params.extend(state_filter)
+
+        if domain:
+            where_clauses.append(f"domain = ${len(params)+1}")
+            params.append(domain)
+
+        query = f"""
+            SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
+                   entities, topics, refs, witness_chain, embedding,
+                   1 - (embedding <=> $1::{self.vtype}) AS cosine_score
+            FROM memories
+            WHERE {" AND ".join(where_clauses)}
+            ORDER BY embedding <=> $1::{self.vtype}
+            LIMIT $2
+        """
         async with self.pool.acquire() as conn:
-            if self.vtype == "ruvector":
-                # RuVector HNSW search
-                rows = await conn.fetch(
-                    """
-                    SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
-                           entities, topics, refs, witness_chain, embedding,
-                           1 - (embedding <=> $1::vector) AS cosine_score
-                    FROM memories
-                    WHERE state != 'shed'
-                    ORDER BY embedding <=> $1::vector
-                    LIMIT $2
-                    """,
-                    json.dumps(embedding), top_k
-                )
-            else:
-                # pgvector fallback
-                params = [json.dumps(embedding), top_k]
-                where_clauses = ["state != 'shed'"]
-                
-                if state_filter:
-                    placeholders = ", ".join(f"${i+3}" for i in range(len(state_filter)))
-                    where_clauses.append(f"state IN ({placeholders})")
-                    params.extend(state_filter)
-                
-                if domain:
-                    where_clauses.append(f"domain = ${len(params)+1}")
-                    params.append(domain)
-                
-                query = f"""
-                    SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
-                           entities, topics, refs, witness_chain, embedding,
-                           1 - (embedding <=> $1::vector) AS cosine_score
-                    FROM memories
-                    WHERE {" AND ".join(where_clauses)}
-                    ORDER BY embedding <=> $1::vector
-                    LIMIT $2
-                """
-                rows = await conn.fetch(query, *params)
-            
+            rows = await conn.fetch(query, *params)
             return [dict(r) for r in rows]
 
     async def _lexical_search(self, query: str, top_k: int,
@@ -430,19 +426,25 @@ class HybridRetriever:
             # Try tsvector search first
             try:
                 tsquery = " | ".join(words)
-                rows = await conn.fetch(
-                    """
+                params = [tsquery, top_k]
+                where_clauses = ["state != 'shed'", "to_tsvector('english', content) @@ to_tsquery('english', $1)"]
+                if state_filter:
+                    placeholders = ", ".join(f"${i+3}" for i in range(len(state_filter)))
+                    where_clauses.append(f"state IN ({placeholders})")
+                    params.extend(state_filter)
+                if domain:
+                    where_clauses.append(f"domain = ${len(params)+1}")
+                    params.append(domain)
+                query_sql = f"""
                     SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
                            entities, topics, refs, witness_chain, embedding,
                            ts_rank(to_tsvector('english', content), to_tsquery('english', $1)) AS bm25_score
                     FROM memories
-                    WHERE state != 'shed'
-                      AND to_tsvector('english', content) @@ to_tsquery('english', $1)
+                    WHERE {" AND ".join(where_clauses)}
                     ORDER BY bm25_score DESC
                     LIMIT $2
-                    """,
-                    tsquery, top_k
-                )
+                    """
+                rows = await conn.fetch(query_sql, *params)
                 if rows:
                     return [dict(r) for r in rows]
             except Exception:

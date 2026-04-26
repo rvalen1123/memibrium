@@ -1,0 +1,1074 @@
+{
+  "common_questions": 1975,
+  "class_counts": {
+    "rescued": 110,
+    "harmed": 79,
+    "unchanged_correct": 1013,
+    "unchanged_wrong": 463,
+    "partial_changed": 65
+  },
+  "class_cat_counts": {
+    "rescued": {
+      "5": 23,
+      "multi-hop": 3,
+      "single-hop": 22,
+      "temporal": 20,
+      "unanswerable": 42
+    },
+    "harmed": {
+      "5": 29,
+      "multi-hop": 3,
+      "single-hop": 11,
+      "temporal": 7,
+      "unanswerable": 29
+    },
+    "unchanged_correct": {
+      "5": 61,
+      "multi-hop": 37,
+      "single-hop": 109,
+      "temporal": 206,
+      "unanswerable": 600
+    },
+    "unchanged_wrong": {
+      "5": 296,
+      "multi-hop": 29,
+      "single-hop": 24,
+      "temporal": 58,
+      "unanswerable": 56
+    },
+    "partial_changed": {
+      "5": 15,
+      "multi-hop": 7,
+      "single-hop": 14,
+      "temporal": 8,
+      "unanswerable": 21
+    }
+  },
+  "avg_delta_by_cat": {
+    "5": {
+      "n": 446,
+      "avg_delta_pp": -2.35
+    },
+    "multi-hop": {
+      "n": 96,
+      "avg_delta_pp": 2.08
+    },
+    "single-hop": {
+      "n": 282,
+      "avg_delta_pp": 3.9
+    },
+    "temporal": {
+      "n": 321,
+      "avg_delta_pp": 4.21
+    },
+    "unanswerable": {
+      "n": 830,
+      "avg_delta_pp": 1.51
+    }
+  },
+  "samples": {
+    "rescued": [
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What activity did Melanie used to do with her dad?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": "Horseback riding",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "Melanie used to go horseback riding with her dad.",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What does Caroline do to keep herself busy during her pottery break?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "Read a book and paint.",
+        "normalized_predicted": "Caroline keeps busy by painting.",
+        "expansion_predicted": "During her pottery break, Caroline keeps busy by painting and reading a book Melanie recommended.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What inspired Melanie's painting for the art show?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": "visiting an LGBTQ center and wanting to capture unity and strength",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "Melanie's painting for the art show was inspired by a visit to an LGBTQ center, aiming to capture everyone's unity and strength.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What kind of place does Melanie want to create for people?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "a safe and inviting place for people to grow",
+        "normalized_predicted": "Melanie wants to create a safe and loving home where everyone experiences love and acceptance.",
+        "expansion_predicted": "Melanie wants to create a safe, inviting place for people to grow.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "How many children does Melanie have?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": 3,
+        "normalized_predicted": "Melanie has kids, but the exact number is not specified.",
+        "expansion_predicted": "Melanie has three children.",
+        "normalized_n_memories": 6,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "How many times has Melanie gone to the beach in 2023?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": 2,
+        "normalized_predicted": "Melanie has gone to the beach once in 2023.",
+        "expansion_predicted": "Melanie went to the beach twice in 2023.",
+        "normalized_n_memories": 6,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "In what ways is Caroline participating in the LGBTQ community?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+        "normalized_predicted": "Caroline participates in the LGBTQ community by attending support groups, mentoring LGBTQ youth, volunteering at an LGBTQ+ youth center, creating and showcasing art that expresses her trans experience and promotes inclusivity, and organizing an LGBTQ art show.",
+        "expansion_predicted": "Caroline participates in the LGBTQ community by attending support groups, pride parades, and advocacy events; mentoring LGBTQ youth; volunteering at an LGBTQ+ youth center; creating and showcasing LGBTQ-themed art; organizing an LGBTQ art show; and using her art to express her trans experience and promote acceptance.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 11
+      },
+      {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What transgender-specific events has Caroline attended?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "Poetry reading, conference",
+        "normalized_predicted": "Caroline attended an LGBTQ support group on 07 May 2023, a transgender conference in July 2023, an LGBT pride event in June 2023, a pride parade on 11 August 2023, and an advocacy event.",
+        "expansion_predicted": "Caroline has attended a transgender support group (7 May 2023), a transgender conference (July 2023), a transgender poetry reading (September 2023), and a pride event (June and August 2023).",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "Who supports Caroline when she has a negative experience?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "Her mentors, family, and friends",
+        "normalized_predicted": "Caroline is supported by her friends, family, and Melanie during negative experiences.",
+        "expansion_predicted": "Caroline is supported by her friends, family, and mentors when she has a negative experience.",
+        "normalized_n_memories": 6,
+        "expansion_n_memories": 10
+      },
+      {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline have a picnic?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": "The week before 6 July 2023",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "Caroline had a picnic the week of 29 June 2023.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie go to the park?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": "27 August 2023",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "Melanie went to the park on 27 August 2023.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When is Melanie's daughter's birthday?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": "13 August",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "Melanie's daughter's birthday is on 13 August.",
+        "normalized_n_memories": 5,
+        "expansion_n_memories": 11
+      },
+      {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Melanie and her family do while camping?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+        "normalized_predicted": "Melanie and her family roasted marshmallows around the campfire, told stories, enjoyed each other's company, went on hikes, and watched the Perseid meteor shower.",
+        "expansion_predicted": "Melanie and her family roasted marshmallows, told stories around the campfire, enjoyed each other's company, explored nature, went on hikes, and watched the Perseid meteor shower.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 14
+      },
+      {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What does Caroline's necklace symbolize?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "love, faith, and strength",
+        "normalized_predicted": "Caroline's necklace symbolizes love, faith, strength, and a reminder of her roots and family support.",
+        "expansion_predicted": "Caroline's necklace symbolizes love, faith, and strength.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What kind of place does Caroline want to create for people?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "a safe and inviting place for people to grow",
+        "normalized_predicted": "Caroline wants to create a supportive, accepting community where people can be authentic and feel loved.",
+        "expansion_predicted": "Caroline wants to create a safe, inviting place for people to grow, especially supporting trans individuals' mental health and self-acceptance.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What setback did Melanie face in October 2023?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "She got hurt and had to take a break from pottery.",
+        "normalized_predicted": "In October 2023, Melanie got hurt in September and had to take a break from pottery.",
+        "expansion_predicted": "In October 2023, Melanie faced a setback due to an injury in September 2023 that forced her to take a break from pottery.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What workshop did Caroline attend recently?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": "LGBTQ+ counseling workshop",
+        "normalized_predicted": "Caroline recently attended a transgender poetry reading workshop.",
+        "expansion_predicted": "Caroline recently attended an LGBTQ+ counseling workshop on 23 June 2023.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-30",
+        "cat": "single-hop",
+        "question": "Which city have both Jean and John visited?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": "Rome",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "They both visited Rome.",
+        "normalized_n_memories": 6,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-30",
+        "cat": "single-hop",
+        "question": "Which events has Jon participated in to promote his business venture?",
+        "normalized_score": 0.5,
+        "expansion_score": 1.0,
+        "ground_truth": "fair, networking events, dance competition",
+        "normalized_predicted": "Jon participated in a dance competition in May 2023 and a festival performance before February 2023 to promote his dance studio.",
+        "expansion_predicted": "Jon participated in networking events and a dance competition in May 2023 to promote his business venture.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 12
+      },
+      {
+        "conv": "conv-30",
+        "cat": "unanswerable",
+        "question": "According to Gina, what makes Jon a perfect mentor and guide?",
+        "normalized_score": 0.0,
+        "expansion_score": 1.0,
+        "ground_truth": "His positivity and determination",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "According to Gina, Jon is a perfect mentor and guide because of his positivity and determination.",
+        "normalized_n_memories": 2,
+        "expansion_n_memories": 15
+      }
+    ],
+    "harmed": [
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "How did Caroline's son handle the accident?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.0,
+        "ground_truth": "He was scared but reassured by his family",
+        "normalized_predicted": "Caroline does not have a son mentioned; it was Melanie's son who was in the accident. Melanie said her kids were scared but reassured and tough.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 6,
+        "expansion_n_memories": 14
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What did Melanie see at the council meeting for adoption?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.0,
+        "ground_truth": "many people wanting to create loving homes for children in need",
+        "normalized_predicted": "Melanie saw many people wanting to create loving homes for children in need at the council meeting for adoption.",
+        "expansion_predicted": "Melanie did not attend the council meeting; Caroline did and saw many people wanting to create loving homes for children in need.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What does Caroline say running has been great for?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.0,
+        "ground_truth": "Her mental health",
+        "normalized_predicted": "Caroline says running has been great for her headspace and mental health.",
+        "expansion_predicted": "Caroline does not mention running; Melanie says running has been great for her headspace and mental health.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 10
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "Who is Caroline a fan of in terms of modern music?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.0,
+        "ground_truth": "Ed Sheeran",
+        "normalized_predicted": "Caroline is a fan of Ed Sheeran's \"Perfect\" in modern music.",
+        "expansion_predicted": "Caroline is a fan of Sara Bareilles, specifically her song \"Brave.\"",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "What fields would Caroline be likely to pursue in her educaton?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "Psychology, counseling certification",
+        "normalized_predicted": "Caroline is likely to pursue education in counseling and mental health.",
+        "expansion_predicted": "Caroline is likely to pursue education in counseling and mental health.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What LGBTQ+ events has Caroline participated in?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "Pride parade, school speech, support group",
+        "normalized_predicted": "Caroline has participated in an LGBTQ support group (May 2023), an LGBTQ conference (July 2023), an LGBT pride event (June 2023), a pride parade (August 2023), and is organizing an LGBTQ art show (September 2023).",
+        "expansion_predicted": "Caroline has participated in LGBTQ+ pride events and parades (June 2023, 11 August 2023, weekend of 15 July 2023), an LGBTQ support group (7 May 2023), an LGBTQ art show (planned for August and September 2023), volunteering at an LGBTQ+ youth center, and joined an LGBTQ activist group called \"Connected LGBTQ Activists.\"",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 11
+      },
+      {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What did Caroline research?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "Adoption agencies",
+        "normalized_predicted": "Caroline researched adoption agencies.",
+        "expansion_predicted": "Caroline researched counseling, mental health careers, adoption agencies, and created a children's book library.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What did Melanie paint recently?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "sunset",
+        "normalized_predicted": "Melanie recently painted a sunset-inspired painting with calming colors and an abstract painting featuring peaceful blue streaks to show tranquility.",
+        "expansion_predicted": "Melanie recently painted a sunset inspired by calming colors and tranquility, as well as a horse painting showing grace and strength. She also created pottery bowls with cool designs.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 12
+      },
+      {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When is Melanie planning on going camping?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "June 2023",
+        "normalized_predicted": "Melanie was planning on going camping in June 2023.",
+        "expansion_predicted": "Melanie was planning a family outing or special trip with Caroline for summer 2023, as discussed in August 2023.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 10
+      },
+      {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How did Melanie feel after the accident?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "Grateful and thankful for her family",
+        "normalized_predicted": "Melanie felt really scared during the accident but was thankful her son was okay and it reminded her to cherish her family.",
+        "expansion_predicted": "Melanie felt really scared after the accident but was thankful her son was okay and it reminded her to cherish her family.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How did Melanie's son handle the accident?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "He was scared but reassured by his family",
+        "normalized_predicted": "Melanie's son was scared but okay; the family reassured the kids and explained he would be fine.",
+        "expansion_predicted": "Melanie's son was okay after the accident, and although the kids were scared, they were reassured and handled it well.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 12
+      },
+      {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "She wanted to catch the eye and make people smile.",
+        "normalized_predicted": "Melanie chose colors and patterns in her pottery project to catch the eye, make people smile, and express her feelings creatively.",
+        "expansion_predicted": "Melanie chose the colors and patterns in her pottery project to catch the eye, make people smile, and to express her feelings and creativity, with each stroke carrying a part of her.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 12
+      },
+      {
+        "conv": "conv-30",
+        "cat": "unanswerable",
+        "question": "What advice does Gina give to Jon about running a successful business?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "build relationships with customers, create a strong brand image, stay positive",
+        "normalized_predicted": "Gina advises Jon to build a strong brand identity, develop relationships with customers, stay positive, and keep motivated.",
+        "expansion_predicted": "Gina advises Jon to stay passionate, focused, resilient, build relationships with customers, create a strong brand identity, use social media and influencers for marketing, stay positive, keep learning, network for contacts, and believe in himself.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 11
+      },
+      {
+        "conv": "conv-30",
+        "cat": "unanswerable",
+        "question": "What does Gina say about the dancers in the photo?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "They look graceful",
+        "normalized_predicted": "Gina says the dancers in the photo look great, graceful, and she can't wait to see them rock the festival.",
+        "expansion_predicted": "Gina says the dancers in the photo look great, graceful, and she can't wait to see them rock the festival.",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 10
+      },
+      {
+        "conv": "conv-41",
+        "cat": "single-hop",
+        "question": "What music events has John attended?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "Live music event, violin concert",
+        "normalized_predicted": "John attended a live music event the week of 20 June 2023 and a violin concert the week of 27 February 2023.",
+        "expansion_predicted": "John attended a live music event in June 2023 with his family, where they enjoyed the energy and fun of the crowd.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 14
+      },
+      {
+        "conv": "conv-41",
+        "cat": "temporal",
+        "question": "When did Maria take up community work with her church friends?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.0,
+        "ground_truth": "August 4, 2023",
+        "normalized_predicted": "Maria took up community work with her church friends on 4 August 2023.",
+        "expansion_predicted": "Maria took up community work with her church friends around 05 May 2023.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 10
+      },
+      {
+        "conv": "conv-41",
+        "cat": "unanswerable",
+        "question": "How did John describe his kids' reaction at the military memorial?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "awestruck and humbled",
+        "normalized_predicted": "John said his kids were awestruck and humbled by the military memorial.",
+        "expansion_predicted": "John said the visit to the military memorial was a moving experience for all of them and that it really made an impact on his kids.",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 14
+      },
+      {
+        "conv": "conv-41",
+        "cat": "unanswerable",
+        "question": "What activities does John's family enjoy doing together?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "going for hikes, hanging out at the park, having picnics, playing board games, having movie nights",
+        "normalized_predicted": "John's family enjoys outdoor activities like hiking, going to the park, having picnics, playing board games, and having movie nights at home.",
+        "expansion_predicted": "John's family enjoys outdoor activities like hiking, going to the park, having picnics, playing board games, movie nights, climbing, sliding, playing games at the playground, making pizzas together, and working out together three times a week.",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 12
+      },
+      {
+        "conv": "conv-41",
+        "cat": "unanswerable",
+        "question": "What important values does John want to teach his kids through adopting a rescue dog?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "Responsibility and compassion",
+        "normalized_predicted": "John wants to teach his kids responsibility, compassion, unconditional love, and loyalty through adopting a rescue dog.",
+        "expansion_predicted": "John wants to teach his kids responsibility, compassion, unconditional love, and loyalty through adopting a rescue dog.",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 14
+      },
+      {
+        "conv": "conv-41",
+        "cat": "unanswerable",
+        "question": "What kind of activities did John and his mates from the online group do as part of their service efforts?",
+        "normalized_score": 1.0,
+        "expansion_score": 0.5,
+        "ground_truth": "gave out food and supplies at a homeless shelter, organized a toy drive for kids in need",
+        "normalized_predicted": "John and his online group organized events like giving out food and supplies at a homeless shelter and running a toy drive for kids in need.",
+        "expansion_predicted": "John and his mates from the online group organized events like giving out food and supplies at a homeless shelter, a toy drive for kids in need, and a 5K charity run to raise money for veterans and their families.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 15
+      }
+    ],
+    "unchanged_wrong": [
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "How did Caroline feel about her family after the accident?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "They are important and mean the world to her",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "How did Caroline feel while watching the meteor shower?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "in awe of the universe",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "How did Caroline's children handle the accident?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "They were scared but resilient",
+        "normalized_predicted": "I don't know. The conversation mentions Melanie's children handling the accident, but not Caroline's children.",
+        "expansion_predicted": "Caroline did not mention having children or how any children handled the accident.",
+        "normalized_n_memories": 5,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "How often does Caroline go to the beach with her kids?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "once or twice a year",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 6,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What are Melanie's plans for the summer with respect to adoption?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "researching adoption agencies",
+        "normalized_predicted": "Melanie does not mention any specific plans for the summer related to adoption.",
+        "expansion_predicted": "Melanie does not have any specific plans for adoption in the summer mentioned in the context.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 8
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What are the new shoes that Caroline got used for?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "Running",
+        "normalized_predicted": "Caroline did not mention getting new shoes; Melanie mentioned new running shoes.",
+        "expansion_predicted": "Caroline did not mention getting new shoes; Melanie mentioned getting new shoes for running.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What country is Melanie's grandma from?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "Sweden",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What did Caroline and her family do while camping?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+        "normalized_predicted": "I don't know. The context only mentions Melanie's family camping activities, not Caroline's.",
+        "expansion_predicted": "Caroline did not mention camping with her family; it was Melanie who shared that her family enjoyed roasting marshmallows, telling stories around the campfire, hiking, and exploring nature during their camping trips.",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 14
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What did Caroline do after the road trip to relax?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "Went on a nature walk or hike",
+        "normalized_predicted": "Caroline did not mention what she did after the road trip to relax; Melanie said she loved camping trips with her family to reset and recharge.",
+        "expansion_predicted": "Caroline went to the beach the week of 18 August 2023 and painted a sunset to capture the calming and peaceful feeling.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What did Caroline realize after her charity race?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "self-care is important",
+        "normalized_predicted": "Caroline did not run the charity race; Melanie did. Melanie realized that self-care is really important after her charity race.",
+        "expansion_predicted": "Caroline did not mention a charity race; Melanie ran a charity race for mental health on 20 May 2023 and realized that self-care is really important.",
+        "normalized_n_memories": 6,
+        "expansion_n_memories": 14
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What did Melanie make for a local church?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "a stained glass window",
+        "normalized_predicted": "Melanie did not make anything for a local church; Caroline made a stained glass window for a local church.",
+        "expansion_predicted": "Melanie did not make anything for a local church; Caroline made a stained glass window for a local church.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What does Caroline love most about camping with her family?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "Being present and bonding with her family",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 8
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What does Melanie's necklace symbolize?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "love, faith, and strength",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 9,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What inspired Caroline's sculpture for the art show?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "visiting an LGBTQ center and wanting to capture unity and strength",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 7,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What is Caroline's reason for getting into running?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "To de-stress and clear her mind",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 14
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What is Melanie excited about in her adoption process?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "creating a family for kids who need one",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 7
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What kind of counseling and mental health services is Melanie interested in pursuing?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "working with trans people, helping them accept themselves and supporting their mental health",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 15
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What kind of counseling workshop did Melanie attend recently?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "LGBTQ+ counseling workshop",
+        "normalized_predicted": "Melanie did not attend a counseling workshop recently; Caroline attended an LGBTQ+ counseling workshop.",
+        "expansion_predicted": "Melanie did not attend a counseling workshop recently; Caroline attended an LGBTQ+ counseling workshop.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What motivated Melanie to pursue counseling?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "her own journey and the support she received, and how counseling improved her life",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 10,
+        "expansion_n_memories": 13
+      },
+      {
+        "conv": "conv-26",
+        "cat": "5",
+        "question": "What setback did Caroline face recently?",
+        "normalized_score": 0.0,
+        "expansion_score": 0.0,
+        "ground_truth": "She got hurt and had to take a break from pottery.",
+        "normalized_predicted": "I don't know.",
+        "expansion_predicted": "I don't know.",
+        "normalized_n_memories": 8,
+        "expansion_n_memories": 15
+      }
+    ]
+  },
+  "diagnostics_by_outcome_and_cat": {
+    "rescued": {
+      "5": {
+        "n": 23,
+        "norm_idk": 8,
+        "exp_idk": 0,
+        "norm_mem_avg": 9.6,
+        "exp_mem_avg": 13.9,
+        "norm_lat_avg": 2705.7,
+        "exp_lat_avg": 9818.5,
+        "norm_idk_rate": 34.8,
+        "exp_idk_rate": 0.0
+      },
+      "multi-hop": {
+        "n": 3,
+        "norm_idk": 3,
+        "exp_idk": 0,
+        "norm_mem_avg": 10.0,
+        "exp_mem_avg": 14.3,
+        "norm_lat_avg": 2791.3,
+        "exp_lat_avg": 7596.7,
+        "norm_idk_rate": 100.0,
+        "exp_idk_rate": 0.0
+      },
+      "single-hop": {
+        "n": 22,
+        "norm_idk": 3,
+        "exp_idk": 0,
+        "norm_mem_avg": 7.6,
+        "exp_mem_avg": 12.2,
+        "norm_lat_avg": 2641.1,
+        "exp_lat_avg": 8186.5,
+        "norm_idk_rate": 13.6,
+        "exp_idk_rate": 0.0
+      },
+      "temporal": {
+        "n": 20,
+        "norm_idk": 9,
+        "exp_idk": 0,
+        "norm_mem_avg": 7.5,
+        "exp_mem_avg": 12.9,
+        "norm_lat_avg": 2584.8,
+        "exp_lat_avg": 7905.4,
+        "norm_idk_rate": 45.0,
+        "exp_idk_rate": 0.0
+      },
+      "unanswerable": {
+        "n": 42,
+        "norm_idk": 6,
+        "exp_idk": 0,
+        "norm_mem_avg": 8.9,
+        "exp_mem_avg": 13.6,
+        "norm_lat_avg": 2696.1,
+        "exp_lat_avg": 8301.3,
+        "norm_idk_rate": 14.3,
+        "exp_idk_rate": 0.0
+      }
+    },
+    "harmed": {
+      "5": {
+        "n": 29,
+        "norm_idk": 5,
+        "exp_idk": 9,
+        "norm_mem_avg": 9.4,
+        "exp_mem_avg": 13.1,
+        "norm_lat_avg": 2595.1,
+        "exp_lat_avg": 8738.9,
+        "norm_idk_rate": 17.2,
+        "exp_idk_rate": 31.0
+      },
+      "multi-hop": {
+        "n": 3,
+        "norm_idk": 0,
+        "exp_idk": 0,
+        "norm_mem_avg": 9.3,
+        "exp_mem_avg": 13.0,
+        "norm_lat_avg": 1924.0,
+        "exp_lat_avg": 7692.7,
+        "norm_idk_rate": 0.0,
+        "exp_idk_rate": 0.0
+      },
+      "single-hop": {
+        "n": 11,
+        "norm_idk": 0,
+        "exp_idk": 0,
+        "norm_mem_avg": 9.1,
+        "exp_mem_avg": 12.5,
+        "norm_lat_avg": 2756.2,
+        "exp_lat_avg": 7575.3,
+        "norm_idk_rate": 0.0,
+        "exp_idk_rate": 0.0
+      },
+      "temporal": {
+        "n": 7,
+        "norm_idk": 0,
+        "exp_idk": 1,
+        "norm_mem_avg": 9.7,
+        "exp_mem_avg": 11.3,
+        "norm_lat_avg": 2730.4,
+        "exp_lat_avg": 7800.0,
+        "norm_idk_rate": 0.0,
+        "exp_idk_rate": 14.3
+      },
+      "unanswerable": {
+        "n": 29,
+        "norm_idk": 0,
+        "exp_idk": 2,
+        "norm_mem_avg": 9.4,
+        "exp_mem_avg": 12.8,
+        "norm_lat_avg": 2496.8,
+        "exp_lat_avg": 7597.6,
+        "norm_idk_rate": 0.0,
+        "exp_idk_rate": 6.9
+      }
+    },
+    "unchanged_wrong": {
+      "5": {
+        "n": 296,
+        "norm_idk": 165,
+        "exp_idk": 194,
+        "norm_mem_avg": 9.4,
+        "exp_mem_avg": 13.6,
+        "norm_lat_avg": 2771.9,
+        "exp_lat_avg": 8662.7,
+        "norm_idk_rate": 55.7,
+        "exp_idk_rate": 65.5
+      },
+      "multi-hop": {
+        "n": 29,
+        "norm_idk": 26,
+        "exp_idk": 27,
+        "norm_mem_avg": 8.7,
+        "exp_mem_avg": 12.8,
+        "norm_lat_avg": 2503.4,
+        "exp_lat_avg": 10887.1,
+        "norm_idk_rate": 89.7,
+        "exp_idk_rate": 93.1
+      },
+      "single-hop": {
+        "n": 24,
+        "norm_idk": 8,
+        "exp_idk": 5,
+        "norm_mem_avg": 8.9,
+        "exp_mem_avg": 12.6,
+        "norm_lat_avg": 2429.2,
+        "exp_lat_avg": 8062.3,
+        "norm_idk_rate": 33.3,
+        "exp_idk_rate": 20.8
+      },
+      "temporal": {
+        "n": 58,
+        "norm_idk": 28,
+        "exp_idk": 29,
+        "norm_mem_avg": 9.1,
+        "exp_mem_avg": 12.6,
+        "norm_lat_avg": 2612.2,
+        "exp_lat_avg": 10656.3,
+        "norm_idk_rate": 48.3,
+        "exp_idk_rate": 50.0
+      },
+      "unanswerable": {
+        "n": 56,
+        "norm_idk": 19,
+        "exp_idk": 16,
+        "norm_mem_avg": 9.7,
+        "exp_mem_avg": 13.8,
+        "norm_lat_avg": 2630.4,
+        "exp_lat_avg": 8126.5,
+        "norm_idk_rate": 33.9,
+        "exp_idk_rate": 28.6
+      }
+    },
+    "partial_changed": {
+      "5": {
+        "n": 15,
+        "norm_idk": 1,
+        "exp_idk": 6,
+        "norm_mem_avg": 9.3,
+        "exp_mem_avg": 13.1,
+        "norm_lat_avg": 2628.9,
+        "exp_lat_avg": 11072.9,
+        "norm_idk_rate": 6.7,
+        "exp_idk_rate": 40.0
+      },
+      "multi-hop": {
+        "n": 7,
+        "norm_idk": 3,
+        "exp_idk": 1,
+        "norm_mem_avg": 9.6,
+        "exp_mem_avg": 13.1,
+        "norm_lat_avg": 2736.1,
+        "exp_lat_avg": 7521.0,
+        "norm_idk_rate": 42.9,
+        "exp_idk_rate": 14.3
+      },
+      "single-hop": {
+        "n": 14,
+        "norm_idk": 4,
+        "exp_idk": 0,
+        "norm_mem_avg": 7.5,
+        "exp_mem_avg": 12.7,
+        "norm_lat_avg": 2543.4,
+        "exp_lat_avg": 10405.6,
+        "norm_idk_rate": 28.6,
+        "exp_idk_rate": 0.0
+      },
+      "temporal": {
+        "n": 8,
+        "norm_idk": 0,
+        "exp_idk": 2,
+        "norm_mem_avg": 9.6,
+        "exp_mem_avg": 12.8,
+        "norm_lat_avg": 2647.1,
+        "exp_lat_avg": 7328.2,
+        "norm_idk_rate": 0.0,
+        "exp_idk_rate": 25.0
+      },
+      "unanswerable": {
+        "n": 21,
+        "norm_idk": 6,
+        "exp_idk": 3,
+        "norm_mem_avg": 8.5,
+        "exp_mem_avg": 13.1,
+        "norm_lat_avg": 3080.0,
+        "exp_lat_avg": 9480.3,
+        "norm_idk_rate": 28.6,
+        "exp_idk_rate": 14.3
+      }
+    }
+  },
+  "residual_failures_after_expansion": {
+    "5": {
+      "n": 362,
+      "idk": 209,
+      "score0": 333,
+      "score05": 29,
+      "idk_rate": 57.7,
+      "avg_memories": 13.6,
+      "avg_latency_ms": 8711
+    },
+    "multi-hop": {
+      "n": 56,
+      "idk": 28,
+      "score0": 33,
+      "score05": 23,
+      "idk_rate": 50.0,
+      "avg_memories": 12.9,
+      "avg_latency_ms": 9872
+    },
+    "single-hop": {
+      "n": 151,
+      "idk": 6,
+      "score0": 28,
+      "score05": 123,
+      "idk_rate": 4.0,
+      "avg_memories": 12.4,
+      "avg_latency_ms": 8613
+    },
+    "temporal": {
+      "n": 95,
+      "idk": 32,
+      "score0": 65,
+      "score05": 30,
+      "idk_rate": 33.7,
+      "avg_memories": 12.4,
+      "avg_latency_ms": 9563
+    },
+    "unanswerable": {
+      "n": 188,
+      "idk": 21,
+      "score0": 73,
+      "score05": 115,
+      "idk_rate": 11.2,
+      "avg_memories": 13.2,
+      "avg_latency_ms": 8255
+    }
+  }
+}

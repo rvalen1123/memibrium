@@ -18,7 +18,39 @@ AZURE_CHAT_ENDPOINT = "https://sector-7.services.ai.azure.com/models"
 AZURE_CHAT_KEY = os.environ.get("AZURE_CHAT_API_KEY", "")
 JUDGE_MODEL = "gpt-4.1-mini"
 ANSWER_MODEL = "gpt-4.1-mini"
-USE_QUERY_EXPANSION = os.environ.get("USE_QUERY_EXPANSION", "1").lower() not in {"0", "false", "no"}
+
+
+def _env_flag(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() not in {"", "0", "false", "no", "off"}
+
+
+# Query expansion is intentionally opt-in: useful for evaluation, too slow for default runs.
+USE_QUERY_EXPANSION = _env_flag("USE_QUERY_EXPANSION", default=False)
+# Context reranking is opt-in candidate precision recovery after recall/query expansion.
+USE_CONTEXT_RERANK = _env_flag("USE_CONTEXT_RERANK", default=False)
+# Append-only context expansion is an opt-in safer follow-up: preserve the
+# original answer context exactly, then append a few extra candidates below it.
+USE_APPEND_CONTEXT_EXPANSION = _env_flag("USE_APPEND_CONTEXT_EXPANSION", default=False)
+RECALL_TOP_K = 10
+RERANK_RECALL_TOP_K = 20
+APPEND_CONTEXT_RECALL_TOP_K = 20
+ANSWER_CONTEXT_TOP_K = 15
+APPEND_CONTEXT_EXTRA_K = 5
+RERANK_PRESERVE_PREFIX_K = 2
+
+
+def validate_retrieval_modes(use_context_rerank=None, use_append_context_expansion=None):
+    """Reject retrieval modes whose metadata/prompt semantics would conflict."""
+    if use_context_rerank is None:
+        use_context_rerank = USE_CONTEXT_RERANK
+    if use_append_context_expansion is None:
+        use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
+    if use_context_rerank and use_append_context_expansion:
+        raise ValueError("--context-rerank and --append-context-expansion are mutually exclusive")
+
 
 # Categories
 CAT_NAMES = {1: "multi-hop", 2: "temporal", 3: "open-domain", 4: "single-hop", 5: "adversarial"}
@@ -355,31 +387,160 @@ def expand_query(question):
         return [question]
 
 
+def _tokenize_for_rerank(text):
+    """Tokenize text for lightweight lexical reranking."""
+    stopwords = {
+        "a", "an", "and", "are", "as", "at", "be", "by", "did", "do", "does",
+        "for", "from", "happen", "happened", "how", "i", "in", "is", "it",
+        "of", "on", "or", "the", "to", "was", "were", "what", "when", "where",
+        "who", "why", "with", "would",
+    }
+    return [
+        token
+        for token in re.findall(r"[a-z0-9]+", str(text).lower())
+        if len(token) > 2 and token not in stopwords
+    ]
+
+
+def _memory_dedupe_key(memory):
+    """Stable key for deduplicating recall results with or without ids."""
+    if isinstance(memory, dict):
+        if memory.get("id"):
+            return f"id::{memory.get('id')}"
+        content = " ".join(str(memory.get("content", "")).split())
+        refs = memory.get("refs") or ""
+        created_at = memory.get("created_at") or ""
+        return f"content::{content}::refs::{refs}::created::{created_at}"
+    return f"raw::{str(memory)}"
+
+
+def rerank_memories_for_question(question, memories, top_k=ANSWER_CONTEXT_TOP_K, preserve_prefix_k=RERANK_PRESERVE_PREFIX_K):
+    """Lightweight precision recovery with an original-order safety prefix.
+
+    The first lexical-rerank canary reduced latency but harmed paired LOCOMO
+    quality, especially unanswerable and multi-hop questions, by demoting
+    evidence needed for abstention/composition. Keep a small prefix in original
+    retriever order, then fill the remaining context budget with lexical-ranked
+    candidates. Stable tie-breaking preserves original recall order.
+    """
+    memories = list(memories)
+    if top_k <= 0:
+        return []
+    preserve_count = max(0, min(preserve_prefix_k, top_k, len(memories)))
+    preserved = memories[:preserve_count]
+    remaining_slots = top_k - len(preserved)
+    if remaining_slots <= 0:
+        return preserved
+
+    query_terms = _tokenize_for_rerank(question)
+    candidates = memories[preserve_count:]
+    if not query_terms:
+        return preserved + candidates[:remaining_slots]
+
+    query_counts = Counter(query_terms)
+    ranked = []
+    for offset, memory in enumerate(candidates, start=preserve_count):
+        content = memory.get("content", "") if isinstance(memory, dict) else str(memory)
+        content_terms = Counter(_tokenize_for_rerank(content))
+        overlap = sum(min(query_counts[t], content_terms.get(t, 0)) for t in query_counts)
+        # Preserve existing retriever scores as a weak tie-breaker when available.
+        retriever_score = memory.get("score", memory.get("combined_score", memory.get("rrf_score", 0))) if isinstance(memory, dict) else 0
+        try:
+            retriever_score = float(retriever_score or 0)
+        except (TypeError, ValueError):
+            retriever_score = 0
+        ranked.append((overlap, retriever_score, -offset, memory))
+    ranked.sort(reverse=True)
+    return preserved + [memory for _overlap, _score, _neg_idx, memory in ranked][:remaining_slots]
+
+
+def append_memories_for_question(question, base_memories, candidate_memories, extra_k=APPEND_CONTEXT_EXTRA_K):
+    """Preserve original answer context exactly and append lexical extras.
+
+    Rerank harm audits showed context replacement was the failure mode: useful
+    original-order evidence was displaced from the answer prompt. This helper is
+    deliberately append-only. The caller supplies the already-budgeted original
+    answer context as ``base_memories``; those items remain prefix-identical, and
+    only non-duplicate candidates beyond that prefix can be appended.
+    """
+    base = list(base_memories)
+    if extra_k <= 0:
+        return base
+
+    seen_keys = {_memory_dedupe_key(memory) for memory in base}
+    query_terms = _tokenize_for_rerank(question)
+    query_counts = Counter(query_terms)
+    candidates = []
+    for idx, memory in enumerate(candidate_memories):
+        key = _memory_dedupe_key(memory)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        content = memory.get("content", "") if isinstance(memory, dict) else str(memory)
+        content_terms = Counter(_tokenize_for_rerank(content))
+        overlap = sum(min(query_counts[t], content_terms.get(t, 0)) for t in query_counts)
+        retriever_score = memory.get("score", memory.get("combined_score", memory.get("rrf_score", 0))) if isinstance(memory, dict) else 0
+        try:
+            retriever_score = float(retriever_score or 0)
+        except (TypeError, ValueError):
+            retriever_score = 0
+        candidates.append((overlap, retriever_score, -idx, memory))
+    candidates.sort(reverse=True)
+    return base + [memory for _overlap, _score, _neg_idx, memory in candidates[:extra_k]]
+
+
 def answer_question(question, domain):
     """Recall from Memibrium and generate answer."""
+    validate_retrieval_modes()
     memories = []
-    seen = {}
+    base_seen = {}
+    recall_top_k = RECALL_TOP_K
+    if USE_CONTEXT_RERANK:
+        recall_top_k = RERANK_RECALL_TOP_K
+    candidate_recall_top_k = APPEND_CONTEXT_RECALL_TOP_K if USE_APPEND_CONTEXT_EXPANSION else recall_top_k
+    candidate_limit = max(ANSWER_CONTEXT_TOP_K, candidate_recall_top_k)
     queries = expand_query(question) if USE_QUERY_EXPANSION else [question]
+    candidate_memories = []
     for query in queries:
-        recall_result = mcp_post("recall", {"query": query, "top_k": 10, "domain": domain})
+        recall_result = mcp_post("recall", {"query": query, "top_k": candidate_recall_top_k, "domain": domain})
         if isinstance(recall_result, list):
             recalled = recall_result
         else:
             recalled = recall_result.get("results", recall_result.get("memories", []))
-        for memory in recalled:
-            memory_id = memory.get("id") or f"no-id::{memory.get('content', '')}::{len(seen)}"
-            if memory_id not in seen:
-                seen[memory_id] = memory
-        if len(seen) >= 15:
+        candidate_memories.extend(recalled)
+        for memory in recalled[:recall_top_k]:
+            memory_id = _memory_dedupe_key(memory)
+            if memory_id not in base_seen:
+                base_seen[memory_id] = memory
+        if not USE_QUERY_EXPANSION and len(base_seen) >= candidate_limit:
             break
-    memories = list(seen.values())[:15]
+    base_candidates = list(base_seen.values())
+    candidate_keys = {_memory_dedupe_key(memory) for memory in base_candidates}
+    candidates = list(base_candidates)
+    for memory in candidate_memories:
+        key = _memory_dedupe_key(memory)
+        if key not in candidate_keys:
+            candidate_keys.add(key)
+            candidates.append(memory)
+    if USE_CONTEXT_RERANK:
+        memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)
+    elif USE_APPEND_CONTEXT_EXPANSION:
+        base_context = base_candidates[:ANSWER_CONTEXT_TOP_K]
+        memories = append_memories_for_question(
+            question,
+            base_context,
+            candidates,
+            extra_k=APPEND_CONTEXT_EXTRA_K,
+        )
+    else:
+        memories = candidates[:ANSWER_CONTEXT_TOP_K]
 
     if not memories:
         context = "No relevant memories found."
     else:
         chronology_cues = any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"])
         context_lines = []
-        for m in memories[:15]:
+        for m in memories:
             refs = m.get('refs') or {}
             if isinstance(refs, str):
                 try:
@@ -467,24 +628,117 @@ def judge_answer(question, predicted, ground_truth):
     return score
 
 
-def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix="", expand_fallback_count=0, expand_fallback_rate=0.0):
+def result_suffix(normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None):
+    if use_query_expansion is None:
+        use_query_expansion = USE_QUERY_EXPANSION
+    if use_context_rerank is None:
+        use_context_rerank = USE_CONTEXT_RERANK
+    if use_append_context_expansion is None:
+        use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion)
+    suffix = ""
+    if normalize_dates and use_query_expansion:
+        suffix = "_query_expansion"
+    elif normalize_dates:
+        suffix = "_normalized"
+    elif use_query_expansion:
+        suffix = "_query_expansion_raw"
+    if use_context_rerank:
+        suffix += "_reranked"
+    if use_append_context_expansion:
+        suffix += "_appended"
+    return suffix
+
+
+def result_output_path(normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None):
+    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion)}.json"
+
+
+def _category_name(cat):
+    return CAT_NAMES.get(cat, f"cat-{cat}") if isinstance(cat, int) else f"cat-{cat}"
+
+
+def _protocol_4cat_overall(cat_scores):
+    vals = []
+    for cat, scores in cat_scores.items():
+        cat_key = str(cat)
+        if cat_key in {"5", "adversarial", "cat-5"}:
+            continue
+        vals.extend(scores)
+    return round(statistics.mean(vals) * 100, 2) if vals else 0
+
+
+def build_results_payload(
+    all_scores,
+    cat_scores,
+    query_times,
+    results_log,
+    normalize_dates=False,
+    use_query_expansion=None,
+    use_context_rerank=None,
+    use_append_context_expansion=None,
+    expand_fallback_count=0,
+    expand_fallback_rate=0.0,
+    cleaned=None,
+):
+    if use_query_expansion is None:
+        use_query_expansion = USE_QUERY_EXPANSION
+    if use_context_rerank is None:
+        use_context_rerank = USE_CONTEXT_RERANK
+    if use_append_context_expansion is None:
+        use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion)
+    full_overall = statistics.mean(all_scores) * 100 if all_scores else 0
+    category_scores = {
+        _category_name(k): round(statistics.mean(v) * 100, 2)
+        for k, v in cat_scores.items()
+    }
+    return {
+        "overall_score": round(full_overall, 2),
+        "full_5cat_overall": round(full_overall, 2),
+        "protocol_4cat_overall": _protocol_4cat_overall(cat_scores),
+        "category_scores": category_scores,
+        "total_questions": len(all_scores),
+        "avg_query_ms": round(statistics.mean(query_times) * 1000) if query_times else 0,
+        "condition": {
+            "cleaned": cleaned,
+            "normalize_dates": bool(normalize_dates),
+            "query_expansion": bool(use_query_expansion),
+            "context_rerank": bool(use_context_rerank),
+            "append_context_expansion": bool(use_append_context_expansion),
+        },
+        "expand_query_fallback_count": expand_fallback_count,
+        "expand_query_fallback_rate": round(expand_fallback_rate, 4),
+        "details": results_log,
+    }
+
+
+def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, cleaned=None):
     """Save incremental results."""
-    output_path = f"/tmp/locomo_results{suffix}.json"
-    overall = statistics.mean(all_scores) * 100 if all_scores else 0
+    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion) if suffix is None else f"/tmp/locomo_results{suffix}.json"
+    payload = build_results_payload(
+        all_scores,
+        cat_scores,
+        query_times,
+        results_log,
+        normalize_dates=normalize_dates,
+        use_query_expansion=use_query_expansion,
+        use_context_rerank=use_context_rerank,
+        use_append_context_expansion=use_append_context_expansion,
+        expand_fallback_count=expand_fallback_count,
+        expand_fallback_rate=expand_fallback_rate,
+        cleaned=cleaned,
+    )
     with open(output_path, "w") as f:
-        json.dump({
-            "overall_score": round(overall, 2),
-            "category_scores": {CAT_NAMES.get(k, f"cat-{k}"): round(statistics.mean(v)*100, 2) for k, v in cat_scores.items()},
-            "total_questions": len(all_scores),
-            "avg_query_ms": round(statistics.mean(query_times)*1000) if query_times else 0,
-            "expand_query_fallback_count": expand_fallback_count,
-            "expand_query_fallback_rate": round(expand_fallback_rate, 4),
-            "details": results_log
-        }, f, indent=2)
+        json.dump(payload, f, indent=2)
 
 
-def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, normalize_dates=False):
+def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, normalize_dates=False, cleaned=None):
     """Run full LOCOMO benchmark."""
+    use_query_expansion = USE_QUERY_EXPANSION
+    use_context_rerank = USE_CONTEXT_RERANK
+    use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion)
     expand_query.fail_count = 0
     with open(data_path) as f:
         data = json.load(f)
@@ -517,7 +771,12 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
     results_log = []
 
     # Resume support: if skipping conversations, seed metrics from existing partial output.
-    output_path = f"/tmp/locomo_results{'_normalized' if normalize_dates else ''}.json"
+    output_path = result_output_path(
+        normalize_dates=normalize_dates,
+        use_query_expansion=use_query_expansion,
+        use_context_rerank=use_context_rerank,
+        use_append_context_expansion=use_append_context_expansion,
+    )
     if start_conv > 0 and os.path.exists(output_path):
         with open(output_path) as f:
             prior = json.load(f)
@@ -604,9 +863,13 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
             query_times,
             ingest_times,
             results_log,
-            suffix="_normalized" if normalize_dates else "",
+            normalize_dates=normalize_dates,
+            use_query_expansion=use_query_expansion,
+            use_context_rerank=use_context_rerank,
+            use_append_context_expansion=use_append_context_expansion,
             expand_fallback_count=expand_fallback_count,
             expand_fallback_rate=expand_fallback_rate,
+            cleaned=cleaned,
         )
 
     # Final report
@@ -655,17 +918,27 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         print(f"  {name:<25} {score:>6.1f}%{marker}")
 
     # Save detailed results
-    output_path = f"/tmp/locomo_results{'_normalized' if normalize_dates else ''}.json"
+    output_path = result_output_path(
+        normalize_dates=normalize_dates,
+        use_query_expansion=use_query_expansion,
+        use_context_rerank=use_context_rerank,
+        use_append_context_expansion=use_append_context_expansion,
+    )
+    payload = build_results_payload(
+        all_scores,
+        cat_scores,
+        query_times,
+        results_log,
+        normalize_dates=normalize_dates,
+        use_query_expansion=use_query_expansion,
+        use_context_rerank=use_context_rerank,
+        use_append_context_expansion=use_append_context_expansion,
+        expand_fallback_count=expand_fallback_count,
+        expand_fallback_rate=expand_fallback_rate,
+        cleaned=cleaned,
+    )
     with open(output_path, "w") as f:
-        json.dump({
-            "overall_score": round(overall, 2),
-            "category_scores": {CAT_NAMES.get(k, f"cat-{k}"): round(statistics.mean(v)*100, 2) for k, v in cat_scores.items()},
-            "total_questions": len(all_scores),
-            "avg_query_ms": round(statistics.mean(query_times)*1000),
-            "expand_query_fallback_count": expand_fallback_count,
-            "expand_query_fallback_rate": round(expand_fallback_rate, 4),
-            "details": results_log
-        }, f, indent=2)
+        json.dump(payload, f, indent=2)
     print(f"\n  Detailed results saved to {output_path}")
 
 
@@ -677,9 +950,27 @@ if __name__ == "__main__":
     parser.add_argument("--start-conv", type=int, default=0, help="Skip first N conversations (already ingested)")
     parser.add_argument("--cleaned", action="store_true", help="Use cleaned dataset (/tmp/locomo10_cleaned.json)")
     parser.add_argument("--normalize-dates", action="store_true", help="Enable ingest-time date normalization")
+    parser.add_argument("--query-expansion", action="store_true", help="Enable opt-in recall-time query expansion")
+    parser.add_argument("--context-rerank", action="store_true", help="Enable opt-in lexical reranking before answer synthesis")
+    parser.add_argument("--append-context-expansion", action="store_true", help="Enable opt-in append-only extra context after the original answer context")
     args = parser.parse_args()
+
+    if args.query_expansion:
+        USE_QUERY_EXPANSION = True
+    if args.context_rerank:
+        USE_CONTEXT_RERANK = True
+    if args.append_context_expansion:
+        USE_APPEND_CONTEXT_EXPANSION = True
+    validate_retrieval_modes()
 
     skip = {5} if args.skip_adversarial else set()
     data_path = "/tmp/locomo10_cleaned.json" if args.cleaned else "/tmp/locomo/data/locomo10.json"
     run_preflight_checks()
-    run_benchmark(data_path, max_convs=args.max_convs, skip_cats=skip, start_conv=args.start_conv, normalize_dates=args.normalize_dates)
+    run_benchmark(
+        data_path,
+        max_convs=args.max_convs,
+        skip_cats=skip,
+        start_conv=args.start_conv,
+        normalize_dates=args.normalize_dates,
+        cleaned=args.cleaned,
+    )
