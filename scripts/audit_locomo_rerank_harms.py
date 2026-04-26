@@ -178,9 +178,15 @@ def retrieve_candidates(question: str, domain: str, bench: Any) -> tuple[list[st
         recalled = result if isinstance(result, list) else result.get("results", result.get("memories", []))
         recall_stats.append({"query": query, "returned": len(recalled)})
         for memory in recalled:
-            mid = memory.get("id") or f"no-id::{memory.get('content', '')}::{len(seen)}"
-            if mid not in seen:
-                seen[mid] = memory
+            if hasattr(bench, "_memory_dedupe_key"):
+                dedupe_key = bench._memory_dedupe_key(memory)
+            else:
+                content = " ".join(str(memory.get("content", "")).split())
+                refs = memory.get("refs") or ""
+                created_at = memory.get("created_at") or ""
+                dedupe_key = f"content::{content}::refs::{refs}::created::{created_at}"
+            if dedupe_key not in seen:
+                seen[dedupe_key] = memory
     candidates = list(seen.values())
     return queries, candidates, recall_stats
 
@@ -284,6 +290,9 @@ def make_md(report: dict[str, Any]) -> str:
     lines.append(f"Harmed cases audited: `{report['summary']['harmed_cases']}`")
     lines.append(f"LOCOMO memories ingested for replay: `{report['summary']['locomo_memory_count_after_ingest']}`")
     lines.append(f"Expansion fallback during audit: `{report['summary']['expand_fallback_count']}`")
+    if report.get("contaminated"):
+        lines.append("")
+        lines.append("> Warning: this audit is contaminated by query-expansion fallback. Partial diagnostics were written before aborting.")
     lines.append("")
     lines.append("## Primary mechanism counts")
     lines.append("")
@@ -430,14 +439,11 @@ def main() -> int:
         )
 
     expand_fallback_count = getattr(bench.expand_query, "fail_count", 0)
-    if expand_fallback_count:
-        raise RuntimeError(
-            f"Audit contaminated: expand_query fell back {expand_fallback_count} times. "
-            "Load benchmark env first, e.g. `set -a && source .env && set +a`, and rerun."
-        )
 
     report = {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "contaminated": expand_fallback_count > 0,
+        "expand_fallback_count": expand_fallback_count,
         "inputs": {
             "prior_query_expansion": str(PRIOR_QUERY_EXPANSION),
             "prefix_rerank": str(PREFIX_RERANK),
@@ -457,7 +463,7 @@ def main() -> int:
             "cases_equivalent_context": cases_equivalent_context,
             "prefix_invariant_failures": prefix_invariant_failures,
             "locomo_memory_count_after_ingest": count_after_ingest,
-            "expand_fallback_count": getattr(bench.expand_query, "fail_count", 0),
+            "expand_fallback_count": expand_fallback_count,
         },
         "interpretation": interpretation,
         "cases": cases,
@@ -470,6 +476,13 @@ def main() -> int:
     md_path.write_text(make_md(report))
     print(f"Saved {json_path}")
     print(f"Saved {md_path}")
+
+    if expand_fallback_count:
+        raise RuntimeError(
+            f"Audit contaminated: expand_query fell back {expand_fallback_count} times. "
+            f"Partial diagnostics were saved to {json_path} and {md_path}. "
+            "Load benchmark env first, e.g. `set -a && source .env && set +a`, and rerun."
+        )
 
     if not args.keep_db:
         print("Cleaning LOCOMO domains after audit...")

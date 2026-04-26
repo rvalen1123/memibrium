@@ -8,9 +8,10 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 
-MODULE_PATH = Path('/home/zaddy/src/Memibrium/benchmark_scripts/locomo_bench_v2.py')
+MODULE_PATH = Path(__file__).resolve().parent / 'benchmark_scripts' / 'locomo_bench_v2.py'
 spec = importlib.util.spec_from_file_location('locomo_bench_v2', MODULE_PATH)
 locomo_bench_v2 = importlib.util.module_from_spec(spec)
+assert spec.loader is not None
 spec.loader.exec_module(locomo_bench_v2)
 
 
@@ -708,6 +709,49 @@ class QueryExpansionTests(unittest.TestCase):
         self.assertEqual(payload['full_5cat_overall'], 50.0)
         self.assertEqual(payload['protocol_4cat_overall'], 66.67)
         self.assertEqual(payload['expand_query_fallback_count'], 1)
+
+
+class ScriptReviewRegressionTests(unittest.TestCase):
+    def test_archive_conv26_uses_query_expansion_source_for_exp_case(self):
+        script = (Path(__file__).resolve().parent / 'scripts' / 'archive_conv26_ab_results.sh').read_text()
+        self.assertRegex(script, r"exp\)\s*src=/tmp/locomo_results_query_expansion\.json\s+dst=/tmp/locomo_results_conv26_exp\.json")
+        self.assertRegex(script, r"noexp\)\s*src=/tmp/locomo_results_normalized\.json\s+dst=/tmp/locomo_results_conv26_noexp\.json")
+
+    def test_audit_retrieve_candidates_dedupes_idless_memories_with_benchmark_key(self):
+        audit_path = Path(__file__).resolve().parent / 'scripts' / 'audit_locomo_rerank_harms.py'
+        spec = importlib.util.spec_from_file_location('audit_locomo_rerank_harms_test', audit_path)
+        audit = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(audit)
+
+        class BenchStub:
+            def expand_query(self, question):
+                return [question, f'{question} expanded']
+
+            def _memory_dedupe_key(self, memory):
+                return locomo_bench_v2._memory_dedupe_key(memory)
+
+        duplicate_without_id = {'content': 'same memory content', 'refs': {'turn': 1}, 'created_at': '2026-04-26'}
+        recall_payloads = [
+            {'results': [duplicate_without_id]},
+            {'results': [dict(duplicate_without_id)]},
+        ]
+        with patch.object(audit, 'mcp_post', side_effect=recall_payloads):
+            _queries, candidates, _stats = audit.retrieve_candidates('question', 'locomo-conv-26', BenchStub())
+
+        self.assertEqual(len(candidates), 1)
+
+    def test_clear_locomo_domains_cleans_entity_graph_state(self):
+        script = (Path(__file__).resolve().parent / 'scripts' / 'clear_locomo_domains.sh').read_text()
+        self.assertIn('UPDATE entities', script)
+        self.assertIn('memory_ids', script)
+        self.assertIn('jsonb_array_elements_text', script)
+        self.assertIn('DELETE FROM entities', script)
+        self.assertIn('DELETE FROM entity_relationships', script)
+
+    def test_audit_writes_contaminated_report_before_raising(self):
+        script = (Path(__file__).resolve().parent / 'scripts' / 'audit_locomo_rerank_harms.py').read_text()
+        self.assertIn('"contaminated": expand_fallback_count > 0', script)
+        self.assertLess(script.index('json_path.write_text'), script.rindex('raise RuntimeError'))
 
 
 if __name__ == '__main__':
