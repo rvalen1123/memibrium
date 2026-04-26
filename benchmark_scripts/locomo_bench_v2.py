@@ -12,12 +12,43 @@ import httpx
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
-MCP = "http://localhost:9999/mcp"
-# Use the same Azure Foundry endpoint as Memibrium for judging
-AZURE_CHAT_ENDPOINT = "https://sector-7.services.ai.azure.com/models"
-AZURE_CHAT_KEY = os.environ.get("AZURE_CHAT_API_KEY", "")
-JUDGE_MODEL = "gpt-4.1-mini"
-ANSWER_MODEL = "gpt-4.1-mini"
+MCP = os.environ.get("MCP_URL", "http://localhost:9999/mcp")
+
+
+def _normalize_foundry_models_endpoint(endpoint: str) -> str:
+    endpoint = endpoint.rstrip("/")
+    if endpoint.endswith("/models"):
+        return endpoint
+    return endpoint + "/models" if endpoint else ""
+
+
+def load_chat_config():
+    """Load benchmark answer/judge chat config from env, matching server.py names."""
+    endpoint = (
+        os.environ.get("AZURE_CHAT_ENDPOINT")
+        or os.environ.get("AZURE_OPENAI_ENDPOINT")
+        or os.environ.get("OPENAI_BASE_URL")
+        or ""
+    )
+    key = (
+        os.environ.get("AZURE_CHAT_KEY")
+        or os.environ.get("AZURE_CHAT_API_KEY")
+        or os.environ.get("AZURE_OPENAI_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+        or ""
+    )
+    default_model = (
+        os.environ.get("AZURE_CHAT_DEPLOYMENT")
+        or os.environ.get("AZURE_OPENAI_DEPLOYMENT")
+        or os.environ.get("CHAT_MODEL")
+        or "gpt-4.1-mini"
+    )
+    judge_model = os.environ.get("JUDGE_MODEL", default_model)
+    answer_model = os.environ.get("ANSWER_MODEL", default_model)
+    return _normalize_foundry_models_endpoint(endpoint), key, judge_model, answer_model
+
+
+AZURE_CHAT_ENDPOINT, AZURE_CHAT_KEY, JUDGE_MODEL, ANSWER_MODEL = load_chat_config()
 
 
 def _env_flag(name, default=False):
@@ -52,6 +83,20 @@ def validate_retrieval_modes(use_context_rerank=None, use_append_context_expansi
         raise ValueError("--context-rerank and --append-context-expansion are mutually exclusive")
 
 
+CAT_MAP = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "unanswerable", 5: "adversarial"}
+
+
+def normalize_category(cat):
+    """Return the benchmark/reporting category label for a LOCOMO category value."""
+    return CAT_MAP.get(cat, str(cat)) if isinstance(cat, int) else cat
+
+
+def should_skip_category(orig_cat, skip_cats):
+    """Honor skip lists containing original numeric IDs or normalized labels."""
+    cat = normalize_category(orig_cat)
+    return orig_cat in skip_cats or cat in skip_cats or str(orig_cat) in skip_cats
+
+
 # Categories
 CAT_NAMES = {1: "multi-hop", 2: "temporal", 3: "open-domain", 4: "single-hop", 5: "adversarial"}
 
@@ -59,21 +104,26 @@ client = httpx.Client(timeout=120)
 
 
 def mcp_post(tool, payload, retries=3):
+    last_error = None
+    last_status = None
+    last_response_text = None
     for attempt in range(retries):
         try:
             r = client.post(f"{MCP}/{tool}", json=payload)
+            last_status = r.status_code
+            last_response_text = r.text[:2000]
             if r.status_code == 200 and r.text.strip():
                 return r.json()
-            if attempt < retries - 1:
-                time.sleep(2 ** attempt)
-                continue
-            return [] if tool == "recall" else {}
+            last_error = "empty response" if r.status_code == 200 else "non-200 response"
         except Exception as e:
-            if attempt < retries - 1:
-                time.sleep(2 ** attempt)
-            else:
-                print(f"    [WARN] {tool} failed after {retries} attempts: {e}")
-                return [] if tool == "recall" else {}
+            last_error = e
+        if attempt < retries - 1:
+            time.sleep(2 ** attempt)
+
+    raise RuntimeError(
+        f"MCP {tool} failed after {retries} attempts: {last_error}; "
+        f"status={last_status}; response={last_response_text}"
+    )
 
 
 def mcp_get(tool):
@@ -759,7 +809,7 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
     print(f"  Starting memories: {dashboard.get('total_memories', '?')}")
     print(f"  Conversations to process: {len(data)}")
     total_qs = sum(len(d['qa']) for d in data)
-    eval_qs = sum(1 for d in data for q in d['qa'] if q['category'] not in skip_cats)
+    eval_qs = sum(1 for d in data for q in d['qa'] if not should_skip_category(q['category'], skip_cats))
     print(f"  Total questions: {total_qs} ({eval_qs} evaluated, skipping cats {skip_cats})")
     print()
 
@@ -816,12 +866,9 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         # Phase 2: QA
         conv_scores = []
         for qi, qa in enumerate(qa_list):
-            cat = qa["category"]
-            # Normalize LOCOMO numeric categories to strings
-            if isinstance(cat, int):
-                cat_map = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "unanswerable"}
-                cat = cat_map.get(cat, str(cat))
-            if cat in skip_cats:
+            orig_cat = qa["category"]
+            cat = normalize_category(orig_cat)
+            if should_skip_category(orig_cat, skip_cats):
                 continue
 
             question = qa["question"]
@@ -847,7 +894,8 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
 
             if (qi + 1) % 20 == 0:
                 running_acc = statistics.mean(conv_scores) * 100
-                print(f"    ... {qi+1}/{len([q for q in qa_list if q['category'] not in skip_cats])} questions, running acc: {running_acc:.1f}%")
+                remaining_qs = len([q for q in qa_list if not should_skip_category(q['category'], skip_cats)])
+                print(f"    ... {qi+1}/{remaining_qs} questions, running acc: {running_acc:.1f}%")
 
         conv_acc = statistics.mean(conv_scores) * 100 if conv_scores else 0
         print(f"    Conv accuracy: {conv_acc:.1f}% ({len(conv_scores)} questions)")

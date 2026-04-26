@@ -68,10 +68,10 @@ Validity threshold:
 
 | 4-cat overall | Read |
 |---|---|
-| 78–81% | Prediction validated. |
+| 78–80% | Prediction validated. |
 | 75–78% | Marginal gain. Expansion is doing some work; consider wider candidate set or answer-model bump. |
 | <75% | Expansion is not helping. Check fallback rate, paraphrase diversity, and whether fusion/cap is suppressing useful candidates. |
-| >81% | Stronger than expected. Check whether CE reranking is effectively double-dipping across similar paraphrases. |
+| >80% | Stronger than expected. Check whether CE reranking is effectively double-dipping across similar paraphrases. |
 
 ## Canary before full run
 Run a 1-conversation canary first:

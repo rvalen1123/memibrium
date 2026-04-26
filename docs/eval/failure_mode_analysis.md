@@ -80,7 +80,7 @@
 
 ## Post-Run Formula
 
-```
+```text
 measured_fix_rate = (normalization_score - 61.37) / 21.6
 ```
 
@@ -104,8 +104,6 @@ Interpretation:
 - Consider adding `answer_refusal = predicted.strip().lower().startswith("i don't know")` to `results_log` so post-run analysis can separate model refusals from judge-scored wrong answers.
 
 ---
-
-## Next Step
 
 ## Date Normalization Intervention Result
 
@@ -148,5 +146,5 @@ Interpretation:
 - Preflight now validates both MCP recall reachability and benchmark LLM reachability before ingest.
 
 ## Files
-- Raw analysis: `/tmp/failure_analysis_raw.json`
-- Classification (corrected): `/tmp/failure_classification_corrected.json`
+- Raw analysis: `/tmp/failure_analysis_raw.json` (ephemeral local output, not committed as a reproducible artifact)
+- Classification (corrected): `/tmp/failure_classification_corrected.json` (ephemeral local output, not committed as a reproducible artifact)

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import importlib.util
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 MODULE_PATH = Path('/home/zaddy/src/Memibrium/benchmark_scripts/locomo_bench_v2.py')
@@ -17,6 +18,85 @@ class QueryExpansionTests(unittest.TestCase):
     def setUp(self):
         if hasattr(locomo_bench_v2.expand_query, 'fail_count'):
             delattr(locomo_bench_v2.expand_query, 'fail_count')
+
+    def test_benchmark_chat_config_uses_environment_over_hardcoded_resource(self):
+        with patch.dict(os.environ, {
+            'AZURE_CHAT_ENDPOINT': 'https://example-foundry.services.ai.azure.com',
+            'AZURE_CHAT_KEY': 'example-key',
+            'JUDGE_MODEL': 'judge-deployment',
+            'ANSWER_MODEL': 'answer-deployment',
+        }, clear=True):
+            endpoint, key, judge_model, answer_model = locomo_bench_v2.load_chat_config()
+
+        self.assertEqual(endpoint, 'https://example-foundry.services.ai.azure.com/models')
+        self.assertEqual(key, 'example-key')
+        self.assertEqual(judge_model, 'judge-deployment')
+        self.assertEqual(answer_model, 'answer-deployment')
+
+    def test_benchmark_chat_config_reuses_server_style_chat_config(self):
+        with patch.dict(os.environ, {
+            'AZURE_CHAT_ENDPOINT': 'https://server-foundry.services.ai.azure.com/',
+            'AZURE_CHAT_API_KEY': 'server-key',
+            'AZURE_CHAT_DEPLOYMENT': 'server-deployment',
+        }, clear=True):
+            endpoint, key, judge_model, answer_model = locomo_bench_v2.load_chat_config()
+
+        self.assertEqual(endpoint, 'https://server-foundry.services.ai.azure.com/models')
+        self.assertEqual(key, 'server-key')
+        self.assertEqual(judge_model, 'server-deployment')
+        self.assertEqual(answer_model, 'server-deployment')
+
+    def test_mcp_post_raises_after_non_200_or_empty_response_retries(self):
+        response = Mock(status_code=503, text='Service unavailable')
+        with patch.object(locomo_bench_v2.client, 'post', return_value=response), patch.object(
+            locomo_bench_v2.time, 'sleep'
+        ):
+            with self.assertRaisesRegex(RuntimeError, 'MCP recall failed after 2 attempts.*status=503.*Service unavailable'):
+                locomo_bench_v2.mcp_post('recall', {'query': 'x'}, retries=2)
+
+    def test_mcp_post_raises_after_exception_retries(self):
+        with patch.object(locomo_bench_v2.client, 'post', side_effect=TimeoutError('network down')), patch.object(
+            locomo_bench_v2.time, 'sleep'
+        ):
+            with self.assertRaisesRegex(RuntimeError, 'MCP retain failed after 2 attempts.*network down'):
+                locomo_bench_v2.mcp_post('retain', {'content': 'x'}, retries=2)
+
+    def test_skip_adversarial_honors_numeric_category_after_normalization(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            data_path = Path(tmpdir) / 'locomo.json'
+            data_path.write_text(json.dumps([
+                {
+                    'sample_id': 'sample',
+                    'conversation': {'speaker_a': 'A', 'speaker_b': 'B'},
+                    'qa': [
+                        {'category': 5, 'question': 'Adversarial?', 'answer': 'skip me'},
+                        {'category': 4, 'question': 'Answerable?', 'answer': 'keep me'},
+                    ],
+                }
+            ]))
+            output_path = Path(tmpdir) / 'results.json'
+            answered = []
+
+            def fake_answer_question(question, domain):
+                answered.append(question)
+                return ('keep me', 1)
+
+            with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', False), patch.object(
+                locomo_bench_v2, 'USE_CONTEXT_RERANK', False
+            ), patch.object(
+                locomo_bench_v2, 'USE_APPEND_CONTEXT_EXPANSION', False
+            ), patch.object(
+                locomo_bench_v2, 'result_output_path', return_value=str(output_path)
+            ), patch.object(locomo_bench_v2, 'mcp_get', return_value={'total_memories': 0}), patch.object(
+                locomo_bench_v2, 'ingest_conversation', return_value=(1, 'locomo-sample')
+            ), patch.object(locomo_bench_v2, 'answer_question', side_effect=fake_answer_question), patch.object(
+                locomo_bench_v2, 'judge_answer', return_value=1
+            ), patch.object(locomo_bench_v2.time, 'sleep'), patch('builtins.print'):
+                locomo_bench_v2.run_benchmark(str(data_path), skip_cats={5}, cleaned=True)
+
+            self.assertEqual(answered, ['Answerable?'])
+            payload = json.loads(output_path.read_text())
+            self.assertEqual([row['question'] for row in payload['details']], ['Answerable?'])
 
     def test_expand_query_includes_original_and_limits_to_three_paraphrases(self):
         with patch.object(
