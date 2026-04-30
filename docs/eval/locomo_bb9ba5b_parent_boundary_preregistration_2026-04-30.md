@@ -183,6 +183,7 @@ export JUDGE_MODEL="gpt-4.1-mini"
 export AZURE_CHAT_DEPLOYMENT="gpt-4.1-mini"
 export AZURE_OPENAI_DEPLOYMENT="gpt-4.1-mini"
 export CHAT_MODEL="gpt-4.1-mini"
+export USE_QUERY_EXPANSION="1"
 unset OPENAI_BASE_URL
 unset AZURE_OPENAI_ENDPOINT
 ```
@@ -195,7 +196,7 @@ import os
 print('=== RESOLVED ENV FOR THIS RUN ===')
 for k in ['AZURE_CHAT_ENDPOINT','AZURE_OPENAI_ENDPOINT','OPENAI_BASE_URL',
           'AZURE_CHAT_DEPLOYMENT','AZURE_OPENAI_DEPLOYMENT','CHAT_MODEL',
-          'ANSWER_MODEL','JUDGE_MODEL']:
+          'ANSWER_MODEL','JUDGE_MODEL','USE_QUERY_EXPANSION']:
     print(f'{k}={os.environ.get(k, "<unset>")}')
 print('=================================')
 PY
@@ -212,6 +213,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
 CHAT_MODEL=gpt-4.1-mini
 ANSWER_MODEL=gpt-4.1-mini
 JUDGE_MODEL=gpt-4.1-mini
+USE_QUERY_EXPANSION=1
 ```
 
 ## Benchmark command
@@ -220,9 +222,11 @@ Run exactly one full conv-26 query-expansion benchmark:
 
 ```bash
 python3 benchmark_scripts/locomo_bench_v2.py \
-  --cleaned --normalize-dates --query-expansion \
+  --cleaned --normalize-dates \
   --max-convs 1
 ```
+
+`bfeb90f` enables query expansion by default through `USE_QUERY_EXPANSION=1` and does not expose a `--query-expansion` CLI flag. Therefore, query expansion is locked by the environment variable above, not by a CLI flag in this boundary worktree.
 
 Do not use `--max-questions` for the formal run. The target is the full conv-26 run (`199` questions).
 
@@ -331,7 +335,9 @@ The run is invalid if any of the following are true:
   - `ENABLE_HIERARCHY_PROCESSING`
 - Resolved inference env is not printed into the run log before launch.
 - Forced inference stack deviates from the values locked above.
-- Any diagnostic/intervention flag beyond `--cleaned --normalize-dates --query-expansion --max-convs 1` is used.
+- `USE_QUERY_EXPANSION` is not set to `1` at launch.
+- Any diagnostic/intervention flag beyond `--cleaned --normalize-dates --max-convs 1` is used.
+- `--query-expansion` is used in the `bfeb90f` worktree; query expansion must be enabled by `USE_QUERY_EXPANSION=1` because this commit has no such CLI flag.
 - `--max-questions` is used.
 - Benchmark code in the boundary worktree has uncommitted modifications.
 
