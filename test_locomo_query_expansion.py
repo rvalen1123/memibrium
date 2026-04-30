@@ -150,6 +150,30 @@ class QueryExpansionTests(unittest.TestCase):
         self.assertEqual(queries, ['When did John see Maria?'])
         self.assertEqual(locomo_bench_v2.expand_query.fail_count, 1)
 
+    def test_expand_query_rejects_bare_json_string_and_counts_fallback(self):
+        with patch.object(locomo_bench_v2, 'llm_call', return_value='"When did John see Maria?"'):
+            queries = locomo_bench_v2.expand_query('When did John see Maria?')
+
+        self.assertEqual(queries, ['When did John see Maria?'])
+        self.assertEqual(locomo_bench_v2.expand_query.fail_count, 1)
+
+    def test_expand_query_rejects_dict_non_string_elements_and_empty_lists(self):
+        invalid_payloads = [
+            '{"queries": ["entity-focused", "time-focused"]}',
+            '["entity-focused", {"bad": "shape"}]',
+            '[]',
+        ]
+
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                if hasattr(locomo_bench_v2.expand_query, 'fail_count'):
+                    delattr(locomo_bench_v2.expand_query, 'fail_count')
+                with patch.object(locomo_bench_v2, 'llm_call', return_value=payload):
+                    queries = locomo_bench_v2.expand_query('When did John see Maria?')
+
+                self.assertEqual(queries, ['When did John see Maria?'])
+                self.assertEqual(locomo_bench_v2.expand_query.fail_count, 1)
+
     def test_answer_question_fuses_multi_query_recall_dedups_and_caps_to_15(self):
         recalls = {
             'When did John see Maria?': {

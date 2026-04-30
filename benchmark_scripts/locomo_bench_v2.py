@@ -435,6 +435,18 @@ def ingest_conversation(conv, sample_id, chunk_size=10, normalize_dates=False):
     return total_turns, domain
 
 
+def _parse_query_expansion_response(resp):
+    """Validate query-expansion output as a non-empty JSON list of strings."""
+    paraphrases = json.loads(resp.strip())
+    if not isinstance(paraphrases, list):
+        raise ValueError("query expansion response must be a JSON list")
+    if not paraphrases:
+        raise ValueError("query expansion response must not be empty")
+    if not all(isinstance(p, str) and p.strip() for p in paraphrases):
+        raise ValueError("query expansion response must contain only non-empty strings")
+    return [p.strip() for p in paraphrases]
+
+
 def expand_query(question):
     """Generate a few diverse query reformulations for recall-time fusion."""
     try:
@@ -448,8 +460,8 @@ def expand_query(question):
             },
             {"role": "user", "content": question},
         ], max_tokens=200)
-        paraphrases = json.loads(resp.strip())
-        return [question] + [p for p in paraphrases if isinstance(p, str)][:3]
+        paraphrases = _parse_query_expansion_response(resp)
+        return [question] + paraphrases[:3]
     except Exception:
         expand_query.fail_count = getattr(expand_query, 'fail_count', 0) + 1
         return [question]
