@@ -224,7 +224,9 @@ python3 benchmark_scripts/locomo_bench_v2.py \
   --max-convs 1
 ```
 
-Do not use `--max-questions`. The target is the full conv-26 run (`199` questions).
+Do not use `--max-questions` for the formal run. The target is the full conv-26 run (`199` questions).
+
+A pre-launch sanity check of `<=5` questions in `/tmp/` is permitted to verify worktree wiring, server reachability, and env propagation. Sanity-check results must not be saved to `docs/eval/results/` and must not be used to argue for or against the formal verdict.
 
 Do not use any diagnostic/intervention flag. In particular, this run must not involve current-branch diagnostic infrastructure such as `--legacy-context-assembly`; that flag is not part of the boundary test and should not exist in the `bb9ba5b^` worktree.
 
