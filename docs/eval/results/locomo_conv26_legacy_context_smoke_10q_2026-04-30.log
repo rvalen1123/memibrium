@@ -1,0 +1,59 @@
+=== LEGACY CONTEXT SMOKE 10Q ===
+launch_utc=2026-04-30T12:29:23Z
+head=ebd4c9cee714872ddaf22b75f37eff3f9d4bc0ac
+dirty=2
+=== RESOLVED ENV FOR THIS RUN ===
+AZURE_CHAT_ENDPOINT=https://sector-7.services.ai.azure.com/models
+AZURE_OPENAI_ENDPOINT=<unset>
+OPENAI_BASE_URL=<unset>
+AZURE_CHAT_DEPLOYMENT=gpt-4.1-mini
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
+CHAT_MODEL=gpt-4.1-mini
+ANSWER_MODEL=gpt-4.1-mini
+JUDGE_MODEL=gpt-4.1-mini
+AZURE_CHAT_KEY_PRESENT=True
+=================================
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+  [DATE NORMALIZATION ENABLED]
+======================================================================
+  Starting memories: 19
+  Conversations to process: 1
+  Total questions: 199 (10 evaluated, question cap 10, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 21.7s
+    Conv accuracy: 85.0% (10 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 85.0%
+  Query expansion fallback: 0/10 (0.00%)
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-multi-hop     100.0%       1       5365ms
+  cat-single-hop     50.0%       3       3953ms
+  cat-temporal      100.0%       6       4470ms
+
+  Ingest: 21.7s avg per conversation
+  Query:  4404ms avg per question
+  Total:  66s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  >>> MEMIBRIUM               85.0% <<<
+  MemMachine                  84.9%
+  Zep                         80.3%
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  LangMem                     58.1%
+
+  Detailed results saved to /tmp/locomo_results_query_expansion_legacy_context.json

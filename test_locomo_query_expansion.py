@@ -526,6 +526,137 @@ class QueryExpansionTests(unittest.TestCase):
         )
         self.assertIn('--no-expansion-arm-b', proc.stdout)
 
+    def test_cli_exposes_legacy_context_assembly_flag(self):
+        proc = subprocess.run(
+            [sys.executable, str(MODULE_PATH), '--help'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertIn('--legacy-context-assembly', proc.stdout)
+
+    def test_legacy_context_assembly_stops_after_context_budget_and_skips_later_expansions(self):
+        seen_queries = []
+        seen_messages = []
+
+        def memories(prefix, count):
+            return [
+                {'id': f'{prefix}{i:02d}', 'content': f'{prefix} memory {i:02d}'}
+                for i in range(1, count + 1)
+            ]
+
+        recalls = {
+            'base query': {'results': memories('base', locomo_bench_v2.RECALL_TOP_K)},
+            'expanded one': {'results': memories('exp1', locomo_bench_v2.RECALL_TOP_K)},
+            'expanded two': {'results': memories('exp2', locomo_bench_v2.RECALL_TOP_K)},
+        }
+
+        def fake_mcp_post(tool, payload, retries=3):
+            self.assertEqual(tool, 'recall')
+            seen_queries.append(payload['query'])
+            return recalls[payload['query']]
+
+        def fake_llm_call(messages, model=locomo_bench_v2.ANSWER_MODEL, max_tokens=200, retries=3):
+            seen_messages.append(messages)
+            return 'answer'
+
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', True), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_RERANK', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_APPEND_CONTEXT_EXPANSION', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_GATED_APPEND_CONTEXT_EXPANSION', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_LEGACY_CONTEXT_ASSEMBLY', True
+        ), patch.object(
+            locomo_bench_v2, 'expand_query', return_value=['base query', 'expanded one', 'expanded two']
+        ), patch.object(
+            locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+        ), patch.object(locomo_bench_v2, 'llm_call', side_effect=fake_llm_call):
+            answer, memory_count = locomo_bench_v2.answer_question('base query', 'locomo-1')
+
+        self.assertEqual(answer, 'answer')
+        self.assertEqual(seen_queries, ['base query', 'expanded one'])
+        self.assertEqual(memory_count, locomo_bench_v2.ANSWER_CONTEXT_TOP_K)
+        prompt_text = seen_messages[0][1]['content']
+        self.assertIn('exp1 memory 05', prompt_text)
+        self.assertNotIn('exp2 memory 01', prompt_text)
+
+    def test_output_path_and_payload_are_condition_specific_for_legacy_context_assembly(self):
+        self.assertEqual(
+            locomo_bench_v2.result_output_path(
+                normalize_dates=True,
+                use_query_expansion=True,
+                use_legacy_context_assembly=True,
+            ),
+            '/tmp/locomo_results_query_expansion_legacy_context.json',
+        )
+
+        payload = locomo_bench_v2.build_results_payload(
+            all_scores=[1],
+            cat_scores={'temporal': [1]},
+            query_times=[1.0],
+            results_log=[],
+            normalize_dates=True,
+            use_query_expansion=True,
+            use_legacy_context_assembly=True,
+            cleaned=True,
+        )
+        self.assertTrue(payload['condition']['legacy_context_assembly'])
+        self.assertTrue(payload['condition']['query_expansion'])
+        self.assertFalse(payload['condition']['context_rerank'])
+        self.assertTrue(payload['condition']['cleaned'])
+
+    def test_legacy_context_assembly_is_mutually_exclusive_with_new_context_modes(self):
+        for kwargs in [
+            {'use_context_rerank': True},
+            {'use_append_context_expansion': True},
+            {'use_gated_append_context_expansion': True},
+        ]:
+            with self.subTest(kwargs=kwargs):
+                with self.assertRaises(ValueError):
+                    locomo_bench_v2.validate_retrieval_modes(
+                        use_legacy_context_assembly=True,
+                        **kwargs,
+                    )
+
+    def test_run_benchmark_explicit_legacy_context_assembly_sets_runtime_mode(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            data_path = Path(tmpdir) / 'locomo.json'
+            output_path = Path(tmpdir) / 'results.json'
+            data_path.write_text(json.dumps([
+                {
+                    'sample_id': 'sample',
+                    'conversation': {'speaker_a': 'A', 'speaker_b': 'B'},
+                    'qa': [{'category': 'single-hop', 'question': 'What happened?', 'answer': 'A thing happened.'}],
+                }
+            ]))
+            seen_legacy_values = []
+
+            def fake_answer_question(question, domain):
+                seen_legacy_values.append(locomo_bench_v2.USE_LEGACY_CONTEXT_ASSEMBLY)
+                return ('A thing happened.', 1)
+
+            with patch.object(locomo_bench_v2, 'USE_LEGACY_CONTEXT_ASSEMBLY', False), patch.object(
+                locomo_bench_v2, 'result_output_path', return_value=str(output_path)
+            ), patch.object(locomo_bench_v2, 'mcp_get', return_value={'total_memories': 0}), patch.object(
+                locomo_bench_v2, 'ingest_conversation', return_value=(1, 'locomo-sample')
+            ), patch.object(
+                locomo_bench_v2, 'answer_question', side_effect=fake_answer_question
+            ), patch.object(locomo_bench_v2, 'judge_answer', return_value=1), patch.object(
+                locomo_bench_v2.time, 'sleep'
+            ), patch('builtins.print'):
+                locomo_bench_v2.run_benchmark(
+                    str(data_path),
+                    normalize_dates=True,
+                    cleaned=True,
+                    use_legacy_context_assembly=True,
+                )
+
+            self.assertEqual(seen_legacy_values, [True])
+            payload = json.loads(output_path.read_text())
+            self.assertTrue(payload['condition']['legacy_context_assembly'])
+
     def test_no_expansion_arm_b_run_bypasses_expand_query_even_if_global_enabled(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             data_path = Path(tmpdir) / 'locomo.json'

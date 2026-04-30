@@ -69,6 +69,12 @@ USE_APPEND_CONTEXT_EXPANSION = _env_flag("USE_APPEND_CONTEXT_EXPANSION", default
 # append only when the base context is weak, and require explicit query/context
 # lexical overlap for extras. It is intentionally opt-in/evaluation-only.
 USE_GATED_APPEND_CONTEXT_EXPANSION = _env_flag("USE_GATED_APPEND_CONTEXT_EXPANSION", default=False)
+# Diagnostic-only flag for the canonical-stack regression hunt. It restores the
+# bfeb90f-era query-expansion context assembly: recall expanded queries in order,
+# dedupe, stop once the answer context budget is filled, and do not collect extra
+# candidate memories from later expansions. Keep this opt-in; it is not a new
+# product retrieval mode.
+USE_LEGACY_CONTEXT_ASSEMBLY = _env_flag("USE_LEGACY_CONTEXT_ASSEMBLY", default=False)
 RECALL_TOP_K = 10
 RERANK_RECALL_TOP_K = 20
 APPEND_CONTEXT_RECALL_TOP_K = 20
@@ -85,6 +91,7 @@ def validate_retrieval_modes(
     use_context_rerank=None,
     use_append_context_expansion=None,
     use_gated_append_context_expansion=None,
+    use_legacy_context_assembly=None,
 ):
     """Reject retrieval modes whose metadata/prompt semantics would conflict."""
     if use_context_rerank is None:
@@ -93,11 +100,15 @@ def validate_retrieval_modes(
         use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
     if use_gated_append_context_expansion is None:
         use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
+    if use_legacy_context_assembly is None:
+        use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
     append_modes = [bool(use_append_context_expansion), bool(use_gated_append_context_expansion)]
     if use_context_rerank and any(append_modes):
         raise ValueError("--context-rerank cannot be combined with append context expansion modes")
     if sum(append_modes) > 1:
         raise ValueError("append context expansion modes are mutually exclusive")
+    if use_legacy_context_assembly and (use_context_rerank or any(append_modes)):
+        raise ValueError("--legacy-context-assembly cannot be combined with rerank or append context modes")
 
 
 CAT_MAP = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "unanswerable", 5: "adversarial"}
@@ -613,52 +624,69 @@ def answer_question(question, domain):
     """Recall from Memibrium and generate answer."""
     validate_retrieval_modes()
     memories = []
-    base_seen = {}
-    recall_top_k = RECALL_TOP_K
-    if USE_CONTEXT_RERANK:
-        recall_top_k = RERANK_RECALL_TOP_K
-    append_context_enabled = USE_APPEND_CONTEXT_EXPANSION or USE_GATED_APPEND_CONTEXT_EXPANSION
-    candidate_recall_top_k = APPEND_CONTEXT_RECALL_TOP_K if append_context_enabled else recall_top_k
-    candidate_limit = max(ANSWER_CONTEXT_TOP_K, candidate_recall_top_k)
     queries = expand_query(question) if USE_QUERY_EXPANSION else [question]
-    candidate_memories = []
-    for query in queries:
-        recall_result = mcp_post("recall", {"query": query, "top_k": candidate_recall_top_k, "domain": domain})
-        if isinstance(recall_result, list):
-            recalled = recall_result
-        else:
-            recalled = recall_result.get("results", recall_result.get("memories", []))
-        candidate_memories.extend(recalled)
-        for memory in recalled[:recall_top_k]:
-            memory_id = _memory_dedupe_key(memory)
-            if memory_id not in base_seen:
-                base_seen[memory_id] = memory
-        if not USE_QUERY_EXPANSION and len(base_seen) >= candidate_limit:
-            break
-    base_candidates = list(base_seen.values())
-    candidate_keys = {_memory_dedupe_key(memory) for memory in base_candidates}
-    candidates = list(base_candidates)
-    for memory in candidate_memories:
-        key = _memory_dedupe_key(memory)
-        if key not in candidate_keys:
-            candidate_keys.add(key)
-            candidates.append(memory)
-    if USE_CONTEXT_RERANK:
-        memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)
-    elif append_context_enabled:
-        base_context = base_candidates[:ANSWER_CONTEXT_TOP_K]
-        if USE_GATED_APPEND_CONTEXT_EXPANSION and base_context_is_strong(question, base_context):
-            memories = base_context
-        else:
-            memories = append_memories_for_question(
-                question,
-                base_context,
-                candidates,
-                extra_k=APPEND_CONTEXT_EXTRA_K,
-                min_extra_overlap=(GATED_APPEND_MIN_EXTRA_OVERLAP if USE_GATED_APPEND_CONTEXT_EXPANSION else 0),
-            )
+
+    if USE_LEGACY_CONTEXT_ASSEMBLY:
+        seen = {}
+        for query in queries:
+            recall_result = mcp_post("recall", {"query": query, "top_k": RECALL_TOP_K, "domain": domain})
+            if isinstance(recall_result, list):
+                recalled = recall_result
+            else:
+                recalled = recall_result.get("results", recall_result.get("memories", []))
+            for memory in recalled:
+                memory_id = memory.get("id") or f"no-id::{memory.get('content', '')}::{len(seen)}"
+                if memory_id not in seen:
+                    seen[memory_id] = memory
+            if len(seen) >= ANSWER_CONTEXT_TOP_K:
+                break
+        memories = list(seen.values())[:ANSWER_CONTEXT_TOP_K]
     else:
-        memories = candidates[:ANSWER_CONTEXT_TOP_K]
+        base_seen = {}
+        recall_top_k = RECALL_TOP_K
+        if USE_CONTEXT_RERANK:
+            recall_top_k = RERANK_RECALL_TOP_K
+        append_context_enabled = USE_APPEND_CONTEXT_EXPANSION or USE_GATED_APPEND_CONTEXT_EXPANSION
+        candidate_recall_top_k = APPEND_CONTEXT_RECALL_TOP_K if append_context_enabled else recall_top_k
+        candidate_limit = max(ANSWER_CONTEXT_TOP_K, candidate_recall_top_k)
+        candidate_memories = []
+        for query in queries:
+            recall_result = mcp_post("recall", {"query": query, "top_k": candidate_recall_top_k, "domain": domain})
+            if isinstance(recall_result, list):
+                recalled = recall_result
+            else:
+                recalled = recall_result.get("results", recall_result.get("memories", []))
+            candidate_memories.extend(recalled)
+            for memory in recalled[:recall_top_k]:
+                memory_id = _memory_dedupe_key(memory)
+                if memory_id not in base_seen:
+                    base_seen[memory_id] = memory
+            if not USE_QUERY_EXPANSION and len(base_seen) >= candidate_limit:
+                break
+        base_candidates = list(base_seen.values())
+        candidate_keys = {_memory_dedupe_key(memory) for memory in base_candidates}
+        candidates = list(base_candidates)
+        for memory in candidate_memories:
+            key = _memory_dedupe_key(memory)
+            if key not in candidate_keys:
+                candidate_keys.add(key)
+                candidates.append(memory)
+        if USE_CONTEXT_RERANK:
+            memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)
+        elif append_context_enabled:
+            base_context = base_candidates[:ANSWER_CONTEXT_TOP_K]
+            if USE_GATED_APPEND_CONTEXT_EXPANSION and base_context_is_strong(question, base_context):
+                memories = base_context
+            else:
+                memories = append_memories_for_question(
+                    question,
+                    base_context,
+                    candidates,
+                    extra_k=APPEND_CONTEXT_EXTRA_K,
+                    min_extra_overlap=(GATED_APPEND_MIN_EXTRA_OVERLAP if USE_GATED_APPEND_CONTEXT_EXPANSION else 0),
+                )
+        else:
+            memories = candidates[:ANSWER_CONTEXT_TOP_K]
 
     if not memories:
         context = "No relevant memories found."
@@ -760,6 +788,7 @@ def result_suffix(
     use_append_context_expansion=None,
     use_gated_append_context_expansion=None,
     no_expansion_arm_b=False,
+    use_legacy_context_assembly=None,
 ):
     if no_expansion_arm_b:
         if use_query_expansion is True:
@@ -773,7 +802,14 @@ def result_suffix(
         use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
     if use_gated_append_context_expansion is None:
         use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)
+    if use_legacy_context_assembly is None:
+        use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
+    validate_retrieval_modes(
+        use_context_rerank,
+        use_append_context_expansion,
+        use_gated_append_context_expansion,
+        use_legacy_context_assembly,
+    )
     suffix = ""
     if no_expansion_arm_b:
         suffix = "_no_expansion"
@@ -789,6 +825,8 @@ def result_suffix(
         suffix += "_gated_appended"
     elif use_append_context_expansion:
         suffix += "_appended"
+    if use_legacy_context_assembly:
+        suffix += "_legacy_context"
     return suffix
 
 
@@ -799,8 +837,9 @@ def result_output_path(
     use_append_context_expansion=None,
     use_gated_append_context_expansion=None,
     no_expansion_arm_b=False,
+    use_legacy_context_assembly=None,
 ):
-    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b)}.json"
+    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly)}.json"
 
 
 def _category_name(cat):
@@ -828,6 +867,7 @@ def build_results_payload(
     use_append_context_expansion=None,
     use_gated_append_context_expansion=None,
     no_expansion_arm_b=False,
+    use_legacy_context_assembly=None,
     expand_fallback_count=0,
     expand_fallback_rate=0.0,
     cleaned=None,
@@ -842,7 +882,14 @@ def build_results_payload(
         use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
     if use_gated_append_context_expansion is None:
         use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)
+    if use_legacy_context_assembly is None:
+        use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
+    validate_retrieval_modes(
+        use_context_rerank,
+        use_append_context_expansion,
+        use_gated_append_context_expansion,
+        use_legacy_context_assembly,
+    )
     full_overall = statistics.mean(all_scores) * 100 if all_scores else 0
     category_scores = {
         _category_name(k): round(statistics.mean(v) * 100, 2)
@@ -863,6 +910,7 @@ def build_results_payload(
             "append_context_expansion": bool(use_append_context_expansion or use_gated_append_context_expansion),
             "gated_append_context_expansion": bool(use_gated_append_context_expansion),
             "no_expansion_arm_b": bool(no_expansion_arm_b),
+            "legacy_context_assembly": bool(use_legacy_context_assembly),
         },
         "expand_query_fallback_count": expand_fallback_count,
         "expand_query_fallback_rate": round(expand_fallback_rate, 4),
@@ -870,9 +918,9 @@ def build_results_payload(
     }
 
 
-def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, cleaned=None):
+def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, use_legacy_context_assembly=None, cleaned=None):
     """Save incremental results."""
-    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b) if suffix is None else f"/tmp/locomo_results{suffix}.json"
+    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly) if suffix is None else f"/tmp/locomo_results{suffix}.json"
     payload = build_results_payload(
         all_scores,
         cat_scores,
@@ -884,6 +932,7 @@ def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log
         use_append_context_expansion=use_append_context_expansion,
         use_gated_append_context_expansion=use_gated_append_context_expansion,
         no_expansion_arm_b=no_expansion_arm_b,
+        use_legacy_context_assembly=use_legacy_context_assembly,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -901,17 +950,22 @@ def run_benchmark(
     cleaned=None,
     max_questions=None,
     no_expansion_arm_b=False,
+    use_legacy_context_assembly=None,
 ):
     """Run LOCOMO benchmark, optionally capped by conversations/questions for canaries."""
-    global USE_QUERY_EXPANSION
+    global USE_QUERY_EXPANSION, USE_LEGACY_CONTEXT_ASSEMBLY
     use_query_expansion = USE_QUERY_EXPANSION
     use_context_rerank = USE_CONTEXT_RERANK
     use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
     use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
+    if use_legacy_context_assembly is None:
+        use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
+    else:
+        USE_LEGACY_CONTEXT_ASSEMBLY = bool(use_legacy_context_assembly)
     if no_expansion_arm_b:
         use_query_expansion = False
         USE_QUERY_EXPANSION = False
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, use_legacy_context_assembly)
     expand_query.fail_count = 0
     with open(data_path) as f:
         data = json.load(f)
@@ -953,6 +1007,7 @@ def run_benchmark(
         use_append_context_expansion=use_append_context_expansion,
         use_gated_append_context_expansion=use_gated_append_context_expansion,
         no_expansion_arm_b=no_expansion_arm_b,
+        use_legacy_context_assembly=use_legacy_context_assembly,
     )
     if start_conv > 0 and os.path.exists(output_path):
         with open(output_path) as f:
@@ -1048,6 +1103,7 @@ def run_benchmark(
             use_append_context_expansion=use_append_context_expansion,
             use_gated_append_context_expansion=use_gated_append_context_expansion,
             no_expansion_arm_b=no_expansion_arm_b,
+            use_legacy_context_assembly=use_legacy_context_assembly,
             expand_fallback_count=expand_fallback_count,
             expand_fallback_rate=expand_fallback_rate,
             cleaned=cleaned,
@@ -1106,6 +1162,7 @@ def run_benchmark(
         use_append_context_expansion=use_append_context_expansion,
         use_gated_append_context_expansion=use_gated_append_context_expansion,
         no_expansion_arm_b=no_expansion_arm_b,
+        use_legacy_context_assembly=use_legacy_context_assembly,
     )
     payload = build_results_payload(
         all_scores,
@@ -1118,6 +1175,7 @@ def run_benchmark(
         use_append_context_expansion=use_append_context_expansion,
         use_gated_append_context_expansion=use_gated_append_context_expansion,
         no_expansion_arm_b=no_expansion_arm_b,
+        use_legacy_context_assembly=use_legacy_context_assembly,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -1141,6 +1199,7 @@ if __name__ == "__main__":
     parser.add_argument("--context-rerank", action="store_true", help="Enable opt-in lexical reranking before answer synthesis")
     parser.add_argument("--append-context-expansion", action="store_true", help="Enable opt-in append-only extra context after the original answer context")
     parser.add_argument("--gated-append-context-expansion", action="store_true", help="Enable opt-in gated append-only context expansion")
+    parser.add_argument("--legacy-context-assembly", action="store_true", help="Enable diagnostic bfeb90f-era query-expansion context assembly")
     args = parser.parse_args()
 
     if args.max_questions is not None and args.max_questions <= 0:
@@ -1156,6 +1215,8 @@ if __name__ == "__main__":
         USE_APPEND_CONTEXT_EXPANSION = True
     if args.gated_append_context_expansion:
         USE_GATED_APPEND_CONTEXT_EXPANSION = True
+    if args.legacy_context_assembly:
+        USE_LEGACY_CONTEXT_ASSEMBLY = True
     validate_retrieval_modes()
 
     skip = {5} if args.skip_adversarial else set()
@@ -1170,4 +1231,5 @@ if __name__ == "__main__":
         normalize_dates=args.normalize_dates,
         cleaned=args.cleaned,
         no_expansion_arm_b=args.no_expansion_arm_b,
+        use_legacy_context_assembly=args.legacy_context_assembly,
     )

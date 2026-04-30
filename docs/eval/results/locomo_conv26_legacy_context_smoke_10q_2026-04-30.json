@@ -1,0 +1,126 @@
+{
+  "overall_score": 85.0,
+  "full_5cat_overall": 85.0,
+  "protocol_4cat_overall": 85.0,
+  "category_scores": {
+    "cat-temporal": 100.0,
+    "cat-multi-hop": 100.0,
+    "cat-single-hop": 50.0
+  },
+  "total_questions": 10,
+  "avg_query_ms": 4404,
+  "condition": {
+    "cleaned": true,
+    "normalize_dates": true,
+    "query_expansion": true,
+    "context_rerank": false,
+    "append_context_expansion": false,
+    "gated_append_context_expansion": false,
+    "no_expansion_arm_b": false,
+    "legacy_context_assembly": true
+  },
+  "expand_query_fallback_count": 0,
+  "expand_query_fallback_rate": 0.0,
+  "details": [
+    {
+      "conv": "conv-26",
+      "cat": "temporal",
+      "question": "When did Caroline go to the LGBTQ support group?",
+      "ground_truth": "7 May 2023",
+      "predicted": "Caroline went to the LGBTQ support group on 7 May 2023.",
+      "score": 1.0,
+      "query_time_ms": 5141,
+      "n_memories": 14
+    },
+    {
+      "conv": "conv-26",
+      "cat": "temporal",
+      "question": "When did Melanie paint a sunrise?",
+      "ground_truth": 2022,
+      "predicted": "Melanie painted a lake sunrise in 2022.",
+      "score": 1.0,
+      "query_time_ms": 3974,
+      "n_memories": 15
+    },
+    {
+      "conv": "conv-26",
+      "cat": "multi-hop",
+      "question": "What fields would Caroline be likely to pursue in her educaton?",
+      "ground_truth": "Psychology, counseling certification",
+      "predicted": "Caroline is likely to pursue education in counseling and mental health, focusing on working with transgender people and supporting their mental health.",
+      "score": 1.0,
+      "query_time_ms": 5365,
+      "n_memories": 15
+    },
+    {
+      "conv": "conv-26",
+      "cat": "single-hop",
+      "question": "What did Caroline research?",
+      "ground_truth": "Adoption agencies",
+      "predicted": "Caroline researched adoption agencies and counseling or mental health work.",
+      "score": 0.5,
+      "query_time_ms": 3075,
+      "n_memories": 15
+    },
+    {
+      "conv": "conv-26",
+      "cat": "single-hop",
+      "question": "What is Caroline's identity?",
+      "ground_truth": "Transgender woman",
+      "predicted": "Caroline is a transgender woman.",
+      "score": 1.0,
+      "query_time_ms": 3788,
+      "n_memories": 15
+    },
+    {
+      "conv": "conv-26",
+      "cat": "temporal",
+      "question": "When did Melanie run a charity race?",
+      "ground_truth": "The sunday before 25 May 2023",
+      "predicted": "Melanie ran a charity race for mental health on 20 May 2023.",
+      "score": 1.0,
+      "query_time_ms": 3892,
+      "n_memories": 15
+    },
+    {
+      "conv": "conv-26",
+      "cat": "temporal",
+      "question": "When is Melanie planning on going camping?",
+      "ground_truth": "June 2023",
+      "predicted": "Melanie is planning on going camping in June 2023.",
+      "score": 1.0,
+      "query_time_ms": 3418,
+      "n_memories": 15
+    },
+    {
+      "conv": "conv-26",
+      "cat": "single-hop",
+      "question": "What is Caroline's relationship status?",
+      "ground_truth": "Single",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "query_time_ms": 4993,
+      "n_memories": 15
+    },
+    {
+      "conv": "conv-26",
+      "cat": "temporal",
+      "question": "When did Caroline give a speech at a school?",
+      "ground_truth": "The week before 9 June 2023",
+      "predicted": "Caroline gave a speech at a school the week of 02 June 2023.",
+      "score": 1.0,
+      "query_time_ms": 5494,
+      "n_memories": 14
+    },
+    {
+      "conv": "conv-26",
+      "cat": "temporal",
+      "question": "When did Caroline meet up with her friends, family, and mentors?",
+      "ground_truth": "The week before 9 June 2023",
+      "predicted": "Caroline met up with her friends, family, and mentors the week of 02 June 2023.",
+      "score": 1.0,
+      "query_time_ms": 4900,
+      "n_memories": 13
+    }
+  ]
+}
