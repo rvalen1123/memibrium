@@ -250,7 +250,7 @@ class QueryExpansionTests(unittest.TestCase):
             locomo_bench_v2,
             'expand_query',
             return_value=['What happened?', 'alt one', 'alt two'],
-        ), patch.object(locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post), patch.object(
+        ) as expand_mock, patch.object(locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post), patch.object(
             locomo_bench_v2, 'llm_call', return_value='A thing happened.'
         ):
             answer, memory_count = locomo_bench_v2.answer_question('What happened?', 'locomo-1')
@@ -258,6 +258,7 @@ class QueryExpansionTests(unittest.TestCase):
         self.assertEqual(answer, 'A thing happened.')
         self.assertEqual(memory_count, 1)
         self.assertEqual(seen_queries, ['What happened?'])
+        expand_mock.assert_not_called()
 
     def test_context_rerank_prefers_query_relevant_memories_when_enabled(self):
         memories = [
@@ -480,6 +481,85 @@ class QueryExpansionTests(unittest.TestCase):
             locomo_bench_v2.result_output_path(normalize_dates=True, use_query_expansion=False),
             '/tmp/locomo_results_normalized.json',
         )
+
+    def test_explicit_no_expansion_output_path_does_not_overwrite_normalized_baseline(self):
+        self.assertEqual(
+            locomo_bench_v2.result_output_path(
+                normalize_dates=True,
+                use_query_expansion=False,
+                no_expansion_arm_b=True,
+            ),
+            '/tmp/locomo_results_no_expansion.json',
+        )
+        self.assertNotEqual(
+            locomo_bench_v2.result_output_path(
+                normalize_dates=True,
+                use_query_expansion=False,
+                no_expansion_arm_b=True,
+            ),
+            locomo_bench_v2.result_output_path(normalize_dates=True, use_query_expansion=False),
+        )
+
+    def test_no_expansion_arm_b_path_implies_query_expansion_disabled(self):
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', True):
+            self.assertEqual(
+                locomo_bench_v2.result_output_path(normalize_dates=True, no_expansion_arm_b=True),
+                '/tmp/locomo_results_no_expansion.json',
+            )
+            payload = locomo_bench_v2.build_results_payload(
+                all_scores=[1],
+                cat_scores={'single-hop': [1]},
+                query_times=[0.1],
+                results_log=[],
+                normalize_dates=True,
+                no_expansion_arm_b=True,
+            )
+            self.assertFalse(payload['condition']['query_expansion'])
+            self.assertTrue(payload['condition']['no_expansion_arm_b'])
+
+    def test_cli_exposes_no_expansion_arm_b_flag(self):
+        proc = subprocess.run(
+            [sys.executable, str(MODULE_PATH), '--help'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertIn('--no-expansion-arm-b', proc.stdout)
+
+    def test_no_expansion_arm_b_run_bypasses_expand_query_even_if_global_enabled(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            data_path = Path(tmpdir) / 'locomo.json'
+            output_path = Path(tmpdir) / 'results.json'
+            data_path.write_text(json.dumps([
+                {
+                    'sample_id': 'sample',
+                    'conversation': {'speaker_a': 'A', 'speaker_b': 'B'},
+                    'qa': [{'category': 'single-hop', 'question': 'What happened?', 'answer': 'A thing happened.'}],
+                }
+            ]))
+            seen_queries = []
+
+            def fake_mcp_post(tool, payload, retries=3):
+                self.assertEqual(tool, 'recall')
+                seen_queries.append(payload['query'])
+                return {'results': [{'id': 'm1', 'content': 'base memory'}]}
+
+            with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', True), patch.object(
+                locomo_bench_v2, 'result_output_path', return_value=str(output_path)
+            ), patch.object(locomo_bench_v2, 'mcp_get', return_value={'total_memories': 0}), patch.object(
+                locomo_bench_v2, 'ingest_conversation', return_value=(1, 'locomo-sample')
+            ), patch.object(locomo_bench_v2, 'expand_query', return_value=['What happened?', 'expanded']) as expand_mock, patch.object(
+                locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+            ), patch.object(locomo_bench_v2, 'llm_call', return_value='A thing happened.'), patch.object(
+                locomo_bench_v2, 'judge_answer', return_value=1
+            ), patch.object(locomo_bench_v2.time, 'sleep'), patch('builtins.print'):
+                locomo_bench_v2.run_benchmark(str(data_path), normalize_dates=True, cleaned=True, no_expansion_arm_b=True)
+
+            expand_mock.assert_not_called()
+            self.assertEqual(seen_queries, ['What happened?'])
+            payload = json.loads(output_path.read_text())
+            self.assertFalse(payload['condition']['query_expansion'])
+            self.assertTrue(payload['condition']['no_expansion_arm_b'])
 
     def test_max_questions_caps_evaluated_questions_for_smoke_tests(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -921,6 +1001,7 @@ class ScriptReviewRegressionTests(unittest.TestCase):
         script = (Path(__file__).resolve().parent / 'scripts' / 'archive_conv26_ab_results.sh').read_text()
         self.assertRegex(script, r"exp\)\s*src=/tmp/locomo_results_query_expansion\.json\s+dst=/tmp/locomo_results_conv26_exp\.json")
         self.assertRegex(script, r"noexp\)\s*src=/tmp/locomo_results_normalized\.json\s+dst=/tmp/locomo_results_conv26_noexp\.json")
+        self.assertRegex(script, r"arm-b\)\s*src=/tmp/locomo_results_no_expansion\.json\s+dst=/tmp/locomo_results_conv26_no_expansion\.json")
 
     def test_audit_retrieve_candidates_dedupes_idless_memories_with_benchmark_key(self):
         audit_path = Path(__file__).resolve().parent / 'scripts' / 'audit_locomo_rerank_harms.py'

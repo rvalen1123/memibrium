@@ -759,8 +759,13 @@ def result_suffix(
     use_context_rerank=None,
     use_append_context_expansion=None,
     use_gated_append_context_expansion=None,
+    no_expansion_arm_b=False,
 ):
-    if use_query_expansion is None:
+    if no_expansion_arm_b:
+        if use_query_expansion is True:
+            raise ValueError("no-expansion Arm B cannot be combined with query expansion")
+        use_query_expansion = False
+    elif use_query_expansion is None:
         use_query_expansion = USE_QUERY_EXPANSION
     if use_context_rerank is None:
         use_context_rerank = USE_CONTEXT_RERANK
@@ -770,7 +775,9 @@ def result_suffix(
         use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
     validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)
     suffix = ""
-    if normalize_dates and use_query_expansion:
+    if no_expansion_arm_b:
+        suffix = "_no_expansion"
+    elif normalize_dates and use_query_expansion:
         suffix = "_query_expansion"
     elif normalize_dates:
         suffix = "_normalized"
@@ -791,8 +798,9 @@ def result_output_path(
     use_context_rerank=None,
     use_append_context_expansion=None,
     use_gated_append_context_expansion=None,
+    no_expansion_arm_b=False,
 ):
-    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)}.json"
+    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b)}.json"
 
 
 def _category_name(cat):
@@ -819,11 +827,14 @@ def build_results_payload(
     use_context_rerank=None,
     use_append_context_expansion=None,
     use_gated_append_context_expansion=None,
+    no_expansion_arm_b=False,
     expand_fallback_count=0,
     expand_fallback_rate=0.0,
     cleaned=None,
 ):
-    if use_query_expansion is None:
+    if no_expansion_arm_b:
+        use_query_expansion = False
+    elif use_query_expansion is None:
         use_query_expansion = USE_QUERY_EXPANSION
     if use_context_rerank is None:
         use_context_rerank = USE_CONTEXT_RERANK
@@ -851,6 +862,7 @@ def build_results_payload(
             "context_rerank": bool(use_context_rerank),
             "append_context_expansion": bool(use_append_context_expansion or use_gated_append_context_expansion),
             "gated_append_context_expansion": bool(use_gated_append_context_expansion),
+            "no_expansion_arm_b": bool(no_expansion_arm_b),
         },
         "expand_query_fallback_count": expand_fallback_count,
         "expand_query_fallback_rate": round(expand_fallback_rate, 4),
@@ -858,9 +870,9 @@ def build_results_payload(
     }
 
 
-def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, cleaned=None):
+def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, cleaned=None):
     """Save incremental results."""
-    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion) if suffix is None else f"/tmp/locomo_results{suffix}.json"
+    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b) if suffix is None else f"/tmp/locomo_results{suffix}.json"
     payload = build_results_payload(
         all_scores,
         cat_scores,
@@ -871,6 +883,7 @@ def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log
         use_context_rerank=use_context_rerank,
         use_append_context_expansion=use_append_context_expansion,
         use_gated_append_context_expansion=use_gated_append_context_expansion,
+        no_expansion_arm_b=no_expansion_arm_b,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -887,12 +900,17 @@ def run_benchmark(
     normalize_dates=False,
     cleaned=None,
     max_questions=None,
+    no_expansion_arm_b=False,
 ):
     """Run LOCOMO benchmark, optionally capped by conversations/questions for canaries."""
+    global USE_QUERY_EXPANSION
     use_query_expansion = USE_QUERY_EXPANSION
     use_context_rerank = USE_CONTEXT_RERANK
     use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
     use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
+    if no_expansion_arm_b:
+        use_query_expansion = False
+        USE_QUERY_EXPANSION = False
     validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)
     expand_query.fail_count = 0
     with open(data_path) as f:
@@ -934,6 +952,7 @@ def run_benchmark(
         use_context_rerank=use_context_rerank,
         use_append_context_expansion=use_append_context_expansion,
         use_gated_append_context_expansion=use_gated_append_context_expansion,
+        no_expansion_arm_b=no_expansion_arm_b,
     )
     if start_conv > 0 and os.path.exists(output_path):
         with open(output_path) as f:
@@ -1028,6 +1047,7 @@ def run_benchmark(
             use_context_rerank=use_context_rerank,
             use_append_context_expansion=use_append_context_expansion,
             use_gated_append_context_expansion=use_gated_append_context_expansion,
+            no_expansion_arm_b=no_expansion_arm_b,
             expand_fallback_count=expand_fallback_count,
             expand_fallback_rate=expand_fallback_rate,
             cleaned=cleaned,
@@ -1085,6 +1105,7 @@ def run_benchmark(
         use_context_rerank=use_context_rerank,
         use_append_context_expansion=use_append_context_expansion,
         use_gated_append_context_expansion=use_gated_append_context_expansion,
+        no_expansion_arm_b=no_expansion_arm_b,
     )
     payload = build_results_payload(
         all_scores,
@@ -1096,6 +1117,7 @@ def run_benchmark(
         use_context_rerank=use_context_rerank,
         use_append_context_expansion=use_append_context_expansion,
         use_gated_append_context_expansion=use_gated_append_context_expansion,
+        no_expansion_arm_b=no_expansion_arm_b,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -1115,6 +1137,7 @@ if __name__ == "__main__":
     parser.add_argument("--cleaned", action="store_true", help="Use cleaned dataset (/tmp/locomo10_cleaned.json)")
     parser.add_argument("--normalize-dates", action="store_true", help="Enable ingest-time date normalization")
     parser.add_argument("--query-expansion", action="store_true", help="Enable opt-in recall-time query expansion")
+    parser.add_argument("--no-expansion-arm-b", action="store_true", help="Run explicit pre-registered Arm B without query expansion and with a distinct output path")
     parser.add_argument("--context-rerank", action="store_true", help="Enable opt-in lexical reranking before answer synthesis")
     parser.add_argument("--append-context-expansion", action="store_true", help="Enable opt-in append-only extra context after the original answer context")
     parser.add_argument("--gated-append-context-expansion", action="store_true", help="Enable opt-in gated append-only context expansion")
@@ -1122,6 +1145,8 @@ if __name__ == "__main__":
 
     if args.max_questions is not None and args.max_questions <= 0:
         parser.error("--max-questions must be a positive integer")
+    if args.no_expansion_arm_b and args.query_expansion:
+        parser.error("--no-expansion-arm-b cannot be combined with --query-expansion")
 
     if args.query_expansion:
         USE_QUERY_EXPANSION = True
@@ -1144,4 +1169,5 @@ if __name__ == "__main__":
         start_conv=args.start_conv,
         normalize_dates=args.normalize_dates,
         cleaned=args.cleaned,
+        no_expansion_arm_b=args.no_expansion_arm_b,
     )

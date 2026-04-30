@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
-  echo "usage: $0 noexp|exp" >&2
+  echo "usage: $0 noexp|exp|arm-b" >&2
   exit 1
 fi
 
@@ -15,7 +15,11 @@ case "$1" in
     src=/tmp/locomo_results_query_expansion.json
     dst=/tmp/locomo_results_conv26_exp.json
     ;;
-  *) echo "usage: $0 noexp|exp" >&2; exit 1 ;;
+  arm-b)
+    src=/tmp/locomo_results_no_expansion.json
+    dst=/tmp/locomo_results_conv26_no_expansion.json
+    ;;
+  *) echo "usage: $0 noexp|exp|arm-b" >&2; exit 1 ;;
 esac
 
 if [[ ! -f "$src" ]]; then
