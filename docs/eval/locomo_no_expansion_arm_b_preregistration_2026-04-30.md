@@ -59,7 +59,11 @@ Specifically:
 
 **Arm C (NOT in this pre-registration):** Expansion with fixed prompt and
 parser validation. Branched on Arm B's outcome (see §6). Requires its own
-pre-registration if pursued.
+pre-registration if pursued. Because Arm C would exercise the patched
+parser path from commit `ddb0aa8`, it must not use the 2026-04-29 Arm A
+artifact as its direct reference. If Arm C is pursued, first define a
+fresh post-parser-patch Arm A reference or otherwise pre-register the
+comparison so parser and prompt effects are not conflated.
 
 ## 4. Slice and substrate
 
@@ -109,9 +113,10 @@ B − A ≤ **−1.5pp**.
 
 Action: the within-category paradox check missed something. Arm B
 becomes a research finding, not a config change. Arm C (fixed
-expansion) becomes a candidate next pre-registration. Diagnosis doc
-gets an addendum explaining the discrepancy between within-category
-analysis and full-substrate run.
+expansion) becomes a candidate next pre-registration. Write a follow-up
+diagnosis document that references and supersedes the 2026-04-30
+fallback diagnosis for this branch of the decision tree; do not inline-
+edit the original dated diagnosis artifact after the run.
 
 **Outcome edge case: B is mixed (some categories large gain, others
 large loss)**
@@ -168,9 +173,31 @@ Same as 2026-04-29 protocol, now established:
       `ENABLE_HIERARCHY_PROCESSING=false`
 - [ ] LOCOMO DB cleared: `SELECT count(*) FROM memories WHERE domain
       LIKE 'locomo-%'` returns 0 before run
-- [ ] Test suites green on run commit: 45 / 6 / 10
+- [ ] Test suites green on run commit: 51 / 6 / 10
 - [ ] Working tree committed; commit hash recorded
 - [ ] This pre-registration committed before the run starts
+- [ ] Pre-run smoke: execute a 3-question Arm B smoke with
+      `--no-expansion-arm-b --max-convs 1 --max-questions 3`, inspect
+      recent `memibrium-server` logs for `expand|expansion`, and stop if
+      any expansion LLM activity appears
+- [ ] LOCOMO DB re-cleared after the smoke and verified back to 0 before
+      the full Arm B run
+
+Before executing the full Arm B run, use this smoke check to verify the
+no-expansion wiring cheaply:
+
+```bash
+python3 benchmark_scripts/locomo_bench_v2.py \
+  --cleaned --normalize-dates --no-expansion-arm-b \
+  --max-convs 1 --max-questions 3
+
+docker logs memibrium-server --since 30s | grep -iE "expand|expansion" || \
+  echo "no expansion activity in logs — wiring confirmed"
+```
+
+If any expansion LLM activity appears, stop; the §7 expansion-call
+disqualifier would apply to the real run. After the smoke, clear LOCOMO
+again and verify 0 before starting the full 199Q Arm B run.
 
 **No inter-arm clear required** because Arm A is not being re-run. But
 LOCOMO must be cleared before Arm B starts.
