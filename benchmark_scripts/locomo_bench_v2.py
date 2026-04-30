@@ -65,22 +65,39 @@ USE_CONTEXT_RERANK = _env_flag("USE_CONTEXT_RERANK", default=False)
 # Append-only context expansion is an opt-in safer follow-up: preserve the
 # original answer context exactly, then append a few extra candidates below it.
 USE_APPEND_CONTEXT_EXPANSION = _env_flag("USE_APPEND_CONTEXT_EXPANSION", default=False)
+# Gated append is the next precision experiment: preserve the original context,
+# append only when the base context is weak, and require explicit query/context
+# lexical overlap for extras. It is intentionally opt-in/evaluation-only.
+USE_GATED_APPEND_CONTEXT_EXPANSION = _env_flag("USE_GATED_APPEND_CONTEXT_EXPANSION", default=False)
 RECALL_TOP_K = 10
 RERANK_RECALL_TOP_K = 20
 APPEND_CONTEXT_RECALL_TOP_K = 20
 ANSWER_CONTEXT_TOP_K = 15
 APPEND_CONTEXT_EXTRA_K = 5
 RERANK_PRESERVE_PREFIX_K = 2
+GATED_APPEND_MIN_EXTRA_OVERLAP = 1
+GATED_APPEND_STRONG_BASE_OVERLAP = 2
+GATED_APPEND_STRONG_BASE_SCORE = 0.6
+GATED_APPEND_STRONG_BASE_COUNT = 2
 
 
-def validate_retrieval_modes(use_context_rerank=None, use_append_context_expansion=None):
+def validate_retrieval_modes(
+    use_context_rerank=None,
+    use_append_context_expansion=None,
+    use_gated_append_context_expansion=None,
+):
     """Reject retrieval modes whose metadata/prompt semantics would conflict."""
     if use_context_rerank is None:
         use_context_rerank = USE_CONTEXT_RERANK
     if use_append_context_expansion is None:
         use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
-    if use_context_rerank and use_append_context_expansion:
-        raise ValueError("--context-rerank and --append-context-expansion are mutually exclusive")
+    if use_gated_append_context_expansion is None:
+        use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
+    append_modes = [bool(use_append_context_expansion), bool(use_gated_append_context_expansion)]
+    if use_context_rerank and any(append_modes):
+        raise ValueError("--context-rerank cannot be combined with append context expansion modes")
+    if sum(append_modes) > 1:
+        raise ValueError("append context expansion modes are mutually exclusive")
 
 
 CAT_MAP = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "unanswerable", 5: "adversarial"}
@@ -97,8 +114,9 @@ def should_skip_category(orig_cat, skip_cats):
     return orig_cat in skip_cats or cat in skip_cats or str(orig_cat) in skip_cats
 
 
-# Categories
-CAT_NAMES = {1: "multi-hop", 2: "temporal", 3: "open-domain", 4: "single-hop", 5: "adversarial"}
+# Categories. Numeric LOCOMO rows are normalized before scoring; keep this map
+# aligned with CAT_MAP so reports do not drift if a helper receives raw IDs.
+CAT_NAMES = CAT_MAP
 
 client = httpx.Client(timeout=120)
 
@@ -504,7 +522,53 @@ def rerank_memories_for_question(question, memories, top_k=ANSWER_CONTEXT_TOP_K,
     return preserved + [memory for _overlap, _score, _neg_idx, memory in ranked][:remaining_slots]
 
 
-def append_memories_for_question(question, base_memories, candidate_memories, extra_k=APPEND_CONTEXT_EXTRA_K):
+def _memory_lexical_overlap(question, memory):
+    """Count overlap between query terms and a memory's content."""
+    query_terms = Counter(_tokenize_for_rerank(question))
+    if not query_terms:
+        return 0
+    content = memory.get("content", "") if isinstance(memory, dict) else str(memory)
+    content_terms = Counter(_tokenize_for_rerank(content))
+    return sum(min(query_terms[t], content_terms.get(t, 0)) for t in query_terms)
+
+
+def _memory_retriever_score(memory):
+    """Best-effort numeric score from recall payloads."""
+    if not isinstance(memory, dict):
+        return 0.0
+    score = memory.get("score", memory.get("combined_score", memory.get("rrf_score", 0)))
+    try:
+        return float(score or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def base_context_is_strong(question, base_memories):
+    """Return True when the base context already has enough direct signal.
+
+    This gates append-only expansion to avoid adding noise when the original
+    retrieval prefix already contains multiple high-confidence, query-overlapping
+    memories.
+    """
+    strong = 0
+    for memory in base_memories:
+        if (
+            _memory_lexical_overlap(question, memory) >= GATED_APPEND_STRONG_BASE_OVERLAP
+            and _memory_retriever_score(memory) >= GATED_APPEND_STRONG_BASE_SCORE
+        ):
+            strong += 1
+            if strong >= GATED_APPEND_STRONG_BASE_COUNT:
+                return True
+    return False
+
+
+def append_memories_for_question(
+    question,
+    base_memories,
+    candidate_memories,
+    extra_k=APPEND_CONTEXT_EXTRA_K,
+    min_extra_overlap=0,
+):
     """Preserve original answer context exactly and append lexical extras.
 
     Rerank harm audits showed context replacement was the failure mode: useful
@@ -518,22 +582,16 @@ def append_memories_for_question(question, base_memories, candidate_memories, ex
         return base
 
     seen_keys = {_memory_dedupe_key(memory) for memory in base}
-    query_terms = _tokenize_for_rerank(question)
-    query_counts = Counter(query_terms)
     candidates = []
     for idx, memory in enumerate(candidate_memories):
         key = _memory_dedupe_key(memory)
         if key in seen_keys:
             continue
         seen_keys.add(key)
-        content = memory.get("content", "") if isinstance(memory, dict) else str(memory)
-        content_terms = Counter(_tokenize_for_rerank(content))
-        overlap = sum(min(query_counts[t], content_terms.get(t, 0)) for t in query_counts)
-        retriever_score = memory.get("score", memory.get("combined_score", memory.get("rrf_score", 0))) if isinstance(memory, dict) else 0
-        try:
-            retriever_score = float(retriever_score or 0)
-        except (TypeError, ValueError):
-            retriever_score = 0
+        overlap = _memory_lexical_overlap(question, memory)
+        if overlap < min_extra_overlap:
+            continue
+        retriever_score = _memory_retriever_score(memory)
         candidates.append((overlap, retriever_score, -idx, memory))
     candidates.sort(reverse=True)
     return base + [memory for _overlap, _score, _neg_idx, memory in candidates[:extra_k]]
@@ -547,7 +605,8 @@ def answer_question(question, domain):
     recall_top_k = RECALL_TOP_K
     if USE_CONTEXT_RERANK:
         recall_top_k = RERANK_RECALL_TOP_K
-    candidate_recall_top_k = APPEND_CONTEXT_RECALL_TOP_K if USE_APPEND_CONTEXT_EXPANSION else recall_top_k
+    append_context_enabled = USE_APPEND_CONTEXT_EXPANSION or USE_GATED_APPEND_CONTEXT_EXPANSION
+    candidate_recall_top_k = APPEND_CONTEXT_RECALL_TOP_K if append_context_enabled else recall_top_k
     candidate_limit = max(ANSWER_CONTEXT_TOP_K, candidate_recall_top_k)
     queries = expand_query(question) if USE_QUERY_EXPANSION else [question]
     candidate_memories = []
@@ -574,14 +633,18 @@ def answer_question(question, domain):
             candidates.append(memory)
     if USE_CONTEXT_RERANK:
         memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)
-    elif USE_APPEND_CONTEXT_EXPANSION:
+    elif append_context_enabled:
         base_context = base_candidates[:ANSWER_CONTEXT_TOP_K]
-        memories = append_memories_for_question(
-            question,
-            base_context,
-            candidates,
-            extra_k=APPEND_CONTEXT_EXTRA_K,
-        )
+        if USE_GATED_APPEND_CONTEXT_EXPANSION and base_context_is_strong(question, base_context):
+            memories = base_context
+        else:
+            memories = append_memories_for_question(
+                question,
+                base_context,
+                candidates,
+                extra_k=APPEND_CONTEXT_EXTRA_K,
+                min_extra_overlap=(GATED_APPEND_MIN_EXTRA_OVERLAP if USE_GATED_APPEND_CONTEXT_EXPANSION else 0),
+            )
     else:
         memories = candidates[:ANSWER_CONTEXT_TOP_K]
 
@@ -635,7 +698,7 @@ def judge_answer(question, predicted, ground_truth):
     ]
 
     try:
-        response = llm_call(judge_messages, max_tokens=5)
+        response = llm_call(judge_messages, model=JUDGE_MODEL, max_tokens=5)
     except RuntimeError as e:
         # Azure content filters sometimes falsely trip on family-relationship words
         # in otherwise benign benchmark items (e.g. "sister"). Retry with a lightly
@@ -664,7 +727,7 @@ def judge_answer(question, predicted, ground_truth):
             response = llm_call([
                 judge_messages[0],
                 {"role": "user", "content": f"Question: {sanitize(question)}\nGround truth: {sanitize(ground_truth)}\nPredicted: {sanitize(predicted)}\n\nScore:"}
-            ], max_tokens=5)
+            ], model=JUDGE_MODEL, max_tokens=5)
         else:
             raise
 
@@ -678,14 +741,22 @@ def judge_answer(question, predicted, ground_truth):
     return score
 
 
-def result_suffix(normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None):
+def result_suffix(
+    normalize_dates=False,
+    use_query_expansion=None,
+    use_context_rerank=None,
+    use_append_context_expansion=None,
+    use_gated_append_context_expansion=None,
+):
     if use_query_expansion is None:
         use_query_expansion = USE_QUERY_EXPANSION
     if use_context_rerank is None:
         use_context_rerank = USE_CONTEXT_RERANK
     if use_append_context_expansion is None:
         use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion)
+    if use_gated_append_context_expansion is None:
+        use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)
     suffix = ""
     if normalize_dates and use_query_expansion:
         suffix = "_query_expansion"
@@ -695,13 +766,21 @@ def result_suffix(normalize_dates=False, use_query_expansion=None, use_context_r
         suffix = "_query_expansion_raw"
     if use_context_rerank:
         suffix += "_reranked"
-    if use_append_context_expansion:
+    if use_gated_append_context_expansion:
+        suffix += "_gated_appended"
+    elif use_append_context_expansion:
         suffix += "_appended"
     return suffix
 
 
-def result_output_path(normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None):
-    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion)}.json"
+def result_output_path(
+    normalize_dates=False,
+    use_query_expansion=None,
+    use_context_rerank=None,
+    use_append_context_expansion=None,
+    use_gated_append_context_expansion=None,
+):
+    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)}.json"
 
 
 def _category_name(cat):
@@ -727,6 +806,7 @@ def build_results_payload(
     use_query_expansion=None,
     use_context_rerank=None,
     use_append_context_expansion=None,
+    use_gated_append_context_expansion=None,
     expand_fallback_count=0,
     expand_fallback_rate=0.0,
     cleaned=None,
@@ -737,7 +817,9 @@ def build_results_payload(
         use_context_rerank = USE_CONTEXT_RERANK
     if use_append_context_expansion is None:
         use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion)
+    if use_gated_append_context_expansion is None:
+        use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)
     full_overall = statistics.mean(all_scores) * 100 if all_scores else 0
     category_scores = {
         _category_name(k): round(statistics.mean(v) * 100, 2)
@@ -755,7 +837,8 @@ def build_results_payload(
             "normalize_dates": bool(normalize_dates),
             "query_expansion": bool(use_query_expansion),
             "context_rerank": bool(use_context_rerank),
-            "append_context_expansion": bool(use_append_context_expansion),
+            "append_context_expansion": bool(use_append_context_expansion or use_gated_append_context_expansion),
+            "gated_append_context_expansion": bool(use_gated_append_context_expansion),
         },
         "expand_query_fallback_count": expand_fallback_count,
         "expand_query_fallback_rate": round(expand_fallback_rate, 4),
@@ -763,9 +846,9 @@ def build_results_payload(
     }
 
 
-def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, cleaned=None):
+def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, cleaned=None):
     """Save incremental results."""
-    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion) if suffix is None else f"/tmp/locomo_results{suffix}.json"
+    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion) if suffix is None else f"/tmp/locomo_results{suffix}.json"
     payload = build_results_payload(
         all_scores,
         cat_scores,
@@ -775,6 +858,7 @@ def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log
         use_query_expansion=use_query_expansion,
         use_context_rerank=use_context_rerank,
         use_append_context_expansion=use_append_context_expansion,
+        use_gated_append_context_expansion=use_gated_append_context_expansion,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -783,12 +867,21 @@ def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log
         json.dump(payload, f, indent=2)
 
 
-def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, normalize_dates=False, cleaned=None):
-    """Run full LOCOMO benchmark."""
+def run_benchmark(
+    data_path,
+    max_convs=None,
+    skip_cats=None,
+    start_conv=0,
+    normalize_dates=False,
+    cleaned=None,
+    max_questions=None,
+):
+    """Run LOCOMO benchmark, optionally capped by conversations/questions for canaries."""
     use_query_expansion = USE_QUERY_EXPANSION
     use_context_rerank = USE_CONTEXT_RERANK
     use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion)
+    use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion)
     expand_query.fail_count = 0
     with open(data_path) as f:
         data = json.load(f)
@@ -809,8 +902,10 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
     print(f"  Starting memories: {dashboard.get('total_memories', '?')}")
     print(f"  Conversations to process: {len(data)}")
     total_qs = sum(len(d['qa']) for d in data)
-    eval_qs = sum(1 for d in data for q in d['qa'] if not should_skip_category(q['category'], skip_cats))
-    print(f"  Total questions: {total_qs} ({eval_qs} evaluated, skipping cats {skip_cats})")
+    raw_eval_qs = sum(1 for d in data for q in d['qa'] if not should_skip_category(q['category'], skip_cats))
+    eval_qs = min(raw_eval_qs, max_questions) if max_questions else raw_eval_qs
+    cap_note = f", question cap {max_questions}" if max_questions else ""
+    print(f"  Total questions: {total_qs} ({eval_qs} evaluated{cap_note}, skipping cats {skip_cats})")
     print()
 
     all_scores = []
@@ -826,6 +921,7 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         use_query_expansion=use_query_expansion,
         use_context_rerank=use_context_rerank,
         use_append_context_expansion=use_append_context_expansion,
+        use_gated_append_context_expansion=use_gated_append_context_expansion,
     )
     if start_conv > 0 and os.path.exists(output_path):
         with open(output_path) as f:
@@ -843,6 +939,8 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         print()
 
     for ci, conv_data in enumerate(data):
+        if max_questions and len(all_scores) >= max_questions:
+            break
         sample_id = conv_data.get("sample_id", ci)
         qa_list = conv_data.get("qa", conv_data.get("qa_list", []))
         conv = conv_data.get("conversation", conv_data)
@@ -866,6 +964,8 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         # Phase 2: QA
         conv_scores = []
         for qi, qa in enumerate(qa_list):
+            if max_questions and len(all_scores) >= max_questions:
+                break
             orig_cat = qa["category"]
             cat = normalize_category(orig_cat)
             if should_skip_category(orig_cat, skip_cats):
@@ -915,6 +1015,7 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
             use_query_expansion=use_query_expansion,
             use_context_rerank=use_context_rerank,
             use_append_context_expansion=use_append_context_expansion,
+            use_gated_append_context_expansion=use_gated_append_context_expansion,
             expand_fallback_count=expand_fallback_count,
             expand_fallback_rate=expand_fallback_rate,
             cleaned=cleaned,
@@ -971,6 +1072,7 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         use_query_expansion=use_query_expansion,
         use_context_rerank=use_context_rerank,
         use_append_context_expansion=use_append_context_expansion,
+        use_gated_append_context_expansion=use_gated_append_context_expansion,
     )
     payload = build_results_payload(
         all_scores,
@@ -981,6 +1083,7 @@ def run_benchmark(data_path, max_convs=None, skip_cats=None, start_conv=0, norma
         use_query_expansion=use_query_expansion,
         use_context_rerank=use_context_rerank,
         use_append_context_expansion=use_append_context_expansion,
+        use_gated_append_context_expansion=use_gated_append_context_expansion,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -994,6 +1097,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-convs", type=int, default=None, help="Limit conversations (for testing)")
+    parser.add_argument("--max-questions", type=int, default=None, help="Limit evaluated questions (for smoke tests)")
     parser.add_argument("--skip-adversarial", action="store_true", help="Skip category 5 (adversarial)")
     parser.add_argument("--start-conv", type=int, default=0, help="Skip first N conversations (already ingested)")
     parser.add_argument("--cleaned", action="store_true", help="Use cleaned dataset (/tmp/locomo10_cleaned.json)")
@@ -1001,7 +1105,11 @@ if __name__ == "__main__":
     parser.add_argument("--query-expansion", action="store_true", help="Enable opt-in recall-time query expansion")
     parser.add_argument("--context-rerank", action="store_true", help="Enable opt-in lexical reranking before answer synthesis")
     parser.add_argument("--append-context-expansion", action="store_true", help="Enable opt-in append-only extra context after the original answer context")
+    parser.add_argument("--gated-append-context-expansion", action="store_true", help="Enable opt-in gated append-only context expansion")
     args = parser.parse_args()
+
+    if args.max_questions is not None and args.max_questions <= 0:
+        parser.error("--max-questions must be a positive integer")
 
     if args.query_expansion:
         USE_QUERY_EXPANSION = True
@@ -1009,6 +1117,8 @@ if __name__ == "__main__":
         USE_CONTEXT_RERANK = True
     if args.append_context_expansion:
         USE_APPEND_CONTEXT_EXPANSION = True
+    if args.gated_append_context_expansion:
+        USE_GATED_APPEND_CONTEXT_EXPANSION = True
     validate_retrieval_modes()
 
     skip = {5} if args.skip_adversarial else set()
@@ -1017,6 +1127,7 @@ if __name__ == "__main__":
     run_benchmark(
         data_path,
         max_convs=args.max_convs,
+        max_questions=args.max_questions,
         skip_cats=skip,
         start_conv=args.start_conv,
         normalize_dates=args.normalize_dates,

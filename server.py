@@ -131,6 +131,9 @@ VECTOR_EXTENSION = "ruvector" if USE_RUVECTOR else "vector"
 # Type + operator mapping: ruvector uses its own type name, same operators
 VECTOR_TYPE = "ruvector" if USE_RUVECTOR else "vector"
 VECTOR_COSINE_OPS = "ruvector_cosine_ops" if USE_RUVECTOR else "vector_cosine_ops"
+ENABLE_BACKGROUND_SCORING = os.environ.get("ENABLE_BACKGROUND_SCORING", "true").lower() in ("true", "1", "yes")
+ENABLE_CONTRADICTION_DETECTION = os.environ.get("ENABLE_CONTRADICTION_DETECTION", "true").lower() in ("true", "1", "yes")
+ENABLE_HIERARCHY_PROCESSING = os.environ.get("ENABLE_HIERARCHY_PROCESSING", "true").lower() in ("true", "1", "yes")
 
 # CT Parameters
 IMPORTANCE_THRESHOLD = float(os.environ.get("IMPORTANCE_THRESHOLD", "0.4"))
@@ -523,7 +526,7 @@ class ColdStore:
                 FROM memory_edges e
                 JOIN memories m ON m.id = e.target_id
                 WHERE e.source_id = $1 AND m.state != 'shed'
-                UNION
+                UNION ALL
                 SELECT m.*, e.edge_type, e.weight
                 FROM memory_edges e
                 JOIN memories m ON m.id = e.source_id
@@ -1180,6 +1183,9 @@ class IngestAgent:
 
     def start(self):
         """Start background batch flush loop. Call once event loop is running."""
+        if not ENABLE_BACKGROUND_SCORING:
+            log.info("Background scoring disabled; score batch loop not started")
+            return
         if self._flush_task is None:
             self._flush_task = asyncio.create_task(self._batch_flush_loop())
 
@@ -1358,10 +1364,11 @@ class IngestAgent:
         )
 
         # BACKGROUND: add to batch scoring queue
-        async with self._queue_lock:
-            self._score_queue.append((mid, content, source, domain, embedding, now))
-            if len(self._score_queue) >= self.BATCH_SIZE:
-                self._flush_event.set()
+        if ENABLE_BACKGROUND_SCORING:
+            async with self._queue_lock:
+                self._score_queue.append((mid, content, source, domain, embedding, now))
+                if len(self._score_queue) >= self.BATCH_SIZE:
+                    self._flush_event.set()
 
         # ADAPTIVE BACKPRESSURE: if too many background tasks, wait before spawning more
         if len(self._background_tasks) > 20:
@@ -1370,7 +1377,7 @@ class IngestAgent:
                 await asyncio.sleep(0.1)
 
         # BACKGROUND: contradiction detection for semantic memories
-        if memory_type == "semantic":
+        if ENABLE_CONTRADICTION_DETECTION and memory_type == "semantic":
             task = asyncio.create_task(
                 self._async_detect_contradictions(mid, content, embedding)
             )
@@ -1378,7 +1385,7 @@ class IngestAgent:
             task.add_done_callback(self._background_tasks.discard)
 
         # HIERARCHY: async entity extraction + graph building (non-blocking)
-        if hierarchy_manager:
+        if ENABLE_HIERARCHY_PROCESSING and hierarchy_manager:
             async def _hierarchy_background(mid, content, event_at):
                 async with self._hierarchy_sem:
                     try:

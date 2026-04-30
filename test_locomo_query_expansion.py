@@ -2,6 +2,8 @@
 import importlib.util
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -62,6 +64,13 @@ class QueryExpansionTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'MCP retain failed after 2 attempts.*network down'):
                 locomo_bench_v2.mcp_post('retain', {'content': 'x'}, retries=2)
 
+    def test_numeric_category_names_match_locomo_protocol(self):
+        self.assertEqual(locomo_bench_v2._category_name(1), 'single-hop')
+        self.assertEqual(locomo_bench_v2._category_name(2), 'temporal')
+        self.assertEqual(locomo_bench_v2._category_name(3), 'multi-hop')
+        self.assertEqual(locomo_bench_v2._category_name(4), 'unanswerable')
+        self.assertEqual(locomo_bench_v2._category_name(5), 'adversarial')
+
     def test_skip_adversarial_honors_numeric_category_after_normalization(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             data_path = Path(tmpdir) / 'locomo.json'
@@ -98,6 +107,22 @@ class QueryExpansionTests(unittest.TestCase):
             self.assertEqual(answered, ['Answerable?'])
             payload = json.loads(output_path.read_text())
             self.assertEqual([row['question'] for row in payload['details']], ['Answerable?'])
+
+    def test_judge_answer_uses_configured_judge_model(self):
+        calls = []
+
+        def fake_llm_call(messages, model=locomo_bench_v2.ANSWER_MODEL, max_tokens=200, retries=3):
+            calls.append({'messages': messages, 'model': model, 'max_tokens': max_tokens})
+            return '1'
+
+        with patch.object(locomo_bench_v2, 'JUDGE_MODEL', 'fast-judge-model'), patch.object(
+            locomo_bench_v2, 'ANSWER_MODEL', 'answer-model'
+        ), patch.object(locomo_bench_v2, 'llm_call', side_effect=fake_llm_call):
+            score = locomo_bench_v2.judge_answer('Q?', 'A', 'A')
+
+        self.assertEqual(score, 1)
+        self.assertEqual(calls[0]['model'], 'fast-judge-model')
+        self.assertEqual(calls[0]['max_tokens'], 5)
 
     def test_expand_query_includes_original_and_limits_to_three_paraphrases(self):
         with patch.object(
@@ -432,6 +457,59 @@ class QueryExpansionTests(unittest.TestCase):
             '/tmp/locomo_results_normalized.json',
         )
 
+    def test_max_questions_caps_evaluated_questions_for_smoke_tests(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            data_path = Path(tmpdir) / 'locomo.json'
+            output_path = Path(tmpdir) / 'results.json'
+            data_path.write_text(json.dumps([
+                {
+                    'sample_id': 'sample',
+                    'conversation': {'speaker_a': 'A', 'speaker_b': 'B'},
+                    'qa': [
+                        {'category': 'single-hop', 'question': 'Q1?', 'answer': 'A1'},
+                        {'category': 'temporal', 'question': 'Q2?', 'answer': 'A2'},
+                        {'category': 'multi-hop', 'question': 'Q3?', 'answer': 'A3'},
+                    ],
+                }
+            ]))
+            answered = []
+
+            def fake_answer_question(question, domain):
+                answered.append(question)
+                return (f'answer for {question}', 1)
+
+            with patch.object(locomo_bench_v2, 'result_output_path', return_value=str(output_path)), patch.object(
+                locomo_bench_v2, 'mcp_get', return_value={'total_memories': 0}
+            ), patch.object(locomo_bench_v2, 'ingest_conversation', return_value=(1, 'locomo-sample')), patch.object(
+                locomo_bench_v2, 'answer_question', side_effect=fake_answer_question
+            ), patch.object(locomo_bench_v2, 'judge_answer', return_value=1), patch.object(
+                locomo_bench_v2.time, 'sleep'
+            ), patch('builtins.print'):
+                locomo_bench_v2.run_benchmark(str(data_path), max_questions=2, cleaned=True)
+
+            self.assertEqual(answered, ['Q1?', 'Q2?'])
+            payload = json.loads(output_path.read_text())
+            self.assertEqual(payload['total_questions'], 2)
+            self.assertEqual([row['question'] for row in payload['details']], ['Q1?', 'Q2?'])
+
+    def test_cli_exposes_max_questions_for_smoke_tests(self):
+        proc = subprocess.run(
+            [sys.executable, str(MODULE_PATH), '--help'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertIn('--max-questions', proc.stdout)
+
+    def test_cli_rejects_non_positive_max_questions(self):
+        proc = subprocess.run(
+            [sys.executable, str(MODULE_PATH), '--max-questions', '0'],
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn('--max-questions must be a positive integer', proc.stderr)
+
     def test_run_benchmark_passes_explicit_query_expansion_to_all_output_paths(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             data_path = Path(tmpdir) / 'locomo.json'
@@ -637,11 +715,114 @@ class QueryExpansionTests(unittest.TestCase):
         )
         self.assertTrue(all('dentist appointment extra memory' in line for line in prompt_lines[locomo_bench_v2.RECALL_TOP_K:]))
 
+    def test_gated_append_skips_extras_when_base_context_is_strong(self):
+        seen_messages = []
+
+        def fake_mcp_post(tool, payload, retries=3):
+            self.assertEqual(tool, 'recall')
+            return {'results': [
+                {
+                    'id': f'm{i:02d}',
+                    'content': (
+                        f'dentist appointment strong base memory {i:02d}'
+                        if i <= 2
+                        else f'base memory {i:02d}'
+                    ),
+                    'combined_score': 0.9 if i <= 2 else 0.1,
+                }
+                for i in range(1, locomo_bench_v2.APPEND_CONTEXT_RECALL_TOP_K + 1)
+            ]}
+
+        def fake_llm_call(messages, model=locomo_bench_v2.ANSWER_MODEL, max_tokens=200, retries=3):
+            seen_messages.append(messages)
+            return 'answer'
+
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', False), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_RERANK', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_APPEND_CONTEXT_EXPANSION', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_GATED_APPEND_CONTEXT_EXPANSION', True
+        ), patch.object(
+            locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+        ), patch.object(locomo_bench_v2, 'llm_call', side_effect=fake_llm_call):
+            answer, memory_count = locomo_bench_v2.answer_question('When was the dentist appointment?', 'locomo-1')
+
+        self.assertEqual(answer, 'answer')
+        self.assertEqual(memory_count, locomo_bench_v2.RECALL_TOP_K)
+        prompt_text = seen_messages[0][1]['content']
+        self.assertNotIn('base memory 11', prompt_text)
+
+    def test_gated_append_requires_lexical_overlap_for_extras_when_base_is_weak(self):
+        seen_messages = []
+
+        def fake_mcp_post(tool, payload, retries=3):
+            self.assertEqual(tool, 'recall')
+            return {'results': [
+                *[
+                    {'id': f'b{i:02d}', 'content': f'weak base memory {i:02d}', 'combined_score': 0.1}
+                    for i in range(1, locomo_bench_v2.RECALL_TOP_K + 1)
+                ],
+                {'id': 'e01', 'content': 'The dentist appointment was discussed in detail.', 'combined_score': 0.0},
+                {'id': 'e02', 'content': 'generic extra candidate with high retriever score only', 'combined_score': 0.99},
+            ]}
+
+        def fake_llm_call(messages, model=locomo_bench_v2.ANSWER_MODEL, max_tokens=200, retries=3):
+            seen_messages.append(messages)
+            return 'answer'
+
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', False), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_RERANK', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_APPEND_CONTEXT_EXPANSION', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_GATED_APPEND_CONTEXT_EXPANSION', True
+        ), patch.object(
+            locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+        ), patch.object(locomo_bench_v2, 'llm_call', side_effect=fake_llm_call):
+            answer, memory_count = locomo_bench_v2.answer_question('When was the dentist appointment?', 'locomo-1')
+
+        self.assertEqual(answer, 'answer')
+        self.assertEqual(memory_count, locomo_bench_v2.RECALL_TOP_K + 1)
+        prompt_text = seen_messages[0][1]['content']
+        self.assertIn('The dentist appointment was discussed in detail.', prompt_text)
+        self.assertNotIn('generic extra candidate with high retriever score only', prompt_text)
+
+    def test_output_path_and_payload_are_condition_specific_for_gated_append_context_expansion(self):
+        self.assertEqual(
+            locomo_bench_v2.result_output_path(
+                normalize_dates=True,
+                use_query_expansion=True,
+                use_gated_append_context_expansion=True,
+            ),
+            '/tmp/locomo_results_query_expansion_gated_appended.json',
+        )
+
+        payload = locomo_bench_v2.build_results_payload(
+            all_scores=[1],
+            cat_scores={'temporal': [1]},
+            query_times=[1.0],
+            results_log=[],
+            normalize_dates=True,
+            use_query_expansion=True,
+            use_gated_append_context_expansion=True,
+            cleaned=True,
+        )
+        self.assertTrue(payload['condition']['append_context_expansion'])
+        self.assertTrue(payload['condition']['gated_append_context_expansion'])
+        self.assertFalse(payload['condition']['context_rerank'])
+        self.assertTrue(payload['condition']['cleaned'])
+
     def test_context_rerank_and_append_context_expansion_are_mutually_exclusive(self):
         with self.assertRaises(ValueError):
             locomo_bench_v2.validate_retrieval_modes(
                 use_context_rerank=True,
                 use_append_context_expansion=True,
+            )
+        with self.assertRaises(ValueError):
+            locomo_bench_v2.validate_retrieval_modes(
+                use_context_rerank=True,
+                use_gated_append_context_expansion=True,
             )
 
     def test_result_suffix_rejects_combined_rerank_and_append_context_expansion(self):
@@ -747,6 +928,30 @@ class ScriptReviewRegressionTests(unittest.TestCase):
         self.assertIn('jsonb_array_elements_text', script)
         self.assertIn('DELETE FROM entities', script)
         self.assertIn('DELETE FROM entity_relationships', script)
+
+    def test_server_related_memories_uses_union_all_for_ruvector_rows(self):
+        server = (Path(__file__).resolve().parent / 'server.py').read_text()
+        start = server.index('async def get_related_memories')
+        end = server.index('async def get_prefetch_candidates')
+        method = server[start:end]
+        self.assertIn('UNION ALL', method)
+        self.assertNotIn('\n                UNION\n', method)
+
+    def test_server_has_eval_toggles_for_expensive_background_ingest_tasks(self):
+        server = (Path(__file__).resolve().parent / 'server.py').read_text()
+        self.assertIn('ENABLE_BACKGROUND_SCORING', server)
+        self.assertIn('ENABLE_CONTRADICTION_DETECTION', server)
+        self.assertIn('ENABLE_HIERARCHY_PROCESSING', server)
+        self.assertIn('if not ENABLE_BACKGROUND_SCORING:', server)
+        self.assertIn('if ENABLE_BACKGROUND_SCORING:', server)
+        self.assertIn('if ENABLE_CONTRADICTION_DETECTION and memory_type == "semantic":', server)
+        self.assertIn('if ENABLE_HIERARCHY_PROCESSING and hierarchy_manager:', server)
+
+    def test_compose_passes_background_ingest_toggles_to_server(self):
+        compose = (Path(__file__).resolve().parent / 'docker-compose.ruvector.yml').read_text()
+        self.assertIn('ENABLE_BACKGROUND_SCORING: ${ENABLE_BACKGROUND_SCORING:-true}', compose)
+        self.assertIn('ENABLE_CONTRADICTION_DETECTION: ${ENABLE_CONTRADICTION_DETECTION:-true}', compose)
+        self.assertIn('ENABLE_HIERARCHY_PROCESSING: ${ENABLE_HIERARCHY_PROCESSING:-true}', compose)
 
     def test_audit_writes_contaminated_report_before_raising(self):
         script = (Path(__file__).resolve().parent / 'scripts' / 'audit_locomo_rerank_harms.py').read_text()
