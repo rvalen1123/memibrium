@@ -3361,5 +3361,152 @@
     ],
     "category_diagnostic": "Gated append helped single-hop/unanswerable but hurt temporal and multi-hop, the wrong shape for Memibrium positioning; test whether gating fires before multi-hop evidence assembly.",
     "fallback_blocker": "Approximately 30% query-expansion fallback means future LOCOMO quality work should diagnose fallback before tuning gated append or interpreting absolute quality."
+  },
+  "churn_summary": {
+    "changed_questions": 43,
+    "changed_rate": 0.21608,
+    "improved_questions": 22,
+    "degraded_questions": 21,
+    "unchanged_questions": 156,
+    "improved_total_credit": 16.0,
+    "degraded_total_credit": -16.0,
+    "net_total_credit": 0.0,
+    "interpretation": "Gated append was active but not aligned with correctness: it changed 43/199 questions (~22%), with +16.0 improved credit exactly canceled by -16.0 degraded credit."
+  },
+  "diagnostic_failure_sets": {
+    "full_to_zero": [
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "adversarial",
+          "question": "Who is Caroline a fan of in terms of modern music?"
+        },
+        "baseline_query_time_ms": 2324,
+        "gated_query_time_ms": 2008,
+        "ground_truth": "Ed Sheeran",
+        "baseline_predicted": "**Ed Sheeran (\"Perfect\").**\n\nThis is based on the conversation from 28 August 2023, where Melanie mentions being a fan of Ed Sheeran's \"Perfect\" as modern music, and Caroline responds positively without contradicting it. No other modern music artists are directly linked to Caroline in the provided context.",
+        "gated_predicted": "**Sara Bareilles and Ed Sheeran.**\n\nFrom the conversation on 28 August 2023, Caroline said \"Brave\" by Sara Bareilles has deep personal meaning for her. Melanie mentioned being a fan of Ed Sheeran's \"Perfect\" in the same exchange about music preferences."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "multi-hop",
+          "question": "Would Melanie go on another roadtrip soon?"
+        },
+        "baseline_query_time_ms": 2635,
+        "gated_query_time_ms": 1644,
+        "ground_truth": "Likely no; since this one went badly",
+        "baseline_predicted": "**No**, Melanie would not go on another roadtrip soon. The October 2023 roadtrip ended in a scary accident involving her son, which left the family traumatized. In the conversation right after, she emphasized cherishing family and that \"thankfully it's over now,\" with no mention of future trips. Her later plans focus on camping, hiking, beach visits, and family activities at home or in nature, not roadtrips.",
+        "gated_predicted": "**Yes**, Melanie would likely go on another roadtrip soon.\n\nShe enjoys family camping and nature trips (e.g., Grand Canyon in October 2023, multiple camping outings in 2023), views them positively for recharging and bonding, and continues planning family outings."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "What book did Melanie read from Caroline's suggestion?"
+        },
+        "baseline_query_time_ms": 2490,
+        "gated_query_time_ms": 2547,
+        "ground_truth": "\"Becoming Nicole\"",
+        "baseline_predicted": "**\"Becoming Nicole\" by Amy Ellis Nutt.**\n\nIn the conversation on 12 July 2023, Caroline recommended this book to Melanie, describing it as an inspiring true story about a trans girl and her family. Later, on 13 October 2023, Melanie mentioned she had been reading the book Caroline recommended.",
+        "gated_predicted": "**I don't know.**\n\nThe provided conversation transcripts mention Caroline recommending a book that Melanie read in September 2023 after her pottery injury, but they do not specify the title."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "What instruments does Melanie play?"
+        },
+        "baseline_query_time_ms": 1943,
+        "gated_query_time_ms": 1604,
+        "ground_truth": "clarinet and violin",
+        "baseline_predicted": "**Clarinet and violin.**",
+        "gated_predicted": "**Clarinet.**"
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "What subject have Caroline and Melanie both painted?"
+        },
+        "baseline_query_time_ms": 2700,
+        "gated_query_time_ms": 2214,
+        "ground_truth": "Sunsets",
+        "baseline_predicted": "**Sunsets.**\n\nBoth have created paintings inspired by sunsets: Caroline painted one after visiting the beach (week of 18 August 2023), and Melanie painted one inspired by sunsets (week of 6 October 2023). This is supported by their conversation on 25 August 2023 and 13 October 2023.",
+        "gated_predicted": "**Horses.**\n\nBoth have painted horses: Caroline created a horse painting for her August 2023 LGBTQ art show (inspired by an LGBTQ center, capturing unity and strength), and Melanie painted a horse, sharing a photo of it and discussing its grace. This is supported by conversation logs from 17 July 2023 and 23 August 2023."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "temporal",
+          "question": "When did Caroline attend a pride parade in August?"
+        },
+        "baseline_query_time_ms": 2418,
+        "gated_query_time_ms": 2918,
+        "ground_truth": "The Friday before 14 August 2023",
+        "baseline_predicted": "**11 August 2023**\n\nFrom the first retrieved memory (session 3, 14 August 2023), Caroline explicitly states she attended a pride parade on 11 August 2023. No other pride parades in August are mentioned across the provided contexts.",
+        "gated_predicted": "**I don't know.**\n\nNo context mentions Caroline attending a pride parade in August 2023. The pride parades referenced occurred in June 2023, 11 August 2023, and the weekend of 15 July 2023."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "temporal",
+          "question": "When did Caroline go biking with friends?"
+        },
+        "baseline_query_time_ms": 2508,
+        "gated_query_time_ms": 2608,
+        "ground_truth": "The weekend before 13 September 2023",
+        "baseline_predicted": "**Weekend of 09 September 2023.**\n\nThis is from the conversation on 13 September 2023 (session 8), where Caroline says: \"I had a wicked day out with the gang the weekend of 09 September 2023 - we went biking...\" (The later reference to a caf\u00e9 that same weekend appears to be a separate or follow-up event.)",
+        "gated_predicted": "**the weekend of 09 September 2023**\n\nThis is from the conversation on 13 September 2023 (session 8, turns 0-9), where Caroline says: \"I had a wicked day out with the gang the weekend of 09 September 2023 - we went biking...\" This is the only mention of biking with friends."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "temporal",
+          "question": "When did Melanie go camping in June?"
+        },
+        "baseline_query_time_ms": 3790,
+        "gated_query_time_ms": 3043,
+        "ground_truth": "The week before 27 June 2023",
+        "baseline_predicted": "**20 June 2023**\n\nFrom the first memory (session 14, 27 June 2023), Melanie states she went camping with her family \"the week of 20 June 2023\". No other June camping trip is mentioned.",
+        "gated_predicted": "**June 2023 (week of 20 June 2023 and weekend of 8 July 2023, overlapping into late June).**\n\nFrom the memories:\n- Session 14 (27 June 2023): Melanie mentions taking her family camping \"the week of 20 June 2023.\"\n- Session 19 (17 July 2023): She references going camping with her family \"the weekend of 08 July 2023,\" which follows the earlier June trip."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "unanswerable",
+          "question": "What did Caroline find in her neighborhood during her walk?"
+        },
+        "baseline_query_time_ms": 2157,
+        "gated_query_time_ms": 2282,
+        "ground_truth": "a rainbow sidewalk",
+        "baseline_predicted": "**A cool rainbow sidewalk for Pride Month.**",
+        "gated_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no mention of Caroline taking a walk in her neighborhood or finding anything during one."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "unanswerable",
+          "question": "What workshop did Caroline attend recently?"
+        },
+        "baseline_query_time_ms": 1585,
+        "gated_query_time_ms": 1665,
+        "ground_truth": "LGBTQ+ counseling workshop",
+        "baseline_predicted": "**LGBTQ+ counseling workshop on 23 June 2023.**",
+        "gated_predicted": "**I don't know.**\n\nThe provided context mentions Caroline attending an LGBTQ support group (May 2023), pride parade (June 2023), transgender conference (July 2023), LGBTQ conference (July 2023), council meeting for adoption (July 2023), poetry reading (October 2023), and advocacy events, but no workshop is referenced for her."
+      },
+      {
+        "key": {
+          "conv": "conv-26",
+          "cat": "unanswerable",
+          "question": "Whose birthday did Melanie celebrate recently?"
+        },
+        "baseline_query_time_ms": 1362,
+        "gated_query_time_ms": 1256,
+        "ground_truth": "Melanie's daughter",
+        "baseline_predicted": "**Melanie's daughter's birthday.**\n\nThis is based on the conversation from 14 August 2023, where Melanie says: \"13 August 2023 was amazing! We celebrated my daughter's birthday with a concert...\"",
+        "gated_predicted": "**I don't know.**\n\nThe provided conversation transcripts mention Melanie celebrating family moments, her wedding (5 years prior), camping trips, and art projects, but none reference a recent birthday celebration for herself, her family, or anyone else."
+      }
+    ]
   }
 }
