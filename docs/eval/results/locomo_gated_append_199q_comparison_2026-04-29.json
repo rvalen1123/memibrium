@@ -3246,5 +3246,120 @@
       "gated_predicted": "I don't know.",
       "ground_truth": "She wanted to catch the eye and make people smile."
     }
-  ]
+  ],
+  "score_audit": {
+    "n_common": 199,
+    "baseline_total_credit": 94.5,
+    "gated_total_credit": 94.5,
+    "baseline_raw_pct": 47.48743718592965,
+    "gated_raw_pct": 47.48743718592965,
+    "delta_total_credit": 0.0,
+    "delta_pp_raw": 0.0,
+    "delta_pp_rounded_2dp": 0.0,
+    "exact_aggregate_match": true,
+    "baseline_score_distribution": {
+      "0.0": 95,
+      "0.5": 19,
+      "1.0": 85
+    },
+    "gated_score_distribution": {
+      "0.0": 96,
+      "0.5": 17,
+      "1.0": 86
+    },
+    "score_transitions": [
+      {
+        "baseline_score": 0.0,
+        "gated_score": 0.0,
+        "count": 79,
+        "total_credit_delta": 0.0
+      },
+      {
+        "baseline_score": 0.0,
+        "gated_score": 0.5,
+        "count": 6,
+        "total_credit_delta": 3.0
+      },
+      {
+        "baseline_score": 0.0,
+        "gated_score": 1.0,
+        "count": 10,
+        "total_credit_delta": 10.0
+      },
+      {
+        "baseline_score": 0.5,
+        "gated_score": 0.0,
+        "count": 6,
+        "total_credit_delta": -3.0
+      },
+      {
+        "baseline_score": 0.5,
+        "gated_score": 0.5,
+        "count": 7,
+        "total_credit_delta": 0.0
+      },
+      {
+        "baseline_score": 0.5,
+        "gated_score": 1.0,
+        "count": 6,
+        "total_credit_delta": 3.0
+      },
+      {
+        "baseline_score": 1.0,
+        "gated_score": 0.0,
+        "count": 11,
+        "total_credit_delta": -11.0
+      },
+      {
+        "baseline_score": 1.0,
+        "gated_score": 0.5,
+        "count": 4,
+        "total_credit_delta": -2.0
+      },
+      {
+        "baseline_score": 1.0,
+        "gated_score": 1.0,
+        "count": 70,
+        "total_credit_delta": 0.0
+      }
+    ],
+    "score_delta_distribution": [
+      {
+        "delta": -1.0,
+        "count": 11,
+        "total_credit_delta": -11.0
+      },
+      {
+        "delta": -0.5,
+        "count": 10,
+        "total_credit_delta": -5.0
+      },
+      {
+        "delta": 0.0,
+        "count": 156,
+        "total_credit_delta": 0.0
+      },
+      {
+        "delta": 0.5,
+        "count": 12,
+        "total_credit_delta": 6.0
+      },
+      {
+        "delta": 1.0,
+        "count": 10,
+        "total_credit_delta": 10.0
+      }
+    ]
+  },
+  "post_run_audit_notes": {
+    "exact_score_match": "Verified from per-question credits: both arms total 94.5/199 credit, so +0.00pp is exact, not a two-decimal rounding artifact.",
+    "latency_observation": "Full conv-26 showed materially lower average and p95 query latency for gated append, opposite the 25Q canary. This is an observation requiring separate pre-registration before treating it as a finding.",
+    "latency_confound_candidates": [
+      "warm-up/cache effects",
+      "fallback-rate interaction",
+      "tail truncation/short-circuiting of long baseline queries"
+    ],
+    "category_diagnostic": "Gated append helped single-hop/unanswerable but hurt temporal and multi-hop, the wrong shape for Memibrium positioning; test whether gating fires before multi-hop evidence assembly.",
+    "fallback_blocker": "Approximately 30% query-expansion fallback means future LOCOMO quality work should diagnose fallback before tuning gated append or interpreting absolute quality."
+  }
 }

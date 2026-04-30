@@ -51,3 +51,37 @@ Verdict: **HOLD/REJECT**.
 Reason(s): accuracy_delta_below_+1.5pp, harmed_from_fully_correct_nonzero.
 
 Interpretation: gated append is not promoted from this run. The full-slice accuracy delta was effectively zero and the hard safety criterion failed because previously fully-correct baseline answers were harmed.
+
+
+## Post-run score audit
+
+The exact baseline/gated score match was verified from the raw per-question credits, not just the rounded `overall_score` fields.
+
+| Audit item | Query expansion baseline | Gated append | Delta |
+|---|---:|---:|---:|
+| Total credit | 94.5 / 199 | 94.5 / 199 | 0.0 |
+| Raw percentage | 47.487437185930% | 47.487437185930% | +0.000000 pp |
+| Rounded percentage | 47.49% | 47.49% | +0.00 pp |
+
+Score-transition accounting explains the exact cancellation:
+
+| Baseline score -> gated score | Count | Total credit delta |
+|---|---:|---:|
+| 0 -> 0 | 79 | +0.0 |
+| 0 -> 0.5 | 6 | +3.0 |
+| 0 -> 1 | 10 | +10.0 |
+| 0.5 -> 0 | 6 | -3.0 |
+| 0.5 -> 0.5 | 7 | +0.0 |
+| 0.5 -> 1 | 6 | +3.0 |
+| 1 -> 0 | 11 | -11.0 |
+| 1 -> 0.5 | 4 | -2.0 |
+| 1 -> 1 | 70 | +0.0 |
+
+Net credit delta: `0.0`, so the `+0.00 pp` headline is exact for this scoring scheme.
+
+## Post-run methodological notes
+
+- The negative decision should remain visible. This was a pre-registered null/negative result: gated append failed the accuracy threshold and failed the hard safety criterion despite favorable latency.
+- The latency reversal is a separate hypothesis, not a promotion argument for gated append. The 25Q canary showed gated append slower, while the full 199Q run showed lower average and p95 latency. Before treating this as a real finding, run a separate latency-focused pre-registration that controls arm ordering, warm-up/cache state, fallback behavior, and tail-query composition.
+- The category shape is diagnostic: gated append helped single-hop and unanswerable questions but hurt temporal and multi-hop. That is the wrong shape for Memibrium's target use case. If this mechanism is revisited, start by testing whether the gate fires before multi-hop evidence assembly has completed.
+- The approximately 30% query-expansion fallback rate is the next LOCOMO quality blocker. This paired comparison remains valid for the pre-registered gated-vs-baseline decision because both arms had similar fallback rates, but future absolute LOCOMO quality work should diagnose expansion/fallback before tuning gated append further.
