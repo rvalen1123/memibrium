@@ -118,13 +118,19 @@ Comparison markdown must include:
 
 ## 10. Pre-run checklist
 
-- [ ] Docker available, server reachable on `localhost:9999`
-- [ ] `ENABLE_BACKGROUND_SCORING=false` verified end-to-end (not just via unit test)
-- [ ] `test_temporal_memory.py` re-run with verbose output, explicit pass count recorded
-- [ ] Working tree committed or stashed; commit hash recorded in comparison artifacts
-- [ ] Slice size and ordering confirmed deterministic
-- [ ] Baseline arm and gated append arm executed against the same commit, same slice, same warm-up state
-- [ ] This pre-registration file committed before the run starts
+- [ ] Docker daemon reachable with `docker ps`; `memibrium-server` and `memibrium-ruvector-db` are both `Up`.
+- [ ] Server reachable on `localhost:9999`.
+- [ ] `ENABLE_BACKGROUND_SCORING=false`, `ENABLE_CONTRADICTION_DETECTION=false`, and `ENABLE_HIERARCHY_PROCESSING=false` verified inside the running `memibrium-server` container.
+- [ ] Container logs confirm background scoring / flush-loop suppression during eval setup.
+- [ ] LOCOMO pre-run DB state recorded before any ingest. Expected state for this run: `SELECT count(*) FROM memories WHERE domain LIKE 'locomo-%';` returns `0`. Any nonzero count before smoke/baseline is residue unless explicitly reconciled before the run.
+- [ ] One-time harness contamination smoke completed before the larger run: baseline 5Q then gated-append 5Q without clearing, with LOCOMO domain counts captured after each arm to determine whether the harness reuses ingestion, re-ingests cumulatively, or clears/re-ingests itself.
+- [ ] If the smoke shows cumulative re-ingest (`N -> 2N`), clear LOCOMO state between every arm for the real run. If it shows idempotent reuse (`N -> N`), clear once before baseline and leave state unchanged between arms. If it self-clears (`N -> 0 -> N`), no manual clearing is needed after the initial pre-run zero check.
+- [ ] One-time DB hygiene table enumeration completed (`\d` / table list) and any non-`memories` LOCOMO-scoped tables or logs that require cleanup are documented before the real run.
+- [ ] `test_locomo_query_expansion.py`, `test_hybrid_retrieval_ruvector.py`, and `test_temporal_memory.py` re-run with verbose output and explicit nonzero pass counts recorded.
+- [ ] Working tree committed or stashed; commit hash recorded in comparison artifacts.
+- [ ] Slice size and ordering confirmed deterministic.
+- [ ] Baseline arm and gated append arm executed against the same commit, same slice, same model/config, and same warm-up state.
+- [ ] This pre-registration file committed before the run starts.
 
 ---
 
