@@ -1,0 +1,79 @@
+=== PRE-RUN STATUS ===
+hygiene_status=PASS
+launch_time_utc=2026-04-30T07:30:00Z
+repo_path=/home/zaddy/src/Memibrium
+branch=query-expansion
+head=d3925d52eb09962c89298161b11b3f1f0d960c33
+origin_head=d3925d52eb09962c89298161b11b3f1f0d960c33
+working_tree_short_status_count=0
+docker_services=memibrium-server/memibrium-ruvector-db/memibrium-ollama up
+container_toggles=ENABLE_BACKGROUND_SCORING=false;ENABLE_CONTRADICTION_DETECTION=false;ENABLE_HIERARCHY_PROCESSING=false
+locomo_db_count=0
+tests=test_locomo_query_expansion 51 OK; test_hybrid_retrieval_ruvector 6 OK; test_temporal_memory 10 OK
+credential_hydration=.env sourced; key values not logged
+=== RESOLVED ENV FOR THIS RUN ===
+AZURE_CHAT_ENDPOINT=https://sector-7.services.ai.azure.com/models
+AZURE_OPENAI_ENDPOINT=<unset>
+OPENAI_BASE_URL=<unset>
+AZURE_CHAT_DEPLOYMENT=gpt-4.1-mini
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
+CHAT_MODEL=gpt-4.1-mini
+ANSWER_MODEL=gpt-4.1-mini
+JUDGE_MODEL=gpt-4.1-mini
+AZURE_CHAT_API_KEY_PRESENT=True
+=================================
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+  [DATE NORMALIZATION ENABLED]
+======================================================================
+  Starting memories: 19
+  Conversations to process: 1
+  Total questions: 199 (199 evaluated, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 0.3s
+    ... 20/199 questions, running acc: 82.5%
+    ... 40/199 questions, running acc: 67.5%
+    ... 60/199 questions, running acc: 65.8%
+    ... 80/199 questions, running acc: 70.0%
+    ... 100/199 questions, running acc: 73.0%
+    ... 120/199 questions, running acc: 75.4%
+    ... 140/199 questions, running acc: 74.3%
+    ... 160/199 questions, running acc: 70.6%
+    ... 180/199 questions, running acc: 66.7%
+    Conv accuracy: 62.1% (199 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 62.1%
+  Query expansion fallback: 0/199 (0.00%)
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-adversarial    24.5%      47       4646ms
+  cat-multi-hop      42.3%      13       4278ms
+  cat-single-hop     65.6%      32       4343ms
+  cat-temporal       82.4%      37       4029ms
+  cat-unanswerable    78.6%      70       3944ms
+
+  Ingest: 0.3s avg per conversation
+  Query:  4212ms avg per question
+  Total:  838s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  MemMachine                  84.9%
+  Zep                         80.3%
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  >>> MEMIBRIUM               62.1% <<<
+  LangMem                     58.1%
+
+  Detailed results saved to /tmp/locomo_results_query_expansion.json
