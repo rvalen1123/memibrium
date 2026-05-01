@@ -1,0 +1,171 @@
+{
+  "verdict": "partial reproduction",
+  "interpretation": "Partial reproduction per locked rules, with strong mechanistic support that embedding substrate drift was the dominant regression cause; forcing text-embedding-3-small largely recovered 04-24 retrieval behavior.",
+  "run": {
+    "artifact": "docs/eval/results/locomo_conv26_text_embedding_3_small_199q_2026-04-30.json",
+    "log": "docs/eval/results/locomo_conv26_text_embedding_3_small_199q_2026-04-30.log",
+    "score_percent": 66.08,
+    "fallback": "0/199",
+    "n_memories_mean": 13.160804020100503,
+    "n15_saturation": {
+      "count": 62,
+      "total": 199,
+      "percent": 31.155778894472363
+    },
+    "n_memories_histogram": {
+      "0": 2,
+      "10": 4,
+      "11": 25,
+      "12": 39,
+      "13": 32,
+      "14": 35,
+      "15": 62
+    },
+    "category_scores": {
+      "cat-temporal": 75.68,
+      "cat-multi-hop": 46.15,
+      "cat-single-hop": 71.88,
+      "cat-unanswerable": 82.86,
+      "cat-5": 35.11
+    },
+    "avg_query_ms": 3489
+  },
+  "locked_references": {
+    "reference_2026_04_24": {
+      "score_percent": 68.09,
+      "fallback": "0/199",
+      "n_memories_mean": 11.65,
+      "n15_saturation": {
+        "count": 31,
+        "total": 199,
+        "percent": 15.6
+      }
+    },
+    "failed_bfeb90f_boundary_2026_04_30": {
+      "score_percent": 61.81,
+      "fallback": "0/199",
+      "n_memories_mean": 14.7,
+      "n15_saturation": {
+        "count": 170,
+        "total": 199,
+        "percent": 85.4
+      }
+    }
+  },
+  "locked_rules": {
+    "strong": {
+      "score_range": [
+        66.09,
+        70.09
+      ],
+      "fallback_max": 2,
+      "n_memories_mean_range": [
+        10.15,
+        13.15
+      ],
+      "n15_saturation_pct_range": [
+        5.6,
+        25.6
+      ]
+    },
+    "partial": {
+      "score_range": [
+        63.09,
+        73.09
+      ],
+      "fallback_max": 5,
+      "n_memories_mean_max": 13.2,
+      "n15_saturation_pct_max": 55.4
+    },
+    "strong_checks": {
+      "score": false,
+      "fallback": true,
+      "n_memories_mean": false,
+      "n15_saturation": false
+    },
+    "partial_checks": {
+      "score": true,
+      "fallback": true,
+      "n_memories_mean": true,
+      "n15_saturation": true,
+      "per_question_n_memories_present": true,
+      "effective_embedding_stack_matched": true
+    },
+    "failed_triggers": {
+      "score_outside_pm5pp": false,
+      "fallback_gt_5": false,
+      "n_memories_mean_ge_14": false,
+      "n15_saturation_ge_75": false,
+      "per_question_n_memories_missing": false,
+      "effective_embedding_stack_mismatch": false
+    }
+  },
+  "distances_from_strong": {
+    "score_pp_below_lower_bound": 0.01,
+    "n_memories_mean_above_upper_bound": 0.0108,
+    "n15_saturation_pp_above_upper_bound": 5.5558
+  },
+  "trajectory": {
+    "n15_saturation_percent": {
+      "2026_04_24_reference": 15.6,
+      "2026_04_30_bfeb90f_boundary": 85.4,
+      "this_run_text_embedding_3_small": 31.155778894472363
+    },
+    "n15_saturation_delta_from_boundary_pp": -54.24422110552764,
+    "n_memories_mean_delta_from_boundary": -1.539195979899496,
+    "score_delta_from_reference_pp": -2.010000000000005
+  },
+  "effective_embedding_stack": {
+    "client_class": "AzureOpenAI",
+    "endpoint": "https://sector-7.openai.azure.com/",
+    "deployment": "text-embedding-3-small",
+    "dimensions_arg": 1536,
+    "observed_output_dimension": 1536
+  },
+  "metadata": {
+    "repo_head": "6bf9fc9f4e328b5f18124afe297a7b147937c1dd",
+    "run_worktree_head": "bfeb90fc0465fdc24203d216c97cd1bc7226c0a4",
+    "server_image_sha": "sha256:3fe64e84a34850fdf40318f8af5b4638d23e14640c3edf1e21f9c998ff024c84",
+    "db_image_sha": "sha256:d9f86747f3af63c354bc40b1cc4368575fcdbf16ad7582cb82ef20f0d8907dac",
+    "ollama_image_sha": "sha256:d3d553bdfbcc7f55dd5ddf42c4cbe3a927aa9bb1802710d35e94656ca5aea02b",
+    "package_versions": {
+      "python": "3.11.15",
+      "openai": "2.32.0",
+      "httpx": "0.28.1",
+      "asyncpg": "0.31.0",
+      "pydantic": "2.13.1",
+      "starlette": "0.52.1",
+      "uvicorn": "0.44.0"
+    },
+    "db_extensions": {
+      "plpgsql": "1.0",
+      "ruvector": "0.3.0"
+    },
+    "embedding_column": "ruvector(1536)",
+    "source_hashes": {
+      "locomo10_cleaned": "1b304c7c3d98ff9cef5efd02100a4dfa93fc9ee3babaceca752df9f9aa90b42d",
+      "locomo10_raw": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+      "benchmark_script": "3fe3b7bdd597bbbe17e9ee1bc819496e448442cd6535edcf348f8bf7f7d78a10",
+      "server_py": "df37cef5af863ba29e81077434635cae1da66e7f9b19c5b070baade0cd69822d",
+      "question_list": "07717c689e2e5a228b63d46f3b712a92185a8fa32aed524c4f3e7f9714ba556f"
+    },
+    "post_ingest_counts": {
+      "memories": 68,
+      "locomo_memories": 49,
+      "entities": 3108,
+      "entity_relationships": 231385,
+      "temporal_expressions": 49,
+      "memory_snapshots": 0
+    },
+    "post_cleanup_locomo_count": 0
+  },
+  "caveats": [
+    "bfeb90f server.py does not appear to read ENABLE_BACKGROUND_SCORING, ENABLE_CONTRADICTION_DETECTION, or ENABLE_HIERARCHY_PROCESSING; env values were false but not functionally honored.",
+    "Background chat paths emitted repeated 404s to https://sector-7.services.ai.azure.com/models/models/chat/completions, indicating duplicated /models endpoint construction outside the main benchmark answer/judge path.",
+    "Server logs showed hybrid retrieval failed with type \"vector\" does not exist and fell back to legacy recall; the run result therefore reflects the graceful fallback path under current ruvector schema."
+  ],
+  "cleanup": {
+    "locomo_rows_deleted": 49,
+    "verified_remaining": 0
+  }
+}
