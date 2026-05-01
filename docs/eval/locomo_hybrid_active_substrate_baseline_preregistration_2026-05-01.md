@@ -21,6 +21,11 @@ Do not run this baseline unless the mutation-window result document records `hyb
 - A non-LOCOMO recall probe returns successfully.
 - Fresh logs after the probe do not contain `Hybrid retrieval failed` or `type "vector" does not exist`.
 
+Additional comparability gate discovered during the mutation window:
+
+- The rebuilt server must use the recovered-floor substrate before this baseline launches: `text-embedding-3-small` for embeddings and `gpt-4.1-mini` for answer/judge/query-expansion.
+- If the rebuilt server instead advertises `text-embedding-3-large-1`, `grok-4-20-non-reasoning-1`, or any other changed substrate, stop and pre-register a separate env-alignment mutation or redefine the baseline as a new substrate experiment before any LOCOMO launch.
+
 If any gate fails, stop; Phase C remains blocked.
 
 ## Experiment class
@@ -43,15 +48,25 @@ Condition:
 - Append/gated append: disabled.
 - Legacy context assembly: disabled.
 - No-expansion Arm B: disabled.
-- Answer/judge model stack: canonical `gpt-4.1-mini` stack as configured in env.
-- Embedding substrate: active server substrate at launch; expected Azure `text-embedding-3-small`, 1536d if env is configured as in the recovered run. Capture effective identity rather than assuming.
+- Answer/judge/query-expansion model stack: canonical `gpt-4.1-mini` stack; capture `ANSWER_MODEL`, `JUDGE_MODEL`, `AZURE_CHAT_DEPLOYMENT`, and endpoint immediately before launch.
+- Embedding substrate: Azure `text-embedding-3-small`, 1536d, matching the recovered 66.08% floor; capture effective identity and dimensions rather than assuming.
+- Current mutation-window note: after rebuild, env drifted to `text-embedding-3-large-1` and `grok-4-20-non-reasoning-1`; under this preregistration that state is **not launch-ready** for the comparable substrate baseline.
 
-Canonical command:
+Canonical command, only after the recovered-floor substrate is verified in both server and benchmark-run env:
 
 ```bash
 cd /home/zaddy/src/Memibrium
+export AZURE_CHAT_ENDPOINT="https://sector-7.services.ai.azure.com/models"
+export AZURE_CHAT_DEPLOYMENT="gpt-4.1-mini"
+export ANSWER_MODEL="gpt-4.1-mini"
+export JUDGE_MODEL="gpt-4.1-mini"
+export CHAT_MODEL="gpt-4.1-mini"
+export AZURE_EMBEDDING_ENDPOINT="https://sector-7.openai.azure.com/"
+export AZURE_EMBEDDING_DEPLOYMENT="text-embedding-3-small"
 USE_QUERY_EXPANSION=1 python3 benchmark_scripts/locomo_bench_v2.py --max-convs 26 --query-expansion 2>&1 | tee /tmp/locomo_conv26_hybrid_active_substrate_baseline_2026-05-01.log
 ```
+
+If server-side embedding env is not already `text-embedding-3-small`, this command alone is insufficient because recall embeddings are generated inside `memibrium-server`; stop and align/restart server env under a separate documented mutation before launch.
 
 The script writes its default query-expansion output path:
 
@@ -73,11 +88,15 @@ Immediately before benchmark launch:
    - redacted DB/vector/embedding/chat env from `memibrium-server`.
    - `/mcp/test_embeddings` result if available and non-mutating.
    - source hash for host/container `server.py` and `hybrid_retrieval.py`.
-4. Confirm no LOCOMO contamination:
+4. Confirm recovered-floor substrate identity, not merely any working embedding/chat path:
+   - server logs and `/mcp/test_embeddings` show `text-embedding-3-small`, 1536d;
+   - benchmark env resolves `ANSWER_MODEL=gpt-4.1-mini` and `JUDGE_MODEL=gpt-4.1-mini`;
+   - no `grok-4-20-non-reasoning-1` or `text-embedding-3-large-1` appears in launch env/logs.
+5. Confirm no LOCOMO contamination:
    - `SELECT count(id) FROM memories WHERE domain LIKE 'locomo-%';` must be `0` before launch.
-5. Capture fresh server log tail and note whether hybrid fallback strings are absent before launch.
+6. Capture fresh server log tail and note whether hybrid fallback strings are absent before launch.
 
-If contamination count is nonzero, stop and document. Cleanup is a DB mutation and must be explicitly scoped before continuing.
+If contamination count is nonzero, or if the recovered-floor substrate identity is not verified, stop and document. Cleanup/env alignment is a mutation and must be explicitly scoped before continuing.
 
 ## Success/failure interpretation
 
