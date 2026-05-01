@@ -260,6 +260,60 @@ class QueryExpansionTests(unittest.TestCase):
         self.assertEqual(seen_queries, ['What happened?'])
         expand_mock.assert_not_called()
 
+
+    def test_answer_question_telemetry_disabled_keeps_recall_payload_and_return_shape(self):
+        seen_payloads = []
+
+        def fake_mcp_post(tool, payload, retries=3):
+            self.assertEqual(tool, 'recall')
+            seen_payloads.append(dict(payload))
+            return {'results': [{'id': 'm1', 'content': 'base memory'}]}
+
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', False), patch.object(
+            locomo_bench_v2, 'INCLUDE_RECALL_TELEMETRY', False
+        ), patch.object(locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post), patch.object(
+            locomo_bench_v2, 'llm_call', return_value='answer'
+        ):
+            answer, memory_count = locomo_bench_v2.answer_question('What happened?', 'locomo-1')
+
+        self.assertEqual(answer, 'answer')
+        self.assertEqual(memory_count, 1)
+        self.assertEqual(seen_payloads, [{'query': 'What happened?', 'top_k': locomo_bench_v2.RECALL_TOP_K, 'domain': 'locomo-1'}])
+
+    def test_answer_question_telemetry_enabled_records_expanded_query_and_final_context_metadata(self):
+        def fake_mcp_post(tool, payload, retries=3):
+            self.assertEqual(tool, 'recall')
+            self.assertTrue(payload['include_telemetry'])
+            query = payload['query']
+            return {
+                'results': [
+                    {'id': f'{query}-1', 'content': f'{query} memory one', 'refs': {'turn_start': 1}},
+                    {'id': 'shared', 'content': 'shared memory', 'refs': {'turn_start': 2}},
+                ],
+                'telemetry': {'query': query, 'final': {'returned_count': 2}},
+            }
+
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', True), patch.object(
+            locomo_bench_v2, 'INCLUDE_RECALL_TELEMETRY', True
+        ), patch.object(locomo_bench_v2, 'expand_query', return_value=['base', 'expanded']), patch.object(
+            locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+        ), patch.object(locomo_bench_v2, 'llm_call', return_value='answer'):
+            answer, memory_count, telemetry = locomo_bench_v2.answer_question(
+                'base',
+                'locomo-1',
+                return_telemetry=True,
+                evidence_refs=[{'turn_start': 2}],
+            )
+
+        self.assertEqual(answer, 'answer')
+        self.assertEqual(memory_count, 3)
+        self.assertEqual(telemetry['expanded_queries'], ['base', 'expanded'])
+        self.assertEqual([entry['result_count'] for entry in telemetry['per_query_recall']], [2, 2])
+        self.assertEqual([item['id'] for item in telemetry['final_context']], ['base-1', 'shared', 'expanded-1'])
+        self.assertEqual(telemetry['counts']['candidate_memories_before_dedupe'], 4)
+        self.assertEqual(telemetry['counts']['base_candidate_count_after_dedupe'], 3)
+        self.assertEqual(telemetry['gold_evidence_ref_coverage']['final_context_refs_matched'], 1)
+
     def test_context_rerank_prefers_query_relevant_memories_when_enabled(self):
         memories = [
             {'id': 'm1', 'content': 'Caroline discussed generic travel plans.'},

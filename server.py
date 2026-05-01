@@ -1875,35 +1875,86 @@ async def handle_retain(request: Request) -> JSONResponse:
 async def handle_recall(request: Request) -> JSONResponse:
     body = await request.json()
     query = body.get("query", "")
+    include_telemetry = bool(body.get("include_telemetry", False))
     if not query:
         return JSONResponse({"error": "query required"}, status_code=400)
+
+    response_telemetry = None
 
     # Use hybrid retriever if available, else fallback to old query_agent
     if hybrid_retriever:
         embedding = None
+        embedding_ok = False
+        embedding_error = None
         try:
             embedding = await asyncio.get_event_loop().run_in_executor(embedder._executor, embedder.embed, query)
+            embedding_ok = True
         except Exception as e:
+            embedding_error = {"class": e.__class__.__name__, "message": str(e)}
             log.warning(f"Embedding failed for recall, falling back to keyword-only: {e}")
         try:
-            result = await hybrid_retriever.search(
+            search_result = await hybrid_retriever.search(
                 query=query,
                 embedding=embedding,
                 top_k=body.get("top_k", 5),
                 state_filter=body.get("state_filter"),
                 domain=body.get("domain"),
+                include_telemetry=include_telemetry,
             )
+            if include_telemetry:
+                result, response_telemetry = search_result
+                response_telemetry["server"] = {
+                    "hybrid_retriever_present": True,
+                    "hybrid_path_attempted": True,
+                    "legacy_fallback_executed": False,
+                    "embedding_success": embedding_ok,
+                    "embedding_error": embedding_error,
+                    "response_result_count": len(result),
+                }
+            else:
+                result = search_result
         except Exception as e:
             log.error(f"Hybrid retrieval failed: {e}, falling back to legacy recall")
             result = await query_agent.recall(
                 query, top_k=body.get("top_k", 5),
                 domain=body.get("domain"), expand=body.get("expand", True),
             )
+            if include_telemetry:
+                response_telemetry = {
+                    "schema": "memibrium.recall.telemetry.v1",
+                    "query": query,
+                    "requested_top_k": body.get("top_k", 5),
+                    "server": {
+                        "hybrid_retriever_present": True,
+                        "hybrid_path_attempted": True,
+                        "legacy_fallback_executed": True,
+                        "embedding_success": embedding_ok,
+                        "embedding_error": embedding_error,
+                        "hybrid_error": {"class": e.__class__.__name__, "message": str(e)},
+                        "response_result_count": len(result),
+                    },
+                }
     else:
         result = await query_agent.recall(
             query, top_k=body.get("top_k", 5),
             domain=body.get("domain"), expand=body.get("expand", True),
         )
+        if include_telemetry:
+            response_telemetry = {
+                "schema": "memibrium.recall.telemetry.v1",
+                "query": query,
+                "requested_top_k": body.get("top_k", 5),
+                "server": {
+                    "hybrid_retriever_present": False,
+                    "hybrid_path_attempted": False,
+                    "legacy_fallback_executed": True,
+                    "embedding_success": None,
+                    "embedding_error": None,
+                    "response_result_count": len(result),
+                },
+            }
+    if include_telemetry:
+        return JSONResponse(_serialize_result({"results": result, "telemetry": response_telemetry}))
     return JSONResponse(_serialize_result(result))
 
 

@@ -7,7 +7,7 @@ Flow per conversation:
 3. Score predicted answer vs ground truth using LLM judge
 """
 
-import json, time, sys, os, statistics, re
+import hashlib, json, time, sys, os, statistics, re
 import httpx
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -75,6 +75,8 @@ USE_GATED_APPEND_CONTEXT_EXPANSION = _env_flag("USE_GATED_APPEND_CONTEXT_EXPANSI
 # candidate memories from later expansions. Keep this opt-in; it is not a new
 # product retrieval mode.
 USE_LEGACY_CONTEXT_ASSEMBLY = _env_flag("USE_LEGACY_CONTEXT_ASSEMBLY", default=False)
+# Observation-only telemetry for preregistered LOCOMO diagnostic runs.
+INCLUDE_RECALL_TELEMETRY = _env_flag("INCLUDE_RECALL_TELEMETRY", default=False)
 RECALL_TOP_K = 10
 RERANK_RECALL_TOP_K = 20
 APPEND_CONTEXT_RECALL_TOP_K = 20
@@ -505,6 +507,50 @@ def _memory_dedupe_key(memory):
     return f"raw::{str(memory)}"
 
 
+def _memory_refs(memory):
+    refs = memory.get("refs") if isinstance(memory, dict) else {}
+    refs = refs or {}
+    if isinstance(refs, str):
+        try:
+            refs = json.loads(refs)
+        except Exception:
+            refs = {}
+    return refs if isinstance(refs, dict) else {}
+
+
+def _memory_telemetry_projection(memory, rank=None):
+    content = str(memory.get("content") or "") if isinstance(memory, dict) else str(memory)
+    return {
+        "rank": rank,
+        "id": memory.get("id") if isinstance(memory, dict) else None,
+        "dedupe_key": _memory_dedupe_key(memory),
+        "refs": _memory_refs(memory),
+        "created_at": memory.get("created_at") if isinstance(memory, dict) else None,
+        "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        "snippet": content[:160],
+    }
+
+
+def _ref_matches(gold_ref, memory_ref):
+    if not isinstance(gold_ref, dict) or not isinstance(memory_ref, dict):
+        return False
+    comparable = [key for key in gold_ref.keys() if key in memory_ref]
+    return bool(comparable) and all(memory_ref.get(key) == gold_ref.get(key) for key in comparable)
+
+
+def _count_ref_coverage(evidence_refs, memories):
+    if not evidence_refs:
+        return None
+    refs = [_memory_refs(memory) for memory in memories]
+    return sum(1 for gold_ref in evidence_refs if any(_ref_matches(gold_ref, ref) for ref in refs))
+
+
+def _extract_recall_payload(recall_result):
+    if isinstance(recall_result, list):
+        return recall_result, None
+    return recall_result.get("results", recall_result.get("memories", [])), recall_result.get("telemetry")
+
+
 def rerank_memories_for_question(question, memories, top_k=ANSWER_CONTEXT_TOP_K, preserve_prefix_k=RERANK_PRESERVE_PREFIX_K):
     """Lightweight precision recovery with an original-order safety prefix.
 
@@ -620,20 +666,48 @@ def append_memories_for_question(
     return base + [memory for _overlap, _score, _neg_idx, memory in candidates[:extra_k]]
 
 
-def answer_question(question, domain):
+def answer_question(question, domain, return_telemetry=False, evidence_refs=None):
     """Recall from Memibrium and generate answer."""
     validate_retrieval_modes()
     memories = []
     queries = expand_query(question) if USE_QUERY_EXPANSION else [question]
+    recall_telemetry = {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": question,
+        "domain": domain,
+        "expanded_queries": list(queries),
+        "per_query_recall": [],
+        "counts": {},
+        "final_context": [],
+        "gold_evidence_ref_coverage": None,
+    }
+
+    def recall_for_query(query, top_k):
+        payload = {"query": query, "top_k": top_k, "domain": domain}
+        if INCLUDE_RECALL_TELEMETRY:
+            payload["include_telemetry"] = True
+        recall_result = mcp_post("recall", payload)
+        recalled, telemetry = _extract_recall_payload(recall_result)
+        recall_telemetry["per_query_recall"].append({
+            "query": query,
+            "requested_top_k": top_k,
+            "result_count": len(recalled),
+            "result_ids": [memory.get("id") for memory in recalled if isinstance(memory, dict)],
+            "result_refs": [_memory_refs(memory) for memory in recalled],
+            "result_content_hashes": [
+                hashlib.sha256(str(memory.get("content") if isinstance(memory, dict) else memory or "").encode("utf-8")).hexdigest()
+                for memory in recalled
+            ],
+            "server_telemetry": telemetry,
+        })
+        return recalled
 
     if USE_LEGACY_CONTEXT_ASSEMBLY:
         seen = {}
+        candidate_memories_for_telemetry = []
         for query in queries:
-            recall_result = mcp_post("recall", {"query": query, "top_k": RECALL_TOP_K, "domain": domain})
-            if isinstance(recall_result, list):
-                recalled = recall_result
-            else:
-                recalled = recall_result.get("results", recall_result.get("memories", []))
+            recalled = recall_for_query(query, RECALL_TOP_K)
+            candidate_memories_for_telemetry.extend(recalled)
             for memory in recalled:
                 memory_id = memory.get("id") or f"no-id::{memory.get('content', '')}::{len(seen)}"
                 if memory_id not in seen:
@@ -641,6 +715,8 @@ def answer_question(question, domain):
             if len(seen) >= ANSWER_CONTEXT_TOP_K:
                 break
         memories = list(seen.values())[:ANSWER_CONTEXT_TOP_K]
+        recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(candidate_memories_for_telemetry)
+        recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(seen)
     else:
         base_seen = {}
         recall_top_k = RECALL_TOP_K
@@ -651,11 +727,7 @@ def answer_question(question, domain):
         candidate_limit = max(ANSWER_CONTEXT_TOP_K, candidate_recall_top_k)
         candidate_memories = []
         for query in queries:
-            recall_result = mcp_post("recall", {"query": query, "top_k": candidate_recall_top_k, "domain": domain})
-            if isinstance(recall_result, list):
-                recalled = recall_result
-            else:
-                recalled = recall_result.get("results", recall_result.get("memories", []))
+            recalled = recall_for_query(query, candidate_recall_top_k)
             candidate_memories.extend(recalled)
             for memory in recalled[:recall_top_k]:
                 memory_id = _memory_dedupe_key(memory)
@@ -671,6 +743,9 @@ def answer_question(question, domain):
             if key not in candidate_keys:
                 candidate_keys.add(key)
                 candidates.append(memory)
+        recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(candidate_memories)
+        recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(base_candidates)
+        recall_telemetry["counts"]["candidate_count_after_dedupe"] = len(candidates)
         if USE_CONTEXT_RERANK:
             memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)
         elif append_context_enabled:
@@ -687,6 +762,17 @@ def answer_question(question, domain):
                 )
         else:
             memories = candidates[:ANSWER_CONTEXT_TOP_K]
+
+    recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
+    recall_telemetry["final_context"] = [
+        _memory_telemetry_projection(memory, rank=idx)
+        for idx, memory in enumerate(memories, start=1)
+    ]
+    if evidence_refs is not None:
+        recall_telemetry["gold_evidence_ref_coverage"] = {
+            "gold_ref_count": len(evidence_refs),
+            "final_context_refs_matched": _count_ref_coverage(evidence_refs, memories),
+        }
 
     if not memories:
         context = "No relevant memories found."
@@ -727,8 +813,9 @@ def answer_question(question, domain):
         {"role": "user", "content": f"Context (retrieved memories):\n{context}\n\nQuestion: {question}\n\nAnswer briefly:"}
     ])
 
+    if return_telemetry:
+        return answer, len(memories), recall_telemetry
     return answer, len(memories)
-
 
 def judge_answer(question, predicted, ground_truth):
     """LLM judge: score predicted vs ground truth. Returns 0, 0.5, or 1."""
@@ -1061,7 +1148,16 @@ def run_benchmark(
             ground_truth = qa.get("answer", qa.get("adversarial_answer", ""))
 
             t0 = time.monotonic()
-            predicted, n_mems = answer_question(question, domain)
+            if INCLUDE_RECALL_TELEMETRY:
+                predicted, n_mems, recall_telemetry = answer_question(
+                    question,
+                    domain,
+                    return_telemetry=True,
+                    evidence_refs=qa.get("evidence") or qa.get("evidence_refs"),
+                )
+            else:
+                predicted, n_mems = answer_question(question, domain)
+                recall_telemetry = None
             query_time = time.monotonic() - t0
             query_times.append(query_time)
 
@@ -1071,12 +1167,15 @@ def run_benchmark(
             cat_latencies[cat].append(query_time)
             conv_scores.append(score)
 
-            results_log.append({
+            row = {
                 "conv": sample_id, "cat": cat, "question": question,
                 "ground_truth": ground_truth, "predicted": predicted,
                 "score": score, "query_time_ms": int(query_time * 1000),
                 "n_memories": n_mems
-            })
+            }
+            if INCLUDE_RECALL_TELEMETRY:
+                row["recall_telemetry"] = recall_telemetry
+            results_log.append(row)
 
             if (qi + 1) % 20 == 0:
                 running_acc = statistics.mean(conv_scores) * 100
