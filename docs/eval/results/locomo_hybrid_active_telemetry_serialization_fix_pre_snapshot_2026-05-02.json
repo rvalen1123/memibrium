@@ -1,0 +1,558 @@
+{
+  "captured_at": "2026-05-02T12:29:28.875756+00:00",
+  "db_probe": {
+    "json": {
+      "locomo_contamination_count": 0,
+      "memories_embedding_type": "USER-DEFINED:ruvector",
+      "nonnull_embeddings": 20,
+      "ruvector_extension_version": "0.3.0",
+      "ruvector_type_count": 1,
+      "self_distance": "1.7872301e-07",
+      "vector_type_count": 0
+    },
+    "raw_stdout": "{\"self_distance\": \"1.7872301e-07\", \"vector_type_count\": 0, \"nonnull_embeddings\": 20, \"ruvector_type_count\": 1, \"memories_embedding_type\": \"USER-DEFINED:ruvector\", \"locomo_contamination_count\": 0, \"ruvector_extension_version\": \"0.3.0\"}",
+    "returncode": 0,
+    "stderr": ""
+  },
+  "docker_ps": {
+    "cmd": "docker ps --format '{{.Names}}|{{.Status}}|{{.Image}}' | grep -E 'memibrium|ruvector|ollama'",
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "memibrium-server|Up 15 hours (healthy)|memibrium-memibrium\nmemibrium-ollama|Up 2 days|ollama/ollama:latest\nmemibrium-ruvector-db|Up 2 days (healthy)|ruvnet/ruvector-postgres:latest"
+  },
+  "git": {
+    "branch": "query-expansion",
+    "head": "5cb6f0bf9de64e2879a9f6cdd0f24660bf9ac32b",
+    "status_short": ""
+  },
+  "health": {
+    "json": {
+      "engine": "memibrium",
+      "status": "ok"
+    },
+    "ok": true,
+    "status": 200,
+    "text_excerpt": "{\"status\":\"ok\",\"engine\":\"memibrium\"}"
+  },
+  "label": "pre_serialization_fix_mutation",
+  "log_tail": {
+    "flags": {
+      "contains_decimal_not_json_serializable": false,
+      "contains_hybrid_retrieval_failed": false,
+      "contains_type_error": false,
+      "contains_type_vector_missing": false
+    },
+    "returncode": 0,
+    "tail_excerpt": "FO:     127.0.0.1:48252 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48458 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:51318 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44736 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57920 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:54240 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:46968 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44896 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:32944 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60830 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35366 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53288 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:58438 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60956 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41000 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38058 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41836 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36720 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44878 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36192 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38324 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33572 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41540 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38328 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38504 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56722 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35860 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59406 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37678 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53732 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:49476 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53404 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:54578 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44412 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59438 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41714 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37950 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40332 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:58974 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45708 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52602 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35376 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:49318 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35286 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37356 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47866 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33340 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48846 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48906 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:34948 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:51116 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45498 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56286 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37610 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59532 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53856 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44538 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41768 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37268 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59980 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44716 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:58308 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41272 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41138 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59058 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:55996 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45134 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47168 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60338 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33878 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36882 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45662 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47536 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34750 - \"GET /health HTTP/1.1\" 200 OK\n2026-05-02 10:11:05,490 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}\n2026-05-02 10:40:56,323 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}\n2026-05-02 11:10:47,095 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}\n2026-05-02 11:40:37,789 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}\n2026-05-02 12:10:28,349 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}"
+  },
+  "server_container_inspect": {
+    "cmd": [
+      "docker",
+      "inspect",
+      "memibrium-server",
+      "--format",
+      "server_image={{.Image}} created={{.Created}} started={{.State.StartedAt}}"
+    ],
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "server_image=sha256:565195f02c3ee78f4e951e64a65bd18a2e56addca5a23d89ba9b87e456fdc4ae created=2026-05-01T21:44:07.781283486Z started=2026-05-01T21:44:09.174007932Z"
+  },
+  "server_env_redacted": {
+    "AZURE_API_VERSION": "2024-06-01",
+    "AZURE_CHAT_API_KEY": "[REDACTED]",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com",
+    "AZURE_EMBEDDING_API_KEY": "[REDACTED]",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "AZURE_EMBEDDING_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "AZURE_OPENAI_API_KEY": "[REDACTED]",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "CHAT_MODEL": "gemma4:e4b",
+    "EMBEDDING_BASE_URL": "http://ollama:11434/v1",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "OPENAI_API_KEY": "[REDACTED]",
+    "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+    "RUVECTOR_GNN": "true",
+    "SLM_MODEL": "phi3:mini",
+    "USE_RUVECTOR": "true"
+  },
+  "server_image_inspect": {
+    "cmd": [
+      "docker",
+      "image",
+      "inspect",
+      "sha256:565195f02c3ee78f4e951e64a65bd18a2e56addca5a23d89ba9b87e456fdc4ae",
+      "--format",
+      "image_created={{.Created}} repo_tags={{json .RepoTags}}"
+    ],
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "image_created=2026-05-01T21:44:07.107595287Z repo_tags=[\"memibrium-memibrium:latest\"]"
+  },
+  "smoke_hash": {
+    "aggregate_hash": "ccdb88c7852853bfa4fa514b5a389c528c0425bbb970cd0e55772814080acc54",
+    "include_telemetry": false,
+    "label": "pre_serialization_fix_mutation_smoke",
+    "queries": [
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline adoption agencies LGBTQ individuals",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Melanie charity race mental health self care",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "LGBTQ counseling workshop therapeutic methods",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pottery workshop July Melanie",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "beach with kids once or twice a year",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "camping trip meteor shower family",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Grand Canyon accident children road trip",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "necklace Sweden grandmother love faith strength",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pride parade school speech support group",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "adoption council meeting loving homes children",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "running de-stress clear her mind mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline picnic week before July 6 2023",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Nothing is Impossible book Melanie 2022",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "The Four Seasons Vivaldi classical music",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "safe and inviting place for people to grow",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "hybrid active ruvector smoke probe",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who did Caroline contact about adoption agency policy",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What event helped Melanie manage anxiety and self care",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which workshop discussed therapeutic methods for LGBTQ counseling",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "When did Melanie attend the pottery workshop in July",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "How often did the family go to the beach with the kids",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What happened on the camping trip during the meteor shower",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which child was affected by the Grand Canyon road trip accident",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What did the Swedish grandmother necklace symbolize",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who spoke at the pride parade school support event",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What did the adoption council discuss about loving homes",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "How did running help with stress and mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who had a picnic the week before July 6 2023",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What book was called Nothing is Impossible in 2022",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which classical music piece was associated with The Four Seasons",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What place was described as safe and inviting for growth",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which person preferred counseling over medication",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What meeting changed the adoption plan timeline",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who organized the charity race for mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What family activity happened once or twice a year",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which memory involved love faith and strength",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What was the outcome of the LGBTQ adoption discussion",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who needed support after the road trip accident",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which July event involved pottery and Melanie",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What evidence supports an unanswerable adversarial question",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      }
+    ],
+    "query_count": 40,
+    "top_k": 10
+  },
+  "source_checks": {
+    "container_sha256_bench": {
+      "cmd": [
+        "docker",
+        "exec",
+        "memibrium-server",
+        "sha256sum",
+        "/app/benchmark_scripts/locomo_bench_v2.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff  /app/benchmark_scripts/locomo_bench_v2.py"
+    },
+    "container_sha256_hybrid": {
+      "cmd": [
+        "docker",
+        "exec",
+        "memibrium-server",
+        "sha256sum",
+        "/app/hybrid_retrieval.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07  /app/hybrid_retrieval.py"
+    },
+    "container_sha256_server": {
+      "cmd": [
+        "docker",
+        "exec",
+        "memibrium-server",
+        "sha256sum",
+        "/app/server.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a  /app/server.py"
+    },
+    "host_sha256_benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+    "host_sha256_hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+    "host_sha256_server.py": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a",
+    "host_sha256_test_server_recall_telemetry.py": "26569b9dbea03da0e183a9d9482e7699175b2898676f9ef8bba62366649be770",
+    "live_source_feature_probe": {
+      "cmd": [
+        "docker",
+        "exec",
+        "-i",
+        "memibrium-server",
+        "python3",
+        "-c",
+        "from pathlib import Path\ntext=Path('/app/hybrid_retrieval.py').read_text(); server=Path('/app/server.py').read_text();\nprint('hardcoded_vector_cast_present=' + str('$1::vector' in text)); print('dynamic_vtype_cast_present=' + str('$1::{self.vtype}' in text)); print('decimal_import_present=' + str('from decimal import Decimal' in server)); print('server_include_telemetry_present=' + str('include_telemetry' in server))"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "hardcoded_vector_cast_present=False\ndynamic_vtype_cast_present=True\ndecimal_import_present=True\nserver_include_telemetry_present=True"
+    }
+  }
+}
