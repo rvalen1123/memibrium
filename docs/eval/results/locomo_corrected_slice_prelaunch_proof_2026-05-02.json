@@ -1,0 +1,48 @@
+{
+  "step": "5j_v2_exec_prelaunch_slice_proof",
+  "timestamp_utc": "2026-05-02T19:48:51Z",
+  "path": "/tmp/locomo/data/locomo10.json",
+  "exists": true,
+  "sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "top_level_type": "list",
+  "top_level_is_list": true,
+  "conversation_count": 10,
+  "ordered_sample_ids": [
+    "conv-26",
+    "conv-30",
+    "conv-41",
+    "conv-42",
+    "conv-43",
+    "conv-44",
+    "conv-47",
+    "conv-48",
+    "conv-49",
+    "conv-50"
+  ],
+  "index0": {
+    "sample_id": "conv-26",
+    "speaker_a": "Caroline",
+    "speaker_b": "Melanie",
+    "qa_count": 199,
+    "category_counts": {
+      "1": 32,
+      "2": 37,
+      "3": 13,
+      "4": 70,
+      "5": 47
+    }
+  },
+  "total_qa_count": 1986,
+  "expected_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "sha256_matches_preregistered": true,
+  "pass_conditions": {
+    "file_exists": true,
+    "top_level_type_list": true,
+    "index0_sample_id_conv26": true,
+    "index0_qa_count_199": true,
+    "ordered_sample_list_begins_conv26": true,
+    "max_convs_1_selects_index0_only": true,
+    "sha256_matches_preregistered": true
+  },
+  "gate_status": "pass"
+}
