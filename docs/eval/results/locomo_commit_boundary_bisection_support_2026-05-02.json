@@ -1,0 +1,1630 @@
+{
+  "step": "5n",
+  "mode": "read_only_source_artifact_bisection",
+  "range": {
+    "base": "f2466c9",
+    "end": "c9a7623",
+    "current_at_execution": "617505f"
+  },
+  "target_files": [
+    "benchmark_scripts/locomo_bench_v2.py",
+    "hybrid_retrieval.py",
+    "server.py"
+  ],
+  "commit_count": 18,
+  "commits": [
+    {
+      "sha": "81d1597ffb3fc28fc0c2fd81ba28b63d1233375b",
+      "short": "81d1597",
+      "parent": "f2466c9",
+      "subject": "docs: preregister LOCOMO hybrid failure-mode audit",
+      "changed_files": [
+        "docs/eval/locomo_hybrid_active_failure_mode_audit_preregistration_2026-05-01.md"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "6c0e38f10851aa9ac0d9731f9f60b9998da4f3dd",
+      "short": "6c0e38f",
+      "parent": "81d1597",
+      "subject": "docs: record LOCOMO hybrid failure-mode audit",
+      "changed_files": [
+        "docs/eval/results/locomo_hybrid_active_failure_mode_audit_2026-05-01.md",
+        "docs/eval/results/locomo_hybrid_active_failure_mode_audit_labels_2026-05-01.json"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "d35bee409736877cc7def97c6f82416a20dec118",
+      "short": "d35bee4",
+      "parent": "6c0e38f",
+      "subject": "docs: preregister LOCOMO telemetry baseline",
+      "changed_files": [
+        "docs/eval/locomo_telemetry_augmented_baseline_preregistration_2026-05-01.md"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "ab4bf5d65223a8d1cd64b18f35b02fedeee92023",
+      "short": "ab4bf5d",
+      "parent": "d35bee4",
+      "subject": "docs: preregister LOCOMO telemetry instrumentation window",
+      "changed_files": [
+        "docs/eval/locomo_telemetry_instrumentation_mutation_window_preregistration_2026-05-01.md"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "cb565591a27d394d45b285c24a48390ebe3988bd",
+      "short": "cb56559",
+      "parent": "ab4bf5d",
+      "subject": "feat: add opt-in LOCOMO recall telemetry",
+      "changed_files": [
+        "benchmark_scripts/locomo_bench_v2.py",
+        "hybrid_retrieval.py",
+        "server.py",
+        "test_hybrid_retrieval_ruvector.py",
+        "test_locomo_query_expansion.py",
+        "test_server_recall_telemetry.py"
+      ],
+      "target_files_changed": [
+        "benchmark_scripts/locomo_bench_v2.py",
+        "hybrid_retrieval.py",
+        "server.py"
+      ],
+      "numstat_target_files": {
+        "benchmark_scripts/locomo_bench_v2.py": "115\t16\tbenchmark_scripts/locomo_bench_v2.py",
+        "hybrid_retrieval.py": "167\t15\thybrid_retrieval.py",
+        "server.py": "52\t1\tserver.py"
+      },
+      "impact_labels": [
+        "benchmark_context_assembly",
+        "candidate_generation_or_dedup",
+        "embedding_or_model_selection",
+        "query_expansion_logic",
+        "recall_payload_or_response_shape",
+        "retrieval_fusion_or_scoring",
+        "serialization_only",
+        "telemetry_recording_only",
+        "tests_changed",
+        "topk_or_cap_behavior"
+      ],
+      "preliminary_verdict": "plausible_behavior_change",
+      "focused_changed_lines": [
+        "benchmark_scripts/locomo_bench_v2.py: +# Observation-only telemetry for preregistered LOCOMO diagnostic runs.",
+        "benchmark_scripts/locomo_bench_v2.py: +INCLUDE_RECALL_TELEMETRY = _env_flag(\"INCLUDE_RECALL_TELEMETRY\", default=False)",
+        "benchmark_scripts/locomo_bench_v2.py: +def _memory_telemetry_projection(memory, rank=None):",
+        "benchmark_scripts/locomo_bench_v2.py: +        \"dedupe_key\": _memory_dedupe_key(memory),",
+        "benchmark_scripts/locomo_bench_v2.py: +def _extract_recall_payload(recall_result):",
+        "benchmark_scripts/locomo_bench_v2.py: +    if isinstance(recall_result, list):",
+        "benchmark_scripts/locomo_bench_v2.py: +        return recall_result, None",
+        "benchmark_scripts/locomo_bench_v2.py: +    return recall_result.get(\"results\", recall_result.get(\"memories\", [])), recall_result.get(\"telemetry\")",
+        "benchmark_scripts/locomo_bench_v2.py: +def answer_question(question, domain, return_telemetry=False, evidence_refs=None):",
+        "benchmark_scripts/locomo_bench_v2.py: +    recall_telemetry = {",
+        "benchmark_scripts/locomo_bench_v2.py: +        \"schema\": \"memibrium.locomo_answer_question.telemetry.v1\",",
+        "benchmark_scripts/locomo_bench_v2.py: +        \"expanded_queries\": list(queries),",
+        "benchmark_scripts/locomo_bench_v2.py: +        \"per_query_recall\": [],",
+        "benchmark_scripts/locomo_bench_v2.py: +        \"final_context\": [],",
+        "benchmark_scripts/locomo_bench_v2.py: +    def recall_for_query(query, top_k):",
+        "benchmark_scripts/locomo_bench_v2.py: +        payload = {\"query\": query, \"top_k\": top_k, \"domain\": domain}",
+        "benchmark_scripts/locomo_bench_v2.py: +        if INCLUDE_RECALL_TELEMETRY:",
+        "benchmark_scripts/locomo_bench_v2.py: +            payload[\"include_telemetry\"] = True",
+        "benchmark_scripts/locomo_bench_v2.py: +        recall_result = mcp_post(\"recall\", payload)",
+        "benchmark_scripts/locomo_bench_v2.py: +        recalled, telemetry = _extract_recall_payload(recall_result)",
+        "benchmark_scripts/locomo_bench_v2.py: +        recall_telemetry[\"per_query_recall\"].append({",
+        "benchmark_scripts/locomo_bench_v2.py: +            \"query\": query,",
+        "benchmark_scripts/locomo_bench_v2.py: +            \"requested_top_k\": top_k,",
+        "benchmark_scripts/locomo_bench_v2.py: +            \"result_count\": len(recalled),",
+        "benchmark_scripts/locomo_bench_v2.py: +            \"result_ids\": [memory.get(\"id\") for memory in recalled if isinstance(memory, dict)],",
+        "benchmark_scripts/locomo_bench_v2.py: +            \"result_refs\": [_memory_refs(memory) for memory in recalled],",
+        "benchmark_scripts/locomo_bench_v2.py: +                for memory in recalled",
+        "benchmark_scripts/locomo_bench_v2.py: +            \"server_telemetry\": telemetry,",
+        "benchmark_scripts/locomo_bench_v2.py: +        return recalled",
+        "benchmark_scripts/locomo_bench_v2.py: +        candidate_memories_for_telemetry = []",
+        "benchmark_scripts/locomo_bench_v2.py: -            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": RECALL_TOP_K, \"domain\": domain})",
+        "benchmark_scripts/locomo_bench_v2.py: -            if isinstance(recall_result, list):",
+        "benchmark_scripts/locomo_bench_v2.py: -                recalled = recall_result",
+        "benchmark_scripts/locomo_bench_v2.py: -                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))",
+        "benchmark_scripts/locomo_bench_v2.py: +            recalled = recall_for_query(query, RECALL_TOP_K)",
+        "benchmark_scripts/locomo_bench_v2.py: +            candidate_memories_for_telemetry.extend(recalled)",
+        "benchmark_scripts/locomo_bench_v2.py: +        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories_for_telemetry)",
+        "benchmark_scripts/locomo_bench_v2.py: +        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(seen)",
+        "benchmark_scripts/locomo_bench_v2.py: -            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": candidate_recall_top_k, \"domain\": domain})",
+        "benchmark_scripts/locomo_bench_v2.py: -            if isinstance(recall_result, list):",
+        "benchmark_scripts/locomo_bench_v2.py: -                recalled = recall_result",
+        "benchmark_scripts/locomo_bench_v2.py: -                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))",
+        "benchmark_scripts/locomo_bench_v2.py: +            recalled = recall_for_query(query, candidate_recall_top_k)",
+        "benchmark_scripts/locomo_bench_v2.py: +        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories)",
+        "benchmark_scripts/locomo_bench_v2.py: +        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(base_candidates)",
+        "benchmark_scripts/locomo_bench_v2.py: +        recall_telemetry[\"counts\"][\"candidate_count_after_dedupe\"] = len(candidates)",
+        "benchmark_scripts/locomo_bench_v2.py: +    recall_telemetry[\"counts\"][\"final_answer_context_count\"] = len(memories)",
+        "benchmark_scripts/locomo_bench_v2.py: +    recall_telemetry[\"final_context\"] = [",
+        "benchmark_scripts/locomo_bench_v2.py: +        _memory_telemetry_projection(memory, rank=idx)",
+        "benchmark_scripts/locomo_bench_v2.py: +        recall_telemetry[\"gold_evidence_ref_coverage\"] = {",
+        "benchmark_scripts/locomo_bench_v2.py: +            \"final_context_refs_matched\": _count_ref_coverage(evidence_refs, memories),",
+        "benchmark_scripts/locomo_bench_v2.py: +    if return_telemetry:",
+        "benchmark_scripts/locomo_bench_v2.py: +        return answer, len(memories), recall_telemetry",
+        "benchmark_scripts/locomo_bench_v2.py: +            if INCLUDE_RECALL_TELEMETRY:",
+        "benchmark_scripts/locomo_bench_v2.py: +                predicted, n_mems, recall_telemetry = answer_question(",
+        "benchmark_scripts/locomo_bench_v2.py: +                    return_telemetry=True,",
+        "benchmark_scripts/locomo_bench_v2.py: +                recall_telemetry = None",
+        "benchmark_scripts/locomo_bench_v2.py: +            if INCLUDE_RECALL_TELEMETRY:",
+        "benchmark_scripts/locomo_bench_v2.py: +                row[\"recall_telemetry\"] = recall_telemetry",
+        "hybrid_retrieval.py: +    # \u2500\u2500 Telemetry helpers (opt-in, observation-only) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "hybrid_retrieval.py: +    def _telemetry_memory_projection(self, memory: dict, rank: Optional[int] = None) -> dict:",
+        "hybrid_retrieval.py: +        \"\"\"Return a stable, non-mutating telemetry projection for one memory.\"\"\"",
+        "hybrid_retrieval.py: +        for key in (\"cosine_score\", \"bm25_score\", \"temporal_score\", \"rrf_score\", \"combined_score\"):",
+        "hybrid_retrieval.py: +    def _score_summary(self, results: List[dict], score_key: str) -> dict:",
+        "hybrid_retrieval.py: +        scores = [r.get(score_key) for r in results if r.get(score_key) is not None]",
+        "hybrid_retrieval.py: +        if not scores:",
+        "hybrid_retrieval.py: +            return {\"key\": score_key, \"count\": 0, \"min\": None, \"max\": None, \"mean\": None}",
+        "hybrid_retrieval.py: +            \"key\": score_key,",
+        "hybrid_retrieval.py: +            \"count\": len(scores),",
+        "hybrid_retrieval.py: +            \"min\": min(scores),",
+        "hybrid_retrieval.py: +            \"max\": max(scores),",
+        "hybrid_retrieval.py: +            \"mean\": sum(scores) / len(scores),",
+        "hybrid_retrieval.py: +    def _stream_telemetry(self, results: List[dict], score_key: str, requested_top_k: int, path: Optional[str] = None) -> dict:",
+        "hybrid_retrieval.py: +            \"requested_top_k\": requested_top_k,",
+        "hybrid_retrieval.py: +            \"items\": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(results, start=1)],",
+        "hybrid_retrieval.py: +            \"score_summary\": self._score_summary(results, score_key),",
+        "hybrid_retrieval.py: +    def _new_telemetry(self, query: str, top_k: int, fetch_k: int,",
+        "hybrid_retrieval.py: +                       use_rrf: bool, rerank: bool) -> dict:",
+        "hybrid_retrieval.py: +            \"schema\": \"memibrium.hybrid_retrieval.telemetry.v1\",",
+        "hybrid_retrieval.py: +            \"query\": query,",
+        "hybrid_retrieval.py: +            \"requested_top_k\": top_k,",
+        "hybrid_retrieval.py: +            \"fetch_k\": fetch_k,",
+        "hybrid_retrieval.py: +            \"use_rrf\": bool(use_rrf),",
+        "hybrid_retrieval.py: +                \"semantic\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"cosine_score\")},",
+        "hybrid_retrieval.py: +                \"lexical\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"bm25_score\")},",
+        "hybrid_retrieval.py: +                \"temporal\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"temporal_score\")},",
+        "hybrid_retrieval.py: +            \"fusion\": {\"streams_count\": 0, \"fused_count_before_cap\": 0, \"items_before_cap\": []},",
+        "hybrid_retrieval.py: +            \"multihop\": {\"executed\": False, \"expanded_count\": None},",
+        "hybrid_retrieval.py: +            \"final\": {\"returned_count\": 0, \"items\": [], \"cutoff_items\": []},",
+        "hybrid_retrieval.py: +    def _record_final_telemetry(self, telemetry: Optional[dict], final: List[dict], top_k: int) -> None:",
+        "hybrid_retrieval.py: +        if telemetry is None:",
+        "hybrid_retrieval.py: +        telemetry[\"final\"] = {",
+        "hybrid_retrieval.py: +            \"returned_count\": len(final[:top_k]),",
+        "hybrid_retrieval.py: +            \"items\": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(final[:top_k], start=1)],",
+        "hybrid_retrieval.py: +                self._telemetry_memory_projection(item, rank=idx)",
+        "hybrid_retrieval.py: +                for idx, item in enumerate(final[top_k:top_k + 5], start=top_k + 1)",
+        "hybrid_retrieval.py: +                                telemetry: Optional[dict] = None) -> List[dict]:",
+        "hybrid_retrieval.py: +            if telemetry is not None:",
+        "hybrid_retrieval.py: +                telemetry[\"streams\"][\"semantic\"] = self._stream_telemetry([], \"cosine_score\", top_k)",
+        "hybrid_retrieval.py: +            if telemetry is not None:",
+        "hybrid_retrieval.py: +                telemetry[\"streams\"][\"semantic\"] = self._stream_telemetry(result, \"cosine_score\", top_k)",
+        "hybrid_retrieval.py: +                             telemetry: Optional[dict] = None) -> List[dict]:",
+        "hybrid_retrieval.py: +            if telemetry is not None:",
+        "hybrid_retrieval.py: +                telemetry[\"streams\"][\"lexical\"] = self._stream_telemetry([], \"bm25_score\", top_k)",
+        "hybrid_retrieval.py: +        if telemetry is not None:",
+        "hybrid_retrieval.py: +            telemetry[\"streams\"].setdefault(\"lexical\", {})[\"words\"] = list(words)",
+        "hybrid_retrieval.py: +            if telemetry is not None:",
+        "hybrid_retrieval.py: +                telemetry[\"streams\"][\"lexical\"] = self._stream_telemetry([], \"bm25_score\", top_k) | {\"words\": []}",
+        "hybrid_retrieval.py: +                if telemetry is not None:",
+        "hybrid_retrieval.py: +                    telemetry[\"streams\"].setdefault(\"lexical\", {})[\"tsquery\"] = tsquery",
+        "hybrid_retrieval.py: +                    if telemetry is not None:",
+        "hybrid_retrieval.py: +                        stream = self._stream_telemetry(result, \"bm25_score\", top_k, path=\"tsvector\")",
+        "hybrid_retrieval.py: +                        stream[\"tsquery\"] = tsquery",
+        "hybrid_retrieval.py: +                        telemetry[\"streams\"][\"lexical\"] = stream",
+        "hybrid_retrieval.py: +                if telemetry is not None:",
+        "hybrid_retrieval.py: +                    telemetry[\"streams\"].setdefault(\"lexical\", {})[\"tsvector_error\"] = {\"class\": exc.__class__.__name__, \"message\": str(exc)}",
+        "hybrid_retrieval.py: +            if telemetry is not None:",
+        "hybrid_retrieval.py: +                previous_error = telemetry[\"streams\"].get(\"lexical\", {}).get(\"tsvector_error\")",
+        "hybrid_retrieval.py: +                stream = self._stream_telemetry(result, \"bm25_score\", top_k, path=\"ilike_fallback\")",
+        "hybrid_retrieval.py: +                stream[\"tsquery\"] = \" | \".join(words)"
+      ],
+      "final_verdict": "weak_plausible_behavior_change_not_specific_culprit",
+      "final_notes": "Only commit in f2466c9..c9a7623 that changes benchmark/hybrid/server retrieval path. It adds opt-in telemetry wrappers and response-shape unwrapping but preserves the preexisting all-expanded-query loop, RECALL_TOP_K=10, candidate accumulation, dedupe, and ANSWER_CONTEXT_TOP_K=15 path when telemetry is off. Because later telemetry-off Regime C is high-context-ish and benchmark source hash remains identical from cb56559 through c9a7623/662514a, cb56559 cannot by static evidence explain A low-context vs C high-context as a telemetry-on perturbation. It is the smallest code-change boundary to test only if checkpoint execution is later authorized."
+    },
+    {
+      "sha": "328da535f39c254d79f1fc17e3afd4402277203b",
+      "short": "328da53",
+      "parent": "cb56559",
+      "subject": "docs: record LOCOMO telemetry instrumentation window",
+      "changed_files": [
+        "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_hybrid_probe_2026-05-01.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_post_snapshot_2026-05-01.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_pre_snapshot_2026-05-01.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_result_2026-05-01.md",
+        "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_smoke_hashes_2026-05-01.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_telemetry_probe_2026-05-01.json",
+        "scripts/locomo_telemetry_mutation_window.py"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "other_code_changed"
+      ],
+      "preliminary_verdict": "insufficient_static_evidence",
+      "focused_changed_lines": [],
+      "final_verdict": "support_script_and_artifacts_only_no_runtime_path_change",
+      "final_notes": "Adds LOCOMO telemetry mutation-window helper script and docs/results artifacts. It does not change target benchmark/server/hybrid source. The script can perform read-only snapshots/probes when invoked but is not part of benchmark runtime path."
+    },
+    {
+      "sha": "876eb0485fc7c1835048b20d6761e321270c9c05",
+      "short": "876eb04",
+      "parent": "328da53",
+      "subject": "docs: record LOCOMO telemetry baseline block",
+      "changed_files": [
+        "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_2026-05-01.json",
+        "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_2026-05-01.log",
+        "docs/eval/results/locomo_conv26_hybrid_active_telemetry_traces_2026-05-01.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_199q_comparison_2026-05-01.md",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_blocked_2026-05-01.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_cleanup_2026-05-01.log",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_cleanup_count_2026-05-01.txt",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_cleanup_linked_counts_2026-05-01.txt",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_failed_server_log_2026-05-01.log",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_prelaunch_2026-05-01.json"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "fee3a464feca26824e2ccb64c672b7cc73186dd7",
+      "short": "fee3a46",
+      "parent": "876eb04",
+      "subject": "docs: preregister LOCOMO telemetry serialization fix window",
+      "changed_files": [
+        "docs/eval/locomo_telemetry_serialization_fix_mutation_window_preregistration_2026-05-02.md"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "5cb6f0bf9de64e2879a9f6cdd0f24660bf9ac32b",
+      "short": "5cb6f0b",
+      "parent": "fee3a46",
+      "subject": "fix: serialize Decimal values in recall telemetry",
+      "changed_files": [
+        "server.py",
+        "test_server_recall_telemetry.py"
+      ],
+      "target_files_changed": [
+        "server.py"
+      ],
+      "numstat_target_files": {
+        "server.py": "7\t2\tserver.py"
+      },
+      "impact_labels": [
+        "embedding_or_model_selection",
+        "recall_payload_or_response_shape",
+        "serialization_only",
+        "tests_changed",
+        "topk_or_cap_behavior"
+      ],
+      "preliminary_verdict": "plausible_behavior_change",
+      "focused_changed_lines": [
+        "server.py: +from decimal import Decimal",
+        "server.py: +    if isinstance(obj, Decimal):"
+      ],
+      "final_verdict": "serialization_only_unlikely_behavior_change",
+      "final_notes": "Server change adds date/Decimal serialization support in _serialize_result(). No benchmark source or hybrid retrieval source changed. Diff does not alter recall query, candidate generation, fusion, sorting, top_k, cap, or non-telemetry result path."
+    },
+    {
+      "sha": "6294164e57c1ad29c035739da77cf0f6c27670a7",
+      "short": "6294164",
+      "parent": "5cb6f0b",
+      "subject": "docs: record LOCOMO telemetry serialization fix window",
+      "changed_files": [
+        "docs/eval/results/locomo_hybrid_active_telemetry_serialization_fix_hybrid_probe_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_serialization_fix_mutation_window_result_2026-05-02.md",
+        "docs/eval/results/locomo_hybrid_active_telemetry_serialization_fix_post_snapshot_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_serialization_fix_pre_serialization_probe_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_serialization_fix_pre_snapshot_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_serialization_fix_serialization_probe_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_serialization_fix_smoke_hashes_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_serialization_fix_telemetry_probe_2026-05-02.json"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "91fede6995bae240a05db1f2d4dd6905e0d92cd2",
+      "short": "91fede6",
+      "parent": "6294164",
+      "subject": "docs: record LOCOMO telemetry baseline retry",
+      "changed_files": [
+        "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json",
+        "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.log",
+        "docs/eval/results/locomo_conv26_hybrid_active_telemetry_traces_retry_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_199q_comparison_2026-05-02.md",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_2026-05-02.log",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_count_2026-05-02.txt",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_linked_counts_2026-05-02.txt",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_noncomparable_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_prelaunch_2026-05-02.json",
+        "docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_server_log_2026-05-02.log",
+        "docs/eval/results/locomo_hybrid_active_telemetry_summary_retry_2026-05-02.json"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "faaa661152bc746728ea216d4eae2a51d4f53569",
+      "short": "faaa661",
+      "parent": "91fede6",
+      "subject": "docs: preregister LOCOMO telemetry noncomparability audit",
+      "changed_files": [
+        "docs/eval/locomo_telemetry_noncomparability_audit_preregistration_2026-05-02.md"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "29f420902efa869e686c9f81d073c1121e32e0b6",
+      "short": "29f4209",
+      "parent": "faaa661",
+      "subject": "docs: record LOCOMO telemetry noncomparability audit",
+      "changed_files": [
+        "docs/eval/results/locomo_telemetry_noncomparability_audit_2026-05-02.md",
+        "docs/eval/results/locomo_telemetry_noncomparability_audit_labels_2026-05-02.json",
+        "docs/eval/results/locomo_telemetry_noncomparability_audit_per_question_2026-05-02.json",
+        "docs/eval/results/locomo_telemetry_noncomparability_audit_support_2026-05-02.json"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "544a0036f422fd957ec7c99a216432b05a74f460",
+      "short": "544a003",
+      "parent": "29f4209",
+      "subject": "docs: preregister LOCOMO paired telemetry flag probe",
+      "changed_files": [
+        "docs/eval/locomo_paired_telemetry_flag_probe_preregistration_2026-05-02.md"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "a4102c206215703564a63e6e736ba0b3aabfb23e",
+      "short": "a4102c2",
+      "parent": "544a003",
+      "subject": "docs: record LOCOMO paired telemetry flag probe",
+      "changed_files": [
+        "docs/eval/results/locomo_paired_telemetry_flag_probe_2026-05-02.md",
+        "docs/eval/results/locomo_paired_telemetry_flag_probe_labels_2026-05-02.json",
+        "docs/eval/results/locomo_paired_telemetry_flag_probe_pairs_2026-05-02.json",
+        "docs/eval/results/locomo_paired_telemetry_flag_probe_preflight_2026-05-02.json",
+        "docs/eval/results/locomo_paired_telemetry_flag_probe_protocol_deviation_2026-05-02.json",
+        "docs/eval/results/locomo_paired_telemetry_flag_probe_server_log_2026-05-02.log"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "4663bcd95ce9e01d3b90f1b1a4a7607cde0bde93",
+      "short": "4663bcd",
+      "parent": "a4102c2",
+      "subject": "docs: preregister LOCOMO telemetry-off reproducibility",
+      "changed_files": [
+        "docs/eval/locomo_telemetry_off_199q_reproducibility_preregistration_2026-05-02.md"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "2f9c9df7f69acbd2b6ce690522f7fd0a322f984a",
+      "short": "2f9c9df",
+      "parent": "4663bcd",
+      "subject": "docs: record blocked LOCOMO telemetry-off reproducibility attempt",
+      "changed_files": [
+        "docs/eval/results/locomo_telemetry_off_199q_reproducibility_cleanup_2026-05-02.json",
+        "docs/eval/results/locomo_telemetry_off_199q_reproducibility_comparison_2026-05-02.md",
+        "docs/eval/results/locomo_telemetry_off_199q_reproducibility_labels_2026-05-02.json",
+        "docs/eval/results/locomo_telemetry_off_199q_reproducibility_partial_aborted_2026-05-02.log",
+        "docs/eval/results/locomo_telemetry_off_199q_reproducibility_prelaunch_2026-05-02.json"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    },
+    {
+      "sha": "c9a7623839b092631abb0aa64a3cbc6704bf7267",
+      "short": "c9a7623",
+      "parent": "2f9c9df",
+      "subject": "docs: preregister LOCOMO corrected slice reproducibility",
+      "changed_files": [
+        "docs/eval/locomo_telemetry_off_199q_reproducibility_corrected_slice_preregistration_2026-05-02.md"
+      ],
+      "target_files_changed": [],
+      "numstat_target_files": {},
+      "impact_labels": [
+        "docs_or_artifacts_only"
+      ],
+      "preliminary_verdict": "docs_only_no_behavior_change",
+      "focused_changed_lines": [],
+      "final_verdict": "docs_only_no_behavior_change",
+      "final_notes": "No target runtime source changes in preregistered focus files."
+    }
+  ],
+  "source_windows": {
+    "baseline_to_telemetry_code": {
+      "from": "f2466c9",
+      "to": "cb56559",
+      "files": {
+        "benchmark_scripts/locomo_bench_v2.py": {
+          "numstat": "115\t16\tbenchmark_scripts/locomo_bench_v2.py",
+          "stat": "benchmark_scripts/locomo_bench_v2.py | 131 ++++++++++++++++++++++++++++++-----\n 1 file changed, 115 insertions(+), 16 deletions(-)",
+          "focused_lines": [
+            "+# Observation-only telemetry for preregistered LOCOMO diagnostic runs.",
+            "+INCLUDE_RECALL_TELEMETRY = _env_flag(\"INCLUDE_RECALL_TELEMETRY\", default=False)",
+            "+def _memory_telemetry_projection(memory, rank=None):",
+            "+        \"dedupe_key\": _memory_dedupe_key(memory),",
+            "+def _extract_recall_payload(recall_result):",
+            "+    if isinstance(recall_result, list):",
+            "+        return recall_result, None",
+            "+    return recall_result.get(\"results\", recall_result.get(\"memories\", [])), recall_result.get(\"telemetry\")",
+            "+def answer_question(question, domain, return_telemetry=False, evidence_refs=None):",
+            "+    recall_telemetry = {",
+            "+        \"schema\": \"memibrium.locomo_answer_question.telemetry.v1\",",
+            "+        \"expanded_queries\": list(queries),",
+            "+        \"per_query_recall\": [],",
+            "+        \"final_context\": [],",
+            "+    def recall_for_query(query, top_k):",
+            "+        payload = {\"query\": query, \"top_k\": top_k, \"domain\": domain}",
+            "+        if INCLUDE_RECALL_TELEMETRY:",
+            "+            payload[\"include_telemetry\"] = True",
+            "+        recall_result = mcp_post(\"recall\", payload)",
+            "+        recalled, telemetry = _extract_recall_payload(recall_result)",
+            "+        recall_telemetry[\"per_query_recall\"].append({",
+            "+            \"query\": query,",
+            "+            \"requested_top_k\": top_k,",
+            "+            \"result_count\": len(recalled),",
+            "+            \"result_ids\": [memory.get(\"id\") for memory in recalled if isinstance(memory, dict)],",
+            "+            \"result_refs\": [_memory_refs(memory) for memory in recalled],",
+            "+                for memory in recalled",
+            "+            \"server_telemetry\": telemetry,",
+            "+        return recalled",
+            "+        candidate_memories_for_telemetry = []",
+            "-            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": RECALL_TOP_K, \"domain\": domain})",
+            "-            if isinstance(recall_result, list):",
+            "-                recalled = recall_result",
+            "-                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))",
+            "+            recalled = recall_for_query(query, RECALL_TOP_K)",
+            "+            candidate_memories_for_telemetry.extend(recalled)",
+            "+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories_for_telemetry)",
+            "+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(seen)",
+            "-            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": candidate_recall_top_k, \"domain\": domain})",
+            "-            if isinstance(recall_result, list):",
+            "-                recalled = recall_result",
+            "-                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))",
+            "+            recalled = recall_for_query(query, candidate_recall_top_k)",
+            "+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories)",
+            "+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(base_candidates)",
+            "+        recall_telemetry[\"counts\"][\"candidate_count_after_dedupe\"] = len(candidates)",
+            "+    recall_telemetry[\"counts\"][\"final_answer_context_count\"] = len(memories)",
+            "+    recall_telemetry[\"final_context\"] = [",
+            "+        _memory_telemetry_projection(memory, rank=idx)",
+            "+        recall_telemetry[\"gold_evidence_ref_coverage\"] = {",
+            "+            \"final_context_refs_matched\": _count_ref_coverage(evidence_refs, memories),",
+            "+    if return_telemetry:",
+            "+        return answer, len(memories), recall_telemetry",
+            "+            if INCLUDE_RECALL_TELEMETRY:",
+            "+                predicted, n_mems, recall_telemetry = answer_question(",
+            "+                    return_telemetry=True,",
+            "+                recall_telemetry = None",
+            "+            if INCLUDE_RECALL_TELEMETRY:",
+            "+                row[\"recall_telemetry\"] = recall_telemetry"
+          ]
+        },
+        "hybrid_retrieval.py": {
+          "numstat": "167\t15\thybrid_retrieval.py",
+          "stat": "hybrid_retrieval.py | 182 +++++++++++++++++++++++++++++++++++++++++++++++-----\n 1 file changed, 167 insertions(+), 15 deletions(-)",
+          "focused_lines": [
+            "+    # \u2500\u2500 Telemetry helpers (opt-in, observation-only) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+            "+    def _telemetry_memory_projection(self, memory: dict, rank: Optional[int] = None) -> dict:",
+            "+        \"\"\"Return a stable, non-mutating telemetry projection for one memory.\"\"\"",
+            "+        for key in (\"cosine_score\", \"bm25_score\", \"temporal_score\", \"rrf_score\", \"combined_score\"):",
+            "+    def _score_summary(self, results: List[dict], score_key: str) -> dict:",
+            "+        scores = [r.get(score_key) for r in results if r.get(score_key) is not None]",
+            "+        if not scores:",
+            "+            return {\"key\": score_key, \"count\": 0, \"min\": None, \"max\": None, \"mean\": None}",
+            "+            \"key\": score_key,",
+            "+            \"count\": len(scores),",
+            "+            \"min\": min(scores),",
+            "+            \"max\": max(scores),",
+            "+            \"mean\": sum(scores) / len(scores),",
+            "+    def _stream_telemetry(self, results: List[dict], score_key: str, requested_top_k: int, path: Optional[str] = None) -> dict:",
+            "+            \"requested_top_k\": requested_top_k,",
+            "+            \"items\": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(results, start=1)],",
+            "+            \"score_summary\": self._score_summary(results, score_key),",
+            "+    def _new_telemetry(self, query: str, top_k: int, fetch_k: int,",
+            "+                       use_rrf: bool, rerank: bool) -> dict:",
+            "+            \"schema\": \"memibrium.hybrid_retrieval.telemetry.v1\",",
+            "+            \"query\": query,",
+            "+            \"requested_top_k\": top_k,",
+            "+            \"fetch_k\": fetch_k,",
+            "+            \"use_rrf\": bool(use_rrf),",
+            "+                \"semantic\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"cosine_score\")},",
+            "+                \"lexical\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"bm25_score\")},",
+            "+                \"temporal\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"temporal_score\")},",
+            "+            \"fusion\": {\"streams_count\": 0, \"fused_count_before_cap\": 0, \"items_before_cap\": []},",
+            "+            \"multihop\": {\"executed\": False, \"expanded_count\": None},",
+            "+            \"final\": {\"returned_count\": 0, \"items\": [], \"cutoff_items\": []},",
+            "+    def _record_final_telemetry(self, telemetry: Optional[dict], final: List[dict], top_k: int) -> None:",
+            "+        if telemetry is None:",
+            "+        telemetry[\"final\"] = {",
+            "+            \"returned_count\": len(final[:top_k]),",
+            "+            \"items\": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(final[:top_k], start=1)],",
+            "+                self._telemetry_memory_projection(item, rank=idx)",
+            "+                for idx, item in enumerate(final[top_k:top_k + 5], start=top_k + 1)",
+            "+                                telemetry: Optional[dict] = None) -> List[dict]:",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"semantic\"] = self._stream_telemetry([], \"cosine_score\", top_k)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"semantic\"] = self._stream_telemetry(result, \"cosine_score\", top_k)",
+            "+                             telemetry: Optional[dict] = None) -> List[dict]:",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"lexical\"] = self._stream_telemetry([], \"bm25_score\", top_k)",
+            "+        if telemetry is not None:",
+            "+            telemetry[\"streams\"].setdefault(\"lexical\", {})[\"words\"] = list(words)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"lexical\"] = self._stream_telemetry([], \"bm25_score\", top_k) | {\"words\": []}",
+            "+                if telemetry is not None:",
+            "+                    telemetry[\"streams\"].setdefault(\"lexical\", {})[\"tsquery\"] = tsquery",
+            "+                    if telemetry is not None:",
+            "+                        stream = self._stream_telemetry(result, \"bm25_score\", top_k, path=\"tsvector\")",
+            "+                        stream[\"tsquery\"] = tsquery",
+            "+                        telemetry[\"streams\"][\"lexical\"] = stream",
+            "+                if telemetry is not None:",
+            "+                    telemetry[\"streams\"].setdefault(\"lexical\", {})[\"tsvector_error\"] = {\"class\": exc.__class__.__name__, \"message\": str(exc)}",
+            "+            if telemetry is not None:",
+            "+                previous_error = telemetry[\"streams\"].get(\"lexical\", {}).get(\"tsvector_error\")",
+            "+                stream = self._stream_telemetry(result, \"bm25_score\", top_k, path=\"ilike_fallback\")",
+            "+                stream[\"tsquery\"] = \" | \".join(words)",
+            "+                telemetry[\"streams\"][\"lexical\"] = stream",
+            "+                                telemetry: Optional[dict] = None) -> List[dict]:",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"temporal\"] = self._stream_telemetry([], \"temporal_score\", top_k)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"temporal\"] = self._stream_telemetry(result, \"temporal_score\", top_k)",
+            "+                     include_telemetry: bool = False):",
+            "+        telemetry = self._new_telemetry(query, top_k, fetch_k, state_filter, domain, use_rrf, rerank) if include_telemetry else None",
+            "+        if telemetry is not None and temporal_window is not None:",
+            "+            telemetry[\"temporal\"][\"window_start\"] = temporal_window[0]",
+            "+            telemetry[\"temporal\"][\"window_end\"] = temporal_window[1]",
+            "-        semantic_task = self._semantic_search(embedding, fetch_k, state_filter, domain)",
+            "-        lexical_task = self._lexical_search(query, fetch_k, state_filter, domain)",
+            "+        semantic_task = self._semantic_search(embedding, fetch_k, state_filter, domain, telemetry=telemetry)",
+            "+        lexical_task = self._lexical_search(query, fetch_k, state_filter, domain, telemetry=telemetry)",
+            "-            temporal_task = self._temporal_search(start, end, fetch_k, state_filter, domain)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"temporal\"][\"executed\"] = True",
+            "+                telemetry[\"temporal\"][\"window_start\"] = start",
+            "+                telemetry[\"temporal\"][\"window_end\"] = end",
+            "+            temporal_task = self._temporal_search(start, end, fetch_k, state_filter, domain, telemetry=telemetry)",
+            "-            return self._normalize_scores(semantic_results, \"cosine_score\")[:top_k]",
+            "+            final_legacy = self._normalize_scores(semantic_results, \"cosine_score\")[:top_k]",
+            "+            self._record_final_telemetry(telemetry, final_legacy, top_k)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"fusion\"][\"fused_count_before_cap\"] = len(semantic_results)",
+            "+                return final_legacy, telemetry",
+            "+            return final_legacy",
+            "+        if telemetry is not None:",
+            "+            telemetry[\"fusion\"] = {",
+            "+                \"items_before_cap\": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(fused, start=1)],",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"multihop\"][\"executed\"] = True",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"multihop\"][\"expanded_count\"] = len(final)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"chronology_sort\"][\"executed\"] = True",
+            "-        return final[:top_k]",
+            "+        final_results = final[:top_k]",
+            "+        self._record_final_telemetry(telemetry, final, top_k)",
+            "+        if telemetry is not None:",
+            "+            return final_results, telemetry",
+            "+        return final_results"
+          ]
+        },
+        "server.py": {
+          "numstat": "52\t1\tserver.py",
+          "stat": "server.py | 53 ++++++++++++++++++++++++++++++++++++++++++++++++++++-\n 1 file changed, 52 insertions(+), 1 deletion(-)",
+          "focused_lines": [
+            "+    include_telemetry = bool(body.get(\"include_telemetry\", False))",
+            "+    response_telemetry = None",
+            "+        embedding_ok = False",
+            "+        embedding_error = None",
+            "+            embedding_ok = True",
+            "+            embedding_error = {\"class\": e.__class__.__name__, \"message\": str(e)}",
+            "+                include_telemetry=include_telemetry,",
+            "+            if include_telemetry:",
+            "+                result, response_telemetry = search_result",
+            "+                response_telemetry[\"server\"] = {",
+            "+                    \"embedding_success\": embedding_ok,",
+            "+                    \"embedding_error\": embedding_error,",
+            "+            if include_telemetry:",
+            "+                response_telemetry = {",
+            "+                    \"schema\": \"memibrium.recall.telemetry.v1\",",
+            "+                    \"query\": query,",
+            "+                    \"requested_top_k\": body.get(\"top_k\", 5),",
+            "+                        \"embedding_success\": embedding_ok,",
+            "+                        \"embedding_error\": embedding_error,",
+            "+        if include_telemetry:",
+            "+            response_telemetry = {",
+            "+                \"schema\": \"memibrium.recall.telemetry.v1\",",
+            "+                \"query\": query,",
+            "+                \"requested_top_k\": body.get(\"top_k\", 5),",
+            "+                    \"embedding_success\": None,",
+            "+                    \"embedding_error\": None,",
+            "+    if include_telemetry:",
+            "+        return JSONResponse(_serialize_result({\"results\": result, \"telemetry\": response_telemetry}))"
+          ]
+        }
+      }
+    },
+    "telemetry_to_decimal_fix_code": {
+      "from": "cb56559",
+      "to": "5cb6f0b",
+      "files": {
+        "benchmark_scripts/locomo_bench_v2.py": {
+          "numstat": "",
+          "stat": "",
+          "focused_lines": []
+        },
+        "hybrid_retrieval.py": {
+          "numstat": "",
+          "stat": "",
+          "focused_lines": []
+        },
+        "server.py": {
+          "numstat": "7\t2\tserver.py",
+          "stat": "server.py | 9 +++++++--\n 1 file changed, 7 insertions(+), 2 deletions(-)",
+          "focused_lines": [
+            "+from decimal import Decimal",
+            "+    if isinstance(obj, Decimal):"
+          ]
+        }
+      }
+    },
+    "decimal_fix_to_corrected_prereg": {
+      "from": "5cb6f0b",
+      "to": "c9a7623",
+      "files": {
+        "benchmark_scripts/locomo_bench_v2.py": {
+          "numstat": "",
+          "stat": "",
+          "focused_lines": []
+        },
+        "hybrid_retrieval.py": {
+          "numstat": "",
+          "stat": "",
+          "focused_lines": []
+        },
+        "server.py": {
+          "numstat": "",
+          "stat": "",
+          "focused_lines": []
+        }
+      }
+    },
+    "retry_to_third_result_source": {
+      "from": "91fede6",
+      "to": "662514a",
+      "files": {
+        "benchmark_scripts/locomo_bench_v2.py": {
+          "numstat": "",
+          "stat": "",
+          "focused_lines": []
+        },
+        "hybrid_retrieval.py": {
+          "numstat": "",
+          "stat": "",
+          "focused_lines": []
+        },
+        "server.py": {
+          "numstat": "",
+          "stat": "",
+          "focused_lines": []
+        }
+      }
+    },
+    "baseline_to_corrected_prereg": {
+      "from": "f2466c9",
+      "to": "c9a7623",
+      "files": {
+        "benchmark_scripts/locomo_bench_v2.py": {
+          "numstat": "115\t16\tbenchmark_scripts/locomo_bench_v2.py",
+          "stat": "benchmark_scripts/locomo_bench_v2.py | 131 ++++++++++++++++++++++++++++++-----\n 1 file changed, 115 insertions(+), 16 deletions(-)",
+          "focused_lines": [
+            "+# Observation-only telemetry for preregistered LOCOMO diagnostic runs.",
+            "+INCLUDE_RECALL_TELEMETRY = _env_flag(\"INCLUDE_RECALL_TELEMETRY\", default=False)",
+            "+def _memory_telemetry_projection(memory, rank=None):",
+            "+        \"dedupe_key\": _memory_dedupe_key(memory),",
+            "+def _extract_recall_payload(recall_result):",
+            "+    if isinstance(recall_result, list):",
+            "+        return recall_result, None",
+            "+    return recall_result.get(\"results\", recall_result.get(\"memories\", [])), recall_result.get(\"telemetry\")",
+            "+def answer_question(question, domain, return_telemetry=False, evidence_refs=None):",
+            "+    recall_telemetry = {",
+            "+        \"schema\": \"memibrium.locomo_answer_question.telemetry.v1\",",
+            "+        \"expanded_queries\": list(queries),",
+            "+        \"per_query_recall\": [],",
+            "+        \"final_context\": [],",
+            "+    def recall_for_query(query, top_k):",
+            "+        payload = {\"query\": query, \"top_k\": top_k, \"domain\": domain}",
+            "+        if INCLUDE_RECALL_TELEMETRY:",
+            "+            payload[\"include_telemetry\"] = True",
+            "+        recall_result = mcp_post(\"recall\", payload)",
+            "+        recalled, telemetry = _extract_recall_payload(recall_result)",
+            "+        recall_telemetry[\"per_query_recall\"].append({",
+            "+            \"query\": query,",
+            "+            \"requested_top_k\": top_k,",
+            "+            \"result_count\": len(recalled),",
+            "+            \"result_ids\": [memory.get(\"id\") for memory in recalled if isinstance(memory, dict)],",
+            "+            \"result_refs\": [_memory_refs(memory) for memory in recalled],",
+            "+                for memory in recalled",
+            "+            \"server_telemetry\": telemetry,",
+            "+        return recalled",
+            "+        candidate_memories_for_telemetry = []",
+            "-            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": RECALL_TOP_K, \"domain\": domain})",
+            "-            if isinstance(recall_result, list):",
+            "-                recalled = recall_result",
+            "-                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))",
+            "+            recalled = recall_for_query(query, RECALL_TOP_K)",
+            "+            candidate_memories_for_telemetry.extend(recalled)",
+            "+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories_for_telemetry)",
+            "+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(seen)",
+            "-            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": candidate_recall_top_k, \"domain\": domain})",
+            "-            if isinstance(recall_result, list):",
+            "-                recalled = recall_result",
+            "-                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))",
+            "+            recalled = recall_for_query(query, candidate_recall_top_k)",
+            "+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories)",
+            "+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(base_candidates)",
+            "+        recall_telemetry[\"counts\"][\"candidate_count_after_dedupe\"] = len(candidates)",
+            "+    recall_telemetry[\"counts\"][\"final_answer_context_count\"] = len(memories)",
+            "+    recall_telemetry[\"final_context\"] = [",
+            "+        _memory_telemetry_projection(memory, rank=idx)",
+            "+        recall_telemetry[\"gold_evidence_ref_coverage\"] = {",
+            "+            \"final_context_refs_matched\": _count_ref_coverage(evidence_refs, memories),",
+            "+    if return_telemetry:",
+            "+        return answer, len(memories), recall_telemetry",
+            "+            if INCLUDE_RECALL_TELEMETRY:",
+            "+                predicted, n_mems, recall_telemetry = answer_question(",
+            "+                    return_telemetry=True,",
+            "+                recall_telemetry = None",
+            "+            if INCLUDE_RECALL_TELEMETRY:",
+            "+                row[\"recall_telemetry\"] = recall_telemetry"
+          ]
+        },
+        "hybrid_retrieval.py": {
+          "numstat": "167\t15\thybrid_retrieval.py",
+          "stat": "hybrid_retrieval.py | 182 +++++++++++++++++++++++++++++++++++++++++++++++-----\n 1 file changed, 167 insertions(+), 15 deletions(-)",
+          "focused_lines": [
+            "+    # \u2500\u2500 Telemetry helpers (opt-in, observation-only) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+            "+    def _telemetry_memory_projection(self, memory: dict, rank: Optional[int] = None) -> dict:",
+            "+        \"\"\"Return a stable, non-mutating telemetry projection for one memory.\"\"\"",
+            "+        for key in (\"cosine_score\", \"bm25_score\", \"temporal_score\", \"rrf_score\", \"combined_score\"):",
+            "+    def _score_summary(self, results: List[dict], score_key: str) -> dict:",
+            "+        scores = [r.get(score_key) for r in results if r.get(score_key) is not None]",
+            "+        if not scores:",
+            "+            return {\"key\": score_key, \"count\": 0, \"min\": None, \"max\": None, \"mean\": None}",
+            "+            \"key\": score_key,",
+            "+            \"count\": len(scores),",
+            "+            \"min\": min(scores),",
+            "+            \"max\": max(scores),",
+            "+            \"mean\": sum(scores) / len(scores),",
+            "+    def _stream_telemetry(self, results: List[dict], score_key: str, requested_top_k: int, path: Optional[str] = None) -> dict:",
+            "+            \"requested_top_k\": requested_top_k,",
+            "+            \"items\": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(results, start=1)],",
+            "+            \"score_summary\": self._score_summary(results, score_key),",
+            "+    def _new_telemetry(self, query: str, top_k: int, fetch_k: int,",
+            "+                       use_rrf: bool, rerank: bool) -> dict:",
+            "+            \"schema\": \"memibrium.hybrid_retrieval.telemetry.v1\",",
+            "+            \"query\": query,",
+            "+            \"requested_top_k\": top_k,",
+            "+            \"fetch_k\": fetch_k,",
+            "+            \"use_rrf\": bool(use_rrf),",
+            "+                \"semantic\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"cosine_score\")},",
+            "+                \"lexical\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"bm25_score\")},",
+            "+                \"temporal\": {\"requested_top_k\": fetch_k, \"returned_count\": 0, \"items\": [], \"score_summary\": self._score_summary([], \"temporal_score\")},",
+            "+            \"fusion\": {\"streams_count\": 0, \"fused_count_before_cap\": 0, \"items_before_cap\": []},",
+            "+            \"multihop\": {\"executed\": False, \"expanded_count\": None},",
+            "+            \"final\": {\"returned_count\": 0, \"items\": [], \"cutoff_items\": []},",
+            "+    def _record_final_telemetry(self, telemetry: Optional[dict], final: List[dict], top_k: int) -> None:",
+            "+        if telemetry is None:",
+            "+        telemetry[\"final\"] = {",
+            "+            \"returned_count\": len(final[:top_k]),",
+            "+            \"items\": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(final[:top_k], start=1)],",
+            "+                self._telemetry_memory_projection(item, rank=idx)",
+            "+                for idx, item in enumerate(final[top_k:top_k + 5], start=top_k + 1)",
+            "+                                telemetry: Optional[dict] = None) -> List[dict]:",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"semantic\"] = self._stream_telemetry([], \"cosine_score\", top_k)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"semantic\"] = self._stream_telemetry(result, \"cosine_score\", top_k)",
+            "+                             telemetry: Optional[dict] = None) -> List[dict]:",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"lexical\"] = self._stream_telemetry([], \"bm25_score\", top_k)",
+            "+        if telemetry is not None:",
+            "+            telemetry[\"streams\"].setdefault(\"lexical\", {})[\"words\"] = list(words)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"lexical\"] = self._stream_telemetry([], \"bm25_score\", top_k) | {\"words\": []}",
+            "+                if telemetry is not None:",
+            "+                    telemetry[\"streams\"].setdefault(\"lexical\", {})[\"tsquery\"] = tsquery",
+            "+                    if telemetry is not None:",
+            "+                        stream = self._stream_telemetry(result, \"bm25_score\", top_k, path=\"tsvector\")",
+            "+                        stream[\"tsquery\"] = tsquery",
+            "+                        telemetry[\"streams\"][\"lexical\"] = stream",
+            "+                if telemetry is not None:",
+            "+                    telemetry[\"streams\"].setdefault(\"lexical\", {})[\"tsvector_error\"] = {\"class\": exc.__class__.__name__, \"message\": str(exc)}",
+            "+            if telemetry is not None:",
+            "+                previous_error = telemetry[\"streams\"].get(\"lexical\", {}).get(\"tsvector_error\")",
+            "+                stream = self._stream_telemetry(result, \"bm25_score\", top_k, path=\"ilike_fallback\")",
+            "+                stream[\"tsquery\"] = \" | \".join(words)",
+            "+                telemetry[\"streams\"][\"lexical\"] = stream",
+            "+                                telemetry: Optional[dict] = None) -> List[dict]:",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"temporal\"] = self._stream_telemetry([], \"temporal_score\", top_k)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"streams\"][\"temporal\"] = self._stream_telemetry(result, \"temporal_score\", top_k)",
+            "+                     include_telemetry: bool = False):",
+            "+        telemetry = self._new_telemetry(query, top_k, fetch_k, state_filter, domain, use_rrf, rerank) if include_telemetry else None",
+            "+        if telemetry is not None and temporal_window is not None:",
+            "+            telemetry[\"temporal\"][\"window_start\"] = temporal_window[0]",
+            "+            telemetry[\"temporal\"][\"window_end\"] = temporal_window[1]",
+            "-        semantic_task = self._semantic_search(embedding, fetch_k, state_filter, domain)",
+            "-        lexical_task = self._lexical_search(query, fetch_k, state_filter, domain)",
+            "+        semantic_task = self._semantic_search(embedding, fetch_k, state_filter, domain, telemetry=telemetry)",
+            "+        lexical_task = self._lexical_search(query, fetch_k, state_filter, domain, telemetry=telemetry)",
+            "-            temporal_task = self._temporal_search(start, end, fetch_k, state_filter, domain)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"temporal\"][\"executed\"] = True",
+            "+                telemetry[\"temporal\"][\"window_start\"] = start",
+            "+                telemetry[\"temporal\"][\"window_end\"] = end",
+            "+            temporal_task = self._temporal_search(start, end, fetch_k, state_filter, domain, telemetry=telemetry)",
+            "-            return self._normalize_scores(semantic_results, \"cosine_score\")[:top_k]",
+            "+            final_legacy = self._normalize_scores(semantic_results, \"cosine_score\")[:top_k]",
+            "+            self._record_final_telemetry(telemetry, final_legacy, top_k)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"fusion\"][\"fused_count_before_cap\"] = len(semantic_results)",
+            "+                return final_legacy, telemetry",
+            "+            return final_legacy",
+            "+        if telemetry is not None:",
+            "+            telemetry[\"fusion\"] = {",
+            "+                \"items_before_cap\": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(fused, start=1)],",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"multihop\"][\"executed\"] = True",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"multihop\"][\"expanded_count\"] = len(final)",
+            "+            if telemetry is not None:",
+            "+                telemetry[\"chronology_sort\"][\"executed\"] = True",
+            "-        return final[:top_k]",
+            "+        final_results = final[:top_k]",
+            "+        self._record_final_telemetry(telemetry, final, top_k)",
+            "+        if telemetry is not None:",
+            "+            return final_results, telemetry",
+            "+        return final_results"
+          ]
+        },
+        "server.py": {
+          "numstat": "59\t3\tserver.py",
+          "stat": "server.py | 62 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---\n 1 file changed, 59 insertions(+), 3 deletions(-)",
+          "focused_lines": [
+            "+from decimal import Decimal",
+            "+    if isinstance(obj, Decimal):",
+            "+    include_telemetry = bool(body.get(\"include_telemetry\", False))",
+            "+    response_telemetry = None",
+            "+        embedding_ok = False",
+            "+        embedding_error = None",
+            "+            embedding_ok = True",
+            "+            embedding_error = {\"class\": e.__class__.__name__, \"message\": str(e)}",
+            "+                include_telemetry=include_telemetry,",
+            "+            if include_telemetry:",
+            "+                result, response_telemetry = search_result",
+            "+                response_telemetry[\"server\"] = {",
+            "+                    \"embedding_success\": embedding_ok,",
+            "+                    \"embedding_error\": embedding_error,",
+            "+            if include_telemetry:",
+            "+                response_telemetry = {",
+            "+                    \"schema\": \"memibrium.recall.telemetry.v1\",",
+            "+                    \"query\": query,",
+            "+                    \"requested_top_k\": body.get(\"top_k\", 5),",
+            "+                        \"embedding_success\": embedding_ok,",
+            "+                        \"embedding_error\": embedding_error,",
+            "+        if include_telemetry:",
+            "+            response_telemetry = {",
+            "+                \"schema\": \"memibrium.recall.telemetry.v1\",",
+            "+                \"query\": query,",
+            "+                \"requested_top_k\": body.get(\"top_k\", 5),",
+            "+                    \"embedding_success\": None,",
+            "+                    \"embedding_error\": None,",
+            "+    if include_telemetry:",
+            "+        return JSONResponse(_serialize_result({\"results\": result, \"telemetry\": response_telemetry}))"
+          ]
+        }
+      }
+    }
+  },
+  "regime_summary": {
+    "A_low_f2466c9": {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_substrate_baseline_2026-05-01.json",
+      "sha256": "d44b9288a633bfdb04061f44bb5d37b8240342e5550e2df5f1c2bc2f38187637",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 14.82,
+      "protocol_4cat_overall": 19.41,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 4.5327,
+      "n_dist": {
+        "2": 57,
+        "3": 110,
+        "11": 1,
+        "12": 3,
+        "13": 3,
+        "14": 3,
+        "15": 22
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 2.617,
+        "multi-hop": 7.2308,
+        "single-hop": 6.2188,
+        "temporal": 8.1351,
+        "unanswerable": 2.6429
+      },
+      "cat_score_mean": {
+        "adversarial": 0.0,
+        "multi-hop": 30.77,
+        "single-hop": 26.56,
+        "temporal": 39.19,
+        "unanswerable": 3.57
+      }
+    },
+    "B_high_91fede6": {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json",
+      "sha256": "7d8c911caa8753e6f920bed1402f8e1d72c0a6c4d741f82003f54de5fc2c032d",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 58.29,
+      "protocol_4cat_overall": 69.41,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 14.6231,
+      "n_dist": {
+        "11": 3,
+        "12": 6,
+        "13": 17,
+        "14": 11,
+        "15": 162
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 14.6809,
+        "multi-hop": 14.5385,
+        "single-hop": 14.6875,
+        "temporal": 14.4054,
+        "unanswerable": 14.6857
+      },
+      "cat_score_mean": {
+        "adversarial": 22.34,
+        "multi-hop": 42.31,
+        "single-hop": 64.06,
+        "temporal": 68.92,
+        "unanswerable": 77.14
+      }
+    },
+    "C_third_662514a": {
+      "path": "docs/eval/results/locomo_corrected_slice_results_query_expansion_raw_2026-05-02.json",
+      "sha256": "317dc38bb7cbe8529c3f1d10fbbefe459d6b790c539f8395cf72729dd828f9e9",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 55.28,
+      "protocol_4cat_overall": 70.07,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 11.9296,
+      "n_dist": {
+        "4": 51,
+        "12": 6,
+        "13": 10,
+        "14": 12,
+        "15": 120
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 4,
+        "multi-hop": 14.7692,
+        "single-hop": 14.75,
+        "temporal": 14.5405,
+        "unanswerable": 14.0571
+      },
+      "cat_score_mean": {
+        "adversarial": 7.45,
+        "multi-hop": 38.46,
+        "single-hop": 68.75,
+        "temporal": 75.68,
+        "unanswerable": 73.57
+      }
+    }
+  },
+  "per_question_overlap": {
+    "common_question_count": 199,
+    "same_order_all_three": true,
+    "n_C_equals_A": 19,
+    "n_C_equals_B": 117,
+    "n_C_between_A_B_inclusive": 179,
+    "n_A_to_C_delta_dist": {
+      "-1": 5,
+      "0": 19,
+      "1": 33,
+      "2": 23,
+      "3": 2,
+      "4": 1,
+      "9": 3,
+      "10": 9,
+      "11": 9,
+      "12": 63,
+      "13": 32
+    },
+    "n_B_to_C_delta_dist": {
+      "-3": 3,
+      "-2": 5,
+      "-1": 10,
+      "0": 117,
+      "1": 7,
+      "2": 6,
+      "9": 6,
+      "10": 3,
+      "11": 42
+    },
+    "score_pattern_counts": {
+      "ABC": 38,
+      "abc": 54,
+      "aBC": 82,
+      "Abc": 1,
+      "aBc": 17,
+      "abC": 7
+    },
+    "by_cat": {
+      "adversarial": {
+        "count": 47,
+        "mean_n_A": 2.617,
+        "mean_n_B": 14.6809,
+        "mean_n_C": 4,
+        "score_A_pct": 0.0,
+        "score_B_pct": 22.34,
+        "score_C_pct": 7.45,
+        "C_eq_A": 0,
+        "C_eq_B": 0,
+        "C_between": 47
+      },
+      "multi-hop": {
+        "count": 13,
+        "mean_n_A": 7.2308,
+        "mean_n_B": 14.5385,
+        "mean_n_C": 14.7692,
+        "score_A_pct": 30.77,
+        "score_B_pct": 42.31,
+        "score_C_pct": 38.46,
+        "C_eq_A": 4,
+        "C_eq_B": 12,
+        "C_between": 13
+      },
+      "single-hop": {
+        "count": 32,
+        "mean_n_A": 6.2188,
+        "mean_n_B": 14.6875,
+        "mean_n_C": 14.75,
+        "score_A_pct": 26.56,
+        "score_B_pct": 64.06,
+        "score_C_pct": 68.75,
+        "C_eq_A": 5,
+        "C_eq_B": 26,
+        "C_between": 27
+      },
+      "temporal": {
+        "count": 37,
+        "mean_n_A": 8.1351,
+        "mean_n_B": 14.4054,
+        "mean_n_C": 14.5405,
+        "score_A_pct": 39.19,
+        "score_B_pct": 68.92,
+        "score_C_pct": 75.68,
+        "C_eq_A": 10,
+        "C_eq_B": 25,
+        "C_between": 29
+      },
+      "unanswerable": {
+        "count": 70,
+        "mean_n_A": 2.6429,
+        "mean_n_B": 14.6857,
+        "mean_n_C": 14.0571,
+        "score_A_pct": 3.57,
+        "score_B_pct": 77.14,
+        "score_C_pct": 73.57,
+        "C_eq_A": 0,
+        "C_eq_B": 54,
+        "C_between": 63
+      }
+    }
+  },
+  "telemetry_mechanism_extract": {
+    "telemetry_stats_B": {
+      "rows_with_recall_telemetry": 199,
+      "top_level_keys": {
+        "schema": 199,
+        "question": 199,
+        "domain": 199,
+        "expanded_queries": 199,
+        "per_query_recall": 199,
+        "counts": 199,
+        "final_context": 199,
+        "gold_evidence_ref_coverage": 199
+      },
+      "expanded_query_count_dist": {
+        "4": 199
+      },
+      "pre_candidate_dist_sample": {},
+      "final_context_dist_sample": {
+        "11": 3,
+        "12": 6,
+        "13": 17,
+        "14": 11,
+        "15": 162
+      }
+    }
+  },
+  "target_file_hashes_at_key_commits": {
+    "f2466c9": {
+      "benchmark_scripts/locomo_bench_v2.py": "78721cdc4b76e41b1960b1f8340469e048b3808b62f0889d94cae8921850d57b",
+      "hybrid_retrieval.py": "a35fe1624ff17bc19190a8ee5959a767b690cb44303907fbfb7f5373fb771fce",
+      "server.py": "5efefae8f05b45974dab6a379403e1a94d00a60e2bfb76b403d4ebe4a7e360d5"
+    },
+    "cb56559": {
+      "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+      "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+      "server.py": "d0532ea7a4748031aaf4759bba46deb5d563381da109eb2cb1c953ba4e747a2c"
+    },
+    "5cb6f0b": {
+      "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+      "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+      "server.py": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a"
+    },
+    "c9a7623": {
+      "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+      "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+      "server.py": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a"
+    },
+    "662514a": {
+      "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+      "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+      "server.py": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a"
+    }
+  },
+  "static_code_findings": {
+    "benchmark_path_preexisting_at_f2466c9": [
+      "f2466c9 benchmark already has USE_QUERY_EXPANSION gating expand_query(question).",
+      "f2466c9 non-legacy path loops over all queries returned by expand_query(question).",
+      "f2466c9 only breaks early when not USE_QUERY_EXPANSION; with query expansion enabled it accumulates recalls across expanded queries.",
+      "f2466c9 uses RECALL_TOP_K/candidate_recall_top_k per query and then candidates[:ANSWER_CONTEXT_TOP_K]."
+    ],
+    "cb56559_source_effect": [
+      "Introduces _extract_recall_payload() to unwrap list or {results, memories, telemetry}.",
+      "Introduces recall_for_query() wrapper that optionally adds include_telemetry and then returns recalled results.",
+      "Replaces duplicated recall payload/unwrapping code with recall_for_query() in both legacy and non-legacy branches.",
+      "Adds recall_telemetry counters/projections and optional row[recall_telemetry] output.",
+      "Adds HybridRetriever include_telemetry parameter; when false, return path remains final_results list.",
+      "Server returns legacy list shape unless include_telemetry is true; include_telemetry true returns {results, telemetry}."
+    ],
+    "post_cb56559_stability": [
+      "benchmark_scripts/locomo_bench_v2.py hash is identical at cb56559, 5cb6f0b, c9a7623, and 662514a.",
+      "hybrid_retrieval.py hash is identical at cb56559, 5cb6f0b, c9a7623, and 662514a.",
+      "server.py changes at 5cb6f0b are serialization-only; after 5cb6f0b server.py hash is identical through c9a7623/662514a."
+    ]
+  },
+  "artifact_regime_category_stats": {
+    "A_f2466c9": {
+      "adversarial": {
+        "rows": 47,
+        "mean_n_memories": 2.617,
+        "distribution": {
+          "2": 18,
+          "3": 29
+        },
+        "score_mean_percent": 0.0
+      },
+      "multi-hop": {
+        "rows": 13,
+        "mean_n_memories": 7.2308,
+        "distribution": {
+          "2": 2,
+          "3": 6,
+          "12": 1,
+          "15": 4
+        },
+        "score_mean_percent": 30.77
+      },
+      "single-hop": {
+        "rows": 32,
+        "mean_n_memories": 6.2188,
+        "distribution": {
+          "2": 7,
+          "3": 15,
+          "12": 1,
+          "13": 3,
+          "14": 1,
+          "15": 5
+        },
+        "score_mean_percent": 26.56
+      },
+      "temporal": {
+        "rows": 37,
+        "mean_n_memories": 8.1351,
+        "distribution": {
+          "2": 5,
+          "3": 15,
+          "11": 1,
+          "12": 1,
+          "14": 2,
+          "15": 13
+        },
+        "score_mean_percent": 39.19
+      },
+      "unanswerable": {
+        "rows": 70,
+        "mean_n_memories": 2.6429,
+        "distribution": {
+          "2": 25,
+          "3": 45
+        },
+        "score_mean_percent": 3.57
+      }
+    },
+    "B_91fede6": {
+      "adversarial": {
+        "rows": 47,
+        "mean_n_memories": 14.6809,
+        "distribution": {
+          "13": 6,
+          "14": 3,
+          "15": 38
+        },
+        "score_mean_percent": 22.34
+      },
+      "multi-hop": {
+        "rows": 13,
+        "mean_n_memories": 14.5385,
+        "distribution": {
+          "12": 2,
+          "15": 11
+        },
+        "score_mean_percent": 42.31
+      },
+      "single-hop": {
+        "rows": 32,
+        "mean_n_memories": 14.6875,
+        "distribution": {
+          "11": 1,
+          "13": 2,
+          "14": 2,
+          "15": 27
+        },
+        "score_mean_percent": 64.06
+      },
+      "temporal": {
+        "rows": 37,
+        "mean_n_memories": 14.4054,
+        "distribution": {
+          "11": 1,
+          "12": 2,
+          "13": 5,
+          "14": 2,
+          "15": 27
+        },
+        "score_mean_percent": 68.92
+      },
+      "unanswerable": {
+        "rows": 70,
+        "mean_n_memories": 14.6857,
+        "distribution": {
+          "11": 1,
+          "12": 2,
+          "13": 4,
+          "14": 4,
+          "15": 59
+        },
+        "score_mean_percent": 77.14
+      }
+    },
+    "C_662514a": {
+      "adversarial": {
+        "rows": 47,
+        "mean_n_memories": 4.0,
+        "distribution": {
+          "4": 47
+        },
+        "score_mean_percent": 7.45
+      },
+      "multi-hop": {
+        "rows": 13,
+        "mean_n_memories": 14.7692,
+        "distribution": {
+          "12": 1,
+          "15": 12
+        },
+        "score_mean_percent": 38.46
+      },
+      "single-hop": {
+        "rows": 32,
+        "mean_n_memories": 14.75,
+        "distribution": {
+          "12": 2,
+          "14": 2,
+          "15": 28
+        },
+        "score_mean_percent": 68.75
+      },
+      "temporal": {
+        "rows": 37,
+        "mean_n_memories": 14.5405,
+        "distribution": {
+          "13": 6,
+          "14": 5,
+          "15": 26
+        },
+        "score_mean_percent": 75.68
+      },
+      "unanswerable": {
+        "rows": 70,
+        "mean_n_memories": 14.0571,
+        "distribution": {
+          "4": 4,
+          "12": 3,
+          "13": 4,
+          "14": 5,
+          "15": 54
+        },
+        "score_mean_percent": 73.57
+      }
+    }
+  },
+  "regime_B_telemetry_mechanism_by_category": {
+    "adversarial": {
+      "expanded_query_count_distribution": {
+        "4": 47
+      },
+      "per_query_result_count_distribution": {
+        "10": 188
+      },
+      "candidate_before_dedupe_distribution": {
+        "40": 47
+      },
+      "final_context_distribution": {
+        "13": 6,
+        "14": 3,
+        "15": 38
+      }
+    },
+    "multi-hop": {
+      "expanded_query_count_distribution": {
+        "4": 13
+      },
+      "per_query_result_count_distribution": {
+        "10": 52
+      },
+      "candidate_before_dedupe_distribution": {
+        "40": 13
+      },
+      "final_context_distribution": {
+        "12": 2,
+        "15": 11
+      }
+    },
+    "single-hop": {
+      "expanded_query_count_distribution": {
+        "4": 32
+      },
+      "per_query_result_count_distribution": {
+        "10": 128
+      },
+      "candidate_before_dedupe_distribution": {
+        "40": 32
+      },
+      "final_context_distribution": {
+        "11": 1,
+        "13": 2,
+        "14": 2,
+        "15": 27
+      }
+    },
+    "temporal": {
+      "expanded_query_count_distribution": {
+        "4": 37
+      },
+      "per_query_result_count_distribution": {
+        "10": 148
+      },
+      "candidate_before_dedupe_distribution": {
+        "40": 37
+      },
+      "final_context_distribution": {
+        "11": 1,
+        "12": 2,
+        "13": 5,
+        "14": 2,
+        "15": 27
+      }
+    },
+    "unanswerable": {
+      "expanded_query_count_distribution": {
+        "4": 70
+      },
+      "per_query_result_count_distribution": {
+        "10": 280
+      },
+      "candidate_before_dedupe_distribution": {
+        "40": 70
+      },
+      "final_context_distribution": {
+        "11": 1,
+        "12": 2,
+        "13": 4,
+        "14": 4,
+        "15": 59
+      }
+    }
+  },
+  "conclusion": {
+    "primary_label": "bisection_identifies_commit_range",
+    "culprit_range": "f2466c9..cb56559 effective runtime/source boundary, with cb56559 as only committed target-source change but not a specific static culprit",
+    "confidence": "medium for range, low for specific commit causality",
+    "why_not_specific_commit": "The all-expanded-query accumulation mechanism existed at f2466c9 source, so static committed source alone cannot explain f2466c9 low-context output. cb56559 is the only target-source change, but its visible changes are telemetry wrappers/observation plumbing and preserve telemetry-off list behavior. Therefore the strongest conclusion is an effective source/runtime/artifact boundary rather than a proven code-line culprit.",
+    "phase_c": "blocked",
+    "recommended_next": "Step 5o separately preregistered bounded checkpoint/trace-lite reproduction, not full 199Q first; compare f2466c9 effective source vs cb56559/current with fixed adversarial and non-adversarial rows and trace-lite counts."
+  }
+}
