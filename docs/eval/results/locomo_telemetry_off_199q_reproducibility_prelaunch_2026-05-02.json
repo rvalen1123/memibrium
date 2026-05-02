@@ -1,0 +1,160 @@
+{
+  "artifact_date": "2026-05-02",
+  "authorization": "user said proceed after Step 5i prereg commit 4663bcd",
+  "benchmark_effective_env_nonsecret": {
+    "cmd": "set -a; . ./.env; set +a; export AZURE_CHAT_DEPLOYMENT='gpt-4.1-mini'; export AZURE_OPENAI_DEPLOYMENT='gpt-4.1-mini'; export ANSWER_MODEL='gpt-4.1-mini'; export JUDGE_MODEL='gpt-4.1-mini'; export CHAT_MODEL='gpt-4.1-mini'; export AZURE_EMBEDDING_DEPLOYMENT='text-embedding-3-small'; export USE_QUERY_EXPANSION=1; unset INCLUDE_RECALL_TELEMETRY; unset LOCOMO_RETRIEVAL_TELEMETRY; unset USE_CONTEXT_RERANK; unset USE_APPEND_CONTEXT_EXPANSION; unset USE_GATED_APPEND_CONTEXT_EXPANSION; unset USE_LEGACY_CONTEXT_ASSEMBLY; python3 - <<'PY'\nimport os\nkeys=['AZURE_CHAT_ENDPOINT','AZURE_CHAT_DEPLOYMENT','AZURE_OPENAI_DEPLOYMENT','ANSWER_MODEL','JUDGE_MODEL','CHAT_MODEL','AZURE_EMBEDDING_ENDPOINT','AZURE_EMBEDDING_DEPLOYMENT','USE_QUERY_EXPANSION','INCLUDE_RECALL_TELEMETRY','LOCOMO_RETRIEVAL_TELEMETRY','USE_CONTEXT_RERANK','USE_APPEND_CONTEXT_EXPANSION','USE_GATED_APPEND_CONTEXT_EXPANSION','USE_LEGACY_CONTEXT_ASSEMBLY']\nfor k in keys:\n    print(f'{k}={os.environ.get(k, )}')\nPY",
+    "exit_code": 0,
+    "output": "AZURE_CHAT_ENDPOINT=https://sector-7.services.ai.azure.com\nAZURE_CHAT_DEPLOYMENT=gpt-4.1-mini\nAZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini\nANSWER_MODEL=gpt-4.1-mini\nJUDGE_MODEL=gpt-4.1-mini\nCHAT_MODEL=gpt-4.1-mini\nAZURE_EMBEDDING_ENDPOINT=https://sector-7.openai.azure.com/\nAZURE_EMBEDDING_DEPLOYMENT=text-embedding-3-small\nUSE_QUERY_EXPANSION=1\nINCLUDE_RECALL_TELEMETRY=None\nLOCOMO_RETRIEVAL_TELEMETRY=None\nUSE_CONTEXT_RERANK=None\nUSE_APPEND_CONTEXT_EXPANSION=None\nUSE_GATED_APPEND_CONTEXT_EXPANSION=None\nUSE_LEGACY_CONTEXT_ASSEMBLY=None"
+  },
+  "container_source_probe": {
+    "cmd": "docker exec memibrium-server python3 -c \"from pathlib import Path; h=Path('/app/hybrid_retrieval.py').read_text(); s=Path('/app/server.py').read_text(); b=Path('/app/benchmark_scripts/locomo_bench_v2.py').read_text(); print('dynamic_self_vtype=' + str('\\$1::{self.vtype}' in h)); print('hardcoded_vector=' + str('\\$1::vector' in h)); print('serialize_result=' + str('def _serialize_result' in s)); print('decimal_import=' + str('from decimal import Decimal' in s)); print('include_recall_telemetry=' + str('INCLUDE_RECALL_TELEMETRY' in b)); print('legacy_context_arg=' + str('--legacy-context-assembly' in b)); print('nonlegacy_expanded_query_accumulation_guard=' + str('if not USE_QUERY_EXPANSION and len(base_seen) >= candidate_limit:' in b)); print('candidate_memories_extend=' + str('candidate_memories.extend(recalled)' in b)); print('final_candidates_cap=' + str('memories = candidates[:ANSWER_CONTEXT_TOP_K]' in b));\"",
+    "exit_code": 0,
+    "output": "dynamic_self_vtype=True\nhardcoded_vector=False\nserialize_result=True\ndecimal_import=True\ninclude_recall_telemetry=True\nlegacy_context_arg=True\nnonlegacy_expanded_query_accumulation_guard=True\ncandidate_memories_extend=True\nfinal_candidates_cap=True"
+  },
+  "created_at_utc": "2026-05-02T17:41:18.772365+00:00",
+  "db_type_probe": {
+    "cmd": "docker exec memibrium-ruvector-db psql -U memory -d memory -tA -F '|' -c \"SELECT 'embedding_type', data_type || ':' || udt_name FROM information_schema.columns WHERE table_name='memories' AND column_name='embedding' UNION ALL SELECT 'ruvector_type_count', count(*)::text FROM pg_type WHERE typname='ruvector' UNION ALL SELECT 'vector_type_count', count(*)::text FROM pg_type WHERE typname='vector';\"",
+    "exit_code": 0,
+    "output": "embedding_type|USER-DEFINED:ruvector\nruvector_type_count|1\nvector_type_count|0"
+  },
+  "docker_ps": {
+    "cmd": "docker ps --format '{{.Names}}|{{.Status}}|{{.Image}}' | grep -E 'memibrium|ruvector|ollama' || true",
+    "exit_code": 0,
+    "output": "memibrium-server|Up 5 hours (healthy)|memibrium-memibrium\nmemibrium-ollama|Up 2 days|ollama/ollama:latest\nmemibrium-ruvector-db|Up 2 days (healthy)|ruvnet/ruvector-postgres:latest"
+  },
+  "fresh_log_boundary_utc": "2026-05-02T17:42:41.299078+00:00",
+  "fresh_logs_before": {
+    "cmd": "docker logs --since 5m memibrium-server 2>&1 | tail -240",
+    "exit_code": 0,
+    "output": "INFO:     127.0.0.1:38092 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39426 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59680 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53530 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:34898 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:54906 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56182 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60960 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57596 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45984 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36078 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:57012 - \"GET /health HTTP/1.1\" 200 OK"
+  },
+  "git": {
+    "cmd": "printf 'branch='; git branch --show-current; printf 'head_short='; git rev-parse --short HEAD; printf 'head_full='; git rev-parse HEAD; printf 'status=<<<'; git status --short --untracked-files=no; printf '>>>'; printf '\nstatus_with_untracked=<<<'; git status --short; printf '>>>'",
+    "exit_code": 0,
+    "output": "branch=query-expansion\nhead_short=4663bcd\nhead_full=4663bcd95ce9e01d3b90f1b1a4a7607cde0bde93\nstatus=<<<>>>\nstatus_with_untracked=<<<?? docs/eval/results/locomo_telemetry_off_199q_reproducibility_prelaunch_2026-05-02.json\n>>>"
+  },
+  "health": {
+    "cmd": "curl -fsS http://localhost:9999/health",
+    "exit_code": 0,
+    "output": "{\"status\":\"ok\",\"engine\":\"memibrium\"}"
+  },
+  "linked_counts": {
+    "cmd": "docker exec memibrium-ruvector-db psql -U memory -d memory -tA -c \"WITH locomo AS (SELECT id FROM memories WHERE domain LIKE 'locomo-%') SELECT 'temporal_expressions|' || count(*) FROM temporal_expressions WHERE memory_id IN (SELECT id FROM locomo) UNION ALL SELECT 'memory_snapshots|' || count(*) FROM memory_snapshots WHERE memory_id IN (SELECT id FROM locomo) UNION ALL SELECT 'user_feedback|' || count(*) FROM user_feedback WHERE memory_id IN (SELECT id FROM locomo) UNION ALL SELECT 'contradictions|' || count(*) FROM contradictions WHERE memory_a_id IN (SELECT id FROM locomo) OR memory_b_id IN (SELECT id FROM locomo) UNION ALL SELECT 'memory_edges|' || count(*) FROM memory_edges WHERE source_id IN (SELECT id FROM locomo) OR target_id IN (SELECT id FROM locomo);\"",
+    "exit_code": 0,
+    "output": "temporal_expressions|0\nmemory_snapshots|0\nuser_feedback|0\ncontradictions|0\nmemory_edges|0"
+  },
+  "locomo_count": {
+    "cmd": "docker exec memibrium-ruvector-db psql -U memory -d memory -tA -c \"SELECT count(id) FROM memories WHERE domain LIKE 'locomo-%';\"",
+    "exit_code": 0,
+    "output": "0"
+  },
+  "planned_label_if_blocked": null,
+  "preflight_failures": [],
+  "preflight_status": "pass",
+  "probe_correction_note": "Initial source probe used an overly strict literal for the non-legacy break guard. Corrected probe checks the effective current-source guard: 'if not USE_QUERY_EXPANSION and len(base_seen) >= candidate_limit:' plus expanded-query loop/candidate accumulation fields.",
+  "refreshed_at_utc": "2026-05-02T17:42:36.798493+00:00",
+  "result_path_hygiene_actions": [
+    {
+      "after": {
+        "exists": false,
+        "path": "/tmp/locomo_results_query_expansion_raw.json"
+      },
+      "archive_exit_code": 0,
+      "archive_meta": {
+        "exists": true,
+        "mtime": "2026-05-02T12:54:37.764275+00:00",
+        "path": "/tmp/locomo_results_query_expansion_raw.json.pre_step5j_stale_20260502T174240Z",
+        "sha256": "7d8c911caa8753e6f920bed1402f8e1d72c0a6c4d741f82003f54de5fc2c032d",
+        "size": 58896658
+      },
+      "archive_output": "",
+      "archive_path": "/tmp/locomo_results_query_expansion_raw.json.pre_step5j_stale_20260502T174240Z",
+      "before": {
+        "exists": true,
+        "mtime": "2026-05-02T12:54:37.764275+00:00",
+        "path": "/tmp/locomo_results_query_expansion_raw.json",
+        "sha256": "7d8c911caa8753e6f920bed1402f8e1d72c0a6c4d741f82003f54de5fc2c032d",
+        "size": 58896658
+      },
+      "path": "/tmp/locomo_results_query_expansion_raw.json"
+    },
+    {
+      "action": "none_missing",
+      "after": {
+        "exists": false,
+        "path": "/tmp/locomo_conv26_telemetry_off_reproducibility_2026-05-02.log"
+      },
+      "before": {
+        "exists": false,
+        "path": "/tmp/locomo_conv26_telemetry_off_reproducibility_2026-05-02.log"
+      },
+      "path": "/tmp/locomo_conv26_telemetry_off_reproducibility_2026-05-02.log"
+    }
+  ],
+  "schema": "memibrium.locomo.telemetry_off_199q_reproducibility.prelaunch.v1",
+  "server_env_selected_nonsecret": {
+    "cmd": "docker exec memibrium-server env | sort | grep -E '^(USE_RUVECTOR|AZURE_EMBEDDING_DEPLOYMENT|AZURE_CHAT_DEPLOYMENT|AZURE_OPENAI_DEPLOYMENT|CHAT_MODEL|EMBEDDING_MODEL|EMBEDDING_BASE_URL|INCLUDE_RECALL_TELEMETRY|LOCOMO_RETRIEVAL_TELEMETRY)=' || true",
+    "exit_code": 0,
+    "output": "AZURE_CHAT_DEPLOYMENT=gpt-4.1-mini\nAZURE_EMBEDDING_DEPLOYMENT=text-embedding-3-small\nAZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini\nCHAT_MODEL=gemma4:e4b\nEMBEDDING_BASE_URL=http://ollama:11434/v1\nEMBEDDING_MODEL=nomic-embed-text\nUSE_RUVECTOR=true"
+  },
+  "source_hashes": {
+    "benchmark_scripts/locomo_bench_v2.py": {
+      "container": {
+        "cmd": "docker exec memibrium-server sha256sum /app/benchmark_scripts/locomo_bench_v2.py",
+        "exit_code": 0,
+        "output": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff  /app/benchmark_scripts/locomo_bench_v2.py"
+      },
+      "host": {
+        "cmd": "sha256sum benchmark_scripts/locomo_bench_v2.py",
+        "exit_code": 0,
+        "output": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff  benchmark_scripts/locomo_bench_v2.py"
+      },
+      "match": true
+    },
+    "hybrid_retrieval.py": {
+      "container": {
+        "cmd": "docker exec memibrium-server sha256sum /app/hybrid_retrieval.py",
+        "exit_code": 0,
+        "output": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07  /app/hybrid_retrieval.py"
+      },
+      "host": {
+        "cmd": "sha256sum hybrid_retrieval.py",
+        "exit_code": 0,
+        "output": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07  hybrid_retrieval.py"
+      },
+      "match": true
+    },
+    "server.py": {
+      "container": {
+        "cmd": "docker exec memibrium-server sha256sum /app/server.py",
+        "exit_code": 0,
+        "output": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a  /app/server.py"
+      },
+      "host": {
+        "cmd": "sha256sum server.py",
+        "exit_code": 0,
+        "output": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a  server.py"
+      },
+      "match": true
+    }
+  },
+  "tmp_log_path_before": {
+    "exists": false,
+    "path": "/tmp/locomo_conv26_telemetry_off_reproducibility_2026-05-02.log"
+  },
+  "tmp_log_path_before_launch": {
+    "exists": false,
+    "path": "/tmp/locomo_conv26_telemetry_off_reproducibility_2026-05-02.log"
+  },
+  "tmp_result_path_before": {
+    "exists": true,
+    "mtime": "2026-05-02T12:54:37.764275+00:00",
+    "path": "/tmp/locomo_results_query_expansion_raw.json",
+    "sha256": "7d8c911caa8753e6f920bed1402f8e1d72c0a6c4d741f82003f54de5fc2c032d",
+    "size": 58896658
+  },
+  "tmp_result_path_before_launch": {
+    "exists": false,
+    "path": "/tmp/locomo_results_query_expansion_raw.json"
+  }
+}
