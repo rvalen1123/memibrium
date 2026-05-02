@@ -1,0 +1,13 @@
+{
+  "blocked_artifact": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_blocked_2026-05-01.json",
+  "prelaunch_artifact": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_prelaunch_2026-05-01.json",
+  "question_count_completed": 120,
+  "question_count_expected": 199,
+  "reason": "The telemetry-enabled LOCOMO launch aborted before producing a valid complete 199-question result JSON. The run log shows MCP recall failed after three HTTP 500 responses; server logs show JSON serialization failed on Decimal inside the opt-in telemetry response path.",
+  "run_log": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_2026-05-01.log",
+  "schema": "memibrium.locomo.telemetry_baseline_result_placeholder.v1",
+  "server_log": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_failed_server_log_2026-05-01.log",
+  "status": "blocked_no_valid_199q_result",
+  "valid_for_comparability_or_phase_c": false,
+  "verdict": "telemetry_baseline_blocked_runtime_serialization_error"
+}
