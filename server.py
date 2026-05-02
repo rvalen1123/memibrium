@@ -41,13 +41,14 @@ License: Proprietary — patent-pending architecture
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 import hashlib
 import json
 import logging
 import math
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Optional
 from pathlib import Path
@@ -63,9 +64,13 @@ import uvicorn
 
 
 def _serialize_result(obj):
-    """Recursively convert datetime / date objects to ISO strings for JSON."""
+    """Recursively convert API payload values to JSON-serializable types."""
     if isinstance(obj, datetime):
         return obj.isoformat()
+    if isinstance(obj, date):
+        return obj.isoformat()
+    if isinstance(obj, Decimal):
+        return float(obj)
     if isinstance(obj, dict):
         return {k: _serialize_result(v) for k, v in obj.items()}
     if isinstance(obj, list):
