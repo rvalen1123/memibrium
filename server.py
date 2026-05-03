@@ -223,6 +223,288 @@ def make_witness_entry(from_state: str, to_state: str, trigger: str,
 
 
 # ══════════════════════════════════════════════════════════════════
+# §1b CONTEXT GRAPH / SELF-MODEL V0 — provenance-first cortex
+# ══════════════════════════════════════════════════════════════════
+
+SELF_MODEL_ENGINES = {"ethos", "disposition", "helix_dna", "domain_dna", "manual"}
+SELF_MODEL_LIFECYCLE_STATES = {"observation", "emerging", "accepted", "crystallized", "shed"}
+SELF_MODEL_USER_STATES = {"unreviewed", "confirmed", "rejected", "deleted"}
+SELF_MODEL_SENSITIVITY = {"low", "medium", "high", "sensitive"}
+DECISION_TRACE_STATUSES = {"proposed", "accepted", "rejected", "corrected", "superseded"}
+
+
+def _coerce_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
+def _clamp01(value, default: float = 0.5) -> float:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        numeric = default
+    return max(0.0, min(1.0, numeric))
+
+
+def _jsonable_record_id(prefix: str, payload: dict) -> str:
+    serialized = json.dumps(payload, sort_keys=True, default=str)
+    return f"{prefix}_{hashlib.sha256(serialized.encode()).hexdigest()[:16]}"
+
+
+def _require_source_backed_evidence(evidence_memory_ids: list, evidence_artifact_ids: list) -> None:
+    if not evidence_memory_ids and not evidence_artifact_ids:
+        raise ValueError("self-model observations require source-backed evidence_memory_ids or evidence_artifact_ids")
+
+
+def make_self_model_observation_record(
+    *,
+    engine: str,
+    observation_type: str,
+    claim_text: str,
+    evidence_memory_ids=None,
+    evidence_artifact_ids=None,
+    entity_ids=None,
+    confidence: float = 0.5,
+    sensitivity: str = "low",
+    lifecycle_state: str = "observation",
+    user_state: str = "unreviewed",
+    decay_rate: float = 0.01,
+    metadata: Optional[dict] = None,
+    observation_id: Optional[str] = None,
+    first_seen: Optional[str] = None,
+    last_seen: Optional[str] = None,
+    surfaced_count: int = 0,
+) -> dict:
+    """Create a source-backed Ethos/Disposition/DNA observation record.
+
+    This deliberately models self-knowledge as a reviewable hypothesis, not an
+    authoritative profile fact. Every claim must point back to source memories or
+    artifacts so Inner Voice/context composition can stay auditable.
+    """
+    engine = (engine or "").strip()
+    observation_type = (observation_type or "").strip()
+    claim_text = (claim_text or "").strip()
+    evidence_memory_ids = [str(x) for x in _coerce_list(evidence_memory_ids) if str(x)]
+    evidence_artifact_ids = [str(x) for x in _coerce_list(evidence_artifact_ids) if str(x)]
+    entity_ids = [str(x) for x in _coerce_list(entity_ids) if str(x)]
+    metadata = metadata or {}
+
+    if engine not in SELF_MODEL_ENGINES:
+        raise ValueError(f"invalid self-model engine: {engine}")
+    if not observation_type:
+        raise ValueError("observation_type required")
+    if not claim_text:
+        raise ValueError("claim_text required")
+    if sensitivity not in SELF_MODEL_SENSITIVITY:
+        raise ValueError(f"invalid sensitivity: {sensitivity}")
+    if lifecycle_state not in SELF_MODEL_LIFECYCLE_STATES:
+        raise ValueError(f"invalid lifecycle_state: {lifecycle_state}")
+    if user_state not in SELF_MODEL_USER_STATES:
+        raise ValueError(f"invalid user_state: {user_state}")
+    _require_source_backed_evidence(evidence_memory_ids, evidence_artifact_ids)
+
+    now = datetime.now(timezone.utc).isoformat()
+    seed = {
+        "engine": engine,
+        "observation_type": observation_type,
+        "claim_text": claim_text,
+        "evidence_memory_ids": evidence_memory_ids,
+        "evidence_artifact_ids": evidence_artifact_ids,
+        "entity_ids": entity_ids,
+    }
+    return {
+        "schema": "memibrium.self_model_observation.v1",
+        "observation_id": observation_id or _jsonable_record_id("obs", seed),
+        "engine": engine,
+        "observation_type": observation_type,
+        "claim_text": claim_text,
+        "evidence_memory_ids": evidence_memory_ids,
+        "evidence_artifact_ids": evidence_artifact_ids,
+        "entity_ids": entity_ids,
+        "confidence": _clamp01(confidence),
+        "sensitivity": sensitivity,
+        "lifecycle_state": lifecycle_state,
+        "user_state": user_state,
+        "decay_rate": max(0.0, float(decay_rate)),
+        "metadata": metadata,
+        "first_seen": first_seen or now,
+        "last_seen": last_seen or now,
+        "surfaced_count": int(surfaced_count or 0),
+    }
+
+
+def make_decision_trace_record(
+    *,
+    query: str,
+    answer: str,
+    evidence_memory_ids=None,
+    self_model_observation_ids=None,
+    entity_ids=None,
+    values_invoked=None,
+    status: str = "proposed",
+    outcome_signal: Optional[dict] = None,
+    metadata: Optional[dict] = None,
+    trace_id: Optional[str] = None,
+    created_at: Optional[str] = None,
+) -> dict:
+    """Create an auditable decision/evidence trace for later reward learning."""
+    query = (query or "").strip()
+    answer = (answer or "").strip()
+    evidence_memory_ids = [str(x) for x in _coerce_list(evidence_memory_ids) if str(x)]
+    self_model_observation_ids = [str(x) for x in _coerce_list(self_model_observation_ids) if str(x)]
+    entity_ids = [str(x) for x in _coerce_list(entity_ids) if str(x)]
+    values_invoked = [str(x) for x in _coerce_list(values_invoked) if str(x)]
+    outcome_signal = outcome_signal or {}
+    metadata = metadata or {}
+
+    if not query:
+        raise ValueError("query required")
+    if not answer:
+        raise ValueError("answer required")
+    if status not in DECISION_TRACE_STATUSES:
+        raise ValueError(f"invalid decision trace status: {status}")
+
+    seed = {
+        "query": query,
+        "answer": answer,
+        "evidence_memory_ids": evidence_memory_ids,
+        "self_model_observation_ids": self_model_observation_ids,
+        "entity_ids": entity_ids,
+        "values_invoked": values_invoked,
+    }
+    return {
+        "schema": "memibrium.decision_trace.v1",
+        "trace_id": trace_id or _jsonable_record_id("trace", seed),
+        "query": query,
+        "answer": answer,
+        "evidence_memory_ids": evidence_memory_ids,
+        "self_model_observation_ids": self_model_observation_ids,
+        "entity_ids": entity_ids,
+        "values_invoked": values_invoked,
+        "status": status,
+        "outcome_signal": outcome_signal,
+        "metadata": metadata,
+        "created_at": created_at or datetime.now(timezone.utc).isoformat(),
+        "updated_at": created_at or datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def infer_context_query_type(query: str) -> str:
+    q = (query or "").lower()
+    if any(token in q for token in ("should", "build", "next", "decide", "recommend", "strategy")):
+        return "strategic_decision"
+    if any(token in q for token in ("who", "person", "project", "entity")):
+        return "entity_lookup"
+    if any(token in q for token in ("when", "timeline", "before", "after")):
+        return "temporal_question"
+    return "general_recall"
+
+
+def _normalize_evidence_memory(memory: dict) -> dict:
+    mid = memory.get("memory_id") or memory.get("id")
+    return {
+        "memory_id": mid,
+        "content": memory.get("content", ""),
+        "source": memory.get("source"),
+        "domain": memory.get("domain"),
+        "state": memory.get("state"),
+        "score": memory.get("combined_score", memory.get("cosine_score", memory.get("score"))),
+        "created_at": memory.get("created_at"),
+        "refs": memory.get("refs", {}),
+    }
+
+
+def build_context_packet(
+    *,
+    query: str,
+    episodic_evidence=None,
+    self_model_observations=None,
+    entities=None,
+    graph_facts=None,
+    decision_traces=None,
+    query_type: Optional[str] = None,
+) -> dict:
+    """Compose a grounded context packet for Inner Voice or answer generation."""
+    episodic_evidence = [_normalize_evidence_memory(m) for m in _coerce_list(episodic_evidence) if isinstance(m, dict)]
+    self_model_observations = [o for o in _coerce_list(self_model_observations) if isinstance(o, dict)]
+    entities = [e for e in _coerce_list(entities) if isinstance(e, dict)]
+    graph_facts = [g for g in _coerce_list(graph_facts) if isinstance(g, dict)]
+    decision_traces = [d for d in _coerce_list(decision_traces) if isinstance(d, dict)]
+
+    memory_ids = []
+    for mem in episodic_evidence:
+        if mem.get("memory_id") and mem["memory_id"] not in memory_ids:
+            memory_ids.append(mem["memory_id"])
+    for obs in self_model_observations:
+        for mid in _coerce_list(obs.get("evidence_memory_ids")):
+            if mid and mid not in memory_ids:
+                memory_ids.append(mid)
+    for fact in graph_facts:
+        for mid in _coerce_list(fact.get("evidence_memory_ids")):
+            if mid and mid not in memory_ids:
+                memory_ids.append(mid)
+
+    observation_ids = []
+    for obs in self_model_observations:
+        oid = obs.get("observation_id")
+        if oid and oid not in observation_ids:
+            observation_ids.append(oid)
+    for trace in decision_traces:
+        for oid in _coerce_list(trace.get("self_model_observation_ids")):
+            if oid and oid not in observation_ids:
+                observation_ids.append(oid)
+
+    entity_ids = []
+    for entity in entities:
+        eid = entity.get("entity_id")
+        if eid and eid not in entity_ids:
+            entity_ids.append(eid)
+    for obs in self_model_observations:
+        for eid in _coerce_list(obs.get("entity_ids")):
+            if eid and eid not in entity_ids:
+                entity_ids.append(eid)
+
+    missing_evidence = []
+    if not episodic_evidence:
+        missing_evidence.append("episodic_evidence")
+    if not self_model_observations:
+        missing_evidence.append("self_model_observations")
+    if not graph_facts:
+        missing_evidence.append("graph_facts")
+
+    guidance = [
+        "Use source-backed evidence first; do not invent self-model facts.",
+        "Treat Ethos/Disposition/DNA observations as hypotheses unless user_state is confirmed.",
+        "Surface conflicts or missing evidence instead of overconfident synthesis.",
+    ]
+    if decision_traces:
+        guidance.append("Prefer decisions with positive outcome signals; flag rejected/corrected traces.")
+
+    return {
+        "schema": "memibrium.context_packet.v1",
+        "query": query,
+        "query_type": query_type or infer_context_query_type(query),
+        "episodic_evidence": episodic_evidence,
+        "self_model_observations": self_model_observations,
+        "relevant_entities": entities,
+        "graph_facts": graph_facts,
+        "decision_traces": decision_traces,
+        "conflicts": [],
+        "missing_evidence": missing_evidence,
+        "answer_guidance": guidance,
+        "provenance_summary": {
+            "memory_ids": memory_ids,
+            "self_model_observation_ids": observation_ids,
+            "entity_ids": entity_ids,
+        },
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# ══════════════════════════════════════════════════════════════════
 # §2  VECTOR STORE — pgvector / RuVector (dual-tier)
 # ══════════════════════════════════════════════════════════════════
 
@@ -417,7 +699,74 @@ class ColdStore:
             await conn.execute(
                 "CREATE INDEX IF NOT EXISTS memory_edges_target_idx ON memory_edges (target_id);"
             )
-            log.info("Schema initialized: memories, snapshots, entities, feedback, contradictions, edges")
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS self_model_observations (
+                    observation_id        TEXT PRIMARY KEY,
+                    engine                TEXT NOT NULL,
+                    observation_type      TEXT NOT NULL,
+                    claim_text            TEXT NOT NULL,
+                    evidence_memory_ids   JSONB NOT NULL DEFAULT '[]',
+                    evidence_artifact_ids JSONB NOT NULL DEFAULT '[]',
+                    entity_ids            JSONB NOT NULL DEFAULT '[]',
+                    confidence            FLOAT NOT NULL DEFAULT 0.5,
+                    sensitivity           TEXT NOT NULL DEFAULT 'low',
+                    lifecycle_state       TEXT NOT NULL DEFAULT 'observation',
+                    user_state            TEXT NOT NULL DEFAULT 'unreviewed',
+                    decay_rate            FLOAT NOT NULL DEFAULT 0.01,
+                    metadata              JSONB NOT NULL DEFAULT '{}',
+                    first_seen            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    last_seen             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    surfaced_count        INTEGER NOT NULL DEFAULT 0
+                );
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS self_model_observations_engine_idx
+                ON self_model_observations (engine, observation_type, lifecycle_state, user_state);
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS decision_traces (
+                    trace_id                    TEXT PRIMARY KEY,
+                    query                       TEXT NOT NULL,
+                    answer                      TEXT NOT NULL,
+                    evidence_memory_ids         JSONB NOT NULL DEFAULT '[]',
+                    self_model_observation_ids  JSONB NOT NULL DEFAULT '[]',
+                    entity_ids                  JSONB NOT NULL DEFAULT '[]',
+                    values_invoked              JSONB NOT NULL DEFAULT '[]',
+                    status                      TEXT NOT NULL DEFAULT 'proposed',
+                    outcome_signal              JSONB NOT NULL DEFAULT '{}',
+                    metadata                    JSONB NOT NULL DEFAULT '{}',
+                    created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS decision_traces_status_idx
+                ON decision_traces (status, created_at DESC);
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS context_graph_edges (
+                    edge_id              TEXT PRIMARY KEY,
+                    source_kind          TEXT NOT NULL,
+                    source_id            TEXT NOT NULL,
+                    target_kind          TEXT NOT NULL,
+                    target_id            TEXT NOT NULL,
+                    edge_type            TEXT NOT NULL DEFAULT 'related',
+                    weight               FLOAT NOT NULL DEFAULT 1.0,
+                    evidence_memory_ids  JSONB NOT NULL DEFAULT '[]',
+                    metadata             JSONB NOT NULL DEFAULT '{}',
+                    created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS context_graph_edges_source_idx
+                ON context_graph_edges (source_kind, source_id);
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS context_graph_edges_target_idx
+                ON context_graph_edges (target_kind, target_id);
+            """)
+            log.info("Schema initialized: memories, snapshots, entities, feedback, contradictions, edges, self_model, decision_traces, context_graph")
 
     async def insert_memory(self, mid: str, content: str, embedding: list,
                             state: str, source: str, domain: str,
@@ -523,6 +872,164 @@ class ColdStore:
                 VALUES ($1, $2, $3, $4, $5)
                 ON CONFLICT DO NOTHING
             """, eid, source_id, target_id, edge_type, weight)
+
+    async def create_self_model_observation(self, payload: dict) -> dict:
+        record = make_self_model_observation_record(**payload)
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO self_model_observations (
+                    observation_id, engine, observation_type, claim_text,
+                    evidence_memory_ids, evidence_artifact_ids, entity_ids,
+                    confidence, sensitivity, lifecycle_state, user_state,
+                    decay_rate, metadata, first_seen, last_seen, surfaced_count
+                ) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb,
+                          $8, $9, $10, $11, $12, $13::jsonb, $14, $15, $16)
+                ON CONFLICT (observation_id) DO UPDATE SET
+                    confidence = GREATEST(self_model_observations.confidence, EXCLUDED.confidence),
+                    evidence_memory_ids = EXCLUDED.evidence_memory_ids,
+                    evidence_artifact_ids = EXCLUDED.evidence_artifact_ids,
+                    entity_ids = EXCLUDED.entity_ids,
+                    lifecycle_state = EXCLUDED.lifecycle_state,
+                    user_state = EXCLUDED.user_state,
+                    metadata = EXCLUDED.metadata,
+                    last_seen = NOW(),
+                    surfaced_count = self_model_observations.surfaced_count + EXCLUDED.surfaced_count
+            """, record["observation_id"], record["engine"], record["observation_type"], record["claim_text"],
+                json.dumps(record["evidence_memory_ids"]), json.dumps(record["evidence_artifact_ids"]),
+                json.dumps(record["entity_ids"]), record["confidence"], record["sensitivity"],
+                record["lifecycle_state"], record["user_state"], record["decay_rate"],
+                json.dumps(record["metadata"]), record["first_seen"], record["last_seen"],
+                record["surfaced_count"])
+        return record
+
+    async def list_self_model_observations(self, engine: Optional[str] = None,
+                                           entity_ids: Optional[list] = None,
+                                           include_rejected: bool = False,
+                                           limit: int = 20) -> list:
+        where, params = [], []
+        idx = 1
+        if engine:
+            where.append(f"engine = ${idx}")
+            params.append(engine)
+            idx += 1
+        if not include_rejected:
+            where.append("user_state NOT IN ('rejected', 'deleted')")
+        if entity_ids:
+            where.append(f"entity_ids ?| ${idx}::text[]")
+            params.append([str(x) for x in entity_ids])
+            idx += 1
+        params.append(limit)
+        sql_where = "WHERE " + " AND ".join(where) if where else ""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(f"""
+                SELECT * FROM self_model_observations
+                {sql_where}
+                ORDER BY confidence DESC, last_seen DESC
+                LIMIT ${idx}
+            """, *params)
+        records = []
+        for row in rows:
+            record = dict(row)
+            for key in ("evidence_memory_ids", "evidence_artifact_ids", "entity_ids", "metadata"):
+                if isinstance(record.get(key), str):
+                    record[key] = json.loads(record[key])
+            records.append(record)
+        return records
+
+    async def create_decision_trace(self, payload: dict) -> dict:
+        record = make_decision_trace_record(**payload)
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO decision_traces (
+                    trace_id, query, answer, evidence_memory_ids, self_model_observation_ids,
+                    entity_ids, values_invoked, status, outcome_signal, metadata, created_at, updated_at
+                ) VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb,
+                          $8, $9::jsonb, $10::jsonb, $11, $12)
+                ON CONFLICT (trace_id) DO UPDATE SET
+                    status = EXCLUDED.status,
+                    outcome_signal = EXCLUDED.outcome_signal,
+                    metadata = EXCLUDED.metadata,
+                    updated_at = NOW()
+            """, record["trace_id"], record["query"], record["answer"],
+                json.dumps(record["evidence_memory_ids"]), json.dumps(record["self_model_observation_ids"]),
+                json.dumps(record["entity_ids"]), json.dumps(record["values_invoked"]), record["status"],
+                json.dumps(record["outcome_signal"]), json.dumps(record["metadata"]),
+                record["created_at"], record["updated_at"])
+        return record
+
+    async def list_decision_traces(self, status: Optional[str] = None, limit: int = 10) -> list:
+        where, params = [], []
+        idx = 1
+        if status:
+            where.append(f"status = ${idx}")
+            params.append(status)
+            idx += 1
+        params.append(limit)
+        sql_where = "WHERE " + " AND ".join(where) if where else ""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(f"""
+                SELECT * FROM decision_traces
+                {sql_where}
+                ORDER BY created_at DESC
+                LIMIT ${idx}
+            """, *params)
+        records = []
+        for row in rows:
+            record = dict(row)
+            for key in ("evidence_memory_ids", "self_model_observation_ids", "entity_ids", "values_invoked", "outcome_signal", "metadata"):
+                if isinstance(record.get(key), str):
+                    record[key] = json.loads(record[key])
+            records.append(record)
+        return records
+
+    async def get_context_graph_entities(self, query: str, limit: int = 10) -> list:
+        terms = [part for part in (query or "").split() if len(part) >= 3]
+        if not terms:
+            return []
+        params = [limit]
+        clauses = []
+        for idx, term in enumerate(terms[:8], start=2):
+            params.append(f"%{term}%")
+            clauses.append(f"name ILIKE ${idx}")
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(f"""
+                SELECT entity_id, name, entity_type, attributes, memory_ids, updated_at
+                FROM entities
+                WHERE {' OR '.join(clauses)}
+                ORDER BY updated_at DESC
+                LIMIT $1
+            """, *params)
+        records = []
+        for row in rows:
+            record = dict(row)
+            for key in ("attributes", "memory_ids"):
+                if isinstance(record.get(key), str):
+                    record[key] = json.loads(record[key])
+            records.append(record)
+        return records
+
+    async def list_context_graph_facts(self, entity_ids: Optional[list] = None,
+                                       limit: int = 20) -> list:
+        params = [limit]
+        where = ""
+        if entity_ids:
+            params.append([str(x) for x in entity_ids])
+            where = "WHERE (source_id = ANY($2::text[]) OR target_id = ANY($2::text[]))"
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(f"""
+                SELECT * FROM context_graph_edges
+                {where}
+                ORDER BY weight DESC, updated_at DESC
+                LIMIT $1
+            """, *params)
+        records = []
+        for row in rows:
+            record = dict(row)
+            for key in ("evidence_memory_ids", "metadata"):
+                if isinstance(record.get(key), str):
+                    record[key] = json.loads(record[key])
+            records.append(record)
+        return records
 
     async def get_related_memories(self, memory_id: str, limit: int = 5) -> list:
         async with self.pool.acquire() as conn:
@@ -2095,6 +2602,104 @@ async def handle_prefetch(request: Request) -> JSONResponse:
     return JSONResponse(result)
 
 
+async def handle_self_model_observe(request: Request) -> JSONResponse:
+    """Create a source-backed Ethos/Disposition/DNA self-model observation."""
+    body = await request.json()
+    try:
+        record = await store.create_self_model_observation(body)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    return JSONResponse(_serialize_result(record))
+
+
+async def handle_self_model_observations(request: Request) -> JSONResponse:
+    body = await request.json() if request.method == "POST" else {}
+    observations = await store.list_self_model_observations(
+        engine=body.get("engine"),
+        entity_ids=body.get("entity_ids"),
+        include_rejected=bool(body.get("include_rejected", False)),
+        limit=int(body.get("limit", 20)),
+    )
+    return JSONResponse(_serialize_result({"observations": observations}))
+
+
+async def handle_decision_trace(request: Request) -> JSONResponse:
+    """Persist an auditable decision/evidence trace for reward-aware memory."""
+    body = await request.json()
+    try:
+        record = await store.create_decision_trace(body)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    return JSONResponse(_serialize_result(record))
+
+
+async def handle_decision_traces(request: Request) -> JSONResponse:
+    body = await request.json() if request.method == "POST" else {}
+    traces = await store.list_decision_traces(
+        status=body.get("status"),
+        limit=int(body.get("limit", 10)),
+    )
+    return JSONResponse(_serialize_result({"decision_traces": traces}))
+
+
+async def handle_context_packet(request: Request) -> JSONResponse:
+    """Compose a grounded context packet from episodic, graph, and self-model evidence."""
+    body = await request.json()
+    query = body.get("query", "")
+    if not query:
+        return JSONResponse({"error": "query required"}, status_code=400)
+
+    episodic_evidence = body.get("episodic_evidence")
+    if episodic_evidence is None:
+        try:
+            recall = await query_agent.recall(
+                query,
+                top_k=int(body.get("top_k", 8)),
+                domain=body.get("domain"),
+                expand=body.get("expand", True),
+            )
+            episodic_evidence = recall.get("memories", recall) if isinstance(recall, dict) else recall
+        except Exception as e:
+            log.warning(f"Context packet recall failed: {e}")
+            episodic_evidence = []
+
+    entities = body.get("entities")
+    if entities is None:
+        entities = await store.get_context_graph_entities(query, limit=int(body.get("entity_limit", 10)))
+    entity_ids = [e.get("entity_id") for e in entities if isinstance(e, dict) and e.get("entity_id")]
+
+    observations = body.get("self_model_observations")
+    if observations is None:
+        observations = await store.list_self_model_observations(
+            engine=body.get("engine"),
+            entity_ids=entity_ids or body.get("entity_ids"),
+            include_rejected=bool(body.get("include_rejected", False)),
+            limit=int(body.get("observation_limit", 20)),
+        )
+
+    graph_facts = body.get("graph_facts")
+    if graph_facts is None:
+        graph_facts = await store.list_context_graph_facts(
+            entity_ids=entity_ids or body.get("entity_ids"),
+            limit=int(body.get("graph_limit", 20)),
+        )
+
+    decision_traces = body.get("decision_traces", [])
+    if body.get("include_decision_traces", False):
+        decision_traces = await store.list_decision_traces(limit=int(body.get("decision_trace_limit", 5)))
+
+    packet = build_context_packet(
+        query=query,
+        episodic_evidence=episodic_evidence,
+        self_model_observations=observations,
+        entities=entities,
+        graph_facts=graph_facts,
+        decision_traces=decision_traces,
+        query_type=body.get("query_type"),
+    )
+    return JSONResponse(_serialize_result(packet))
+
+
 async def handle_dashboard(request: Request) -> JSONResponse:
     counts = await store.count_by_state()
     total = sum(counts.values())
@@ -2375,6 +2980,34 @@ async def handle_mcp_manifest(request: Request) -> JSONResponse:
              "inputSchema": {"type": "object", "properties": {
                  "context_query": {"type": "string", "description": "Recent conversation context to base predictions on"},
                  "top_k": {"type": "integer", "default": 5}}, "required": []}},
+            {"name": "self_model_observe", "description": "Create a source-backed Ethos/Disposition/DNA self-model observation hypothesis.",
+             "inputSchema": {"type": "object", "properties": {
+                 "engine": {"type": "string", "enum": sorted(SELF_MODEL_ENGINES)},
+                 "observation_type": {"type": "string"},
+                 "claim_text": {"type": "string"},
+                 "evidence_memory_ids": {"type": "array", "items": {"type": "string"}},
+                 "evidence_artifact_ids": {"type": "array", "items": {"type": "string"}},
+                 "entity_ids": {"type": "array", "items": {"type": "string"}},
+                 "confidence": {"type": "number", "default": 0.5},
+                 "sensitivity": {"type": "string", "default": "low"}},
+                 "required": ["engine", "observation_type", "claim_text"]}},
+            {"name": "context_packet", "description": "Compose a grounded context packet from episodic evidence, graph facts, self-model observations, and decision traces.",
+             "inputSchema": {"type": "object", "properties": {
+                 "query": {"type": "string"},
+                 "top_k": {"type": "integer", "default": 8},
+                 "domain": {"type": "string"},
+                 "include_decision_traces": {"type": "boolean", "default": False}},
+                 "required": ["query"]}},
+            {"name": "decision_trace", "description": "Persist an auditable decision/evidence trace for outcome-aware retrieval.",
+             "inputSchema": {"type": "object", "properties": {
+                 "query": {"type": "string"},
+                 "answer": {"type": "string"},
+                 "evidence_memory_ids": {"type": "array", "items": {"type": "string"}},
+                 "self_model_observation_ids": {"type": "array", "items": {"type": "string"}},
+                 "entity_ids": {"type": "array", "items": {"type": "string"}},
+                 "values_invoked": {"type": "array", "items": {"type": "string"}},
+                 "status": {"type": "string", "default": "proposed"}},
+                 "required": ["query", "answer"]}},
             {"name": "ingest_file", "description": "Ingest a file: read, chunk, classify, embed, store through CT lifecycle.",
              "inputSchema": {"type": "object", "properties": {
                  "filepath": {"type": "string", "description": "Absolute path to the file"},
@@ -2421,6 +3054,11 @@ app = Starlette(
         Route("/mcp/dashboard", handle_dashboard, methods=["GET"]),
         Route("/mcp/graph", handle_graph, methods=["GET"]),
         Route("/mcp/prefetch", handle_prefetch, methods=["POST"]),
+        Route("/mcp/self_model/observe", handle_self_model_observe, methods=["POST"]),
+        Route("/mcp/self_model/observations", handle_self_model_observations, methods=["GET", "POST"]),
+        Route("/mcp/decision_trace", handle_decision_trace, methods=["POST"]),
+        Route("/mcp/decision_traces", handle_decision_traces, methods=["GET", "POST"]),
+        Route("/mcp/context_packet", handle_context_packet, methods=["POST"]),
         Route("/mcp/ingest/file", handle_ingest_file, methods=["POST"]),
         Route("/mcp/ingest/directory", handle_ingest_directory, methods=["POST"]),
         Route("/mcp/ingest/jsonl", handle_ingest_jsonl, methods=["POST"]),
