@@ -56,6 +56,7 @@ ENV_KEYS = [
     "USE_QUERY_EXPANSION",
     "INCLUDE_RECALL_TELEMETRY",
     "USE_CONTEXT_PACKET",
+    "USE_CONTEXT_PACKET_MERGE",
     "USE_CONTEXT_RERANK",
     "USE_APPEND_CONTEXT_EXPANSION",
     "USE_GATED_APPEND_CONTEXT_EXPANSION",
@@ -130,8 +131,8 @@ def normalize_mcp_url(url: str) -> str:
     return url if url.endswith("/mcp") else f"{url}/mcp"
 
 
-def build_benchmark_env(base_env: dict[str, str], *, mcp_url: str, context_packet: bool) -> dict[str, str]:
-    """Build arm envs that differ only by USE_CONTEXT_PACKET."""
+def build_benchmark_env(base_env: dict[str, str], *, mcp_url: str, context_packet: bool, context_packet_merge: bool = False) -> dict[str, str]:
+    """Build arm envs with explicit Context Packet condition flags."""
     env = load_dotenv(base_env)
     env.update({
         "MCP_URL": normalize_mcp_url(mcp_url),
@@ -165,6 +166,10 @@ def build_benchmark_env(base_env: dict[str, str], *, mcp_url: str, context_packe
         env["USE_CONTEXT_PACKET"] = "1"
     else:
         env.pop("USE_CONTEXT_PACKET", None)
+    if context_packet_merge:
+        env["USE_CONTEXT_PACKET_MERGE"] = "1"
+    else:
+        env.pop("USE_CONTEXT_PACKET_MERGE", None)
     return env
 
 
@@ -258,6 +263,9 @@ def validate_paired_artifacts(
     baseline: dict[str, Any],
     treatment: dict[str, Any],
     fixed_rows: list[dict[str, Any]],
+    *,
+    treatment_context_packet: bool = True,
+    treatment_context_packet_merge: bool = False,
 ) -> dict[str, Any]:
     baseline_details = baseline.get("details", [])
     treatment_details = treatment.get("details", [])
@@ -281,16 +289,21 @@ def validate_paired_artifacts(
 
     b_condition = baseline.get("condition", {})
     t_condition = treatment.get("condition", {})
-    condition_metadata_ok = b_condition.get("context_packet") is False and t_condition.get("context_packet") is True
+    condition_metadata_ok = (
+        b_condition.get("context_packet") is False
+        and b_condition.get("context_packet_merge") is False
+        and t_condition.get("context_packet") is bool(treatment_context_packet)
+        and t_condition.get("context_packet_merge") is bool(treatment_context_packet_merge)
+    )
     if not condition_metadata_ok:
-        raise ValueError("condition_metadata_mismatch: expected baseline context_packet=false and treatment=true")
+        raise ValueError("condition_metadata_mismatch: unexpected baseline/treatment context-packet condition flags")
 
     context_packet_telemetry_ok = True
     for row in treatment_details:
         telemetry = row.get("recall_telemetry") or {}
         packet = telemetry.get("context_packet")
         counts = telemetry.get("counts") or {}
-        if not isinstance(packet, dict) or counts.get("context_packet_enabled") is not True:
+        if not isinstance(packet, dict) or not (counts.get("context_packet_enabled") is True or counts.get("context_packet_merge_enabled") is True):
             context_packet_telemetry_ok = False
             break
     if not context_packet_telemetry_ok:
@@ -466,9 +479,10 @@ def import_benchmark_module(env: dict[str, str]):
         os.environ.update(old_env)
 
 
-def configure_benchmark_module(module: Any, *, context_packet: bool) -> None:
+def configure_benchmark_module(module: Any, *, context_packet: bool, context_packet_merge: bool = False) -> None:
     module.USE_QUERY_EXPANSION = False
     module.USE_CONTEXT_PACKET = bool(context_packet)
+    module.USE_CONTEXT_PACKET_MERGE = bool(context_packet_merge)
     module.INCLUDE_RECALL_TELEMETRY = True
     module.USE_CONTEXT_RERANK = False
     module.USE_APPEND_CONTEXT_EXPANSION = False
@@ -547,12 +561,13 @@ def run_arm(
     arm_name: str,
     *,
     context_packet: bool,
+    context_packet_merge: bool = False,
     data: list[dict[str, Any]],
     fixed_rows: list[dict[str, Any]],
     env: dict[str, str],
 ) -> dict[str, Any]:
     module = import_benchmark_module(env)
-    configure_benchmark_module(module, context_packet=context_packet)
+    configure_benchmark_module(module, context_packet=context_packet, context_packet_merge=context_packet_merge)
     conv_data = data[0]
     conv = conv_data.get("conversation", conv_data)
     qa_list = conv_data.get("qa", conv_data.get("qa_list", []))
@@ -640,6 +655,7 @@ def run_arm(
         normalize_dates=False,
         use_query_expansion=False,
         use_context_packet=context_packet,
+        use_context_packet_merge=context_packet_merge,
         cleaned=False,
     )
     payload.update({
@@ -696,6 +712,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fixed-rows-path", default=str(FIXED_ROWS_PATH))
     parser.add_argument("--mcp-url", default=os.environ.get("MCP_URL", "http://localhost:9999/mcp"))
     parser.add_argument("--identity-only", action="store_true", help="Validate data/fixed-row identity without DB or benchmark mutation")
+    parser.add_argument("--merge-treatment", action="store_true", help="Use baseline+packet append/dedupe treatment instead of packet replacement")
     args = parser.parse_args(argv)
 
     data_path = Path(args.data_path)
@@ -713,27 +730,47 @@ def main(argv: list[str] | None = None) -> int:
 
     base_env = os.environ.copy()
     baseline_env = build_benchmark_env(base_env, mcp_url=args.mcp_url, context_packet=False)
-    treatment_env = build_benchmark_env(base_env, mcp_url=args.mcp_url, context_packet=True)
+    treatment_env = build_benchmark_env(
+        base_env,
+        mcp_url=args.mcp_url,
+        context_packet=not args.merge_treatment,
+        context_packet_merge=args.merge_treatment,
+    )
     live_status = health_and_tools(args.mcp_url)
     if not live_status.get("context_packet_present"):
         raise RuntimeError(f"context_packet tool missing: {live_status}")
 
     baseline = run_arm("baseline_default", context_packet=False, data=data, fixed_rows=fixed_rows, env=baseline_env)
-    treatment = run_arm("treatment_context_packet", context_packet=True, data=data, fixed_rows=fixed_rows, env=treatment_env)
-    comparison = validate_paired_artifacts(baseline, treatment, fixed_rows)
+    treatment_arm = "treatment_context_packet_merge" if args.merge_treatment else "treatment_context_packet"
+    treatment = run_arm(
+        treatment_arm,
+        context_packet=not args.merge_treatment,
+        context_packet_merge=args.merge_treatment,
+        data=data,
+        fixed_rows=fixed_rows,
+        env=treatment_env,
+    )
+    comparison = validate_paired_artifacts(
+        baseline,
+        treatment,
+        fixed_rows,
+        treatment_context_packet=not args.merge_treatment,
+        treatment_context_packet_merge=args.merge_treatment,
+    )
     final_hygiene = locomo_hygiene()
 
     paths = {
         "baseline": str(RESULTS_DIR / f"locomo_context_packet_canary_baseline_{RUN_ID}.json"),
-        "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment_{RUN_ID}.json"),
-        "summary": str(RESULTS_DIR / f"locomo_context_packet_canary_summary_{RUN_ID}.json"),
-        "markdown": str(RESULTS_DIR / f"locomo_context_packet_canary_result_{RUN_ID}.md"),
+        "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment{'_merge' if args.merge_treatment else ''}_{RUN_ID}.json"),
+        "summary": str(RESULTS_DIR / f"locomo_context_packet_canary_summary{'_merge' if args.merge_treatment else ''}_{RUN_ID}.json"),
+        "markdown": str(RESULTS_DIR / f"locomo_context_packet_canary_result{'_merge' if args.merge_treatment else ''}_{RUN_ID}.md"),
     }
     summary = {
         "schema": "memibrium.locomo.context_packet_canary.summary.v1",
         "run_id": RUN_ID,
         "created_at": utc_now(),
         "purpose": "prove context_packet changes prompt context on exact fixed rows without changing unrelated benchmark mechanics",
+        "treatment_mode": "context_packet_merge" if args.merge_treatment else "context_packet_replacement",
         "input_identity": input_identity,
         "data_sha256": data_sha,
         "fixed_rows_path": str(fixed_rows_path),

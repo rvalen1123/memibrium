@@ -84,6 +84,9 @@ USE_FULL_DOMAIN_CONTEXT = _env_flag("USE_FULL_DOMAIN_CONTEXT", default=False)
 # Memibrium and render packet evidence into the answer prompt. Default-off until
 # preregistered fixed-row A/B slices prove benefit and comparability.
 USE_CONTEXT_PACKET = _env_flag("USE_CONTEXT_PACKET", default=False)
+# Baseline+packet merge/fallback canary: preserve the default baseline top-k
+# answer context, then append deduped packet evidence. Default-off/eval-only.
+USE_CONTEXT_PACKET_MERGE = _env_flag("USE_CONTEXT_PACKET_MERGE", default=False)
 # Observation-only telemetry for preregistered LOCOMO diagnostic runs.
 INCLUDE_RECALL_TELEMETRY = _env_flag("INCLUDE_RECALL_TELEMETRY", default=False)
 RECALL_TOP_K = 10
@@ -106,6 +109,7 @@ def validate_retrieval_modes(
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
     use_context_packet=None,
+    use_context_packet_merge=None,
 ):
     """Reject retrieval modes whose metadata/prompt semantics would conflict."""
     if use_context_rerank is None:
@@ -120,6 +124,8 @@ def validate_retrieval_modes(
         use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
     if use_context_packet is None:
         use_context_packet = USE_CONTEXT_PACKET
+    if use_context_packet_merge is None:
+        use_context_packet_merge = USE_CONTEXT_PACKET_MERGE
     append_modes = [bool(use_append_context_expansion), bool(use_gated_append_context_expansion)]
     if use_context_rerank and any(append_modes):
         raise ValueError("--context-rerank cannot be combined with append context expansion modes")
@@ -129,8 +135,10 @@ def validate_retrieval_modes(
         raise ValueError("--legacy-context-assembly cannot be combined with rerank or append context modes")
     if use_full_domain_context and (use_context_rerank or any(append_modes) or use_legacy_context_assembly):
         raise ValueError("--full-domain-context bypasses recall and cannot be combined with rerank, append, or legacy context modes")
-    if use_context_packet and (use_context_rerank or any(append_modes) or use_legacy_context_assembly or use_full_domain_context):
-        raise ValueError("--context-packet cannot be combined with rerank, append, legacy, or full-domain context modes")
+    if use_context_packet and (use_context_rerank or any(append_modes) or use_legacy_context_assembly or use_full_domain_context or use_context_packet_merge):
+        raise ValueError("--context-packet cannot be combined with rerank, append, legacy, full-domain, or context-packet-merge modes")
+    if use_context_packet_merge and (use_context_rerank or any(append_modes) or use_legacy_context_assembly or use_full_domain_context):
+        raise ValueError("--context-packet-merge cannot be combined with rerank, append, legacy, or full-domain context modes")
 
 
 CAT_MAP = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "unanswerable", 5: "adversarial"}
@@ -538,6 +546,48 @@ def _memory_dedupe_key(memory):
     return f"raw::{str(memory)}"
 
 
+def _memory_content(memory):
+    if isinstance(memory, dict):
+        return str(memory.get("content") or memory.get("text") or "")
+    return str(memory or "")
+
+
+def _render_plain_context(memories, question):
+    if not memories:
+        return "No relevant memories found."
+    chronology_cues = any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"])
+    context_lines = []
+    for m in memories:
+        refs = _memory_refs(m)
+        prefix = ""
+        if chronology_cues:
+            parts = []
+            if isinstance(m, dict) and m.get('created_at'):
+                parts.append(f"time={m.get('created_at')}")
+            if refs.get('session_index') is not None:
+                parts.append(f"session={refs.get('session_index')}")
+            if refs.get('turn_start') is not None and refs.get('turn_end') is not None:
+                parts.append(f"turns={refs.get('turn_start')}-{refs.get('turn_end')}")
+            if parts:
+                prefix = "[" + ", ".join(parts) + "] "
+        context_lines.append(f"- {prefix}{_memory_content(m)}")
+    return "\n".join(context_lines)
+
+
+def _append_packet_evidence_to_baseline(base_memories, packet):
+    merged = list(base_memories or [])
+    seen = {_memory_dedupe_key(memory) for memory in merged}
+    packet_added = []
+    for memory in _dedupe_context_packet_episodic_evidence((packet or {}).get("episodic_evidence") or []):
+        key = _memory_dedupe_key(memory)
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(memory)
+        packet_added.append(memory)
+    return merged, packet_added
+
+
 def _memory_refs(memory):
     refs = memory.get("refs") if isinstance(memory, dict) else {}
     refs = refs or {}
@@ -869,6 +919,9 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
         ]
         recall_telemetry["context_packet"] = _context_packet_telemetry_projection(packet)
     else:
+        packet = None
+        packet_added_memories = []
+        base_context_memories = []
         if USE_FULL_DOMAIN_CONTEXT:
             memories = full_domain_memories_for_question(question, domain)
             recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(memories)
@@ -935,6 +988,19 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
                     )
             else:
                 memories = candidates[:ANSWER_CONTEXT_TOP_K]
+            if USE_CONTEXT_PACKET_MERGE:
+                base_context_memories = list(memories)
+                packet = mcp_post("context_packet", {
+                    "query": question,
+                    "domain": domain,
+                    "top_k": CONTEXT_PACKET_TOP_K,
+                    "include_decision_traces": True,
+                })
+                memories, packet_added_memories = _append_packet_evidence_to_baseline(base_context_memories, packet)
+                recall_telemetry["counts"]["context_packet_merge_enabled"] = True
+                recall_telemetry["counts"]["base_final_answer_context_count"] = len(base_context_memories)
+                recall_telemetry["counts"]["packet_episodic_added_count"] = len(packet_added_memories)
+                recall_telemetry["context_packet"] = _context_packet_telemetry_projection(packet)
 
     recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
     recall_telemetry["final_context"] = [
@@ -948,31 +1014,7 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
         }
 
     if not USE_CONTEXT_PACKET:
-        if not memories:
-            context = "No relevant memories found."
-        else:
-            chronology_cues = any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"])
-            context_lines = []
-            for m in memories:
-                refs = m.get('refs') or {}
-                if isinstance(refs, str):
-                    try:
-                        refs = json.loads(refs)
-                    except Exception:
-                        refs = {}
-                prefix = ""
-                if chronology_cues:
-                    parts = []
-                    if m.get('created_at'):
-                        parts.append(f"time={m.get('created_at')}")
-                    if refs.get('session_index') is not None:
-                        parts.append(f"session={refs.get('session_index')}")
-                    if refs.get('turn_start') is not None and refs.get('turn_end') is not None:
-                        parts.append(f"turns={refs.get('turn_start')}-{refs.get('turn_end')}")
-                    if parts:
-                        prefix = "[" + ", ".join(parts) + "] "
-                context_lines.append(f"- {prefix}{m.get('content', '')}")
-            context = "\n".join(context_lines)
+        context = _render_plain_context(memories, question)
 
     system_prompt = (
         "You are extracting factual information from conversation transcripts. "
@@ -1054,6 +1096,7 @@ def result_suffix(
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
     use_context_packet=None,
+    use_context_packet_merge=None,
 ):
     if no_expansion_arm_b:
         if use_query_expansion is True:
@@ -1073,6 +1116,8 @@ def result_suffix(
         use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
     if use_context_packet is None:
         use_context_packet = USE_CONTEXT_PACKET
+    if use_context_packet_merge is None:
+        use_context_packet_merge = USE_CONTEXT_PACKET_MERGE
     validate_retrieval_modes(
         use_context_rerank,
         use_append_context_expansion,
@@ -1080,6 +1125,7 @@ def result_suffix(
         use_legacy_context_assembly,
         use_full_domain_context,
         use_context_packet,
+        use_context_packet_merge,
     )
     suffix = ""
     if no_expansion_arm_b:
@@ -1100,7 +1146,9 @@ def result_suffix(
         suffix += "_legacy_context"
     if use_full_domain_context:
         suffix += "_full_domain_context"
-    if use_context_packet:
+    if use_context_packet_merge:
+        suffix += "_context_packet_merge"
+    elif use_context_packet:
         suffix += "_context_packet"
     return suffix
 
@@ -1115,8 +1163,9 @@ def result_output_path(
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
     use_context_packet=None,
+    use_context_packet_merge=None,
 ):
-    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context, use_context_packet)}.json"
+    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context, use_context_packet, use_context_packet_merge)}.json"
 
 
 def _category_name(cat):
@@ -1147,6 +1196,7 @@ def build_results_payload(
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
     use_context_packet=None,
+    use_context_packet_merge=None,
     expand_fallback_count=0,
     expand_fallback_rate=0.0,
     cleaned=None,
@@ -1167,6 +1217,8 @@ def build_results_payload(
         use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
     if use_context_packet is None:
         use_context_packet = USE_CONTEXT_PACKET
+    if use_context_packet_merge is None:
+        use_context_packet_merge = USE_CONTEXT_PACKET_MERGE
     validate_retrieval_modes(
         use_context_rerank,
         use_append_context_expansion,
@@ -1174,6 +1226,7 @@ def build_results_payload(
         use_legacy_context_assembly,
         use_full_domain_context,
         use_context_packet,
+        use_context_packet_merge,
     )
     full_overall = statistics.mean(all_scores) * 100 if all_scores else 0
     category_scores = {
@@ -1198,6 +1251,7 @@ def build_results_payload(
             "legacy_context_assembly": bool(use_legacy_context_assembly),
             "full_domain_context": bool(use_full_domain_context),
             "context_packet": bool(use_context_packet),
+            "context_packet_merge": bool(use_context_packet_merge),
         },
         "expand_query_fallback_count": expand_fallback_count,
         "expand_query_fallback_rate": round(expand_fallback_rate, 4),
@@ -1205,9 +1259,9 @@ def build_results_payload(
     }
 
 
-def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, use_legacy_context_assembly=None, use_full_domain_context=None, use_context_packet=None, cleaned=None):
+def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, use_legacy_context_assembly=None, use_full_domain_context=None, use_context_packet=None, use_context_packet_merge=None, cleaned=None):
     """Save incremental results."""
-    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context, use_context_packet) if suffix is None else f"/tmp/locomo_results{suffix}.json"
+    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context, use_context_packet, use_context_packet_merge) if suffix is None else f"/tmp/locomo_results{suffix}.json"
     payload = build_results_payload(
         all_scores,
         cat_scores,
@@ -1222,6 +1276,7 @@ def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log
         use_legacy_context_assembly=use_legacy_context_assembly,
         use_full_domain_context=use_full_domain_context,
         use_context_packet=use_context_packet,
+        use_context_packet_merge=use_context_packet_merge,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -1242,9 +1297,10 @@ def run_benchmark(
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
     use_context_packet=None,
+    use_context_packet_merge=None,
 ):
     """Run LOCOMO benchmark, optionally capped by conversations/questions for canaries."""
-    global USE_QUERY_EXPANSION, USE_LEGACY_CONTEXT_ASSEMBLY, USE_FULL_DOMAIN_CONTEXT, USE_CONTEXT_PACKET
+    global USE_QUERY_EXPANSION, USE_LEGACY_CONTEXT_ASSEMBLY, USE_FULL_DOMAIN_CONTEXT, USE_CONTEXT_PACKET, USE_CONTEXT_PACKET_MERGE
     use_query_expansion = USE_QUERY_EXPANSION
     use_context_rerank = USE_CONTEXT_RERANK
     use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
@@ -1261,10 +1317,14 @@ def run_benchmark(
         use_context_packet = USE_CONTEXT_PACKET
     else:
         USE_CONTEXT_PACKET = bool(use_context_packet)
+    if use_context_packet_merge is None:
+        use_context_packet_merge = USE_CONTEXT_PACKET_MERGE
+    else:
+        USE_CONTEXT_PACKET_MERGE = bool(use_context_packet_merge)
     if no_expansion_arm_b:
         use_query_expansion = False
         USE_QUERY_EXPANSION = False
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, use_legacy_context_assembly, use_full_domain_context, use_context_packet)
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, use_legacy_context_assembly, use_full_domain_context, use_context_packet, use_context_packet_merge)
     expand_query.fail_count = 0
     with open(data_path) as f:
         data = json.load(f)
@@ -1309,6 +1369,7 @@ def run_benchmark(
         use_legacy_context_assembly=use_legacy_context_assembly,
         use_full_domain_context=use_full_domain_context,
         use_context_packet=use_context_packet,
+        use_context_packet_merge=use_context_packet_merge,
     )
     if start_conv > 0 and os.path.exists(output_path):
         with open(output_path) as f:
@@ -1480,6 +1541,7 @@ def run_benchmark(
         use_legacy_context_assembly=use_legacy_context_assembly,
         use_full_domain_context=use_full_domain_context,
         use_context_packet=use_context_packet,
+        use_context_packet_merge=use_context_packet_merge,
     )
     payload = build_results_payload(
         all_scores,
@@ -1495,6 +1557,7 @@ def run_benchmark(
         use_legacy_context_assembly=use_legacy_context_assembly,
         use_full_domain_context=use_full_domain_context,
         use_context_packet=use_context_packet,
+        use_context_packet_merge=use_context_packet_merge,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -1521,6 +1584,7 @@ if __name__ == "__main__":
     parser.add_argument("--legacy-context-assembly", action="store_true", help="Enable diagnostic bfeb90f-era query-expansion context assembly")
     parser.add_argument("--full-domain-context", action="store_true", help="Enable opt-in full-domain transcript context spike")
     parser.add_argument("--context-packet", action="store_true", help="Enable default-off Context Graph v0 context packet prompt integration")
+    parser.add_argument("--context-packet-merge", action="store_true", help="Enable default-off baseline+Context Packet append/dedupe canary")
     args = parser.parse_args()
 
     if args.max_questions is not None and args.max_questions <= 0:
@@ -1542,6 +1606,8 @@ if __name__ == "__main__":
         USE_FULL_DOMAIN_CONTEXT = True
     if args.context_packet:
         USE_CONTEXT_PACKET = True
+    if args.context_packet_merge:
+        USE_CONTEXT_PACKET_MERGE = True
     validate_retrieval_modes()
 
     skip = {5} if args.skip_adversarial else set()

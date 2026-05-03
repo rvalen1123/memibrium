@@ -57,14 +57,19 @@ class ContextPacketCanaryTests(unittest.TestCase):
 
         baseline = context_packet_canary.build_benchmark_env(base_env, mcp_url='http://localhost:9999/mcp', context_packet=False)
         treatment = context_packet_canary.build_benchmark_env(base_env, mcp_url='http://localhost:9999/mcp', context_packet=True)
+        merge = context_packet_canary.build_benchmark_env(base_env, mcp_url='http://localhost:9999/mcp', context_packet=False, context_packet_merge=True)
 
         self.assertEqual(baseline['MCP_URL'], 'http://localhost:9999/mcp')
         self.assertEqual(treatment['MCP_URL'], 'http://localhost:9999/mcp')
+        self.assertEqual(merge['MCP_URL'], 'http://localhost:9999/mcp')
         self.assertEqual(baseline['USE_QUERY_EXPANSION'], treatment['USE_QUERY_EXPANSION'])
+        self.assertEqual(merge['USE_QUERY_EXPANSION'], baseline['USE_QUERY_EXPANSION'])
         self.assertEqual(baseline['INCLUDE_RECALL_TELEMETRY'], '1')
         self.assertEqual(treatment['INCLUDE_RECALL_TELEMETRY'], '1')
         self.assertNotIn('USE_CONTEXT_PACKET', baseline)
         self.assertEqual(treatment['USE_CONTEXT_PACKET'], '1')
+        self.assertNotIn('USE_CONTEXT_PACKET', merge)
+        self.assertEqual(merge['USE_CONTEXT_PACKET_MERGE'], '1')
         for incompatible in [
             'USE_CONTEXT_RERANK',
             'USE_APPEND_CONTEXT_EXPANSION',
@@ -72,9 +77,20 @@ class ContextPacketCanaryTests(unittest.TestCase):
             'USE_LEGACY_CONTEXT_ASSEMBLY',
             'USE_FULL_DOMAIN_CONTEXT',
             'LOCOMO_RETRIEVAL_TELEMETRY',
+            'USE_CONTEXT_PACKET_MERGE',
         ]:
             self.assertNotIn(incompatible, baseline)
             self.assertNotIn(incompatible, treatment)
+        for incompatible in [
+            'USE_CONTEXT_RERANK',
+            'USE_APPEND_CONTEXT_EXPANSION',
+            'USE_GATED_APPEND_CONTEXT_EXPANSION',
+            'USE_LEGACY_CONTEXT_ASSEMBLY',
+            'USE_FULL_DOMAIN_CONTEXT',
+            'LOCOMO_RETRIEVAL_TELEMETRY',
+            'USE_CONTEXT_PACKET',
+        ]:
+            self.assertNotIn(incompatible, merge)
 
     def test_tool_names_supports_dict_or_list_mcp_tools_response(self):
         self.assertEqual(
@@ -114,7 +130,7 @@ class ContextPacketCanaryTests(unittest.TestCase):
             }
         ]
         baseline = {
-            'condition': {'context_packet': False},
+            'condition': {'context_packet': False, 'context_packet_merge': False},
             'details': [
                 {
                     'question': 'second question',
@@ -124,13 +140,17 @@ class ContextPacketCanaryTests(unittest.TestCase):
             ],
         }
         treatment = {
-            'condition': {'context_packet': True},
+            'condition': {'context_packet': False, 'context_packet_merge': True},
             'details': [
                 {
                     'question': 'second question',
                     'row_identity': fixed_rows[0],
                     'recall_telemetry': {
-                        'counts': {'context_packet_enabled': True, 'final_answer_context_count': 2},
+                        'counts': {
+                            'context_packet_merge_enabled': True,
+                            'base_final_answer_context_count': 3,
+                            'final_answer_context_count': 4,
+                        },
                         'context_packet': {'provenance_summary': {'memory_ids': ['m1']}},
                         'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
                     },
@@ -138,7 +158,13 @@ class ContextPacketCanaryTests(unittest.TestCase):
             ],
         }
 
-        comparison = context_packet_canary.validate_paired_artifacts(baseline, treatment, fixed_rows)
+        comparison = context_packet_canary.validate_paired_artifacts(
+            baseline,
+            treatment,
+            fixed_rows,
+            treatment_context_packet=False,
+            treatment_context_packet_merge=True,
+        )
 
         self.assertTrue(comparison['row_identity_ok'])
         self.assertTrue(comparison['condition_metadata_ok'])
@@ -151,7 +177,13 @@ class ContextPacketCanaryTests(unittest.TestCase):
         mismatched_treatment = json.loads(json.dumps(treatment))
         mismatched_treatment['details'][0]['row_identity']['question_sha256'] = '1' * 64
         with self.assertRaisesRegex(ValueError, 'paired_row_identity_mismatch'):
-            context_packet_canary.validate_paired_artifacts(baseline, mismatched_treatment, fixed_rows)
+            context_packet_canary.validate_paired_artifacts(
+                baseline,
+                mismatched_treatment,
+                fixed_rows,
+                treatment_context_packet=False,
+                treatment_context_packet_merge=True,
+            )
     def test_canary_input_slice_records_session_order_mapping(self):
         data = [{
             'sample_id': 'conv-26',

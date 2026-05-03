@@ -1004,6 +1004,63 @@ class QueryExpansionTests(unittest.TestCase):
         )
         self.assertTrue(all('dentist appointment extra memory' in line for line in prompt_lines[locomo_bench_v2.RECALL_TOP_K:]))
 
+    def test_context_packet_merge_preserves_baseline_context_and_appends_deduped_packet_evidence(self):
+        calls = []
+        seen_messages = []
+
+        def fake_mcp_post(tool, payload, retries=3):
+            calls.append((tool, payload))
+            if tool == 'recall':
+                return {'results': [
+                    {'id': f'b{i:02d}', 'content': f'baseline memory {i:02d}'}
+                    for i in range(1, locomo_bench_v2.RECALL_TOP_K + 1)
+                ]}
+            if tool == 'context_packet':
+                return {
+                    'schema': 'memibrium.context_packet.v1',
+                    'episodic_evidence': [
+                        {'memory_id': 'b01', 'content': 'baseline memory 01'},
+                        {'memory_id': 'p01', 'content': 'packet-only source-backed evidence'},
+                        {'memory_id': 'p01', 'content': 'packet-only source-backed evidence'},
+                    ],
+                    'provenance_summary': {'memory_ids': ['b01', 'p01']},
+                }
+            raise AssertionError(tool)
+
+        def fake_llm_call(messages, model=locomo_bench_v2.ANSWER_MODEL, max_tokens=200, retries=3):
+            seen_messages.append(messages)
+            return 'merged answer'
+
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', False), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_PACKET', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_PACKET_MERGE', True
+        ), patch.object(
+            locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+        ), patch.object(locomo_bench_v2, 'llm_call', side_effect=fake_llm_call):
+            answer, memory_count, telemetry = locomo_bench_v2.answer_question(
+                'What changed?',
+                'locomo-1',
+                return_telemetry=True,
+            )
+
+        self.assertEqual(answer, 'merged answer')
+        self.assertEqual([call[0] for call in calls], ['recall', 'context_packet'])
+        self.assertEqual(memory_count, locomo_bench_v2.RECALL_TOP_K + 1)
+        prompt_lines = [line for line in seen_messages[0][1]['content'].splitlines() if line.startswith('- ')]
+        self.assertEqual(
+            prompt_lines[:locomo_bench_v2.RECALL_TOP_K],
+            [f'- baseline memory {i:02d}' for i in range(1, locomo_bench_v2.RECALL_TOP_K + 1)],
+        )
+        self.assertEqual(seen_messages[0][1]['content'].count('baseline memory 01'), 1)
+        self.assertEqual(seen_messages[0][1]['content'].count('packet-only source-backed evidence'), 1)
+        self.assertEqual([item['id'] for item in telemetry['final_context'][:locomo_bench_v2.RECALL_TOP_K]], [f'b{i:02d}' for i in range(1, locomo_bench_v2.RECALL_TOP_K + 1)])
+        self.assertEqual(telemetry['final_context'][-1]['id'], 'p01')
+        self.assertTrue(telemetry['counts']['context_packet_merge_enabled'])
+        self.assertEqual(telemetry['counts']['base_final_answer_context_count'], locomo_bench_v2.RECALL_TOP_K)
+        self.assertEqual(telemetry['counts']['packet_episodic_added_count'], 1)
+        self.assertEqual(telemetry['context_packet']['deduped_episodic_evidence_count'], 1)
+
     def test_context_packet_mode_calls_context_packet_and_uses_packet_evidence(self):
         calls = []
         seen_messages = []
