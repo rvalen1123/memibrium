@@ -79,6 +79,16 @@ class CapturePool:
         return FakeAcquire(self.conn)
 
 
+class FakeQueryAgent:
+    async def recall(self, query, top_k=5, domain=None, expand=True):
+        return {
+            "results": [
+                {"id": "mem_recalled", "content": "Recalled episodic evidence from the active domain.", "domain": domain},
+            ],
+            "tier": "fake",
+        }
+
+
 class ContextGraphV0Tests(unittest.TestCase):
     def run_async(self, coro):
         return asyncio.run(coro)
@@ -238,7 +248,7 @@ class ContextGraphV0Tests(unittest.TestCase):
             confidence=0.88,
         ))
 
-        with patch.object(server, "store", fake_store):
+        with patch.object(server, "store", fake_store), patch.object(server, "query_agent", FakeQueryAgent()):
             obs_response = self.run_async(server.handle_self_model_observe(FakeRequest({
                 "engine": "disposition",
                 "observation_type": "flow_signal",
@@ -262,10 +272,15 @@ class ContextGraphV0Tests(unittest.TestCase):
                 ],
                 "include_decision_traces": True,
             })))
+            recalled_packet_response = self.run_async(server.handle_context_packet(FakeRequest({
+                "query": "What did active recall return?",
+                "domain": "locomo-test",
+            })))
 
         obs_payload = self.decode_response(obs_response)
         trace_payload = self.decode_response(trace_response)
         packet_payload = self.decode_response(packet_response)
+        recalled_packet_payload = self.decode_response(recalled_packet_response)
 
         self.assertEqual(obs_payload["engine"], "disposition")
         self.assertEqual(trace_payload["schema"], "memibrium.decision_trace.v1")
@@ -273,6 +288,9 @@ class ContextGraphV0Tests(unittest.TestCase):
         self.assertGreaterEqual(len(packet_payload["self_model_observations"]), 2)
         self.assertEqual(packet_payload["decision_traces"][0]["query"], "Build context graph?")
         self.assertEqual(packet_payload["provenance_summary"]["memory_ids"], ["mem_1", "mem_2"])
+        self.assertEqual(recalled_packet_payload["episodic_evidence"][0]["memory_id"], "mem_recalled")
+        self.assertEqual(recalled_packet_payload["episodic_evidence"][0]["content"], "Recalled episodic evidence from the active domain.")
+        self.assertIn("mem_recalled", recalled_packet_payload["provenance_summary"]["memory_ids"])
 
 
 if __name__ == "__main__":

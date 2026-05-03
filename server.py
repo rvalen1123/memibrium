@@ -2674,7 +2674,7 @@ async def handle_context_packet(request: Request) -> JSONResponse:
                 domain=body.get("domain"),
                 expand=body.get("expand", True),
             )
-            episodic_evidence = recall.get("memories", recall) if isinstance(recall, dict) else recall
+            episodic_evidence = recall.get("results", recall.get("memories", recall)) if isinstance(recall, dict) else recall
         except Exception as e:
             log.warning(f"Context packet recall failed: {e}")
             episodic_evidence = []
