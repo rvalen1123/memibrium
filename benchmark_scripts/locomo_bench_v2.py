@@ -75,6 +75,11 @@ USE_GATED_APPEND_CONTEXT_EXPANSION = _env_flag("USE_GATED_APPEND_CONTEXT_EXPANSI
 # candidate memories from later expansions. Keep this opt-in; it is not a new
 # product retrieval mode.
 USE_LEGACY_CONTEXT_ASSEMBLY = _env_flag("USE_LEGACY_CONTEXT_ASSEMBLY", default=False)
+# Last-mile LOCOMO spike: bypass recall ranking and give the answer model every
+# chunk ingested for the current conversation/domain, in chronological order.
+# This is intentionally opt-in/evaluation-only; it tests whether remaining score
+# ceiling is retrieval/context-selection versus answer/judge behavior.
+USE_FULL_DOMAIN_CONTEXT = _env_flag("USE_FULL_DOMAIN_CONTEXT", default=False)
 # Observation-only telemetry for preregistered LOCOMO diagnostic runs.
 INCLUDE_RECALL_TELEMETRY = _env_flag("INCLUDE_RECALL_TELEMETRY", default=False)
 RECALL_TOP_K = 10
@@ -94,6 +99,7 @@ def validate_retrieval_modes(
     use_append_context_expansion=None,
     use_gated_append_context_expansion=None,
     use_legacy_context_assembly=None,
+    use_full_domain_context=None,
 ):
     """Reject retrieval modes whose metadata/prompt semantics would conflict."""
     if use_context_rerank is None:
@@ -104,6 +110,8 @@ def validate_retrieval_modes(
         use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
     if use_legacy_context_assembly is None:
         use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
+    if use_full_domain_context is None:
+        use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
     append_modes = [bool(use_append_context_expansion), bool(use_gated_append_context_expansion)]
     if use_context_rerank and any(append_modes):
         raise ValueError("--context-rerank cannot be combined with append context expansion modes")
@@ -111,9 +119,12 @@ def validate_retrieval_modes(
         raise ValueError("append context expansion modes are mutually exclusive")
     if use_legacy_context_assembly and (use_context_rerank or any(append_modes)):
         raise ValueError("--legacy-context-assembly cannot be combined with rerank or append context modes")
+    if use_full_domain_context and (use_context_rerank or any(append_modes) or use_legacy_context_assembly):
+        raise ValueError("--full-domain-context bypasses recall and cannot be combined with rerank, append, or legacy context modes")
 
 
 CAT_MAP = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "unanswerable", 5: "adversarial"}
+DOMAIN_CONTEXT_CACHE = defaultdict(list)
 
 
 def normalize_category(cat):
@@ -418,30 +429,40 @@ def ingest_conversation(conv, sample_id, chunk_size=10, normalize_dates=False):
 
             if len(chunk) >= chunk_size:
                 content = f"[{date_str}] {' | '.join(chunk)}"
-                payload = {"content": content, "domain": domain}
-                if event_at:
-                    payload["event_at"] = event_at
-                payload["refs"] = {
+                refs = {
                     "session_index": session_idx,
                     "chunk_index": chunk_turn_start // max(chunk_size, 1),
                     "turn_start": chunk_turn_start,
                     "turn_end": turn_idx,
                 }
+                payload = {"content": content, "domain": domain, "refs": refs}
+                if event_at:
+                    payload["event_at"] = event_at
+                DOMAIN_CONTEXT_CACHE[domain].append({
+                    "content": content,
+                    "refs": refs,
+                    "created_at": event_at,
+                })
                 mcp_post("retain", payload)
                 total_turns += len(chunk)
                 chunk = []
 
         if chunk:
             content = f"[{date_str}] {' | '.join(chunk)}"
-            payload = {"content": content, "domain": domain}
-            if event_at:
-                payload["event_at"] = event_at
-            payload["refs"] = {
+            refs = {
                 "session_index": session_idx,
                 "chunk_index": chunk_turn_start // max(chunk_size, 1),
                 "turn_start": chunk_turn_start,
                 "turn_end": len(turns) - 1,
             }
+            payload = {"content": content, "domain": domain, "refs": refs}
+            if event_at:
+                payload["event_at"] = event_at
+            DOMAIN_CONTEXT_CACHE[domain].append({
+                "content": content,
+                "refs": refs,
+                "created_at": event_at,
+            })
             mcp_post("retain", payload)
             total_turns += len(chunk)
 
@@ -549,6 +570,20 @@ def _extract_recall_payload(recall_result):
     if isinstance(recall_result, list):
         return recall_result, None
     return recall_result.get("results", recall_result.get("memories", [])), recall_result.get("telemetry")
+
+
+def full_domain_memories_for_question(question, domain):
+    """Return every ingested chunk for this LOCOMO domain in transcript order.
+
+    This deliberately bypasses retrieval and ranking. It is a bounded eval spike,
+    useful for testing whether LOCOMO's residual failures are mostly caused by
+    missing evidence in the answer prompt or by downstream reasoning/judging.
+    """
+    memories = list(DOMAIN_CONTEXT_CACHE.get(domain, []))
+    for rank, memory in enumerate(memories, start=1):
+        memory.setdefault("id", f"full-domain::{domain}::{rank}")
+        memory.setdefault("score", 1.0)
+    return memories
 
 
 def rerank_memories_for_question(question, memories, top_k=ANSWER_CONTEXT_TOP_K, preserve_prefix_k=RERANK_PRESERVE_PREFIX_K):
@@ -702,7 +737,13 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
         })
         return recalled
 
-    if USE_LEGACY_CONTEXT_ASSEMBLY:
+    if USE_FULL_DOMAIN_CONTEXT:
+        memories = full_domain_memories_for_question(question, domain)
+        recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(memories)
+        recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(memories)
+        recall_telemetry["counts"]["candidate_count_after_dedupe"] = len(memories)
+        recall_telemetry["counts"]["full_domain_context_enabled"] = True
+    elif USE_LEGACY_CONTEXT_ASSEMBLY:
         seen = {}
         candidate_memories_for_telemetry = []
         for query in queries:
@@ -807,6 +848,8 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
     )
     if any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"]):
         system_prompt += " Pay close attention to chronology, timestamps, session order, and turn order."
+    if USE_FULL_DOMAIN_CONTEXT:
+        system_prompt += " You are seeing the full conversation transcript, not a relevance-filtered memory list; search it carefully before answering."
 
     answer = llm_call([
         {"role": "system", "content": system_prompt},
@@ -876,6 +919,7 @@ def result_suffix(
     use_gated_append_context_expansion=None,
     no_expansion_arm_b=False,
     use_legacy_context_assembly=None,
+    use_full_domain_context=None,
 ):
     if no_expansion_arm_b:
         if use_query_expansion is True:
@@ -891,11 +935,14 @@ def result_suffix(
         use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
     if use_legacy_context_assembly is None:
         use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
+    if use_full_domain_context is None:
+        use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
     validate_retrieval_modes(
         use_context_rerank,
         use_append_context_expansion,
         use_gated_append_context_expansion,
         use_legacy_context_assembly,
+        use_full_domain_context,
     )
     suffix = ""
     if no_expansion_arm_b:
@@ -914,6 +961,8 @@ def result_suffix(
         suffix += "_appended"
     if use_legacy_context_assembly:
         suffix += "_legacy_context"
+    if use_full_domain_context:
+        suffix += "_full_domain_context"
     return suffix
 
 
@@ -925,8 +974,9 @@ def result_output_path(
     use_gated_append_context_expansion=None,
     no_expansion_arm_b=False,
     use_legacy_context_assembly=None,
+    use_full_domain_context=None,
 ):
-    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly)}.json"
+    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context)}.json"
 
 
 def _category_name(cat):
@@ -955,6 +1005,7 @@ def build_results_payload(
     use_gated_append_context_expansion=None,
     no_expansion_arm_b=False,
     use_legacy_context_assembly=None,
+    use_full_domain_context=None,
     expand_fallback_count=0,
     expand_fallback_rate=0.0,
     cleaned=None,
@@ -971,11 +1022,14 @@ def build_results_payload(
         use_gated_append_context_expansion = USE_GATED_APPEND_CONTEXT_EXPANSION
     if use_legacy_context_assembly is None:
         use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
+    if use_full_domain_context is None:
+        use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
     validate_retrieval_modes(
         use_context_rerank,
         use_append_context_expansion,
         use_gated_append_context_expansion,
         use_legacy_context_assembly,
+        use_full_domain_context,
     )
     full_overall = statistics.mean(all_scores) * 100 if all_scores else 0
     category_scores = {
@@ -998,6 +1052,7 @@ def build_results_payload(
             "gated_append_context_expansion": bool(use_gated_append_context_expansion),
             "no_expansion_arm_b": bool(no_expansion_arm_b),
             "legacy_context_assembly": bool(use_legacy_context_assembly),
+            "full_domain_context": bool(use_full_domain_context),
         },
         "expand_query_fallback_count": expand_fallback_count,
         "expand_query_fallback_rate": round(expand_fallback_rate, 4),
@@ -1005,9 +1060,9 @@ def build_results_payload(
     }
 
 
-def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, use_legacy_context_assembly=None, cleaned=None):
+def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, use_legacy_context_assembly=None, use_full_domain_context=None, cleaned=None):
     """Save incremental results."""
-    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly) if suffix is None else f"/tmp/locomo_results{suffix}.json"
+    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context) if suffix is None else f"/tmp/locomo_results{suffix}.json"
     payload = build_results_payload(
         all_scores,
         cat_scores,
@@ -1020,6 +1075,7 @@ def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log
         use_gated_append_context_expansion=use_gated_append_context_expansion,
         no_expansion_arm_b=no_expansion_arm_b,
         use_legacy_context_assembly=use_legacy_context_assembly,
+        use_full_domain_context=use_full_domain_context,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -1038,9 +1094,10 @@ def run_benchmark(
     max_questions=None,
     no_expansion_arm_b=False,
     use_legacy_context_assembly=None,
+    use_full_domain_context=None,
 ):
     """Run LOCOMO benchmark, optionally capped by conversations/questions for canaries."""
-    global USE_QUERY_EXPANSION, USE_LEGACY_CONTEXT_ASSEMBLY
+    global USE_QUERY_EXPANSION, USE_LEGACY_CONTEXT_ASSEMBLY, USE_FULL_DOMAIN_CONTEXT
     use_query_expansion = USE_QUERY_EXPANSION
     use_context_rerank = USE_CONTEXT_RERANK
     use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
@@ -1049,10 +1106,14 @@ def run_benchmark(
         use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
     else:
         USE_LEGACY_CONTEXT_ASSEMBLY = bool(use_legacy_context_assembly)
+    if use_full_domain_context is None:
+        use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
+    else:
+        USE_FULL_DOMAIN_CONTEXT = bool(use_full_domain_context)
     if no_expansion_arm_b:
         use_query_expansion = False
         USE_QUERY_EXPANSION = False
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, use_legacy_context_assembly)
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, use_legacy_context_assembly, use_full_domain_context)
     expand_query.fail_count = 0
     with open(data_path) as f:
         data = json.load(f)
@@ -1095,6 +1156,7 @@ def run_benchmark(
         use_gated_append_context_expansion=use_gated_append_context_expansion,
         no_expansion_arm_b=no_expansion_arm_b,
         use_legacy_context_assembly=use_legacy_context_assembly,
+        use_full_domain_context=use_full_domain_context,
     )
     if start_conv > 0 and os.path.exists(output_path):
         with open(output_path) as f:
@@ -1203,6 +1265,7 @@ def run_benchmark(
             use_gated_append_context_expansion=use_gated_append_context_expansion,
             no_expansion_arm_b=no_expansion_arm_b,
             use_legacy_context_assembly=use_legacy_context_assembly,
+            use_full_domain_context=use_full_domain_context,
             expand_fallback_count=expand_fallback_count,
             expand_fallback_rate=expand_fallback_rate,
             cleaned=cleaned,
@@ -1262,6 +1325,7 @@ def run_benchmark(
         use_gated_append_context_expansion=use_gated_append_context_expansion,
         no_expansion_arm_b=no_expansion_arm_b,
         use_legacy_context_assembly=use_legacy_context_assembly,
+        use_full_domain_context=use_full_domain_context,
     )
     payload = build_results_payload(
         all_scores,
@@ -1275,6 +1339,7 @@ def run_benchmark(
         use_gated_append_context_expansion=use_gated_append_context_expansion,
         no_expansion_arm_b=no_expansion_arm_b,
         use_legacy_context_assembly=use_legacy_context_assembly,
+        use_full_domain_context=use_full_domain_context,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -1299,6 +1364,7 @@ if __name__ == "__main__":
     parser.add_argument("--append-context-expansion", action="store_true", help="Enable opt-in append-only extra context after the original answer context")
     parser.add_argument("--gated-append-context-expansion", action="store_true", help="Enable opt-in gated append-only context expansion")
     parser.add_argument("--legacy-context-assembly", action="store_true", help="Enable diagnostic bfeb90f-era query-expansion context assembly")
+    parser.add_argument("--full-domain-context", action="store_true", help="Enable opt-in full-domain transcript context spike")
     args = parser.parse_args()
 
     if args.max_questions is not None and args.max_questions <= 0:
@@ -1316,6 +1382,8 @@ if __name__ == "__main__":
         USE_GATED_APPEND_CONTEXT_EXPANSION = True
     if args.legacy_context_assembly:
         USE_LEGACY_CONTEXT_ASSEMBLY = True
+    if args.full_domain_context:
+        USE_FULL_DOMAIN_CONTEXT = True
     validate_retrieval_modes()
 
     skip = {5} if args.skip_adversarial else set()
@@ -1331,4 +1399,5 @@ if __name__ == "__main__":
         cleaned=args.cleaned,
         no_expansion_arm_b=args.no_expansion_arm_b,
         use_legacy_context_assembly=args.legacy_context_assembly,
+        use_full_domain_context=args.full_domain_context,
     )
