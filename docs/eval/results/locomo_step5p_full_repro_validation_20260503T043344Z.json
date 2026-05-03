@@ -1,0 +1,201 @@
+{
+  "adversarial_summary": {
+    "count": 47,
+    "distribution": {
+      "11": 1,
+      "13": 3,
+      "14": 5,
+      "15": 38
+    },
+    "mean_n_memories": 14.6809,
+    "n_le_4": 0
+  },
+  "avg_query_ms": 2619,
+  "category_scores": {
+    "cat-adversarial": 22.34,
+    "cat-multi-hop": 30.77,
+    "cat-single-hop": 54.69,
+    "cat-temporal": 72.97,
+    "cat-unanswerable": 71.43
+  },
+  "category_summary": {
+    "adversarial": {
+      "count": 47,
+      "mean_n_memories": 14.6809,
+      "n_eq_15": 38,
+      "n_le_4": 0,
+      "n_memories_distribution": {
+        "11": 1,
+        "13": 3,
+        "14": 5,
+        "15": 38
+      },
+      "score_pct": 22.34
+    },
+    "multi-hop": {
+      "count": 13,
+      "mean_n_memories": 14.6154,
+      "n_eq_15": 11,
+      "n_le_4": 0,
+      "n_memories_distribution": {
+        "12": 1,
+        "13": 1,
+        "15": 11
+      },
+      "score_pct": 30.77
+    },
+    "single-hop": {
+      "count": 32,
+      "mean_n_memories": 14.6562,
+      "n_eq_15": 26,
+      "n_le_4": 0,
+      "n_memories_distribution": {
+        "11": 1,
+        "12": 1,
+        "14": 4,
+        "15": 26
+      },
+      "score_pct": 54.69
+    },
+    "temporal": {
+      "count": 37,
+      "mean_n_memories": 14.4595,
+      "n_eq_15": 28,
+      "n_le_4": 0,
+      "n_memories_distribution": {
+        "11": 1,
+        "12": 3,
+        "13": 2,
+        "14": 3,
+        "15": 28
+      },
+      "score_pct": 72.97
+    },
+    "unanswerable": {
+      "count": 70,
+      "mean_n_memories": 14.6429,
+      "n_eq_15": 58,
+      "n_le_4": 0,
+      "n_memories_distribution": {
+        "10": 1,
+        "12": 3,
+        "13": 3,
+        "14": 5,
+        "15": 58
+      },
+      "score_pct": 71.43
+    }
+  },
+  "cleanup": {
+    "completed_at": "2026-05-03T04:44:11Z",
+    "hygiene_after_cleanup": {
+      "contradictions": 0,
+      "memories": 0,
+      "memory_edges": 0,
+      "memory_snapshots": 0,
+      "ok": true,
+      "temporal_expressions": 0,
+      "user_feedback": 0
+    },
+    "run_id": "20260503T043344Z",
+    "schema": "memibrium.locomo.step5p.cleanup.v1",
+    "started_at": "2026-05-03T04:44:09Z"
+  },
+  "comparison_targets": {
+    "step5j_v2_exec": {
+      "adversarial_mean_n": 4.0,
+      "distribution": {
+        "12": 6,
+        "13": 10,
+        "14": 12,
+        "15": 120,
+        "4": 51
+      },
+      "fallback": 0,
+      "full_5cat_overall": 55.28,
+      "mean_n_memories": 11.9296,
+      "n_eq_15": 120,
+      "protocol_4cat_overall": 70.07
+    }
+  },
+  "condition": {
+    "append_context_expansion": false,
+    "cleaned": false,
+    "context_rerank": false,
+    "gated_append_context_expansion": false,
+    "legacy_context_assembly": false,
+    "no_expansion_arm_b": false,
+    "normalize_dates": false,
+    "query_expansion": true
+  },
+  "decision_labels": [
+    "full_repro_execution_complete_valid",
+    "5j_v2_exec_bimodality_does_not_reproduce",
+    "score_drifts_significantly",
+    "no_go_phase_c_still_blocked"
+  ],
+  "expand_query_fallback_count": 0,
+  "expand_query_fallback_rate": 0.0,
+  "full_5cat_overall": 54.77,
+  "log_error_flags": {
+    "Decimal is not JSON serializable": false,
+    "HTTP 500": false,
+    "Hybrid retrieval failed": false,
+    "Internal Server Error": false,
+    "Traceback": false,
+    "TypeError": false,
+    "type \"vector\" does not exist": false
+  },
+  "n_memories_summary": {
+    "count": 199,
+    "distribution": {
+      "10": 1,
+      "11": 3,
+      "12": 8,
+      "13": 9,
+      "14": 17,
+      "15": 161
+    },
+    "max": 15,
+    "mean": 14.6181,
+    "min": 10,
+    "n_eq_15": 161,
+    "n_eq_4": 0,
+    "n_ge_11": 198,
+    "n_le_4": 0
+  },
+  "non_adversarial_summary": {
+    "count": 152,
+    "distribution": {
+      "10": 1,
+      "11": 2,
+      "12": 8,
+      "13": 6,
+      "14": 12,
+      "15": 123
+    },
+    "mean_n_memories": 14.5987,
+    "n_eq_15": 123
+  },
+  "protocol_4cat_overall": 64.8,
+  "run_id": "20260503T043344Z",
+  "schema": "memibrium.locomo.step5p.validation.v1",
+  "total_questions": 199,
+  "validated_at": "2026-05-03T04:44:07Z",
+  "validity_checks": {
+    "all_rows_conv26": true,
+    "append_context_expansion_off": true,
+    "context_rerank_off": true,
+    "detail_rows_199": true,
+    "fallback_present": true,
+    "gated_append_context_expansion_off": true,
+    "legacy_context_assembly_off": true,
+    "n_memories_present_all_rows": true,
+    "no_expansion_arm_b_off": true,
+    "no_fresh_log_error_flags": true,
+    "normalize_dates_off": true,
+    "query_expansion_on": true,
+    "result_parseable": true,
+    "telemetry_absent": true
+  }
+}

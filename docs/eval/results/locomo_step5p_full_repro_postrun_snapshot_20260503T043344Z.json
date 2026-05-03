@@ -1,0 +1,313 @@
+{
+  "authorization": "user said proceed after Step 5p preregistration",
+  "benchmark_env_redacted": {
+    "ANSWER_MODEL": "gpt-4.1-mini",
+    "AZURE_API_VERSION": "2024-06-01",
+    "AZURE_CHAT_API_KEY": "[REDACTED]",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com",
+    "AZURE_EMBEDDING_API_KEY": "[REDACTED]",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "AZURE_EMBEDDING_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "AZURE_OPENAI_API_KEY": "[REDACTED]",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "CHAT_MODEL": "gpt-4.1-mini",
+    "DB_HOST": "localhost",
+    "DB_NAME": "memory",
+    "DB_PASSWORD": "[REDACTED]",
+    "DB_PORT": "5432",
+    "DB_USER": "memory",
+    "EMBEDDING_BASE_URL": "http://ollama:11434/v1",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "ENABLE_BACKGROUND_SCORING": null,
+    "ENABLE_CONTRADICTION_DETECTION": null,
+    "ENABLE_HIERARCHY_PROCESSING": null,
+    "INCLUDE_RECALL_TELEMETRY": null,
+    "JUDGE_MODEL": "gpt-4.1-mini",
+    "LOCOMO_RETRIEVAL_TELEMETRY": null,
+    "MCP_URL": null,
+    "OPENAI_API_KEY": "[REDACTED]",
+    "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+    "RUVECTOR_GNN": "true",
+    "USE_APPEND_CONTEXT_EXPANSION": null,
+    "USE_CONTEXT_RERANK": null,
+    "USE_GATED_APPEND_CONTEXT_EXPANSION": null,
+    "USE_LEGACY_CONTEXT_ASSEMBLY": null,
+    "USE_QUERY_EXPANSION": "1",
+    "USE_RUVECTOR": "true"
+  },
+  "bounded_server_log_tail": "INFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48890 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35218 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44610 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:58834 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:34492 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:52388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57094 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38244 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58910 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:50460 - \"GET /health HTTP/1.1\" 200 OK\n2026-05-03 04:40:55,905 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:40:56,100 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:40:59,096 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:00,398 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:12,991 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:18,034 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:18,182 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:30,117 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:30,497 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:43,440 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:43,630 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:41:59,726 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:42:05,524 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:42:05,688 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:42:21,697 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:42:21,880 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:42:24,455 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:42:29,951 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:42:46,199 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:14,708 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:22,835 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:23,053 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:23,262 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:42,164 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:47,961 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:48,135 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:51,141 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-03 04:43:51,286 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n",
+  "captured_at": "2026-05-03T04:44:07Z",
+  "db_snapshot": {
+    "extensions": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "plpgsql|1.0\nruvector|0.3.0"
+    },
+    "indexes": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "entities|entities_pkey|CREATE UNIQUE INDEX entities_pkey ON public.entities USING btree (entity_id)\nmemories|memories_content_tsv_idx|CREATE INDEX memories_content_tsv_idx ON public.memories USING gin (content_tsv)\nmemories|memories_created_at_idx|CREATE INDEX memories_created_at_idx ON public.memories USING btree (created_at)\nmemories|memories_embedding_idx|CREATE INDEX memories_embedding_idx ON public.memories USING hnsw (embedding ruvector_cosine_ops) WITH (m='16', ef_construction='200')\nmemories|memories_pkey|CREATE UNIQUE INDEX memories_pkey ON public.memories USING btree (id)\nmemories|memories_state_idx|CREATE INDEX memories_state_idx ON public.memories USING btree (state)\nmemories|memories_type_idx|CREATE INDEX memories_type_idx ON public.memories USING btree (memory_type)\nmemory_edges|memory_edges_pkey|CREATE UNIQUE INDEX memory_edges_pkey ON public.memory_edges USING btree (edge_id)\nmemory_edges|memory_edges_source_idx|CREATE INDEX memory_edges_source_idx ON public.memory_edges USING btree (source_id)\nmemory_edges|memory_edges_target_idx|CREATE INDEX memory_edges_target_idx ON public.memory_edges USING btree (target_id)"
+    },
+    "locomo_hygiene": {
+      "contradictions": 0,
+      "memories": 49,
+      "memory_edges": 435,
+      "memory_snapshots": 0,
+      "ok": false,
+      "temporal_expressions": 66,
+      "user_feedback": 0
+    },
+    "pg_stat_user_tables": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "contradictions||||\nentities||2026-05-01 05:54:08.083657+00||2026-05-03 00:52:01.557886+00\nentity_relationships||2026-05-01 05:55:08.190625+00||2026-05-01 05:55:08.515134+00\nmemories||2026-05-03 00:53:01.492683+00||2026-05-03 04:34:02.213737+00\nmemory_edges||2026-05-03 00:53:01.511088+00||2026-05-03 04:35:02.204168+00\nmemory_snapshots||||\ntemporal_expressions||2026-05-03 00:53:01.508789+00||2026-05-03 04:35:02.201603+00\nuser_feedback||||"
+    },
+    "planner_settings": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "effective_cache_size=524288\nenable_seqscan=on\nrandom_page_cost=4\nwork_mem=4096"
+    },
+    "postgres_version": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "PostgreSQL 17.9 (Debian 17.9-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit"
+    },
+    "table_counts_sizes": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "contradictions|0|32768\nentities|3149|1572864\nentity_relationships|232436|46800896\nmemories|76|144228352\nmemory_edges|436|286720\nmemory_snapshots|0|16384\ntemporal_expressions|66|442368\nuser_feedback|0|24576"
+    },
+    "vector_column": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "embedding|ruvector|USER-DEFINED"
+    }
+  },
+  "docker_identity": {
+    "memibrium_server": {
+      "available": true,
+      "config_image": "memibrium-memibrium",
+      "id": "37b4e905299874b18421ea577211083f42956fe4659af37b198eb53f1d81d02a",
+      "image": "sha256:76fed12e0da1324ab1e26e927fa3fa1a3aa6e7b340d5f7ab6e481da3e0afe9b6",
+      "name": "/memibrium-server",
+      "state": {
+        "Dead": false,
+        "Error": "",
+        "ExitCode": 0,
+        "FinishedAt": "0001-01-01T00:00:00Z",
+        "Health": {
+          "FailingStreak": 0,
+          "Log": [
+            {
+              "End": "2026-05-03T04:42:08.746279225Z",
+              "ExitCode": 0,
+              "Output": "",
+              "Start": "2026-05-03T04:42:08.630101833Z"
+            },
+            {
+              "End": "2026-05-03T04:42:38.008462488Z",
+              "ExitCode": 0,
+              "Output": "",
+              "Start": "2026-05-03T04:42:37.908978695Z"
+            },
+            {
+              "End": "2026-05-03T04:43:07.25953201Z",
+              "ExitCode": 0,
+              "Output": "",
+              "Start": "2026-05-03T04:43:07.172495724Z"
+            },
+            {
+              "End": "2026-05-03T04:43:36.5097369Z",
+              "ExitCode": 0,
+              "Output": "",
+              "Start": "2026-05-03T04:43:36.427503704Z"
+            },
+            {
+              "End": "2026-05-03T04:44:05.757354475Z",
+              "ExitCode": 0,
+              "Output": "",
+              "Start": "2026-05-03T04:44:05.654308359Z"
+            }
+          ],
+          "Status": "healthy"
+        },
+        "OOMKilled": false,
+        "Paused": false,
+        "Pid": 822563,
+        "Restarting": false,
+        "Running": true,
+        "StartedAt": "2026-05-02T12:30:18.612989007Z",
+        "Status": "running"
+      }
+    },
+    "ruvector_db": {
+      "available": true,
+      "config_image": "ruvnet/ruvector-postgres:latest",
+      "id": "33edce3023ac0ef719b748b56f5a1acdc5a59afbb7543f6a1f7604e23df941a9",
+      "image": "sha256:d9f86747f3af63c354bc40b1cc4368575fcdbf16ad7582cb82ef20f0d8907dac",
+      "name": "/memibrium-ruvector-db",
+      "state": {
+        "Dead": false,
+        "Error": "",
+        "ExitCode": 0,
+        "FinishedAt": "2026-04-30T12:26:52.09103367Z",
+        "Health": {
+          "FailingStreak": 0,
+          "Log": [
+            {
+              "End": "2026-05-03T04:42:00.214965114Z",
+              "ExitCode": 0,
+              "Output": "/var/run/postgresql:5432 - accepting connections\n",
+              "Start": "2026-05-03T04:42:00.144545591Z"
+            },
+            {
+              "End": "2026-05-03T04:42:29.46216789Z",
+              "ExitCode": 0,
+              "Output": "/var/run/postgresql:5432 - accepting connections\n",
+              "Start": "2026-05-03T04:42:29.377918485Z"
+            },
+            {
+              "End": "2026-05-03T04:42:58.695248346Z",
+              "ExitCode": 0,
+              "Output": "/var/run/postgresql:5432 - accepting connections\n",
+              "Start": "2026-05-03T04:42:58.62485534Z"
+            },
+            {
+              "End": "2026-05-03T04:43:27.933847658Z",
+              "ExitCode": 0,
+              "Output": "/var/run/postgresql:5432 - accepting connections\n",
+              "Start": "2026-05-03T04:43:27.863953782Z"
+            },
+            {
+              "End": "2026-05-03T04:43:57.144487054Z",
+              "ExitCode": 0,
+              "Output": "/var/run/postgresql:5432 - accepting connections\n",
+              "Start": "2026-05-03T04:43:57.078791261Z"
+            }
+          ],
+          "Status": "healthy"
+        },
+        "OOMKilled": false,
+        "Paused": false,
+        "Pid": 784,
+        "Restarting": false,
+        "Running": true,
+        "StartedAt": "2026-04-30T12:27:04.256521238Z",
+        "Status": "running"
+      }
+    }
+  },
+  "embedding_cache_state": "not_discoverable_read_only",
+  "git": {
+    "branch": "query-expansion",
+    "head": "7d02da9468d2b644917789710dd9161ea203ae18",
+    "log_1": "7d02da9 docs: preregister LOCOMO step 5p full repro",
+    "short": "7d02da9",
+    "status_short": "?? docs/eval/results/locomo_step5p_full_repro_guard_summary_20260503T043344Z.json\n?? docs/eval/results/locomo_step5p_full_repro_log_20260503T043344Z.log\n?? docs/eval/results/locomo_step5p_full_repro_prelaunch_snapshot_20260503T043344Z.json\n?? docs/eval/results/locomo_step5p_full_repro_raw_20260503T043344Z.json\n?? docs/eval/results/locomo_step5p_stale_locomo_results_query_expansion_raw.json_20260503T043344Z\n?? docs/eval/results/run_locomo_step5p_full_repro.py"
+  },
+  "health": {
+    "json": {
+      "engine": "memibrium",
+      "status": "ok"
+    },
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "{\"status\":\"ok\",\"engine\":\"memibrium\"}"
+  },
+  "input_slice_proof": {
+    "conversation_count": 10,
+    "exists": true,
+    "index0_category_counts_raw": {
+      "1": 32,
+      "2": 37,
+      "3": 13,
+      "4": 70,
+      "5": 47
+    },
+    "index0_qa_count": 199,
+    "index0_sample_id": "conv-26",
+    "index0_speaker_a": "Caroline",
+    "index0_speaker_b": "Melanie",
+    "ok": true,
+    "path": "/tmp/locomo/data/locomo10.json",
+    "sample_order": [
+      "conv-26",
+      "conv-30",
+      "conv-41",
+      "conv-42",
+      "conv-43",
+      "conv-44",
+      "conv-47",
+      "conv-48",
+      "conv-49",
+      "conv-50"
+    ],
+    "sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "top_level_type": "list",
+    "total_qa_count": 1986
+  },
+  "preregistration": "docs/eval/locomo_step5p_full_repro_preregistration_2026-05-03.md",
+  "process_matches": [],
+  "run_id": "20260503T043344Z",
+  "schema": "memibrium.locomo.step5p.snapshot.v1",
+  "server_env_redacted": {
+    "ANSWER_MODEL": null,
+    "AZURE_API_VERSION": "2024-06-01",
+    "AZURE_CHAT_API_KEY": "[REDACTED]",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com",
+    "AZURE_EMBEDDING_API_KEY": "[REDACTED]",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "AZURE_EMBEDDING_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "AZURE_OPENAI_API_KEY": "[REDACTED]",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "CHAT_MODEL": "gemma4:e4b",
+    "DB_HOST": "ruvector-db",
+    "DB_NAME": "memory",
+    "DB_PASSWORD": "[REDACTED]",
+    "DB_PORT": "5432",
+    "DB_USER": "memory",
+    "EMBEDDING_BASE_URL": "http://ollama:11434/v1",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "ENABLE_BACKGROUND_SCORING": "true",
+    "ENABLE_CONTRADICTION_DETECTION": "true",
+    "ENABLE_HIERARCHY_PROCESSING": "true",
+    "INCLUDE_RECALL_TELEMETRY": null,
+    "JUDGE_MODEL": null,
+    "LOCOMO_RETRIEVAL_TELEMETRY": null,
+    "MCP_URL": null,
+    "OPENAI_API_KEY": "[REDACTED]",
+    "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+    "RUVECTOR_GNN": "true",
+    "USE_APPEND_CONTEXT_EXPANSION": null,
+    "USE_CONTEXT_RERANK": null,
+    "USE_GATED_APPEND_CONTEXT_EXPANSION": null,
+    "USE_LEGACY_CONTEXT_ASSEMBLY": null,
+    "USE_QUERY_EXPANSION": null,
+    "USE_RUVECTOR": "true"
+  },
+  "source_behavior_probes": {
+    "fallback_count_field": true,
+    "hybrid_uses_dynamic_vector_type": true,
+    "include_recall_telemetry_flag": true,
+    "legacy_context_assembly_flag": true,
+    "max_convs_is_slice_cap": true,
+    "n_memories_field": true,
+    "query_expansion_flag": true,
+    "serialize_result_helper": true
+  },
+  "source_hashes_container": {
+    "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+    "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+    "server.py": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a"
+  },
+  "source_hashes_host": {
+    "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+    "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+    "server.py": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a"
+  },
+  "stage": "postrun_before_cleanup"
+}
