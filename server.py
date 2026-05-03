@@ -254,6 +254,21 @@ def _jsonable_record_id(prefix: str, payload: dict) -> str:
     return f"{prefix}_{hashlib.sha256(serialized.encode()).hexdigest()[:16]}"
 
 
+def _coerce_datetime(value, default: Optional[datetime] = None) -> datetime:
+    """Return a timezone-aware datetime suitable for asyncpg timestamptz args."""
+    if value is None:
+        value = default or datetime.now(timezone.utc)
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, str):
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    else:
+        raise TypeError(f"expected datetime or ISO timestamp string, got {type(value).__name__}")
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 def _require_source_backed_evidence(evidence_memory_ids: list, evidence_artifact_ids: list) -> None:
     if not evidence_memory_ids and not evidence_artifact_ids:
         raise ValueError("self-model observations require source-backed evidence_memory_ids or evidence_artifact_ids")
@@ -306,7 +321,7 @@ def make_self_model_observation_record(
         raise ValueError(f"invalid user_state: {user_state}")
     _require_source_backed_evidence(evidence_memory_ids, evidence_artifact_ids)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
     seed = {
         "engine": engine,
         "observation_type": observation_type,
@@ -330,8 +345,8 @@ def make_self_model_observation_record(
         "user_state": user_state,
         "decay_rate": max(0.0, float(decay_rate)),
         "metadata": metadata,
-        "first_seen": first_seen or now,
-        "last_seen": last_seen or now,
+        "first_seen": _coerce_datetime(first_seen, now),
+        "last_seen": _coerce_datetime(last_seen, now),
         "surfaced_count": int(surfaced_count or 0),
     }
 
@@ -375,6 +390,7 @@ def make_decision_trace_record(
         "entity_ids": entity_ids,
         "values_invoked": values_invoked,
     }
+    now = datetime.now(timezone.utc)
     return {
         "schema": "memibrium.decision_trace.v1",
         "trace_id": trace_id or _jsonable_record_id("trace", seed),
@@ -387,8 +403,8 @@ def make_decision_trace_record(
         "status": status,
         "outcome_signal": outcome_signal,
         "metadata": metadata,
-        "created_at": created_at or datetime.now(timezone.utc).isoformat(),
-        "updated_at": created_at or datetime.now(timezone.utc).isoformat(),
+        "created_at": _coerce_datetime(created_at, now),
+        "updated_at": _coerce_datetime(created_at, now),
     }
 
 

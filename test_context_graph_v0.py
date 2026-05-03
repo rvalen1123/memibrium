@@ -4,6 +4,7 @@
 import asyncio
 import json
 import unittest
+from datetime import datetime
 from unittest.mock import patch
 
 import server
@@ -51,6 +52,33 @@ class FakeContextStore:
         return list(self.graph_facts)
 
 
+class CaptureConnection:
+    def __init__(self):
+        self.execute_calls = []
+
+    async def execute(self, sql, *args):
+        self.execute_calls.append((sql, args))
+
+
+class FakeAcquire:
+    def __init__(self, conn):
+        self.conn = conn
+
+    async def __aenter__(self):
+        return self.conn
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
+class CapturePool:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def acquire(self):
+        return FakeAcquire(self.conn)
+
+
 class ContextGraphV0Tests(unittest.TestCase):
     def run_async(self, coro):
         return asyncio.run(coro)
@@ -86,6 +114,77 @@ class ContextGraphV0Tests(unittest.TestCase):
         self.assertEqual(record["evidence_memory_ids"], ["mem_quality"])
         self.assertEqual(record["entity_ids"], ["ent_user"])
         self.assertAlmostEqual(record["confidence"], 0.82)
+
+    def test_self_model_observation_timestamps_are_db_ready_and_json_serializable(self):
+        record = server.make_self_model_observation_record(
+            engine="manual",
+            observation_type="smoke_test",
+            claim_text="Context Graph persistence timestamps must be DB-ready.",
+            evidence_artifact_ids=["smoke://context-graph/timestamp"],
+        )
+
+        self.assertIsInstance(record["first_seen"], datetime)
+        self.assertIsInstance(record["last_seen"], datetime)
+        serialized = server._serialize_result(record)
+        self.assertIsInstance(serialized["first_seen"], str)
+        self.assertIsInstance(serialized["last_seen"], str)
+
+        explicit = server.make_self_model_observation_record(
+            engine="manual",
+            observation_type="smoke_test",
+            claim_text="Explicit ISO timestamps should also be DB-ready.",
+            evidence_artifact_ids=["smoke://context-graph/timestamp"],
+            first_seen="2026-05-03T18:00:00+00:00",
+            last_seen="2026-05-03T18:01:00Z",
+        )
+        self.assertIsInstance(explicit["first_seen"], datetime)
+        self.assertIsInstance(explicit["last_seen"], datetime)
+
+    def test_decision_trace_timestamps_are_db_ready_and_json_serializable(self):
+        trace = server.make_decision_trace_record(
+            query="Should Context Graph timestamps be DB-ready?",
+            answer="Yes, asyncpg timestamptz inserts require datetime objects.",
+            evidence_memory_ids=["mem_timestamp"],
+        )
+
+        self.assertIsInstance(trace["created_at"], datetime)
+        self.assertIsInstance(trace["updated_at"], datetime)
+        serialized = server._serialize_result(trace)
+        self.assertIsInstance(serialized["created_at"], str)
+        self.assertIsInstance(serialized["updated_at"], str)
+
+        explicit = server.make_decision_trace_record(
+            query="Should explicit ISO timestamps be DB-ready?",
+            answer="Yes, parse them before asyncpg persistence.",
+            evidence_memory_ids=["mem_timestamp"],
+            created_at="2026-05-03T18:00:00Z",
+        )
+        self.assertIsInstance(explicit["created_at"], datetime)
+        self.assertIsInstance(explicit["updated_at"], datetime)
+
+    def test_context_graph_persistence_passes_datetime_objects_to_asyncpg(self):
+        conn = CaptureConnection()
+        store = server.ColdStore()
+        store.pool = CapturePool(conn)
+
+        self.run_async(store.create_self_model_observation({
+            "engine": "manual",
+            "observation_type": "smoke_test",
+            "claim_text": "Context Graph observation persistence must pass datetime objects.",
+            "evidence_artifact_ids": ["smoke://context-graph/db-ready"],
+        }))
+        self.run_async(store.create_decision_trace({
+            "query": "Should Context Graph persistence pass datetime objects?",
+            "answer": "Yes, asyncpg timestamptz parameters must be datetime objects.",
+            "evidence_memory_ids": ["mem_timestamp"],
+        }))
+
+        observation_args = conn.execute_calls[0][1]
+        decision_args = conn.execute_calls[1][1]
+        self.assertIsInstance(observation_args[13], datetime)
+        self.assertIsInstance(observation_args[14], datetime)
+        self.assertIsInstance(decision_args[10], datetime)
+        self.assertIsInstance(decision_args[11], datetime)
 
     def test_decision_trace_preserves_evidence_observations_and_feedback_surface(self):
         trace = server.make_decision_trace_record(
