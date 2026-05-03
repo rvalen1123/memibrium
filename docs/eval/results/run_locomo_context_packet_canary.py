@@ -20,6 +20,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -167,6 +168,24 @@ def build_benchmark_env(base_env: dict[str, str], *, mcp_url: str, context_packe
     return env
 
 
+def session_order_mapping(conv: dict[str, Any]) -> dict[str, Any]:
+    sessions = sorted([key for key in conv if key.startswith("session_") and not key.endswith("date_time")])
+    ingest_to_dialogue = {}
+    dialogue_to_ingest = {}
+    for ingest_idx, sess_key in enumerate(sessions, start=1):
+        numeric = sess_key.rsplit("_", 1)[-1]
+        dialogue = f"D{numeric}"
+        ingest_to_dialogue[ingest_idx] = dialogue
+        dialogue_to_ingest[dialogue] = ingest_idx
+    return {
+        "ordering": "lexicographic",
+        "ingest_to_dialogue_session": ingest_to_dialogue,
+        "dialogue_to_ingest_session": dialogue_to_ingest,
+        "session_keys": sessions,
+        "note": "LOCOMO ingest currently sorts session keys lexicographically; refs.session_index follows this order, not numeric D-session order.",
+    }
+
+
 def validate_fixed_row_identity(data: list[dict[str, Any]], fixed_rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not data:
         raise ValueError("row_identity_mismatch: dataset is empty")
@@ -193,11 +212,13 @@ def validate_fixed_row_identity(data: list[dict[str, Any]], fixed_rows: list[dic
             "question": question,
             "question_sha256": digest,
         })
+    conv = conv_data.get("conversation", conv_data)
     return {
         "ok": True,
         "sample_id": sample_id,
         "qa_count": len(qa_list),
         "fixed_row_count": len(rows),
+        "session_order_mapping": session_order_mapping(conv),
         "rows": rows,
     }
 
@@ -216,6 +237,21 @@ def row_identity_for_detail(detail: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(identity, dict):
         raise ValueError("paired_row_identity_mismatch: missing row_identity")
     return identity
+
+
+def _gold_coverage_hit_rate(details: list[dict[str, Any]]) -> float | None:
+    eligible = 0
+    hits = 0
+    for row in details:
+        coverage = ((row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {})
+        gold_count = coverage.get("canary_gold_ref_count", coverage.get("gold_ref_count"))
+        matched = coverage.get("canary_final_context_refs_matched", coverage.get("final_context_refs_matched"))
+        if gold_count is None or matched is None:
+            continue
+        eligible += 1
+        if matched and matched > 0:
+            hits += 1
+    return round(hits / eligible, 4) if eligible else None
 
 
 def validate_paired_artifacts(
@@ -260,11 +296,22 @@ def validate_paired_artifacts(
     if not context_packet_telemetry_ok:
         raise ValueError("context_packet_telemetry_missing: treatment row lacks packet telemetry")
 
+    baseline_hit_rate = _gold_coverage_hit_rate(baseline_details)
+    treatment_hit_rate = _gold_coverage_hit_rate(treatment_details)
+    hit_delta = None
+    if baseline_hit_rate is not None and treatment_hit_rate is not None:
+        hit_delta = round(treatment_hit_rate - baseline_hit_rate, 4)
+
     return {
         "row_identity_ok": True,
         "condition_metadata_ok": True,
         "context_packet_telemetry_ok": True,
         "row_count": len(fixed_rows),
+        "gold_evidence_ref_hit_rate": {
+            "baseline": baseline_hit_rate,
+            "treatment": treatment_hit_rate,
+        },
+        "gold_evidence_ref_hit_delta": hit_delta,
         "baseline_context_hashes": [row.get("answer_prompt_context_sha256") for row in baseline_details],
         "treatment_context_hashes": [row.get("answer_prompt_context_sha256") for row in treatment_details],
         "prompt_context_changed_by_row": [
@@ -448,6 +495,54 @@ def capture_answer_prompt_wrapper(module: Any, capture: dict[str, Any]):
     return wrapped
 
 
+def _parse_locomo_ref(ref: Any) -> dict[str, int] | None:
+    if isinstance(ref, str):
+        match = re.fullmatch(r"D(\d+):(\d+)", ref.strip())
+        if match:
+            return {"dialogue_session": int(match.group(1)), "turn": int(match.group(2))}
+        return None
+    if isinstance(ref, dict):
+        if "dialogue_session" in ref and "turn" in ref:
+            return {"dialogue_session": int(ref["dialogue_session"]), "turn": int(ref["turn"])}
+    return None
+
+
+def _memory_refs_for_gold(memory: dict[str, Any]) -> dict[str, Any]:
+    refs = memory.get("refs") if isinstance(memory, dict) else {}
+    refs = refs or {}
+    if isinstance(refs, str):
+        try:
+            refs = json.loads(refs)
+        except Exception:
+            refs = {}
+    return refs if isinstance(refs, dict) else {}
+
+
+def _memory_matches_gold_ref(memory: dict[str, Any], gold_ref: Any, session_mapping: dict[str, Any]) -> bool:
+    parsed = _parse_locomo_ref(gold_ref)
+    if not parsed:
+        return False
+    refs = _memory_refs_for_gold(memory)
+    dialogue_key = f"D{parsed['dialogue_session']}"
+    ingest_session = (session_mapping.get("dialogue_to_ingest_session") or {}).get(dialogue_key)
+    if ingest_session is None:
+        return False
+    if refs.get("session_index") != ingest_session:
+        return False
+    turn_start = refs.get("turn_start")
+    turn_end = refs.get("turn_end")
+    if turn_start is None or turn_end is None:
+        return False
+    return int(turn_start) <= parsed["turn"] - 1 <= int(turn_end)
+
+
+def _count_gold_hits(evidence_refs: Any, memories: list[dict[str, Any]], session_mapping: dict[str, Any]) -> int | None:
+    refs = evidence_refs or []
+    if not refs:
+        return None
+    return sum(1 for gold_ref in refs if any(_memory_matches_gold_ref(memory, gold_ref, session_mapping) for memory in memories if isinstance(memory, dict)))
+
+
 def run_arm(
     arm_name: str,
     *,
@@ -461,6 +556,7 @@ def run_arm(
     conv_data = data[0]
     conv = conv_data.get("conversation", conv_data)
     qa_list = conv_data.get("qa", conv_data.get("qa_list", []))
+    session_mapping = session_order_mapping(conv)
 
     hygiene_before = clean_locomo_domains()
     if not hygiene_before.get("ok"):
@@ -501,6 +597,17 @@ def run_arm(
         query_times.append(query_time)
         cat_scores.setdefault(cat, []).append(score)
         prompt_context = capture.get("answer_prompt_context", "")
+        final_context = recall_telemetry.get("final_context") or []
+        evidence_refs = qa.get("evidence") or qa.get("evidence_refs")
+        gold_ref_count = len(evidence_refs or [])
+        canary_gold_hits = _count_gold_hits(evidence_refs, final_context, session_mapping)
+        if recall_telemetry.get("gold_evidence_ref_coverage") is None:
+            recall_telemetry["gold_evidence_ref_coverage"] = {}
+        recall_telemetry["gold_evidence_ref_coverage"].update({
+            "canary_gold_ref_count": gold_ref_count,
+            "canary_final_context_refs_matched": canary_gold_hits,
+            "canary_mapping": session_mapping.get("ordering"),
+        })
         details.append({
             "arm": arm_name,
             "row_identity": {
@@ -571,6 +678,7 @@ def make_markdown(summary: dict[str, Any]) -> str:
         f"- Paired row identity: `{comparison.get('row_identity_ok')}`",
         f"- Condition metadata: `{comparison.get('condition_metadata_ok')}`",
         f"- Context packet telemetry: `{comparison.get('context_packet_telemetry_ok')}`",
+        f"- Gold-evidence hit rates: `baseline={comparison.get('gold_evidence_ref_hit_rate', {}).get('baseline')}`, `treatment={comparison.get('gold_evidence_ref_hit_rate', {}).get('treatment')}`, `delta={comparison.get('gold_evidence_ref_hit_delta')}`",
         f"- Prompt context changed by row: `{comparison.get('prompt_context_changed_by_row')}`",
         f"- Final cleanup: `{summary.get('final_hygiene', {}).get('ok')}`",
         "",

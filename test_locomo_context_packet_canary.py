@@ -119,7 +119,7 @@ class ContextPacketCanaryTests(unittest.TestCase):
                 {
                     'question': 'second question',
                     'row_identity': fixed_rows[0],
-                    'recall_telemetry': {'counts': {'final_answer_context_count': 3}},
+                    'recall_telemetry': {'counts': {'final_answer_context_count': 3}, 'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1}},
                 }
             ],
         }
@@ -132,6 +132,7 @@ class ContextPacketCanaryTests(unittest.TestCase):
                     'recall_telemetry': {
                         'counts': {'context_packet_enabled': True, 'final_answer_context_count': 2},
                         'context_packet': {'provenance_summary': {'memory_ids': ['m1']}},
+                        'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
                     },
                 }
             ],
@@ -143,11 +144,42 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertTrue(comparison['condition_metadata_ok'])
         self.assertTrue(comparison['context_packet_telemetry_ok'])
         self.assertEqual(comparison['row_count'], 1)
+        self.assertEqual(comparison['gold_evidence_ref_hit_rate']['baseline'], 1.0)
+        self.assertEqual(comparison['gold_evidence_ref_hit_rate']['treatment'], 1.0)
+        self.assertEqual(comparison['gold_evidence_ref_hit_delta'], 0.0)
 
         mismatched_treatment = json.loads(json.dumps(treatment))
         mismatched_treatment['details'][0]['row_identity']['question_sha256'] = '1' * 64
         with self.assertRaisesRegex(ValueError, 'paired_row_identity_mismatch'):
             context_packet_canary.validate_paired_artifacts(baseline, mismatched_treatment, fixed_rows)
+    def test_canary_input_slice_records_session_order_mapping(self):
+        data = [{
+            'sample_id': 'conv-26',
+            'conversation': {
+                'session_1': [],
+                'session_2': [],
+                'session_10': [],
+            },
+            'qa': [
+                {'category': 1, 'question': 'first question', 'answer': 'first'},
+            ],
+        }]
+        fixed_rows = [{
+            'one_based_index': 1,
+            'cat': 'single-hop',
+            'question': 'first question',
+            'question_sha256': context_packet_canary.sha256_text('first question'),
+            'label': 'tiny_single_hop',
+        }]
+
+        proof = context_packet_canary.validate_fixed_row_identity(data, fixed_rows)
+
+        self.assertEqual(proof['session_order_mapping']['ordering'], 'lexicographic')
+        self.assertEqual(proof['session_order_mapping']['ingest_to_dialogue_session'], {
+            1: 'D1',
+            2: 'D10',
+            3: 'D2',
+        })
 
 
 if __name__ == '__main__':

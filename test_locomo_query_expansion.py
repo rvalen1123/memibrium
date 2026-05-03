@@ -1018,6 +1018,8 @@ class QueryExpansionTests(unittest.TestCase):
                 'schema': 'memibrium.context_packet.v1',
                 'episodic_evidence': [
                     {'memory_id': 'mem_ctx_1', 'content': 'Ricky repeatedly values defensible preregistration.'},
+                    {'memory_id': 'mem_ctx_1', 'content': 'Ricky repeatedly values defensible preregistration.'},
+                    {'id': 'mem_ctx_2', 'content': 'Ricky wants source-backed benchmark changes.'},
                 ],
                 'self_model_observations': [
                     {'observation_id': 'obs_ctx_1', 'claim_text': 'Ricky values evidence before features.'},
@@ -1046,15 +1048,21 @@ class QueryExpansionTests(unittest.TestCase):
             )
 
         self.assertEqual(answer, 'defensible preregistration')
-        self.assertEqual(memory_count, 1)
+        self.assertEqual(memory_count, 2)
         self.assertEqual(calls[0][0], 'context_packet')
         prompt_text = seen_messages[0][1]['content']
+        self.assertEqual(prompt_text.count('Ricky repeatedly values defensible preregistration.'), 1)
+        self.assertIn('[mem_ctx_1] Ricky repeatedly values defensible preregistration.', prompt_text)
+        self.assertIn('[mem_ctx_2] Ricky wants source-backed benchmark changes.', prompt_text)
         self.assertIn('Context Packet (self-model observations):', prompt_text)
         self.assertIn('Ricky values evidence before features.', prompt_text)
         self.assertIn('Context Packet (decision traces):', prompt_text)
         self.assertIn('Use context packets only behind a default-off flag.', prompt_text)
         self.assertEqual(telemetry['counts']['context_packet_enabled'], True)
+        self.assertEqual([item['id'] for item in telemetry['final_context']], ['mem_ctx_1', 'mem_ctx_2'])
         self.assertEqual(telemetry['context_packet']['schema'], 'memibrium.context_packet.v1')
+        self.assertEqual(telemetry['context_packet']['episodic_evidence_count'], 2)
+        self.assertEqual(telemetry['context_packet']['deduped_episodic_evidence_count'], 1)
         self.assertEqual(telemetry['context_packet']['provenance_summary']['memory_ids'], ['mem_ctx_1'])
 
     def test_context_packet_condition_is_default_off_and_condition_specific(self):

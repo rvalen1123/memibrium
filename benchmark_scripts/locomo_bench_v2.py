@@ -553,7 +553,7 @@ def _memory_telemetry_projection(memory, rank=None):
     content = str(memory.get("content") or "") if isinstance(memory, dict) else str(memory)
     return {
         "rank": rank,
-        "id": memory.get("id") if isinstance(memory, dict) else None,
+        "id": (memory.get("id") or memory.get("memory_id")) if isinstance(memory, dict) else None,
         "dedupe_key": _memory_dedupe_key(memory),
         "refs": _memory_refs(memory),
         "created_at": memory.get("created_at") if isinstance(memory, dict) else None,
@@ -582,14 +582,40 @@ def _extract_recall_payload(recall_result):
     return recall_result.get("results", recall_result.get("memories", [])), recall_result.get("telemetry")
 
 
+def _packet_memory_id(memory):
+    if isinstance(memory, dict):
+        return memory.get("memory_id") or memory.get("id")
+    return None
+
+
+def _dedupe_context_packet_episodic_evidence(episodic):
+    seen = set()
+    deduped = []
+    for memory in episodic or []:
+        if not isinstance(memory, dict):
+            continue
+        key = _memory_dedupe_key({**memory, "id": _packet_memory_id(memory) or memory.get("id")})
+        if key in seen:
+            continue
+        seen.add(key)
+        if memory.get("memory_id") or memory.get("id"):
+            memory = dict(memory)
+            memory.setdefault("id", _packet_memory_id(memory))
+        deduped.append(memory)
+    return deduped
+
+
 def _context_packet_telemetry_projection(packet):
     """Compact, JSON-safe projection of a Context Graph packet for eval artifacts."""
     if not isinstance(packet, dict):
         return None
+    raw_episodic = packet.get("episodic_evidence") or []
+    deduped_episodic = _dedupe_context_packet_episodic_evidence(raw_episodic)
     return {
         "schema": packet.get("schema"),
         "query_type": packet.get("query_type"),
-        "episodic_evidence_count": len(packet.get("episodic_evidence") or []),
+        "episodic_evidence_count": len(deduped_episodic),
+        "deduped_episodic_evidence_count": max(0, len(raw_episodic) - len(deduped_episodic)),
         "self_model_observation_count": len(packet.get("self_model_observations") or []),
         "graph_fact_count": len(packet.get("graph_facts") or []),
         "decision_trace_count": len(packet.get("decision_traces") or []),
@@ -603,7 +629,7 @@ def _render_context_packet_context(packet):
     if not isinstance(packet, dict):
         return "No relevant memories found."
     sections = []
-    episodic = packet.get("episodic_evidence") or []
+    episodic = _dedupe_context_packet_episodic_evidence(packet.get("episodic_evidence") or [])
     if episodic:
         lines = ["Context Packet (episodic evidence):"]
         for memory in episodic:
@@ -833,7 +859,7 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
             "top_k": CONTEXT_PACKET_TOP_K,
             "include_decision_traces": True,
         })
-        memories = packet.get("episodic_evidence") or [] if isinstance(packet, dict) else []
+        memories = _dedupe_context_packet_episodic_evidence(packet.get("episodic_evidence") or []) if isinstance(packet, dict) else []
         context = _render_context_packet_context(packet)
         recall_telemetry["counts"]["context_packet_enabled"] = True
         recall_telemetry["counts"]["final_answer_context_count"] = len(memories)

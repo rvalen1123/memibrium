@@ -1,0 +1,260 @@
+{
+  "schema": "memibrium.locomo.context_packet_canary.summary.v1",
+  "run_id": "20260503T201307Z",
+  "created_at": "2026-05-03T20:14:17.049756+00:00",
+  "purpose": "prove context_packet changes prompt context on exact fixed rows without changing unrelated benchmark mechanics",
+  "input_identity": {
+    "ok": true,
+    "sample_id": "conv-26",
+    "qa_count": 199,
+    "fixed_row_count": 7,
+    "session_order_mapping": {
+      "ordering": "lexicographic",
+      "ingest_to_dialogue_session": {
+        "1": "D1",
+        "2": "D10",
+        "3": "D11",
+        "4": "D12",
+        "5": "D13",
+        "6": "D14",
+        "7": "D15",
+        "8": "D16",
+        "9": "D17",
+        "10": "D18",
+        "11": "D19",
+        "12": "D2",
+        "13": "D3",
+        "14": "D4",
+        "15": "D5",
+        "16": "D6",
+        "17": "D7",
+        "18": "D8",
+        "19": "D9"
+      },
+      "dialogue_to_ingest_session": {
+        "D1": 1,
+        "D10": 2,
+        "D11": 3,
+        "D12": 4,
+        "D13": 5,
+        "D14": 6,
+        "D15": 7,
+        "D16": 8,
+        "D17": 9,
+        "D18": 10,
+        "D19": 11,
+        "D2": 12,
+        "D3": 13,
+        "D4": 14,
+        "D5": 15,
+        "D6": 16,
+        "D7": 17,
+        "D8": 18,
+        "D9": 19
+      },
+      "session_keys": [
+        "session_1",
+        "session_10",
+        "session_11",
+        "session_12",
+        "session_13",
+        "session_14",
+        "session_15",
+        "session_16",
+        "session_17",
+        "session_18",
+        "session_19",
+        "session_2",
+        "session_3",
+        "session_4",
+        "session_5",
+        "session_6",
+        "session_7",
+        "session_8",
+        "session_9"
+      ],
+      "note": "LOCOMO ingest currently sorts session keys lexicographically; refs.session_index follows this order, not numeric D-session order."
+    },
+    "rows": [
+      {
+        "one_based_index": 153,
+        "label": "adversarial_split_early",
+        "cat": "adversarial",
+        "question": "What did Caroline realize after her charity race?",
+        "question_sha256": "27b4847984de1d6c9dde59d26f076fd6f729ed02020feb2ba8bea5a54afae319"
+      },
+      {
+        "one_based_index": 154,
+        "label": "adversarial_split_late",
+        "cat": "adversarial",
+        "question": "What are Melanie's plans for the summer with respect to adoption?",
+        "question_sha256": "753a2d308908a185eb2cca48e15941005e2fcac20dcd978d50ecf28f95f45641"
+      },
+      {
+        "one_based_index": 83,
+        "label": "unanswerable_high_context",
+        "cat": "unanswerable",
+        "question": "What did the charity race raise awareness for?",
+        "question_sha256": "d655f74fe3f7194564489450f0b77e69eacf705269e77bbae3c6d34242ab00be"
+      },
+      {
+        "one_based_index": 149,
+        "label": "unanswerable_c_low_exception",
+        "cat": "unanswerable",
+        "question": "What was Melanie's reaction to her children enjoying the Grand Canyon?",
+        "question_sha256": "17f1b00d7eceafed2640e81b2342bf064f8284f124a4a676ef8d14d6054be2d7"
+      },
+      {
+        "one_based_index": 34,
+        "label": "temporal_high_context",
+        "cat": "temporal",
+        "question": "When did Caroline go to a pride parade during the summer?",
+        "question_sha256": "46df9a32c68bda07d28e4b3d23f462cfc0a0839af1de47f130d74aac7afea8b3"
+      },
+      {
+        "one_based_index": 33,
+        "label": "single_hop_high_context",
+        "cat": "single-hop",
+        "question": "What LGBTQ+ events has Caroline participated in?",
+        "question_sha256": "c26b7a216dfc7eacc85248cb275a25ec02964b1e0a40a550c014e7dbdc43b7a8"
+      },
+      {
+        "one_based_index": 43,
+        "label": "multi_hop_high_context",
+        "cat": "multi-hop",
+        "question": "Would Melanie be more interested in going to a national park or a theme park?",
+        "question_sha256": "43ab1d1387937c9833a68417daeae616a8ac101c2473f6079464b448e0e5d42c"
+      }
+    ]
+  },
+  "data_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "fixed_rows_path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_step5o_prereg_fixed_rows_2026-05-02.json",
+  "live_status": {
+    "health": {
+      "status": "ok",
+      "engine": "memibrium"
+    },
+    "tool_count": 18,
+    "context_packet_present": true,
+    "self_model_observe_present": true,
+    "decision_trace_present": true
+  },
+  "baseline_env": {
+    "MCP_URL": "http://localhost:9999/mcp",
+    "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_CHAT_API_KEY": "[REDACTED]",
+    "AZURE_OPENAI_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_API_KEY": "[REDACTED]",
+    "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+    "OPENAI_API_KEY": "[REDACTED]",
+    "ANSWER_MODEL": "gpt-4.1-mini",
+    "JUDGE_MODEL": "gpt-4.1-mini",
+    "CHAT_MODEL": "gpt-4.1-mini",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "EMBEDDING_BASE_URL": "http://ollama:11434/v1",
+    "USE_QUERY_EXPANSION": "0",
+    "INCLUDE_RECALL_TELEMETRY": "1",
+    "USE_CONTEXT_PACKET": null,
+    "USE_CONTEXT_RERANK": null,
+    "USE_APPEND_CONTEXT_EXPANSION": null,
+    "USE_GATED_APPEND_CONTEXT_EXPANSION": null,
+    "USE_LEGACY_CONTEXT_ASSEMBLY": null,
+    "USE_FULL_DOMAIN_CONTEXT": null,
+    "LOCOMO_RETRIEVAL_TELEMETRY": null,
+    "DB_HOST": "localhost",
+    "DB_PORT": "5432",
+    "DB_NAME": "memory",
+    "DB_USER": "memory",
+    "DB_PASSWORD": "[REDACTED]"
+  },
+  "treatment_env": {
+    "MCP_URL": "http://localhost:9999/mcp",
+    "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_CHAT_API_KEY": "[REDACTED]",
+    "AZURE_OPENAI_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_API_KEY": "[REDACTED]",
+    "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+    "OPENAI_API_KEY": "[REDACTED]",
+    "ANSWER_MODEL": "gpt-4.1-mini",
+    "JUDGE_MODEL": "gpt-4.1-mini",
+    "CHAT_MODEL": "gpt-4.1-mini",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "EMBEDDING_BASE_URL": "http://ollama:11434/v1",
+    "USE_QUERY_EXPANSION": "0",
+    "INCLUDE_RECALL_TELEMETRY": "1",
+    "USE_CONTEXT_PACKET": "1",
+    "USE_CONTEXT_RERANK": null,
+    "USE_APPEND_CONTEXT_EXPANSION": null,
+    "USE_GATED_APPEND_CONTEXT_EXPANSION": null,
+    "USE_LEGACY_CONTEXT_ASSEMBLY": null,
+    "USE_FULL_DOMAIN_CONTEXT": null,
+    "LOCOMO_RETRIEVAL_TELEMETRY": null,
+    "DB_HOST": "localhost",
+    "DB_PORT": "5432",
+    "DB_NAME": "memory",
+    "DB_USER": "memory",
+    "DB_PASSWORD": "[REDACTED]"
+  },
+  "comparison": {
+    "row_identity_ok": true,
+    "condition_metadata_ok": true,
+    "context_packet_telemetry_ok": true,
+    "row_count": 7,
+    "gold_evidence_ref_hit_rate": {
+      "baseline": 0.7143,
+      "treatment": 0.5714
+    },
+    "gold_evidence_ref_hit_delta": -0.1429,
+    "baseline_context_hashes": [
+      "2b0113b58faeed2f8938b3720f8c97cd43beceb3999aab33a9a94e4f566cb518",
+      "526549961744790c13a61015416c1dd881c61d0ab46738ec521c29ed40c5415d",
+      "2d8f2279080d0177e7aa48b4fd15e675bf573d0b5d9c3d5545104018055ca5d5",
+      "a62462c707853408ef6a7f6bdd0c5317825c884ff2daffcdfc90d9c14cb8ab1f",
+      "3de2b44af80b46e5e456808066b33e1b67efa497c9393f9eb8767bfb67dc401d",
+      "861bf33d5575ee80b9e18238c657342a08d57459fd65f83f31d68f4f06632983",
+      "f5cb1b16fe036418493abeb5038f0206ed08b73333ef2f9e4fa6f5c23d77d57f"
+    ],
+    "treatment_context_hashes": [
+      "bfd882d788db0340fad00d2a3469f577f105e65a94d0c8178c7bec9a9634c721",
+      "a69f9eafd18ebe5cfb2c4d06650125169205fd807f19c0288b8839a249dab7c8",
+      "cd6ae0a035168d89a016c0879b2b29ec9401f685653b21e34f31a7f8dfbe72d4",
+      "a8474ca0d3148201b53d08d592a3ffb478012e504031d8310d37eb160c0ea71c",
+      "468c6df864de49286a0766e3f07797d25147f9eeea38209678752159d99f4de0",
+      "034a4e899809256eb118613142da84aa8908c4e4eb4bb0d24aace7d1040d5566",
+      "62e1af6931c6e17fdf896df7bf32240feb795314d91ba9bd9bd0b38b5b84442d"
+    ],
+    "prompt_context_changed_by_row": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "final_hygiene": {
+    "memories": 0,
+    "temporal_expressions": 0,
+    "memory_snapshots": 0,
+    "user_feedback": 0,
+    "contradictions": 0,
+    "memory_edges": 0,
+    "context_graph_edges": 0,
+    "decision_traces": 0,
+    "self_model_observations": 0,
+    "ok": true
+  },
+  "paths": {
+    "baseline": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_context_packet_canary_baseline_20260503T201307Z.json",
+    "treatment": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_context_packet_canary_treatment_20260503T201307Z.json",
+    "summary": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_context_packet_canary_summary_20260503T201307Z.json",
+    "markdown": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_context_packet_canary_result_20260503T201307Z.md"
+  }
+}
