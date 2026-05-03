@@ -80,6 +80,10 @@ USE_LEGACY_CONTEXT_ASSEMBLY = _env_flag("USE_LEGACY_CONTEXT_ASSEMBLY", default=F
 # This is intentionally opt-in/evaluation-only; it tests whether remaining score
 # ceiling is retrieval/context-selection versus answer/judge behavior.
 USE_FULL_DOMAIN_CONTEXT = _env_flag("USE_FULL_DOMAIN_CONTEXT", default=False)
+# Context Graph v0 integration canary: request a grounded context packet from
+# Memibrium and render packet evidence into the answer prompt. Default-off until
+# preregistered fixed-row A/B slices prove benefit and comparability.
+USE_CONTEXT_PACKET = _env_flag("USE_CONTEXT_PACKET", default=False)
 # Observation-only telemetry for preregistered LOCOMO diagnostic runs.
 INCLUDE_RECALL_TELEMETRY = _env_flag("INCLUDE_RECALL_TELEMETRY", default=False)
 RECALL_TOP_K = 10
@@ -87,6 +91,7 @@ RERANK_RECALL_TOP_K = 20
 APPEND_CONTEXT_RECALL_TOP_K = 20
 ANSWER_CONTEXT_TOP_K = 15
 APPEND_CONTEXT_EXTRA_K = 5
+CONTEXT_PACKET_TOP_K = 8
 RERANK_PRESERVE_PREFIX_K = 2
 GATED_APPEND_MIN_EXTRA_OVERLAP = 1
 GATED_APPEND_STRONG_BASE_OVERLAP = 2
@@ -100,6 +105,7 @@ def validate_retrieval_modes(
     use_gated_append_context_expansion=None,
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
+    use_context_packet=None,
 ):
     """Reject retrieval modes whose metadata/prompt semantics would conflict."""
     if use_context_rerank is None:
@@ -112,6 +118,8 @@ def validate_retrieval_modes(
         use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
     if use_full_domain_context is None:
         use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
+    if use_context_packet is None:
+        use_context_packet = USE_CONTEXT_PACKET
     append_modes = [bool(use_append_context_expansion), bool(use_gated_append_context_expansion)]
     if use_context_rerank and any(append_modes):
         raise ValueError("--context-rerank cannot be combined with append context expansion modes")
@@ -121,6 +129,8 @@ def validate_retrieval_modes(
         raise ValueError("--legacy-context-assembly cannot be combined with rerank or append context modes")
     if use_full_domain_context and (use_context_rerank or any(append_modes) or use_legacy_context_assembly):
         raise ValueError("--full-domain-context bypasses recall and cannot be combined with rerank, append, or legacy context modes")
+    if use_context_packet and (use_context_rerank or any(append_modes) or use_legacy_context_assembly or use_full_domain_context):
+        raise ValueError("--context-packet cannot be combined with rerank, append, legacy, or full-domain context modes")
 
 
 CAT_MAP = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "unanswerable", 5: "adversarial"}
@@ -572,6 +582,85 @@ def _extract_recall_payload(recall_result):
     return recall_result.get("results", recall_result.get("memories", [])), recall_result.get("telemetry")
 
 
+def _context_packet_telemetry_projection(packet):
+    """Compact, JSON-safe projection of a Context Graph packet for eval artifacts."""
+    if not isinstance(packet, dict):
+        return None
+    return {
+        "schema": packet.get("schema"),
+        "query_type": packet.get("query_type"),
+        "episodic_evidence_count": len(packet.get("episodic_evidence") or []),
+        "self_model_observation_count": len(packet.get("self_model_observations") or []),
+        "graph_fact_count": len(packet.get("graph_facts") or []),
+        "decision_trace_count": len(packet.get("decision_traces") or []),
+        "missing_evidence": packet.get("missing_evidence") or [],
+        "provenance_summary": packet.get("provenance_summary") or {},
+    }
+
+
+def _render_context_packet_context(packet):
+    """Render a Context Graph packet into answer-model context without inventing facts."""
+    if not isinstance(packet, dict):
+        return "No relevant memories found."
+    sections = []
+    episodic = packet.get("episodic_evidence") or []
+    if episodic:
+        lines = ["Context Packet (episodic evidence):"]
+        for memory in episodic:
+            if isinstance(memory, dict):
+                content = memory.get("content") or memory.get("text") or ""
+                memory_id = memory.get("memory_id") or memory.get("id")
+                prefix = f"[{memory_id}] " if memory_id else ""
+                lines.append(f"- {prefix}{content}")
+        sections.append("\n".join(lines))
+
+    observations = packet.get("self_model_observations") or []
+    if observations:
+        lines = ["Context Packet (self-model observations):"]
+        for obs in observations:
+            if isinstance(obs, dict):
+                claim = obs.get("claim_text") or obs.get("claim") or ""
+                state = obs.get("lifecycle_state") or "observation"
+                confidence = obs.get("confidence")
+                suffix = f" (state={state}"
+                if confidence is not None:
+                    suffix += f", confidence={confidence}"
+                suffix += ")"
+                lines.append(f"- {claim}{suffix}")
+        sections.append("\n".join(lines))
+
+    graph_facts = packet.get("graph_facts") or []
+    if graph_facts:
+        lines = ["Context Packet (graph facts):"]
+        for fact in graph_facts:
+            if isinstance(fact, dict):
+                edge_type = fact.get("edge_type") or "related"
+                source = fact.get("source_id") or fact.get("source_kind") or "source"
+                target = fact.get("target_id") or fact.get("target_kind") or "target"
+                lines.append(f"- {source} --{edge_type}--> {target}")
+        sections.append("\n".join(lines))
+
+    traces = packet.get("decision_traces") or []
+    if traces:
+        lines = ["Context Packet (decision traces):"]
+        for trace in traces:
+            if isinstance(trace, dict):
+                answer = trace.get("answer") or trace.get("decision") or ""
+                status = trace.get("status") or "candidate"
+                outcome = trace.get("outcome_signal")
+                suffix = f" (status={status}"
+                if outcome:
+                    suffix += f", outcome={outcome}"
+                suffix += ")"
+                lines.append(f"- {answer}{suffix}")
+        sections.append("\n".join(lines))
+
+    guidance = packet.get("answer_guidance") or []
+    if guidance:
+        sections.append("Context Packet (answer guidance):\n" + "\n".join(f"- {g}" for g in guidance))
+    return "\n\n".join(sections) if sections else "No relevant memories found."
+
+
 def full_domain_memories_for_question(question, domain):
     """Return every ingested chunk for this LOCOMO domain in transcript order.
 
@@ -737,72 +826,89 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
         })
         return recalled
 
-    if USE_FULL_DOMAIN_CONTEXT:
-        memories = full_domain_memories_for_question(question, domain)
-        recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(memories)
-        recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(memories)
-        recall_telemetry["counts"]["candidate_count_after_dedupe"] = len(memories)
-        recall_telemetry["counts"]["full_domain_context_enabled"] = True
-    elif USE_LEGACY_CONTEXT_ASSEMBLY:
-        seen = {}
-        candidate_memories_for_telemetry = []
-        for query in queries:
-            recalled = recall_for_query(query, RECALL_TOP_K)
-            candidate_memories_for_telemetry.extend(recalled)
-            for memory in recalled:
-                memory_id = memory.get("id") or f"no-id::{memory.get('content', '')}::{len(seen)}"
-                if memory_id not in seen:
-                    seen[memory_id] = memory
-            if len(seen) >= ANSWER_CONTEXT_TOP_K:
-                break
-        memories = list(seen.values())[:ANSWER_CONTEXT_TOP_K]
-        recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(candidate_memories_for_telemetry)
-        recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(seen)
+    if USE_CONTEXT_PACKET:
+        packet = mcp_post("context_packet", {
+            "query": question,
+            "domain": domain,
+            "top_k": CONTEXT_PACKET_TOP_K,
+            "include_decision_traces": True,
+        })
+        memories = packet.get("episodic_evidence") or [] if isinstance(packet, dict) else []
+        context = _render_context_packet_context(packet)
+        recall_telemetry["counts"]["context_packet_enabled"] = True
+        recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
+        recall_telemetry["final_context"] = [
+            _memory_telemetry_projection(memory, rank=idx)
+            for idx, memory in enumerate(memories, start=1)
+        ]
+        recall_telemetry["context_packet"] = _context_packet_telemetry_projection(packet)
     else:
-        base_seen = {}
-        recall_top_k = RECALL_TOP_K
-        if USE_CONTEXT_RERANK:
-            recall_top_k = RERANK_RECALL_TOP_K
-        append_context_enabled = USE_APPEND_CONTEXT_EXPANSION or USE_GATED_APPEND_CONTEXT_EXPANSION
-        candidate_recall_top_k = APPEND_CONTEXT_RECALL_TOP_K if append_context_enabled else recall_top_k
-        candidate_limit = max(ANSWER_CONTEXT_TOP_K, candidate_recall_top_k)
-        candidate_memories = []
-        for query in queries:
-            recalled = recall_for_query(query, candidate_recall_top_k)
-            candidate_memories.extend(recalled)
-            for memory in recalled[:recall_top_k]:
-                memory_id = _memory_dedupe_key(memory)
-                if memory_id not in base_seen:
-                    base_seen[memory_id] = memory
-            if not USE_QUERY_EXPANSION and len(base_seen) >= candidate_limit:
-                break
-        base_candidates = list(base_seen.values())
-        candidate_keys = {_memory_dedupe_key(memory) for memory in base_candidates}
-        candidates = list(base_candidates)
-        for memory in candidate_memories:
-            key = _memory_dedupe_key(memory)
-            if key not in candidate_keys:
-                candidate_keys.add(key)
-                candidates.append(memory)
-        recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(candidate_memories)
-        recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(base_candidates)
-        recall_telemetry["counts"]["candidate_count_after_dedupe"] = len(candidates)
-        if USE_CONTEXT_RERANK:
-            memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)
-        elif append_context_enabled:
-            base_context = base_candidates[:ANSWER_CONTEXT_TOP_K]
-            if USE_GATED_APPEND_CONTEXT_EXPANSION and base_context_is_strong(question, base_context):
-                memories = base_context
-            else:
-                memories = append_memories_for_question(
-                    question,
-                    base_context,
-                    candidates,
-                    extra_k=APPEND_CONTEXT_EXTRA_K,
-                    min_extra_overlap=(GATED_APPEND_MIN_EXTRA_OVERLAP if USE_GATED_APPEND_CONTEXT_EXPANSION else 0),
-                )
+        if USE_FULL_DOMAIN_CONTEXT:
+            memories = full_domain_memories_for_question(question, domain)
+            recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(memories)
+            recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(memories)
+            recall_telemetry["counts"]["candidate_count_after_dedupe"] = len(memories)
+            recall_telemetry["counts"]["full_domain_context_enabled"] = True
+        elif USE_LEGACY_CONTEXT_ASSEMBLY:
+            seen = {}
+            candidate_memories_for_telemetry = []
+            for query in queries:
+                recalled = recall_for_query(query, RECALL_TOP_K)
+                candidate_memories_for_telemetry.extend(recalled)
+                for memory in recalled:
+                    memory_id = memory.get("id") or f"no-id::{memory.get('content', '')}::{len(seen)}"
+                    if memory_id not in seen:
+                        seen[memory_id] = memory
+                if len(seen) >= ANSWER_CONTEXT_TOP_K:
+                    break
+            memories = list(seen.values())[:ANSWER_CONTEXT_TOP_K]
+            recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(candidate_memories_for_telemetry)
+            recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(seen)
         else:
-            memories = candidates[:ANSWER_CONTEXT_TOP_K]
+            base_seen = {}
+            recall_top_k = RECALL_TOP_K
+            if USE_CONTEXT_RERANK:
+                recall_top_k = RERANK_RECALL_TOP_K
+            append_context_enabled = USE_APPEND_CONTEXT_EXPANSION or USE_GATED_APPEND_CONTEXT_EXPANSION
+            candidate_recall_top_k = APPEND_CONTEXT_RECALL_TOP_K if append_context_enabled else recall_top_k
+            candidate_limit = max(ANSWER_CONTEXT_TOP_K, candidate_recall_top_k)
+            candidate_memories = []
+            for query in queries:
+                recalled = recall_for_query(query, candidate_recall_top_k)
+                candidate_memories.extend(recalled)
+                for memory in recalled[:recall_top_k]:
+                    memory_id = _memory_dedupe_key(memory)
+                    if memory_id not in base_seen:
+                        base_seen[memory_id] = memory
+                if not USE_QUERY_EXPANSION and len(base_seen) >= candidate_limit:
+                    break
+            base_candidates = list(base_seen.values())
+            candidate_keys = {_memory_dedupe_key(memory) for memory in base_candidates}
+            candidates = list(base_candidates)
+            for memory in candidate_memories:
+                key = _memory_dedupe_key(memory)
+                if key not in candidate_keys:
+                    candidate_keys.add(key)
+                    candidates.append(memory)
+            recall_telemetry["counts"]["candidate_memories_before_dedupe"] = len(candidate_memories)
+            recall_telemetry["counts"]["base_candidate_count_after_dedupe"] = len(base_candidates)
+            recall_telemetry["counts"]["candidate_count_after_dedupe"] = len(candidates)
+            if USE_CONTEXT_RERANK:
+                memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)
+            elif append_context_enabled:
+                base_context = base_candidates[:ANSWER_CONTEXT_TOP_K]
+                if USE_GATED_APPEND_CONTEXT_EXPANSION and base_context_is_strong(question, base_context):
+                    memories = base_context
+                else:
+                    memories = append_memories_for_question(
+                        question,
+                        base_context,
+                        candidates,
+                        extra_k=APPEND_CONTEXT_EXTRA_K,
+                        min_extra_overlap=(GATED_APPEND_MIN_EXTRA_OVERLAP if USE_GATED_APPEND_CONTEXT_EXPANSION else 0),
+                    )
+            else:
+                memories = candidates[:ANSWER_CONTEXT_TOP_K]
 
     recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
     recall_telemetry["final_context"] = [
@@ -815,31 +921,32 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
             "final_context_refs_matched": _count_ref_coverage(evidence_refs, memories),
         }
 
-    if not memories:
-        context = "No relevant memories found."
-    else:
-        chronology_cues = any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"])
-        context_lines = []
-        for m in memories:
-            refs = m.get('refs') or {}
-            if isinstance(refs, str):
-                try:
-                    refs = json.loads(refs)
-                except Exception:
-                    refs = {}
-            prefix = ""
-            if chronology_cues:
-                parts = []
-                if m.get('created_at'):
-                    parts.append(f"time={m.get('created_at')}")
-                if refs.get('session_index') is not None:
-                    parts.append(f"session={refs.get('session_index')}")
-                if refs.get('turn_start') is not None and refs.get('turn_end') is not None:
-                    parts.append(f"turns={refs.get('turn_start')}-{refs.get('turn_end')}")
-                if parts:
-                    prefix = "[" + ", ".join(parts) + "] "
-            context_lines.append(f"- {prefix}{m.get('content', '')}")
-        context = "\n".join(context_lines)
+    if not USE_CONTEXT_PACKET:
+        if not memories:
+            context = "No relevant memories found."
+        else:
+            chronology_cues = any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"])
+            context_lines = []
+            for m in memories:
+                refs = m.get('refs') or {}
+                if isinstance(refs, str):
+                    try:
+                        refs = json.loads(refs)
+                    except Exception:
+                        refs = {}
+                prefix = ""
+                if chronology_cues:
+                    parts = []
+                    if m.get('created_at'):
+                        parts.append(f"time={m.get('created_at')}")
+                    if refs.get('session_index') is not None:
+                        parts.append(f"session={refs.get('session_index')}")
+                    if refs.get('turn_start') is not None and refs.get('turn_end') is not None:
+                        parts.append(f"turns={refs.get('turn_start')}-{refs.get('turn_end')}")
+                    if parts:
+                        prefix = "[" + ", ".join(parts) + "] "
+                context_lines.append(f"- {prefix}{m.get('content', '')}")
+            context = "\n".join(context_lines)
 
     system_prompt = (
         "You are extracting factual information from conversation transcripts. "
@@ -920,6 +1027,7 @@ def result_suffix(
     no_expansion_arm_b=False,
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
+    use_context_packet=None,
 ):
     if no_expansion_arm_b:
         if use_query_expansion is True:
@@ -937,12 +1045,15 @@ def result_suffix(
         use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
     if use_full_domain_context is None:
         use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
+    if use_context_packet is None:
+        use_context_packet = USE_CONTEXT_PACKET
     validate_retrieval_modes(
         use_context_rerank,
         use_append_context_expansion,
         use_gated_append_context_expansion,
         use_legacy_context_assembly,
         use_full_domain_context,
+        use_context_packet,
     )
     suffix = ""
     if no_expansion_arm_b:
@@ -963,6 +1074,8 @@ def result_suffix(
         suffix += "_legacy_context"
     if use_full_domain_context:
         suffix += "_full_domain_context"
+    if use_context_packet:
+        suffix += "_context_packet"
     return suffix
 
 
@@ -975,8 +1088,9 @@ def result_output_path(
     no_expansion_arm_b=False,
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
+    use_context_packet=None,
 ):
-    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context)}.json"
+    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context, use_context_packet)}.json"
 
 
 def _category_name(cat):
@@ -1006,6 +1120,7 @@ def build_results_payload(
     no_expansion_arm_b=False,
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
+    use_context_packet=None,
     expand_fallback_count=0,
     expand_fallback_rate=0.0,
     cleaned=None,
@@ -1024,12 +1139,15 @@ def build_results_payload(
         use_legacy_context_assembly = USE_LEGACY_CONTEXT_ASSEMBLY
     if use_full_domain_context is None:
         use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
+    if use_context_packet is None:
+        use_context_packet = USE_CONTEXT_PACKET
     validate_retrieval_modes(
         use_context_rerank,
         use_append_context_expansion,
         use_gated_append_context_expansion,
         use_legacy_context_assembly,
         use_full_domain_context,
+        use_context_packet,
     )
     full_overall = statistics.mean(all_scores) * 100 if all_scores else 0
     category_scores = {
@@ -1053,6 +1171,7 @@ def build_results_payload(
             "no_expansion_arm_b": bool(no_expansion_arm_b),
             "legacy_context_assembly": bool(use_legacy_context_assembly),
             "full_domain_context": bool(use_full_domain_context),
+            "context_packet": bool(use_context_packet),
         },
         "expand_query_fallback_count": expand_fallback_count,
         "expand_query_fallback_rate": round(expand_fallback_rate, 4),
@@ -1060,9 +1179,9 @@ def build_results_payload(
     }
 
 
-def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, use_legacy_context_assembly=None, use_full_domain_context=None, cleaned=None):
+def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log, suffix=None, expand_fallback_count=0, expand_fallback_rate=0.0, normalize_dates=False, use_query_expansion=None, use_context_rerank=None, use_append_context_expansion=None, use_gated_append_context_expansion=None, no_expansion_arm_b=False, use_legacy_context_assembly=None, use_full_domain_context=None, use_context_packet=None, cleaned=None):
     """Save incremental results."""
-    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context) if suffix is None else f"/tmp/locomo_results{suffix}.json"
+    output_path = result_output_path(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context, use_context_packet) if suffix is None else f"/tmp/locomo_results{suffix}.json"
     payload = build_results_payload(
         all_scores,
         cat_scores,
@@ -1076,6 +1195,7 @@ def _save_results(all_scores, cat_scores, query_times, ingest_times, results_log
         no_expansion_arm_b=no_expansion_arm_b,
         use_legacy_context_assembly=use_legacy_context_assembly,
         use_full_domain_context=use_full_domain_context,
+        use_context_packet=use_context_packet,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -1095,9 +1215,10 @@ def run_benchmark(
     no_expansion_arm_b=False,
     use_legacy_context_assembly=None,
     use_full_domain_context=None,
+    use_context_packet=None,
 ):
     """Run LOCOMO benchmark, optionally capped by conversations/questions for canaries."""
-    global USE_QUERY_EXPANSION, USE_LEGACY_CONTEXT_ASSEMBLY, USE_FULL_DOMAIN_CONTEXT
+    global USE_QUERY_EXPANSION, USE_LEGACY_CONTEXT_ASSEMBLY, USE_FULL_DOMAIN_CONTEXT, USE_CONTEXT_PACKET
     use_query_expansion = USE_QUERY_EXPANSION
     use_context_rerank = USE_CONTEXT_RERANK
     use_append_context_expansion = USE_APPEND_CONTEXT_EXPANSION
@@ -1110,10 +1231,14 @@ def run_benchmark(
         use_full_domain_context = USE_FULL_DOMAIN_CONTEXT
     else:
         USE_FULL_DOMAIN_CONTEXT = bool(use_full_domain_context)
+    if use_context_packet is None:
+        use_context_packet = USE_CONTEXT_PACKET
+    else:
+        USE_CONTEXT_PACKET = bool(use_context_packet)
     if no_expansion_arm_b:
         use_query_expansion = False
         USE_QUERY_EXPANSION = False
-    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, use_legacy_context_assembly, use_full_domain_context)
+    validate_retrieval_modes(use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, use_legacy_context_assembly, use_full_domain_context, use_context_packet)
     expand_query.fail_count = 0
     with open(data_path) as f:
         data = json.load(f)
@@ -1157,6 +1282,7 @@ def run_benchmark(
         no_expansion_arm_b=no_expansion_arm_b,
         use_legacy_context_assembly=use_legacy_context_assembly,
         use_full_domain_context=use_full_domain_context,
+        use_context_packet=use_context_packet,
     )
     if start_conv > 0 and os.path.exists(output_path):
         with open(output_path) as f:
@@ -1266,6 +1392,7 @@ def run_benchmark(
             no_expansion_arm_b=no_expansion_arm_b,
             use_legacy_context_assembly=use_legacy_context_assembly,
             use_full_domain_context=use_full_domain_context,
+            use_context_packet=use_context_packet,
             expand_fallback_count=expand_fallback_count,
             expand_fallback_rate=expand_fallback_rate,
             cleaned=cleaned,
@@ -1326,6 +1453,7 @@ def run_benchmark(
         no_expansion_arm_b=no_expansion_arm_b,
         use_legacy_context_assembly=use_legacy_context_assembly,
         use_full_domain_context=use_full_domain_context,
+        use_context_packet=use_context_packet,
     )
     payload = build_results_payload(
         all_scores,
@@ -1340,6 +1468,7 @@ def run_benchmark(
         no_expansion_arm_b=no_expansion_arm_b,
         use_legacy_context_assembly=use_legacy_context_assembly,
         use_full_domain_context=use_full_domain_context,
+        use_context_packet=use_context_packet,
         expand_fallback_count=expand_fallback_count,
         expand_fallback_rate=expand_fallback_rate,
         cleaned=cleaned,
@@ -1365,6 +1494,7 @@ if __name__ == "__main__":
     parser.add_argument("--gated-append-context-expansion", action="store_true", help="Enable opt-in gated append-only context expansion")
     parser.add_argument("--legacy-context-assembly", action="store_true", help="Enable diagnostic bfeb90f-era query-expansion context assembly")
     parser.add_argument("--full-domain-context", action="store_true", help="Enable opt-in full-domain transcript context spike")
+    parser.add_argument("--context-packet", action="store_true", help="Enable default-off Context Graph v0 context packet prompt integration")
     args = parser.parse_args()
 
     if args.max_questions is not None and args.max_questions <= 0:
@@ -1384,6 +1514,8 @@ if __name__ == "__main__":
         USE_LEGACY_CONTEXT_ASSEMBLY = True
     if args.full_domain_context:
         USE_FULL_DOMAIN_CONTEXT = True
+    if args.context_packet:
+        USE_CONTEXT_PACKET = True
     validate_retrieval_modes()
 
     skip = {5} if args.skip_adversarial else set()
@@ -1400,4 +1532,5 @@ if __name__ == "__main__":
         no_expansion_arm_b=args.no_expansion_arm_b,
         use_legacy_context_assembly=args.legacy_context_assembly,
         use_full_domain_context=args.full_domain_context,
+        use_context_packet=args.context_packet,
     )

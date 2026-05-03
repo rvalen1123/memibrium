@@ -1004,6 +1004,93 @@ class QueryExpansionTests(unittest.TestCase):
         )
         self.assertTrue(all('dentist appointment extra memory' in line for line in prompt_lines[locomo_bench_v2.RECALL_TOP_K:]))
 
+    def test_context_packet_mode_calls_context_packet_and_uses_packet_evidence(self):
+        calls = []
+        seen_messages = []
+
+        def fake_mcp_post(tool, payload, retries=3):
+            calls.append((tool, payload))
+            self.assertEqual(tool, 'context_packet')
+            self.assertEqual(payload['query'], 'What does Ricky value?')
+            self.assertEqual(payload['domain'], 'locomo-1')
+            self.assertEqual(payload['top_k'], locomo_bench_v2.CONTEXT_PACKET_TOP_K)
+            return {
+                'schema': 'memibrium.context_packet.v1',
+                'episodic_evidence': [
+                    {'memory_id': 'mem_ctx_1', 'content': 'Ricky repeatedly values defensible preregistration.'},
+                ],
+                'self_model_observations': [
+                    {'observation_id': 'obs_ctx_1', 'claim_text': 'Ricky values evidence before features.'},
+                ],
+                'decision_traces': [
+                    {'trace_id': 'trace_ctx_1', 'answer': 'Use context packets only behind a default-off flag.'},
+                ],
+                'answer_guidance': ['Use source-backed evidence first.'],
+                'provenance_summary': {
+                    'memory_ids': ['mem_ctx_1'],
+                    'self_model_observation_ids': ['obs_ctx_1'],
+                },
+            }
+
+        def fake_llm_call(messages, model=locomo_bench_v2.ANSWER_MODEL, max_tokens=200, retries=3):
+            seen_messages.append(messages)
+            return 'defensible preregistration'
+
+        with patch.object(locomo_bench_v2, 'USE_CONTEXT_PACKET', True), patch.object(
+            locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+        ), patch.object(locomo_bench_v2, 'llm_call', side_effect=fake_llm_call):
+            answer, memory_count, telemetry = locomo_bench_v2.answer_question(
+                'What does Ricky value?',
+                'locomo-1',
+                return_telemetry=True,
+            )
+
+        self.assertEqual(answer, 'defensible preregistration')
+        self.assertEqual(memory_count, 1)
+        self.assertEqual(calls[0][0], 'context_packet')
+        prompt_text = seen_messages[0][1]['content']
+        self.assertIn('Context Packet (self-model observations):', prompt_text)
+        self.assertIn('Ricky values evidence before features.', prompt_text)
+        self.assertIn('Context Packet (decision traces):', prompt_text)
+        self.assertIn('Use context packets only behind a default-off flag.', prompt_text)
+        self.assertEqual(telemetry['counts']['context_packet_enabled'], True)
+        self.assertEqual(telemetry['context_packet']['schema'], 'memibrium.context_packet.v1')
+        self.assertEqual(telemetry['context_packet']['provenance_summary']['memory_ids'], ['mem_ctx_1'])
+
+    def test_context_packet_condition_is_default_off_and_condition_specific(self):
+        self.assertFalse(locomo_bench_v2.USE_CONTEXT_PACKET)
+        self.assertEqual(
+            locomo_bench_v2.result_output_path(
+                normalize_dates=True,
+                use_query_expansion=True,
+                use_context_packet=True,
+            ),
+            '/tmp/locomo_results_query_expansion_context_packet.json',
+        )
+
+        payload = locomo_bench_v2.build_results_payload(
+            all_scores=[1],
+            cat_scores={'single-hop': [1]},
+            query_times=[1.0],
+            results_log=[],
+            normalize_dates=True,
+            use_query_expansion=True,
+            use_context_packet=True,
+        )
+        self.assertTrue(payload['condition']['context_packet'])
+
+    def test_context_packet_mode_rejects_other_context_modes(self):
+        with self.assertRaises(ValueError):
+            locomo_bench_v2.validate_retrieval_modes(
+                use_context_packet=True,
+                use_context_rerank=True,
+            )
+        with self.assertRaises(ValueError):
+            locomo_bench_v2.validate_retrieval_modes(
+                use_context_packet=True,
+                use_full_domain_context=True,
+            )
+
     def test_gated_append_skips_extras_when_base_context_is_strong(self):
         seen_messages = []
 
