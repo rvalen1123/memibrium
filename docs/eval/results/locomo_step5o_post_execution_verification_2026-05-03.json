@@ -1,0 +1,31 @@
+{
+  "schema": "memibrium.locomo.step5o.post_execution_verification.v1",
+  "verified_at_utc": "2026-05-03T00:56:49.403799+00:00",
+  "summary_artifact": "docs/eval/results/locomo_step5o_trace_lite_summary_20260503T005114Z.json",
+  "primary_label": "checkpoint_shows_no_static_boundary_effect",
+  "secondary_labels": [
+    "no_go_phase_c_still_blocked",
+    "supports_post_cb56559_high_context_path",
+    "supports_effective_harness_mismatch",
+    "requires_full_repro_prereg"
+  ],
+  "branch": "query-expansion",
+  "head": "8a0e421f2c12a11e568ef75af98a571f27456941",
+  "status_short": "?? docs/eval/results/locomo_step5o_A_f2466c9_server_20260503T005114Z.log\n?? docs/eval/results/locomo_step5o_A_f2466c9_trace_lite_20260503T005114Z.json\n?? docs/eval/results/locomo_step5o_B_current_server_20260503T005114Z.log\n?? docs/eval/results/locomo_step5o_B_current_trace_lite_20260503T005114Z.json\n?? docs/eval/results/locomo_step5o_trace_lite_execution_result_2026-05-03.md\n?? docs/eval/results/locomo_step5o_trace_lite_summary_20260503T005114Z.json\n?? docs/eval/results/run_locomo_step5o_trace_lite.py",
+  "health": {
+    "status": "ok",
+    "engine": "memibrium"
+  },
+  "locomo_hygiene": {
+    "memories": 0,
+    "temporal_expressions": 0,
+    "memory_snapshots": 0,
+    "user_feedback": 0,
+    "contradictions": 0,
+    "memory_edges": 0,
+    "ok": true
+  },
+  "orphan_process_matches": [],
+  "orphan_processes_ok": true,
+  "classification_correction_note": "Corrected after reviewing Step 5o interpretation rules: because Arm A did not reproduce low-context and both arms reached high-context, primary label is checkpoint_shows_no_static_boundary_effect; Arm B high-context support is secondary."
+}
