@@ -191,6 +191,38 @@ def session_order_mapping(conv: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def validate_preregistered_larger_slice(slice_payload: dict[str, Any], *, min_rows: int = 20, max_rows: int = 30) -> dict[str, Any]:
+    rows = slice_payload.get("selected_rows") if isinstance(slice_payload, dict) else None
+    if not isinstance(rows, list) or not (min_rows <= len(rows) <= max_rows):
+        raise ValueError(f"larger_slice_prereg_invalid: row_count={0 if not isinstance(rows, list) else len(rows)}")
+    seen_indexes = set()
+    category_counts: dict[str, int] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("larger_slice_prereg_invalid: row is not an object")
+        required = ["one_based_index", "cat", "question", "question_sha256", "label"]
+        missing = [key for key in required if key not in row]
+        if missing:
+            raise ValueError(f"larger_slice_prereg_invalid: missing={missing}")
+        idx = int(row["one_based_index"])
+        if idx in seen_indexes:
+            raise ValueError(f"larger_slice_prereg_invalid: duplicate_index={idx}")
+        seen_indexes.add(idx)
+        if sha256_text(str(row["question"])) != row["question_sha256"]:
+            raise ValueError(f"larger_slice_prereg_invalid: question_hash_mismatch index={idx}")
+        cat = str(row["cat"])
+        category_counts[cat] = category_counts.get(cat, 0) + 1
+    required_categories = {"single-hop", "temporal", "multi-hop", "unanswerable", "adversarial"}
+    if not required_categories.issubset(category_counts):
+        raise ValueError(f"larger_slice_prereg_invalid: missing_categories={sorted(required_categories - set(category_counts))}")
+    return {
+        "ok": True,
+        "row_count": len(rows),
+        "category_counts": category_counts,
+        "one_based_indexes": [int(row["one_based_index"]) for row in rows],
+    }
+
+
 def validate_fixed_row_identity(data: list[dict[str, Any]], fixed_rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not data:
         raise ValueError("row_identity_mismatch: dataset is empty")
@@ -259,6 +291,23 @@ def _gold_coverage_hit_rate(details: list[dict[str, Any]]) -> float | None:
     return round(hits / eligible, 4) if eligible else None
 
 
+def _memory_ids(row: dict[str, Any]) -> list[Any]:
+    final_context = ((row.get("recall_telemetry") or {}).get("final_context") or [])
+    return [memory.get("id") for memory in final_context if isinstance(memory, dict)]
+
+
+def _baseline_prefix_preserved(baseline_row: dict[str, Any], treatment_row: dict[str, Any]) -> bool:
+    telemetry = treatment_row.get("recall_telemetry") or {}
+    before_merge = telemetry.get("final_context_before_packet_merge")
+    if before_merge is not None:
+        before_ids = [memory.get("id") for memory in before_merge if isinstance(memory, dict)]
+        treatment_ids = _memory_ids(treatment_row)
+        return treatment_ids[:len(before_ids)] == before_ids
+    baseline_ids = _memory_ids(baseline_row)
+    treatment_ids = _memory_ids(treatment_row)
+    return treatment_ids[:len(baseline_ids)] == baseline_ids
+
+
 def validate_paired_artifacts(
     baseline: dict[str, Any],
     treatment: dict[str, Any],
@@ -314,6 +363,29 @@ def validate_paired_artifacts(
     hit_delta = None
     if baseline_hit_rate is not None and treatment_hit_rate is not None:
         hit_delta = round(treatment_hit_rate - baseline_hit_rate, 4)
+    baseline_prefix_by_row = [
+        _baseline_prefix_preserved(baseline_details[i], treatment_details[i])
+        for i in range(len(fixed_rows))
+    ]
+    answer_change_diagnostics = []
+    for i in range(len(fixed_rows)):
+        b_row = baseline_details[i]
+        t_row = treatment_details[i]
+        b_score = b_row.get("score")
+        t_score = t_row.get("score")
+        score_delta = None
+        if b_score is not None and t_score is not None:
+            score_delta = round(float(t_score) - float(b_score), 4)
+        answer_change_diagnostics.append({
+            "one_based_index": (b_row.get("row_identity") or {}).get("one_based_index"),
+            "label": (b_row.get("row_identity") or {}).get("label"),
+            "answer_changed": b_row.get("predicted") != t_row.get("predicted"),
+            "baseline_score": b_score,
+            "treatment_score": t_score,
+            "score_delta": score_delta,
+            "baseline_gold_hits": ((b_row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {}).get("canary_final_context_refs_matched", ((b_row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {}).get("final_context_refs_matched")),
+            "treatment_gold_hits": ((t_row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {}).get("canary_final_context_refs_matched", ((t_row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {}).get("final_context_refs_matched")),
+        })
 
     return {
         "row_identity_ok": True,
@@ -325,6 +397,9 @@ def validate_paired_artifacts(
             "treatment": treatment_hit_rate,
         },
         "gold_evidence_ref_hit_delta": hit_delta,
+        "baseline_prefix_preserved_by_row": baseline_prefix_by_row,
+        "baseline_prefix_preserved_rate": round(sum(1 for ok in baseline_prefix_by_row if ok) / len(baseline_prefix_by_row), 4) if baseline_prefix_by_row else None,
+        "answer_change_diagnostics": answer_change_diagnostics,
         "baseline_context_hashes": [row.get("answer_prompt_context_sha256") for row in baseline_details],
         "treatment_context_hashes": [row.get("answer_prompt_context_sha256") for row in treatment_details],
         "prompt_context_changed_by_row": [
@@ -710,6 +785,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run a tiny fixed-row Context Packet A/B canary.")
     parser.add_argument("--data-path", default=str(DATA_PATH))
     parser.add_argument("--fixed-rows-path", default=str(FIXED_ROWS_PATH))
+    parser.add_argument("--min-prereg-rows", type=int, default=None, help="Require fixed-row preregistration to contain at least this many rows")
+    parser.add_argument("--max-prereg-rows", type=int, default=None, help="Require fixed-row preregistration to contain at most this many rows")
     parser.add_argument("--mcp-url", default=os.environ.get("MCP_URL", "http://localhost:9999/mcp"))
     parser.add_argument("--identity-only", action="store_true", help="Validate data/fixed-row identity without DB or benchmark mutation")
     parser.add_argument("--merge-treatment", action="store_true", help="Use baseline+packet append/dedupe treatment instead of packet replacement")
@@ -718,14 +795,22 @@ def main(argv: list[str] | None = None) -> int:
     data_path = Path(args.data_path)
     fixed_rows_path = Path(args.fixed_rows_path)
     data = load_json(data_path)
-    fixed_rows = load_json(fixed_rows_path)["selected_rows"]
+    fixed_rows_payload = load_json(fixed_rows_path)
+    fixed_rows = fixed_rows_payload["selected_rows"]
+    preregistration_proof = None
+    if args.min_prereg_rows is not None or args.max_prereg_rows is not None:
+        preregistration_proof = validate_preregistered_larger_slice(
+            fixed_rows_payload,
+            min_rows=args.min_prereg_rows or 1,
+            max_rows=args.max_prereg_rows or 10_000,
+        )
     input_identity = validate_canary_input_slice(data, fixed_rows)
     data_sha = sha256_file(data_path)
     if data_path == DATA_PATH and data_sha != EXPECTED_DATA_SHA256:
         raise ValueError(f"data_sha256_mismatch: {data_sha} != {EXPECTED_DATA_SHA256}")
 
     if args.identity_only:
-        print(json.dumps({"ok": True, "identity": input_identity, "data_sha256": data_sha}, indent=2))
+        print(json.dumps({"ok": True, "identity": input_identity, "data_sha256": data_sha, "preregistration": preregistration_proof}, indent=2))
         return 0
 
     base_env = os.environ.copy()
@@ -772,6 +857,7 @@ def main(argv: list[str] | None = None) -> int:
         "purpose": "prove context_packet changes prompt context on exact fixed rows without changing unrelated benchmark mechanics",
         "treatment_mode": "context_packet_merge" if args.merge_treatment else "context_packet_replacement",
         "input_identity": input_identity,
+        "preregistration": preregistration_proof,
         "data_sha256": data_sha,
         "fixed_rows_path": str(fixed_rows_path),
         "live_status": live_status,

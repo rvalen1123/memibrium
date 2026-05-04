@@ -184,6 +184,78 @@ class ContextPacketCanaryTests(unittest.TestCase):
                 treatment_context_packet=False,
                 treatment_context_packet_merge=True,
             )
+    def test_paired_artifact_validation_reports_baseline_prefix_and_answer_change_diagnostics(self):
+        fixed_rows = [{
+            'one_based_index': 1,
+            'question': 'merge question',
+            'question_sha256': context_packet_canary.sha256_text('merge question'),
+            'label': 'merge_row',
+        }]
+        baseline = {
+            'condition': {'context_packet': False, 'context_packet_merge': False},
+            'details': [{
+                'question': 'merge question',
+                'row_identity': fixed_rows[0],
+                'predicted': 'baseline answer',
+                'score': 0.5,
+                'recall_telemetry': {
+                    'final_context': [{'id': 'b1'}, {'id': 'b2'}],
+                    'counts': {'final_answer_context_count': 2},
+                    'gold_evidence_ref_coverage': {'gold_ref_count': 2, 'final_context_refs_matched': 1},
+                },
+            }],
+        }
+        treatment = {
+            'condition': {'context_packet': False, 'context_packet_merge': True},
+            'details': [{
+                'question': 'merge question',
+                'row_identity': fixed_rows[0],
+                'predicted': 'merge answer',
+                'score': 1.0,
+                'recall_telemetry': {
+                    'final_context_before_packet_merge': [{'id': 'b1'}, {'id': 'b2'}],
+                    'final_context': [{'id': 'b1'}, {'id': 'b2'}, {'id': 'p1'}],
+                    'counts': {'context_packet_merge_enabled': True, 'base_final_answer_context_count': 2, 'final_answer_context_count': 3},
+                    'context_packet': {'provenance_summary': {'memory_ids': ['p1']}},
+                    'gold_evidence_ref_coverage': {'gold_ref_count': 2, 'final_context_refs_matched': 2},
+                },
+            }],
+        }
+
+        comparison = context_packet_canary.validate_paired_artifacts(
+            baseline,
+            treatment,
+            fixed_rows,
+            treatment_context_packet=False,
+            treatment_context_packet_merge=True,
+        )
+
+        self.assertEqual(comparison['baseline_prefix_preserved_by_row'], [True])
+        self.assertEqual(comparison['baseline_prefix_preserved_rate'], 1.0)
+        self.assertEqual(comparison['answer_change_diagnostics'][0]['answer_changed'], True)
+        self.assertEqual(comparison['answer_change_diagnostics'][0]['score_delta'], 0.5)
+
+    def test_preregistered_larger_slice_requires_20_to_30_rows_and_category_coverage(self):
+        rows = []
+        cats = ['single-hop', 'temporal', 'multi-hop', 'unanswerable', 'adversarial']
+        for idx in range(25):
+            rows.append({
+                'one_based_index': idx + 1,
+                'cat': cats[idx % len(cats)],
+                'question': f'question {idx}',
+                'question_sha256': context_packet_canary.sha256_text(f'question {idx}'),
+                'label': f'row_{idx}',
+            })
+
+        proof = context_packet_canary.validate_preregistered_larger_slice({'selected_rows': rows}, min_rows=20, max_rows=30)
+
+        self.assertTrue(proof['ok'])
+        self.assertEqual(proof['row_count'], 25)
+        self.assertEqual(proof['category_counts']['adversarial'], 5)
+
+        with self.assertRaisesRegex(ValueError, 'larger_slice_prereg_invalid'):
+            context_packet_canary.validate_preregistered_larger_slice({'selected_rows': rows[:19]}, min_rows=20, max_rows=30)
+
     def test_canary_input_slice_records_session_order_mapping(self):
         data = [{
             'sample_id': 'conv-26',

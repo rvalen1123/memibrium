@@ -996,6 +996,10 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
                     "top_k": CONTEXT_PACKET_TOP_K,
                     "include_decision_traces": True,
                 })
+                recall_telemetry["final_context_before_packet_merge"] = [
+                    _memory_telemetry_projection(memory, rank=idx)
+                    for idx, memory in enumerate(base_context_memories, start=1)
+                ]
                 memories, packet_added_memories = _append_packet_evidence_to_baseline(base_context_memories, packet)
                 recall_telemetry["counts"]["context_packet_merge_enabled"] = True
                 recall_telemetry["counts"]["base_final_answer_context_count"] = len(base_context_memories)
