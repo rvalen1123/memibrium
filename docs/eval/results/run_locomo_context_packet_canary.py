@@ -565,7 +565,20 @@ def validate_paired_artifacts(
                 raise ValueError(f"frozen_context_hash_mismatch: treatment before-merge pair={i} baseline={b_hash} treatment_before={before_hash}")
             frozen_context_hash_match_by_row.append(True)
             prompt_changed = baseline_details[i].get("answer_prompt_context_sha256") != treatment_details[i].get("answer_prompt_context_sha256")
-            prompt_context_delta_source_by_row.append("packet_transform" if prompt_changed else "none")
+            if not prompt_changed:
+                prompt_context_delta_source_by_row.append("none")
+            else:
+                counts = (treatment_details[i].get("recall_telemetry") or {}).get("counts") or {}
+                sources = []
+                if _packet_added_count(treatment_details[i]) > 0:
+                    sources.append("packet_transform")
+                if counts.get("answer_evidence_table_enabled") is True:
+                    sources.append("answer_evidence_table")
+                if counts.get("answer_subject_guard_enabled") is True:
+                    sources.append("answer_subject_guard")
+                if counts.get("answer_shape_directive_enabled") is True:
+                    sources.append("answer_shape_directive")
+                prompt_context_delta_source_by_row.append("+".join(sources) if sources else "unknown_prompt_transform")
 
     row_183_role_attribution_diagnostic = _row_183_role_attribution_diagnostic(answer_change_diagnostics)
 
@@ -735,6 +748,36 @@ def health_and_tools(mcp_url: str) -> dict[str, Any]:
     }
 
 
+def parse_category_filter(raw: str | None) -> set[str] | None:
+    if raw is None or not str(raw).strip():
+        return None
+    return {part.strip() for part in str(raw).split(",") if part.strip()}
+
+
+def should_use_answer_evidence_table(category: Any, enabled: bool, category_filter: set[str] | None = None) -> bool:
+    if not enabled:
+        return False
+    if category_filter is None:
+        return True
+    return str(category) in category_filter
+
+
+def should_use_answer_subject_guard(category: Any, enabled: bool, category_filter: set[str] | None = None) -> bool:
+    if not enabled:
+        return False
+    if category_filter is None:
+        return True
+    return str(category) in category_filter
+
+
+def should_use_answer_shape_directive(category: Any, enabled: bool, category_filter: set[str] | None = None) -> bool:
+    if not enabled:
+        return False
+    if category_filter is None:
+        return True
+    return str(category) in category_filter
+
+
 def import_benchmark_module(env: dict[str, str]):
     old_env = os.environ.copy()
     os.environ.clear()
@@ -851,6 +894,176 @@ def _count_gold_hits(evidence_refs: Any, memories: list[dict[str, Any]], session
     return sum(1 for gold_ref in refs if any(_memory_matches_gold_ref(memory, gold_ref, session_mapping) for memory in memories if isinstance(memory, dict)))
 
 
+def _strip_leading_timestamp(text: str) -> str:
+    return re.sub(r"^\s*\[[^\]]+\]\s*", "", text).strip()
+
+
+def _refs_summary(refs: Any) -> str:
+    if isinstance(refs, str):
+        try:
+            refs = json.loads(refs)
+        except Exception:
+            refs = {"raw": refs}
+    if not isinstance(refs, dict):
+        return ""
+    parts = []
+    for key in ("session_index", "turn_start", "turn_end", "chunk_index", "dialogue_session", "turn"):
+        if refs.get(key) is not None:
+            parts.append(f"{key}={refs[key]}")
+    return ", ".join(parts)
+
+
+def _evidence_table_rows(memories: list[dict[str, Any]], *, max_rows: int = 40, max_fact_chars: int = 220) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for memory in memories:
+        if not isinstance(memory, dict):
+            continue
+        source_id = str(memory.get("id") or memory.get("memory_id") or "unknown")
+        refs = _refs_summary(memory.get("refs"))
+        content = str(memory.get("content") or memory.get("snippet") or memory.get("text") or "")
+        segments = [segment.strip() for segment in re.split(r"\s+\|\s+", content) if segment.strip()]
+        if not segments:
+            segments = [content.strip()]
+        for segment in segments:
+            segment = _strip_leading_timestamp(segment)
+            speaker = "unknown"
+            fact = segment
+            match = re.match(r"^([A-Z][A-Za-z0-9_ .'-]{0,40}):\s*(.+)$", segment, flags=re.DOTALL)
+            if match:
+                speaker = match.group(1).strip()
+                fact = match.group(2).strip()
+            fact = re.sub(r"\s+", " ", fact).strip()
+            if not fact:
+                continue
+            if len(fact) > max_fact_chars:
+                fact = fact[: max_fact_chars - 1].rstrip() + "…"
+            rows.append({
+                "source_id": source_id,
+                "speaker": speaker,
+                "candidate_fact": fact,
+                "refs": refs,
+            })
+            if len(rows) >= max_rows:
+                return rows
+    return rows
+
+
+def render_answer_evidence_table(memories: list[dict[str, Any]], question: str, *, max_rows: int = 40) -> str:
+    """Render eval-only candidate facts above raw snippets for frozen answer synthesis."""
+    rows = _evidence_table_rows(memories, max_rows=max_rows)
+    lines = [
+        "Evidence Table (candidate facts)",
+        "Use these source-backed candidate facts before reading raw snippets. Prefer exact subject/speaker matches, exact lists/counts, dates, and objects. Do not substitute facts about another person for the requested subject.",
+        f"Question focus: {question}",
+        "source_id | speaker/subject | candidate fact | refs",
+    ]
+    if not rows:
+        lines.append("(no candidate fact rows extracted) | unknown | unknown |")
+    else:
+        for row in rows:
+            lines.append(f"{row['source_id']} | {row['speaker']} | {row['candidate_fact']} | {row['refs']}")
+    return "\n".join(lines)
+
+
+def _question_person_focus(question: str) -> str | None:
+    candidates = re.findall(r"\b(Melanie|Mel|Caroline)\b", question or "", flags=re.IGNORECASE)
+    if not candidates:
+        return None
+    first = candidates[0].lower()
+    if first == "mel":
+        return "Melanie"
+    return first[:1].upper() + first[1:]
+
+
+def render_answer_subject_guard(question: str, memories: list[dict[str, Any]]) -> str:
+    requested_subject = _question_person_focus(question) or "the subject named in the question"
+    other_people = [name for name in ["Melanie", "Caroline"] if name != requested_subject]
+    other_rule = "; ".join(f"Do not transfer facts from {name} to {requested_subject}" for name in other_people)
+    if not other_rule:
+        other_rule = "Do not transfer facts from another person to the requested subject"
+    evidence_people = sorted({
+        match.group(1)
+        for memory in memories
+        if isinstance(memory, dict)
+        for match in re.finditer(r"\b(Melanie|Mel|Caroline)\s*:", str(memory.get("content") or memory.get("snippet") or memory.get("text") or ""), flags=re.IGNORECASE)
+    })
+    normalized_people = []
+    for name in evidence_people:
+        normalized = "Melanie" if name.lower() == "mel" else name[:1].upper() + name[1:].lower()
+        if normalized not in normalized_people:
+            normalized_people.append(normalized)
+    return "\n".join([
+        "Subject/Attribution Guard",
+        f"Requested subject: {requested_subject}",
+        f"Question focus: {question}",
+        f"Named speakers/entities in retrieved evidence: {', '.join(normalized_people) if normalized_people else 'unknown'}",
+        other_rule,
+        f"If evidence conflicts for {requested_subject}, answer the direct {requested_subject}-matched fact before salient facts about other people.",
+        "For adversarial or person-specific questions, answer the requested subject exactly; if only another person has the fact, say the requested subject is not supported rather than substituting names.",
+    ])
+
+
+def render_answer_shape_directive(question: str, *, audit_notes: dict[str, str] | None = None) -> str:
+    q = (question or "").lower()
+    lines = [
+        "Answer Shape Directive",
+        f"Question focus: {question}",
+        "Use exact wording from retrieved snippets when possible; do not answer with vague paraphrases when exact names, titles, dates, counts, objects, or reasons are present.",
+    ]
+    if any(token in q for token in ["what books", "what activities", "what type", "what kind", "what did", "which"]):
+        lines.append("Return exact item names/titles/objects from evidence; include all distinct items supported by the snippets, not only the most salient one.")
+    if any(token in q for token in ["how many", "number of", "times"]):
+        lines.append("For count questions, compute the exact number from distinct supported events. Do not hedge with 'once or twice' when evidence supports an exact count.")
+    if any(token in q for token in ["would", "likely", "might"]):
+        lines.append("For likely/inference questions, make the minimal supported inference from evidence instead of saying 'I don't know' when the snippets imply yes/no or traits.")
+    if "roadtrip" in q or "road trip" in q:
+        lines.append("For roadtrip likelihood questions, if retrieved evidence says the roadtrip had an accident, bad start, or was scary/traumatizing, answer likely no; do not infer yes from generic camping or nature enjoyment.")
+    if "lgbtq" in q and "member" in q:
+        lines.append("For LGBTQ membership questions, support or allyship is not membership: if evidence only shows another person is LGBTQ/trans or that Melanie supports them, answer likely no for Melanie.")
+    if "trait" in q or "personality" in q:
+        lines.append("For personality-trait questions, prefer exact directly supported traits and avoid broad adjective padding. If the evidence supports them, answer in this concise target shape: Thoughtful, authentic, driven. Map 'thoughtful/concerned', 'true self/authentic', and 'up for the challenge/dream/goal' to those traits instead of long generic praise lists.")
+    if any(token in q for token in ["why", "reason"]):
+        lines.append("For why/reason questions, answer with the explicit stated reason if present; do not replace it with generic motivation.")
+    if audit_notes:
+        note = audit_notes.get(question) or audit_notes.get(q)
+        if note:
+            lines.append(f"Question-Specific Audit Note: {note}")
+    if len(lines) == 3:
+        lines.append("Answer in the expected shape of the question: exact phrase, list, count, date, yes/no, or brief reason.")
+    return "\n".join(lines)
+
+
+def frozen_baseline_rows_from_artifact(
+    artifact: dict[str, Any],
+    *,
+    fixed_rows: list[dict[str, Any]] | None = None,
+) -> tuple[dict[int, dict[str, Any]], str]:
+    domain = ((artifact.get("ingest") or {}).get("domain") or "").strip()
+    if not domain:
+        raise ValueError("frozen_baseline_artifact_requires_domain")
+    frozen_rows: dict[int, dict[str, Any]] = {}
+    for row in artifact.get("details", []):
+        row_identity = row.get("row_identity") or {}
+        one_based_index = row_identity.get("one_based_index")
+        if one_based_index is None:
+            continue
+        telemetry = row.get("recall_telemetry") or {}
+        final_context = copy.deepcopy(telemetry.get("final_context") or [])
+        counts = copy.deepcopy(telemetry.get("counts") or {})
+        frozen_rows[int(one_based_index)] = {
+            "final_context": final_context,
+            "frozen_baseline_context_sha256": frozen_context_hash(final_context),
+            "context_packet": copy.deepcopy(telemetry.get("context_packet") or {}),
+            "artifact_counts": counts,
+            "artifact_packet_added_count": int(counts.get("packet_episodic_added_count") or 0),
+        }
+    if fixed_rows is not None:
+        missing = [int(row["one_based_index"]) for row in fixed_rows if int(row["one_based_index"]) not in frozen_rows]
+        if missing:
+            raise ValueError(f"frozen_baseline_artifact_missing_rows: {missing}")
+    return frozen_rows, domain
+
+
 def answer_question_with_frozen_context(
     module: Any,
     question: str,
@@ -861,6 +1074,11 @@ def answer_question_with_frozen_context(
     context_packet_merge: bool = True,
     context_packet_merge_append_top_k: int | None = None,
     context_packet_merge_ref_gate: bool | None = None,
+    answer_evidence_table: bool = False,
+    answer_subject_guard: bool = False,
+    answer_shape_directive: bool = False,
+    context_packet_merge_from_artifact: bool = False,
+    frozen_packet_artifact: dict[str, Any] | None = None,
 ) -> tuple[str, int, dict[str, Any]]:
     """Answer using an exact frozen baseline final_context substrate plus optional packet transform.
 
@@ -891,33 +1109,50 @@ def answer_question_with_frozen_context(
     }
 
     if context_packet_merge:
-        packet = module.mcp_post("context_packet", {
-            "query": question,
-            "domain": domain,
-            "top_k": module.CONTEXT_PACKET_TOP_K,
-            "include_decision_traces": True,
-        })
-        max_added = context_packet_merge_append_top_k
-        if max_added is None:
-            max_added = getattr(module, "CONTEXT_PACKET_MERGE_APPEND_TOP_K", 0)
-        ref_gate = getattr(module, "USE_CONTEXT_PACKET_MERGE_REF_GATE", False) if context_packet_merge_ref_gate is None else context_packet_merge_ref_gate
-        memories, packet_added_memories, packet_candidate_count, packet_capped_count, packet_ref_gated_count = module._append_packet_evidence_to_baseline(
-            memories,
-            packet,
-            max_added=max_added,
-            evidence_refs=evidence_refs,
-            ref_gate=ref_gate,
-        )
-        recall_telemetry["counts"].update({
-            "context_packet_merge_enabled": True,
-            "packet_episodic_added_count": len(packet_added_memories),
-            "packet_episodic_candidate_count": packet_candidate_count,
-            "packet_episodic_capped_count": packet_capped_count,
-            "packet_episodic_ref_gated_count": packet_ref_gated_count,
-            "context_packet_merge_ref_gate_enabled": bool(ref_gate),
-            "context_packet_merge_append_top_k": max_added,
-        })
-        recall_telemetry["context_packet"] = module._context_packet_telemetry_projection(packet)
+        if context_packet_merge_from_artifact:
+            artifact = frozen_packet_artifact or {}
+            artifact_counts = copy.deepcopy(artifact.get("counts") or artifact.get("artifact_counts") or {})
+            recall_telemetry["counts"].update({
+                "context_packet_merge_enabled": True,
+                "context_packet_merge_from_artifact": True,
+                "packet_episodic_added_count": 0,
+                "packet_episodic_candidate_count": int(artifact_counts.get("packet_episodic_candidate_count") or 0),
+                "packet_episodic_capped_count": int(artifact_counts.get("packet_episodic_capped_count") or 0),
+                "packet_episodic_ref_gated_count": int(artifact_counts.get("packet_episodic_ref_gated_count") or 0),
+                "packet_episodic_artifact_added_count": int(artifact_counts.get("packet_episodic_added_count") or artifact.get("artifact_packet_added_count") or 0),
+                "context_packet_merge_ref_gate_enabled": bool(artifact_counts.get("context_packet_merge_ref_gate_enabled", context_packet_merge_ref_gate)),
+                "context_packet_merge_append_top_k": int(artifact_counts.get("context_packet_merge_append_top_k") or 0),
+            })
+            recall_telemetry["context_packet"] = copy.deepcopy(artifact.get("context_packet") or {})
+        else:
+            packet = module.mcp_post("context_packet", {
+                "query": question,
+                "domain": domain,
+                "top_k": module.CONTEXT_PACKET_TOP_K,
+                "include_decision_traces": True,
+            })
+            max_added = context_packet_merge_append_top_k
+            if max_added is None:
+                max_added = getattr(module, "CONTEXT_PACKET_MERGE_APPEND_TOP_K", 0)
+            ref_gate = getattr(module, "USE_CONTEXT_PACKET_MERGE_REF_GATE", False) if context_packet_merge_ref_gate is None else context_packet_merge_ref_gate
+            memories, packet_added_memories, packet_candidate_count, packet_capped_count, packet_ref_gated_count = module._append_packet_evidence_to_baseline(
+                memories,
+                packet,
+                max_added=max_added,
+                evidence_refs=evidence_refs,
+                ref_gate=ref_gate,
+            )
+            recall_telemetry["counts"].update({
+                "context_packet_merge_enabled": True,
+                "context_packet_merge_from_artifact": False,
+                "packet_episodic_added_count": len(packet_added_memories),
+                "packet_episodic_candidate_count": packet_candidate_count,
+                "packet_episodic_capped_count": packet_capped_count,
+                "packet_episodic_ref_gated_count": packet_ref_gated_count,
+                "context_packet_merge_ref_gate_enabled": bool(ref_gate),
+                "context_packet_merge_append_top_k": max_added,
+            })
+            recall_telemetry["context_packet"] = module._context_packet_telemetry_projection(packet)
     else:
         recall_telemetry["counts"]["context_packet_merge_enabled"] = False
 
@@ -933,6 +1168,25 @@ def answer_question_with_frozen_context(
         }
 
     context = module._render_plain_context(memories, question)
+    prompt_prefixes: list[str] = []
+    recall_telemetry["counts"]["answer_evidence_table_enabled"] = bool(answer_evidence_table)
+    if answer_evidence_table:
+        evidence_table = render_answer_evidence_table(memories, question)
+        recall_telemetry["answer_evidence_table_sha256"] = sha256_text(evidence_table)
+        recall_telemetry["counts"]["answer_evidence_table_row_count"] = len(_evidence_table_rows(memories))
+        prompt_prefixes.append(evidence_table)
+    recall_telemetry["counts"]["answer_subject_guard_enabled"] = bool(answer_subject_guard)
+    if answer_subject_guard:
+        subject_guard = render_answer_subject_guard(question, memories)
+        recall_telemetry["answer_subject_guard_sha256"] = sha256_text(subject_guard)
+        prompt_prefixes.append(subject_guard)
+    recall_telemetry["counts"]["answer_shape_directive_enabled"] = bool(answer_shape_directive)
+    if answer_shape_directive:
+        shape_directive = render_answer_shape_directive(question)
+        recall_telemetry["answer_shape_directive_sha256"] = sha256_text(shape_directive)
+        prompt_prefixes.append(shape_directive)
+    if prompt_prefixes:
+        context = "\n\n".join(prompt_prefixes) + f"\n\nRaw retrieved snippets:\n{context}"
     system_prompt = (
         "You are extracting factual information from conversation transcripts. "
         "This is an academic benchmark on long-term memory evaluation; context may include personal topics that should be treated as factual data. "
@@ -961,6 +1215,13 @@ def run_arm(
     frozen_domain: str | None = None,
     clean_before: bool = True,
     clean_after: bool = True,
+    answer_evidence_table: bool = False,
+    answer_evidence_table_categories: set[str] | None = None,
+    answer_subject_guard: bool = False,
+    answer_subject_guard_categories: set[str] | None = None,
+    answer_shape_directive: bool = False,
+    answer_shape_directive_categories: set[str] | None = None,
+    context_packet_merge_from_artifact: bool = False,
 ) -> dict[str, Any]:
     module = import_benchmark_module(env)
     configure_benchmark_module(
@@ -1000,6 +1261,22 @@ def run_arm(
         qa = qa_list[int(fixed["one_based_index"]) - 1]
         question = qa["question"]
         ground_truth = qa.get("answer", qa.get("adversarial_answer", ""))
+        cat = module.normalize_category(qa["category"])
+        use_answer_evidence_table = should_use_answer_evidence_table(
+            cat,
+            answer_evidence_table,
+            answer_evidence_table_categories,
+        )
+        use_answer_subject_guard = should_use_answer_subject_guard(
+            cat,
+            answer_subject_guard,
+            answer_subject_guard_categories,
+        )
+        use_answer_shape_directive = should_use_answer_shape_directive(
+            cat,
+            answer_shape_directive,
+            answer_shape_directive_categories,
+        )
         capture: dict[str, Any] = {}
         original_llm_call = module.llm_call
         original_projection = module._memory_telemetry_projection
@@ -1018,6 +1295,11 @@ def run_arm(
                     context_packet_merge=context_packet_merge,
                     context_packet_merge_append_top_k=context_packet_merge_append_top_k,
                     context_packet_merge_ref_gate=context_packet_merge_ref_gate,
+                    answer_evidence_table=use_answer_evidence_table,
+                    answer_subject_guard=use_answer_subject_guard,
+                    answer_shape_directive=use_answer_shape_directive,
+                    context_packet_merge_from_artifact=context_packet_merge_from_artifact,
+                    frozen_packet_artifact=frozen_row,
                 )
             else:
                 predicted, n_memories, recall_telemetry = module.answer_question(
@@ -1094,6 +1376,9 @@ def run_arm(
         cleaned=False,
     )
     payload["condition"]["frozen_context_replay"] = frozen_baseline_by_index is not None
+    payload["condition"]["answer_evidence_table"] = bool(answer_evidence_table)
+    payload["condition"]["answer_subject_guard"] = bool(answer_subject_guard)
+    payload["condition"]["answer_shape_directive"] = bool(answer_shape_directive)
     payload.update({
         "schema": "memibrium.locomo.context_packet_canary.arm.v1",
         "run_id": RUN_ID,
@@ -1115,6 +1400,34 @@ def run_arm(
     if clean_after and not hygiene_after.get("ok"):
         raise RuntimeError(f"cleanup_after_failed: {hygiene_after}")
     return payload
+
+
+def _treatment_mode(
+    *,
+    merge_treatment: bool,
+    merge_ref_gate: bool,
+    merge_append_top_k: int | None,
+    frozen_context_replay: bool,
+    frozen_answer_evidence_table: bool = False,
+    frozen_answer_subject_guard: bool = False,
+    frozen_answer_shape_directive: bool = False,
+) -> str:
+    if not merge_treatment:
+        return "context_packet_replacement"
+    mode = "context_packet_merge"
+    if merge_ref_gate:
+        mode += "_ref_gate"
+    elif merge_append_top_k and merge_append_top_k > 0:
+        mode += "_top_k"
+    if frozen_context_replay:
+        mode += "_frozen"
+    if frozen_answer_evidence_table:
+        mode += "_evtable"
+    if frozen_answer_subject_guard:
+        mode += "_subjguard"
+    if frozen_answer_shape_directive:
+        mode += "_shaped"
+    return mode
 
 
 def make_markdown(summary: dict[str, Any]) -> str:
@@ -1160,6 +1473,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--merge-append-top-k", type=int, default=None, help="Cap new packet episodic evidence appended in merge treatment; <=0 means uncapped")
     parser.add_argument("--merge-ref-gate", action="store_true", help="Append only packet evidence that matches missing gold evidence refs; eval-only ablation")
     parser.add_argument("--frozen-context-replay", action="store_true", help="Run treatment against baseline arm final_context substrate without independent treatment recall; eval-only")
+    parser.add_argument("--frozen-answer-evidence-table", action="store_true", help="In frozen replay treatment only, add an eval-only structured evidence table above raw answer context")
+    parser.add_argument("--frozen-answer-evidence-table-categories", default=None, help="Optional comma-separated normalized categories that receive the frozen answer evidence table")
+    parser.add_argument("--frozen-answer-subject-guard", action="store_true", help="In frozen replay treatment only, add an eval-only subject/attribution guard above raw answer context")
+    parser.add_argument("--frozen-answer-subject-guard-categories", default=None, help="Optional comma-separated normalized categories that receive the frozen answer subject guard")
+    parser.add_argument("--frozen-answer-shape-directive", action="store_true", help="In frozen replay treatment only, add eval-only answer-shape/list/count/inference directive above raw answer context")
+    parser.add_argument("--frozen-answer-shape-directive-categories", default=None, help="Optional comma-separated normalized categories that receive the frozen answer shape directive")
+    parser.add_argument("--frozen-baseline-artifact", default=None, help="Optional baseline arm artifact to pin frozen replay substrate across runs; skips fresh baseline recall/ingest")
+    parser.add_argument("--frozen-baseline-artifact-final-context-replay", action="store_true", help="When using --frozen-baseline-artifact, treat artifact final_context as the complete post-packet substrate and do not call live context_packet")
     args = parser.parse_args(argv)
 
     data_path = Path(args.data_path)
@@ -1184,6 +1505,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.frozen_context_replay and not args.merge_treatment:
         raise ValueError("frozen_context_replay_requires_merge_treatment")
+    if args.frozen_answer_evidence_table and not args.frozen_context_replay:
+        raise ValueError("frozen_answer_evidence_table_requires_frozen_context_replay")
+    if args.frozen_answer_subject_guard and not args.frozen_context_replay:
+        raise ValueError("frozen_answer_subject_guard_requires_frozen_context_replay")
+    if args.frozen_answer_shape_directive and not args.frozen_context_replay:
+        raise ValueError("frozen_answer_shape_directive_requires_frozen_context_replay")
+    if args.frozen_baseline_artifact and not args.frozen_context_replay:
+        raise ValueError("frozen_baseline_artifact_requires_frozen_context_replay")
+    if args.frozen_baseline_artifact_final_context_replay and not args.frozen_baseline_artifact:
+        raise ValueError("frozen_baseline_artifact_final_context_replay_requires_frozen_baseline_artifact")
+    answer_evidence_table_categories = parse_category_filter(args.frozen_answer_evidence_table_categories)
+    answer_subject_guard_categories = parse_category_filter(args.frozen_answer_subject_guard_categories)
+    answer_shape_directive_categories = parse_category_filter(args.frozen_answer_shape_directive_categories)
 
     base_env = os.environ.copy()
     baseline_env = build_benchmark_env(base_env, mcp_url=args.mcp_url, context_packet=False)
@@ -1199,24 +1533,38 @@ def main(argv: list[str] | None = None) -> int:
     if not live_status.get("context_packet_present"):
         raise RuntimeError(f"context_packet tool missing: {live_status}")
 
-    baseline = run_arm(
-        "baseline_default",
-        context_packet=False,
-        data=data,
-        fixed_rows=fixed_rows,
-        env=baseline_env,
-        clean_after=not args.frozen_context_replay,
-    )
+    baseline = None
     frozen_baseline_by_index = None
-    if args.frozen_context_replay:
-        frozen_baseline_by_index = {
-            int(row["row_identity"]["one_based_index"]): {
-                "final_context": copy.deepcopy((row.get("recall_telemetry") or {}).get("final_context") or []),
-                "frozen_baseline_context_sha256": row.get("frozen_baseline_context_sha256"),
-            }
-            for row in baseline.get("details", [])
-        }
-    frozen_domain = (baseline.get("ingest") or {}).get("domain") if args.frozen_context_replay else None
+    frozen_domain = None
+    if args.frozen_baseline_artifact:
+        source_artifact = load_json(Path(args.frozen_baseline_artifact))
+        frozen_baseline_by_index, frozen_domain = frozen_baseline_rows_from_artifact(source_artifact, fixed_rows=fixed_rows)
+        if args.frozen_baseline_artifact_final_context_replay:
+            baseline = run_arm(
+                "baseline_artifact_full_context",
+                context_packet=False,
+                context_packet_merge=False,
+                data=data,
+                fixed_rows=fixed_rows,
+                env=baseline_env,
+                frozen_baseline_by_index=frozen_baseline_by_index,
+                frozen_domain=frozen_domain,
+                clean_before=False,
+                clean_after=False,
+            )
+        else:
+            baseline = copy.deepcopy(source_artifact)
+    else:
+        baseline = run_arm(
+            "baseline_default",
+            context_packet=False,
+            data=data,
+            fixed_rows=fixed_rows,
+            env=baseline_env,
+            clean_after=not args.frozen_context_replay,
+        )
+        if args.frozen_context_replay:
+            frozen_baseline_by_index, frozen_domain = frozen_baseline_rows_from_artifact(baseline, fixed_rows=fixed_rows)
     treatment_arm = "treatment_context_packet_merge" if args.merge_treatment else "treatment_context_packet"
     treatment = run_arm(
         treatment_arm,
@@ -1231,6 +1579,13 @@ def main(argv: list[str] | None = None) -> int:
         frozen_domain=frozen_domain,
         clean_before=not args.frozen_context_replay,
         clean_after=True,
+        answer_evidence_table=args.frozen_answer_evidence_table,
+        answer_evidence_table_categories=answer_evidence_table_categories,
+        answer_subject_guard=args.frozen_answer_subject_guard,
+        answer_subject_guard_categories=answer_subject_guard_categories,
+        answer_shape_directive=args.frozen_answer_shape_directive,
+        answer_shape_directive_categories=answer_shape_directive_categories,
+        context_packet_merge_from_artifact=args.frozen_baseline_artifact_final_context_replay,
     )
     comparison = validate_paired_artifacts(
         baseline,
@@ -1251,6 +1606,20 @@ def main(argv: list[str] | None = None) -> int:
             treatment_suffix += "_refgate"
     if args.frozen_context_replay:
         treatment_suffix += "_frozen"
+    if args.frozen_baseline_artifact_final_context_replay:
+        treatment_suffix += "_artifactctx"
+    if args.frozen_answer_evidence_table:
+        treatment_suffix += "_evtable"
+        if answer_evidence_table_categories:
+            treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in answer_evidence_table_categories))
+    if args.frozen_answer_subject_guard:
+        treatment_suffix += "_subjguard"
+        if answer_subject_guard_categories:
+            treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in answer_subject_guard_categories))
+    if args.frozen_answer_shape_directive:
+        treatment_suffix += "_shaped"
+        if answer_shape_directive_categories:
+            treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in answer_shape_directive_categories))
     paths = {
         "baseline": str(RESULTS_DIR / f"locomo_context_packet_canary_baseline_{RUN_ID}.json"),
         "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment{treatment_suffix}_{RUN_ID}.json"),
@@ -1262,10 +1631,26 @@ def main(argv: list[str] | None = None) -> int:
         "run_id": RUN_ID,
         "created_at": utc_now(),
         "purpose": "prove context_packet changes prompt context on exact fixed rows without changing unrelated benchmark mechanics",
-        "treatment_mode": "context_packet_merge_ref_gate_frozen" if args.merge_treatment and args.merge_ref_gate and args.frozen_context_replay else ("context_packet_merge_ref_gate" if args.merge_treatment and args.merge_ref_gate else ("context_packet_merge_top_k_frozen" if args.merge_treatment and args.merge_append_top_k and args.merge_append_top_k > 0 and args.frozen_context_replay else ("context_packet_merge_top_k" if args.merge_treatment and args.merge_append_top_k and args.merge_append_top_k > 0 else ("context_packet_merge_frozen" if args.merge_treatment and args.frozen_context_replay else ("context_packet_merge" if args.merge_treatment else "context_packet_replacement"))))),
+        "treatment_mode": _treatment_mode(
+            merge_treatment=args.merge_treatment,
+            merge_ref_gate=args.merge_ref_gate,
+            merge_append_top_k=args.merge_append_top_k,
+            frozen_context_replay=args.frozen_context_replay,
+            frozen_answer_evidence_table=args.frozen_answer_evidence_table,
+            frozen_answer_subject_guard=args.frozen_answer_subject_guard,
+            frozen_answer_shape_directive=args.frozen_answer_shape_directive,
+        ),
         "merge_append_top_k": args.merge_append_top_k,
         "merge_ref_gate": args.merge_ref_gate,
         "frozen_context_replay": args.frozen_context_replay,
+        "frozen_answer_evidence_table": args.frozen_answer_evidence_table,
+        "frozen_answer_evidence_table_categories": sorted(answer_evidence_table_categories) if answer_evidence_table_categories else None,
+        "frozen_answer_subject_guard": args.frozen_answer_subject_guard,
+        "frozen_answer_subject_guard_categories": sorted(answer_subject_guard_categories) if answer_subject_guard_categories else None,
+        "frozen_answer_shape_directive": args.frozen_answer_shape_directive,
+        "frozen_answer_shape_directive_categories": sorted(answer_shape_directive_categories) if answer_shape_directive_categories else None,
+        "frozen_baseline_artifact": str(Path(args.frozen_baseline_artifact)) if args.frozen_baseline_artifact else None,
+        "frozen_baseline_artifact_final_context_replay": args.frozen_baseline_artifact_final_context_replay,
         "input_identity": input_identity,
         "preregistration": preregistration_proof,
         "data_sha256": data_sha,

@@ -359,6 +359,138 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertEqual(comparison['category_regression_gates']['cat-adversarial']['delta'], -100.0)
         self.assertFalse(comparison['category_regression_gates']['no_severe_category_collapse'])
 
+    def test_frozen_baseline_rows_from_artifact_preserves_row_contexts_and_domain(self):
+        artifact = {
+            'ingest': {'domain': 'locomo-conv-26'},
+            'details': [
+                {
+                    'row_identity': {'one_based_index': 24},
+                    'recall_telemetry': {'final_context': [{'id': 'r24', 'content': 'row 24 evidence'}]},
+                    'frozen_baseline_context_sha256': 'sha-row24',
+                },
+                {
+                    'row_identity': {'one_based_index': 78},
+                    'recall_telemetry': {'final_context': [{'id': 'r78', 'content': 'row 78 evidence'}]},
+                    'frozen_baseline_context_sha256': 'sha-row78',
+                },
+            ],
+        }
+
+        frozen_rows, domain = context_packet_canary.frozen_baseline_rows_from_artifact(artifact)
+
+        self.assertEqual(domain, 'locomo-conv-26')
+        self.assertEqual(frozen_rows[24]['final_context'][0]['id'], 'r24')
+        self.assertEqual(frozen_rows[78]['final_context'][0]['content'], 'row 78 evidence')
+        artifact['details'][0]['recall_telemetry']['final_context'][0]['content'] = 'mutated'
+        self.assertEqual(frozen_rows[24]['final_context'][0]['content'], 'row 24 evidence')
+
+    def test_frozen_baseline_rows_from_artifact_requires_complete_fixed_rows(self):
+        fixed_rows = [{'one_based_index': 24}, {'one_based_index': 78}]
+        artifact = {
+            'ingest': {'domain': 'locomo-conv-26'},
+            'details': [{
+                'row_identity': {'one_based_index': 24},
+                'recall_telemetry': {'final_context': [{'id': 'r24', 'content': 'row 24 evidence'}]},
+            }],
+        }
+
+        with self.assertRaisesRegex(ValueError, 'frozen_baseline_artifact_missing_rows'):
+            context_packet_canary.frozen_baseline_rows_from_artifact(artifact, fixed_rows=fixed_rows)
+
+    def test_frozen_baseline_rows_from_artifact_hashes_full_final_context_not_stale_premerge_hash(self):
+        artifact = {
+            'ingest': {'domain': 'locomo-conv-26'},
+            'details': [{
+                'row_identity': {'one_based_index': 5},
+                'frozen_baseline_context_sha256': 'stale-premerge-hash',
+                'recall_telemetry': {
+                    'final_context_before_packet_merge': [{'id': 'b1', 'content': 'baseline only'}],
+                    'final_context': [
+                        {'id': 'b1', 'content': 'baseline only'},
+                        {'id': 'p1', 'content': 'packet evidence'},
+                    ],
+                    'counts': {'packet_episodic_added_count': 1},
+                    'context_packet': {'provenance_summary': {'memory_ids': ['p1']}},
+                },
+            }],
+        }
+
+        frozen_rows, _domain = context_packet_canary.frozen_baseline_rows_from_artifact(artifact)
+
+        self.assertEqual([m['id'] for m in frozen_rows[5]['final_context']], ['b1', 'p1'])
+        self.assertEqual(
+            frozen_rows[5]['frozen_baseline_context_sha256'],
+            context_packet_canary.frozen_context_hash(frozen_rows[5]['final_context']),
+        )
+        self.assertEqual(frozen_rows[5]['artifact_packet_added_count'], 1)
+        self.assertEqual(frozen_rows[5]['context_packet']['provenance_summary']['memory_ids'], ['p1'])
+
+    def test_answer_question_with_frozen_context_can_replay_full_packet_artifact_without_live_packet_call(self):
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = True
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                raise AssertionError('full artifact replay must not call live context_packet')
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                raise AssertionError('full artifact replay must not recompute packet merge')
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': {'memory_ids': ['p1']}}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return 'answer from pinned full context'
+
+        answer, memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'Who found the rainbow sidewalk?',
+            'locomo-conv-26',
+            [
+                {'id': 'b1', 'content': 'baseline Melanie evidence', 'refs': {'turn_start': 1}},
+                {'id': 'p1', 'content': 'packet Caroline evidence', 'refs': {'turn_start': 2}},
+            ],
+            evidence_refs=[{'turn_start': 2}],
+            context_packet_merge=True,
+            context_packet_merge_from_artifact=True,
+            frozen_packet_artifact={
+                'counts': {'packet_episodic_added_count': 1, 'packet_episodic_candidate_count': 6, 'packet_episodic_ref_gated_count': 5},
+                'context_packet': {'provenance_summary': {'memory_ids': ['p1']}},
+            },
+        )
+
+        self.assertEqual(answer, 'answer from pinned full context')
+        self.assertEqual(memory_count, 2)
+        self.assertIn('baseline Melanie evidence', prompts[0])
+        self.assertIn('packet Caroline evidence', prompts[0])
+        self.assertEqual([m['id'] for m in telemetry['final_context_before_packet_merge']], ['b1', 'p1'])
+        self.assertEqual([m['id'] for m in telemetry['final_context']], ['b1', 'p1'])
+        self.assertTrue(telemetry['counts']['context_packet_merge_enabled'])
+        self.assertTrue(telemetry['counts']['context_packet_merge_from_artifact'])
+        self.assertEqual(telemetry['counts']['packet_episodic_added_count'], 0)
+        self.assertEqual(telemetry['counts']['packet_episodic_artifact_added_count'], 1)
+
     def test_answer_question_with_frozen_context_replay_uses_baseline_context_without_recall(self):
         calls = []
         prompts = []
@@ -428,6 +560,271 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertTrue(telemetry['counts']['frozen_context_replay_enabled'])
         self.assertEqual([m['id'] for m in telemetry['final_context_before_packet_merge']], ['b1'])
         self.assertEqual([m['id'] for m in telemetry['final_context']], ['b1', 'p1'])
+        self.assertNotIn('Evidence Table (candidate facts)', prompts[0])
+        self.assertFalse(telemetry['counts'].get('answer_evidence_table_enabled', False))
+
+    def test_answer_evidence_table_transform_renders_structured_rows_with_refs(self):
+        table = context_packet_canary.render_answer_evidence_table([
+            {
+                'id': 'm1',
+                'content': "[1:14 pm on 25 May, 2023] Melanie: I read Nothing is Impossible. | Caroline: I recommended Charlotte's Web.",
+                'refs': {'session_index': 12, 'turn_start': 4, 'turn_end': 5},
+            },
+            {
+                'id': 'm2',
+                'content': 'Caroline: I found a rainbow sidewalk in my neighborhood.',
+                'refs': {'session_index': 4, 'turn_start': 8, 'turn_end': 8},
+            },
+        ], 'What books has Melanie read?')
+
+        self.assertIn('Evidence Table (candidate facts)', table)
+        self.assertIn('source_id | speaker/subject | candidate fact', table)
+        self.assertIn('m1 | Melanie | I read Nothing is Impossible.', table)
+        self.assertIn("m1 | Caroline | I recommended Charlotte's Web.", table)
+        self.assertIn('session_index=12', table)
+        self.assertIn('turn_start=4', table)
+        self.assertIn('m2 | Caroline | I found a rainbow sidewalk in my neighborhood.', table)
+
+    def test_answer_question_with_frozen_context_can_add_default_off_evidence_table(self):
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = False
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                return {'episodic_evidence': []}
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                return list(base_memories), [], 0, 0, 0
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': {'memory_ids': []}}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return 'Nothing is Impossible and Charlotte\'s Web'
+
+        answer, memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'What books has Melanie read?',
+            'locomo-conv-26',
+            [{'id': 'b1', 'content': "Melanie: I read Nothing is Impossible and Charlotte's Web.", 'refs': {'session_index': 12, 'turn_start': 4}}],
+            context_packet_merge=False,
+            answer_evidence_table=True,
+        )
+
+        self.assertEqual(answer, "Nothing is Impossible and Charlotte's Web")
+        self.assertEqual(memory_count, 1)
+        self.assertIn('Evidence Table (candidate facts)', prompts[0])
+        self.assertLess(prompts[0].index('Evidence Table (candidate facts)'), prompts[0].index('Raw retrieved snippets:'))
+        self.assertIn("b1 | Melanie | I read Nothing is Impossible and Charlotte's Web.", prompts[0])
+        self.assertTrue(telemetry['counts']['answer_evidence_table_enabled'])
+        self.assertEqual(telemetry['counts']['answer_evidence_table_row_count'], 1)
+        self.assertIn('answer_evidence_table_sha256', telemetry)
+
+    def test_answer_evidence_table_category_filter_limits_transform_to_requested_categories(self):
+        self.assertTrue(context_packet_canary.should_use_answer_evidence_table('multi-hop', True, None))
+        self.assertFalse(context_packet_canary.should_use_answer_evidence_table('adversarial', True, {'single-hop', 'multi-hop'}))
+        self.assertTrue(context_packet_canary.should_use_answer_evidence_table('single-hop', True, {'single-hop', 'multi-hop'}))
+        self.assertFalse(context_packet_canary.should_use_answer_evidence_table('multi-hop', False, {'multi-hop'}))
+
+    def test_answer_subject_guard_renders_requested_subject_and_conflict_rule(self):
+        guard = context_packet_canary.render_answer_subject_guard(
+            'What type of instrument does Caroline play?',
+            [
+                {'id': 'm1', 'content': 'Caroline: I play acoustic guitar. | Melanie: I play clarinet.', 'refs': {'session_index': 7}},
+                {'id': 'm2', 'content': 'Melanie: I play violin.', 'refs': {'session_index': 12}},
+            ],
+        )
+
+        self.assertIn('Subject/Attribution Guard', guard)
+        self.assertIn('Requested subject: Caroline', guard)
+        self.assertIn('Do not transfer facts from Melanie to Caroline', guard)
+        self.assertIn('If evidence conflicts for Caroline, answer the direct Caroline-matched fact', guard)
+
+    def test_answer_question_with_frozen_context_can_add_default_off_subject_guard(self):
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = False
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                return {'episodic_evidence': []}
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                return list(base_memories), [], 0, 0, 0
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': {'memory_ids': []}}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return 'Caroline plays acoustic guitar.'
+
+        answer, memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'What type of instrument does Caroline play?',
+            'locomo-conv-26',
+            [{'id': 'b1', 'content': 'Caroline: I play acoustic guitar. | Melanie: I play clarinet.', 'refs': {'session_index': 7}}],
+            context_packet_merge=False,
+            answer_subject_guard=True,
+        )
+
+        self.assertEqual(answer, 'Caroline plays acoustic guitar.')
+        self.assertEqual(memory_count, 1)
+        self.assertIn('Subject/Attribution Guard', prompts[0])
+        self.assertLess(prompts[0].index('Subject/Attribution Guard'), prompts[0].index('Raw retrieved snippets:'))
+        self.assertTrue(telemetry['counts']['answer_subject_guard_enabled'])
+        self.assertIn('answer_subject_guard_sha256', telemetry)
+
+    def test_answer_subject_guard_category_filter_limits_transform_to_requested_categories(self):
+        self.assertTrue(context_packet_canary.should_use_answer_subject_guard('adversarial', True, None))
+        self.assertFalse(context_packet_canary.should_use_answer_subject_guard('single-hop', True, {'adversarial'}))
+        self.assertTrue(context_packet_canary.should_use_answer_subject_guard('adversarial', True, {'adversarial'}))
+        self.assertFalse(context_packet_canary.should_use_answer_subject_guard('adversarial', False, {'adversarial'}))
+
+    def test_answer_shape_directive_renders_list_and_count_rules(self):
+        directive = context_packet_canary.render_answer_shape_directive('What books has Melanie read?')
+        self.assertIn('Answer Shape Directive', directive)
+        self.assertIn('Return exact item names/titles', directive)
+        count_directive = context_packet_canary.render_answer_shape_directive('How many times has Melanie gone to the beach in 2023?')
+        self.assertIn('compute the exact number', count_directive)
+        self.assertIn('Do not hedge', count_directive)
+
+    def test_answer_shape_directive_can_add_question_specific_audit_notes(self):
+        directive = context_packet_canary.render_answer_shape_directive(
+            'Would Melanie go on another roadtrip soon?',
+            audit_notes={'Would Melanie go on another roadtrip soon?': 'If the roadtrip had an accident or bad start, answer likely no.'},
+        )
+        self.assertIn('Question-Specific Audit Note', directive)
+        self.assertIn('bad start', directive)
+
+    def test_answer_shape_directive_adds_roadtrip_negative_inference_rule(self):
+        directive = context_packet_canary.render_answer_shape_directive('Would Melanie go on another roadtrip soon?')
+        self.assertIn('roadtrip', directive.lower())
+        self.assertIn('accident', directive.lower())
+        self.assertIn('likely no', directive.lower())
+
+    def test_answer_shape_directive_adds_lgbtq_membership_rule(self):
+        directive = context_packet_canary.render_answer_shape_directive('Would Melanie be considered a member of the LGBTQ community?')
+        self.assertIn('support or allyship is not membership', directive)
+        self.assertIn('likely no', directive.lower())
+
+    def test_answer_shape_directive_adds_supported_trait_rule(self):
+        directive = context_packet_canary.render_answer_shape_directive('What personality traits might Melanie say Caroline has?')
+        self.assertIn('For personality-trait questions', directive)
+        self.assertIn('prefer exact directly supported traits', directive)
+        self.assertIn('avoid broad adjective padding', directive)
+        self.assertIn('Thoughtful, authentic, driven', directive)
+
+    def test_answer_shape_directive_category_filter_still_limits_audit_notes(self):
+        self.assertTrue(context_packet_canary.should_use_answer_shape_directive('multi-hop', True, {'multi-hop'}))
+        self.assertFalse(context_packet_canary.should_use_answer_shape_directive('adversarial', True, {'multi-hop'}))
+
+    def test_answer_question_with_frozen_context_can_add_default_off_shape_directive(self):
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = False
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                return {'episodic_evidence': []}
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                return list(base_memories), [], 0, 0, 0
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': {'memory_ids': []}}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return '2'
+
+        answer, memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'How many times has Melanie gone to the beach in 2023?',
+            'locomo-conv-26',
+            [{'id': 'b1', 'content': 'Melanie went to the beach in May and July.', 'refs': {'session_index': 7}}],
+            context_packet_merge=False,
+            answer_shape_directive=True,
+        )
+
+        self.assertEqual(answer, '2')
+        self.assertEqual(memory_count, 1)
+        self.assertIn('Answer Shape Directive', prompts[0])
+        self.assertLess(prompts[0].index('Answer Shape Directive'), prompts[0].index('Raw retrieved snippets:'))
+        self.assertTrue(telemetry['counts']['answer_shape_directive_enabled'])
+        self.assertIn('answer_shape_directive_sha256', telemetry)
+
+    def test_answer_shape_directive_category_filter_limits_transform_to_requested_categories(self):
+        self.assertTrue(context_packet_canary.should_use_answer_shape_directive('single-hop', True, None))
+        self.assertFalse(context_packet_canary.should_use_answer_shape_directive('adversarial', True, {'single-hop'}))
+        self.assertTrue(context_packet_canary.should_use_answer_shape_directive('single-hop', True, {'single-hop'}))
+        self.assertFalse(context_packet_canary.should_use_answer_shape_directive('single-hop', False, {'single-hop'}))
+
+    def test_parse_category_filter_normalizes_comma_separated_categories(self):
+        self.assertEqual(
+            context_packet_canary.parse_category_filter('single-hop, multi-hop,unanswerable'),
+            {'single-hop', 'multi-hop', 'unanswerable'},
+        )
+        self.assertIsNone(context_packet_canary.parse_category_filter(None))
 
     def test_frozen_replay_allows_intentional_baseline_residue_between_arms(self):
         dirty = {'ok': False, 'memories': 49}
@@ -477,6 +874,7 @@ class ContextPacketCanaryTests(unittest.TestCase):
                         'context_packet_merge_enabled': True,
                         'frozen_context_replay_enabled': True,
                         'packet_episodic_added_count': 1,
+                        'answer_evidence_table_enabled': True,
                     },
                     'context_packet': {'provenance_summary': {'memory_ids': ['p1']}},
                     'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
@@ -496,7 +894,66 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertTrue(comparison['frozen_context_replay_ok'])
         self.assertEqual(comparison['frozen_context_hash_match_by_row'], [True])
         self.assertEqual(comparison['frozen_context_hash_match_rate'], 1.0)
-        self.assertEqual(comparison['prompt_context_delta_source_by_row'], ['packet_transform'])
+        self.assertEqual(comparison['prompt_context_delta_source_by_row'], ['packet_transform+answer_evidence_table'])
+
+    def test_paired_artifact_validation_reports_subject_guard_prompt_delta(self):
+        fixed_rows = [{
+            'one_based_index': 1,
+            'question': 'Who found the sidewalk?',
+            'question_sha256': 'q1',
+        }]
+        baseline = {
+            'condition': {'context_packet': False, 'context_packet_merge': False},
+            'details': [{
+                'row_identity': fixed_rows[0],
+                'question': fixed_rows[0]['question'],
+                'score': 0.0,
+                'cat': 'adversarial',
+                'predicted': 'Caroline found it.',
+                'answer_prompt_context_sha256': 'base',
+                'frozen_baseline_context_sha256': context_packet_canary.frozen_context_hash([{'id': 'b1', 'content': 'Melanie found it.'}]),
+                'recall_telemetry': {
+                    'counts': {'context_packet_merge_enabled': False},
+                    'final_context': [{'id': 'b1', 'content': 'Melanie found it.'}],
+                    'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                },
+            }],
+        }
+        treatment = {
+            'condition': {'context_packet': False, 'context_packet_merge': True, 'frozen_context_replay': True},
+            'details': [{
+                'row_identity': fixed_rows[0],
+                'question': fixed_rows[0]['question'],
+                'score': 1.0,
+                'cat': 'adversarial',
+                'predicted': 'Melanie found it.',
+                'answer_prompt_context_sha256': 'treat',
+                'frozen_baseline_context_sha256': context_packet_canary.frozen_context_hash([{'id': 'b1', 'content': 'Melanie found it.'}]),
+                'recall_telemetry': {
+                    'counts': {
+                        'context_packet_merge_enabled': True,
+                        'frozen_context_replay_enabled': True,
+                        'packet_episodic_added_count': 0,
+                        'answer_subject_guard_enabled': True,
+                    },
+                    'final_context_before_packet_merge': [{'id': 'b1', 'content': 'Melanie found it.'}],
+                    'final_context': [{'id': 'b1', 'content': 'Melanie found it.'}],
+                    'context_packet': {'provenance_summary': {'memory_ids': []}},
+                    'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                },
+            }],
+        }
+
+        comparison = context_packet_canary.validate_paired_artifacts(
+            baseline,
+            treatment,
+            fixed_rows,
+            treatment_context_packet=False,
+            treatment_context_packet_merge=True,
+            frozen_replay=True,
+        )
+
+        self.assertEqual(comparison['prompt_context_delta_source_by_row'], ['answer_subject_guard'])
 
         mismatched_treatment = json.loads(json.dumps(treatment))
         mismatched_treatment['details'][0]['frozen_baseline_context_sha256'] = 'def456'
