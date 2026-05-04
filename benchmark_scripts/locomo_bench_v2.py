@@ -87,6 +87,9 @@ USE_CONTEXT_PACKET = _env_flag("USE_CONTEXT_PACKET", default=False)
 # Baseline+packet merge/fallback canary: preserve the default baseline top-k
 # answer context, then append deduped packet evidence. Default-off/eval-only.
 USE_CONTEXT_PACKET_MERGE = _env_flag("USE_CONTEXT_PACKET_MERGE", default=False)
+# Gold-ref gated packet merge ablation: append only packet evidence that covers
+# a benchmark evidence ref not already covered by the baseline prefix.
+USE_CONTEXT_PACKET_MERGE_REF_GATE = _env_flag("CONTEXT_PACKET_MERGE_REF_GATE", default=False)
 # Observation-only telemetry for preregistered LOCOMO diagnostic runs.
 INCLUDE_RECALL_TELEMETRY = _env_flag("INCLUDE_RECALL_TELEMETRY", default=False)
 RECALL_TOP_K = 10
@@ -577,23 +580,39 @@ def _render_plain_context(memories, question):
     return "\n".join(context_lines)
 
 
-def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None):
+def _gold_refs_missing_from_base(evidence_refs, base_memories):
+    if not evidence_refs:
+        return []
+    return [gold_ref for gold_ref in evidence_refs if not any(_ref_matches(gold_ref, _memory_refs(memory)) for memory in base_memories)]
+
+
+def _packet_memory_covers_any_ref(memory, gold_refs):
+    memory_ref = _memory_refs(memory)
+    return any(_ref_matches(gold_ref, memory_ref) for gold_ref in gold_refs)
+
+
+def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
     merged = list(base_memories or [])
     seen = {_memory_dedupe_key(memory) for memory in merged}
     packet_added = []
     candidate_count = 0
+    ref_gated_count = 0
+    missing_gold_refs = _gold_refs_missing_from_base(evidence_refs, merged) if ref_gate else []
     for memory in _dedupe_context_packet_episodic_evidence((packet or {}).get("episodic_evidence") or []):
         key = _memory_dedupe_key(memory)
         if key in seen:
             continue
         candidate_count += 1
+        if ref_gate and not _packet_memory_covers_any_ref(memory, missing_gold_refs):
+            ref_gated_count += 1
+            continue
         if max_added is not None and max_added > 0 and len(packet_added) >= max_added:
             continue
         seen.add(key)
         merged.append(memory)
         packet_added.append(memory)
-    capped_count = max(0, candidate_count - len(packet_added))
-    return merged, packet_added, candidate_count, capped_count
+    capped_count = max(0, candidate_count - ref_gated_count - len(packet_added))
+    return merged, packet_added, candidate_count, capped_count, ref_gated_count
 
 
 def _memory_refs(memory):
@@ -620,11 +639,44 @@ def _memory_telemetry_projection(memory, rank=None):
     }
 
 
+def _normalize_evidence_ref(gold_ref):
+    if isinstance(gold_ref, dict):
+        return gold_ref
+    if isinstance(gold_ref, str):
+        match = re.fullmatch(r"D(\d+):(\d+)", gold_ref.strip())
+        if match:
+            # LOCOMO ingest currently sorts session keys lexicographically, so
+            # D2 maps to ingest session 12, D10 to ingest session 2, etc.
+            dialogue_session = int(match.group(1))
+            if dialogue_session == 1:
+                ingest_session = 1
+            elif 10 <= dialogue_session <= 19:
+                ingest_session = dialogue_session - 8
+            elif 2 <= dialogue_session <= 9:
+                ingest_session = dialogue_session + 10
+            else:
+                ingest_session = dialogue_session
+            return {"session_index": ingest_session, "turn_start": int(match.group(2)) - 1}
+    return None
+
+
 def _ref_matches(gold_ref, memory_ref):
+    gold_ref = _normalize_evidence_ref(gold_ref)
     if not isinstance(gold_ref, dict) or not isinstance(memory_ref, dict):
         return False
     comparable = [key for key in gold_ref.keys() if key in memory_ref]
-    return bool(comparable) and all(memory_ref.get(key) == gold_ref.get(key) for key in comparable)
+    if not comparable:
+        return False
+    for key in comparable:
+        if key == "turn_start" and "turn_end" in memory_ref:
+            try:
+                if not int(memory_ref.get("turn_start")) <= int(gold_ref.get("turn_start")) <= int(memory_ref.get("turn_end")):
+                    return False
+            except (TypeError, ValueError):
+                return False
+        elif memory_ref.get(key) != gold_ref.get(key):
+            return False
+    return True
 
 
 def _count_ref_coverage(evidence_refs, memories):
@@ -1008,16 +1060,20 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
                     _memory_telemetry_projection(memory, rank=idx)
                     for idx, memory in enumerate(base_context_memories, start=1)
                 ]
-                memories, packet_added_memories, packet_candidate_count, packet_capped_count = _append_packet_evidence_to_baseline(
+                memories, packet_added_memories, packet_candidate_count, packet_capped_count, packet_ref_gated_count = _append_packet_evidence_to_baseline(
                     base_context_memories,
                     packet,
                     max_added=CONTEXT_PACKET_MERGE_APPEND_TOP_K,
+                    evidence_refs=evidence_refs,
+                    ref_gate=USE_CONTEXT_PACKET_MERGE_REF_GATE,
                 )
                 recall_telemetry["counts"]["context_packet_merge_enabled"] = True
                 recall_telemetry["counts"]["base_final_answer_context_count"] = len(base_context_memories)
                 recall_telemetry["counts"]["packet_episodic_added_count"] = len(packet_added_memories)
                 recall_telemetry["counts"]["packet_episodic_candidate_count"] = packet_candidate_count
                 recall_telemetry["counts"]["packet_episodic_capped_count"] = packet_capped_count
+                recall_telemetry["counts"]["packet_episodic_ref_gated_count"] = packet_ref_gated_count
+                recall_telemetry["counts"]["context_packet_merge_ref_gate_enabled"] = USE_CONTEXT_PACKET_MERGE_REF_GATE
                 recall_telemetry["counts"]["context_packet_merge_append_top_k"] = CONTEXT_PACKET_MERGE_APPEND_TOP_K
                 recall_telemetry["context_packet"] = _context_packet_telemetry_projection(packet)
 

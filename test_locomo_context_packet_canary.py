@@ -66,6 +66,13 @@ class ContextPacketCanaryTests(unittest.TestCase):
             context_packet_merge=True,
             context_packet_merge_append_top_k=2,
         )
+        merge_ref_gate = context_packet_canary.build_benchmark_env(
+            base_env,
+            mcp_url='http://localhost:9999/mcp',
+            context_packet=False,
+            context_packet_merge=True,
+            context_packet_merge_ref_gate=True,
+        )
 
         self.assertEqual(baseline['MCP_URL'], 'http://localhost:9999/mcp')
         self.assertEqual(treatment['MCP_URL'], 'http://localhost:9999/mcp')
@@ -80,6 +87,8 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertEqual(merge['USE_CONTEXT_PACKET_MERGE'], '1')
         self.assertEqual(merge_capped['USE_CONTEXT_PACKET_MERGE'], '1')
         self.assertEqual(merge_capped['CONTEXT_PACKET_MERGE_APPEND_TOP_K'], '2')
+        self.assertEqual(merge_ref_gate['USE_CONTEXT_PACKET_MERGE'], '1')
+        self.assertEqual(merge_ref_gate['CONTEXT_PACKET_MERGE_REF_GATE'], '1')
         for incompatible in [
             'USE_CONTEXT_RERANK',
             'USE_APPEND_CONTEXT_EXPANSION',

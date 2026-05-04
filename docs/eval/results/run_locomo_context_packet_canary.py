@@ -138,6 +138,7 @@ def build_benchmark_env(
     context_packet: bool,
     context_packet_merge: bool = False,
     context_packet_merge_append_top_k: int | None = None,
+    context_packet_merge_ref_gate: bool = False,
 ) -> dict[str, str]:
     """Build arm envs with explicit Context Packet condition flags."""
     env = load_dotenv(base_env)
@@ -181,6 +182,10 @@ def build_benchmark_env(
         env["CONTEXT_PACKET_MERGE_APPEND_TOP_K"] = str(context_packet_merge_append_top_k)
     else:
         env.pop("CONTEXT_PACKET_MERGE_APPEND_TOP_K", None)
+    if context_packet_merge_ref_gate:
+        env["CONTEXT_PACKET_MERGE_REF_GATE"] = "1"
+    else:
+        env.pop("CONTEXT_PACKET_MERGE_REF_GATE", None)
     return env
 
 
@@ -571,12 +576,14 @@ def configure_benchmark_module(
     context_packet: bool,
     context_packet_merge: bool = False,
     context_packet_merge_append_top_k: int | None = None,
+    context_packet_merge_ref_gate: bool = False,
 ) -> None:
     module.USE_QUERY_EXPANSION = False
     module.USE_CONTEXT_PACKET = bool(context_packet)
     module.USE_CONTEXT_PACKET_MERGE = bool(context_packet_merge)
     if context_packet_merge_append_top_k is not None:
         module.CONTEXT_PACKET_MERGE_APPEND_TOP_K = int(context_packet_merge_append_top_k)
+    module.USE_CONTEXT_PACKET_MERGE_REF_GATE = bool(context_packet_merge_ref_gate)
     module.INCLUDE_RECALL_TELEMETRY = True
     module.USE_CONTEXT_RERANK = False
     module.USE_APPEND_CONTEXT_EXPANSION = False
@@ -657,6 +664,7 @@ def run_arm(
     context_packet: bool,
     context_packet_merge: bool = False,
     context_packet_merge_append_top_k: int | None = None,
+    context_packet_merge_ref_gate: bool = False,
     data: list[dict[str, Any]],
     fixed_rows: list[dict[str, Any]],
     env: dict[str, str],
@@ -667,6 +675,7 @@ def run_arm(
         context_packet=context_packet,
         context_packet_merge=context_packet_merge,
         context_packet_merge_append_top_k=context_packet_merge_append_top_k,
+        context_packet_merge_ref_gate=context_packet_merge_ref_gate,
     )
     conv_data = data[0]
     conv = conv_data.get("conversation", conv_data)
@@ -816,6 +825,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--identity-only", action="store_true", help="Validate data/fixed-row identity without DB or benchmark mutation")
     parser.add_argument("--merge-treatment", action="store_true", help="Use baseline+packet append/dedupe treatment instead of packet replacement")
     parser.add_argument("--merge-append-top-k", type=int, default=None, help="Cap new packet episodic evidence appended in merge treatment; <=0 means uncapped")
+    parser.add_argument("--merge-ref-gate", action="store_true", help="Append only packet evidence that matches missing gold evidence refs; eval-only ablation")
     args = parser.parse_args(argv)
 
     data_path = Path(args.data_path)
@@ -847,6 +857,7 @@ def main(argv: list[str] | None = None) -> int:
         context_packet=not args.merge_treatment,
         context_packet_merge=args.merge_treatment,
         context_packet_merge_append_top_k=args.merge_append_top_k,
+        context_packet_merge_ref_gate=args.merge_ref_gate,
     )
     live_status = health_and_tools(args.mcp_url)
     if not live_status.get("context_packet_present"):
@@ -859,6 +870,7 @@ def main(argv: list[str] | None = None) -> int:
         context_packet=not args.merge_treatment,
         context_packet_merge=args.merge_treatment,
         context_packet_merge_append_top_k=args.merge_append_top_k,
+        context_packet_merge_ref_gate=args.merge_ref_gate,
         data=data,
         fixed_rows=fixed_rows,
         env=treatment_env,
@@ -877,6 +889,8 @@ def main(argv: list[str] | None = None) -> int:
         treatment_suffix = "_merge"
         if args.merge_append_top_k and args.merge_append_top_k > 0:
             treatment_suffix += f"_top{args.merge_append_top_k}"
+        if args.merge_ref_gate:
+            treatment_suffix += "_refgate"
     paths = {
         "baseline": str(RESULTS_DIR / f"locomo_context_packet_canary_baseline_{RUN_ID}.json"),
         "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment{treatment_suffix}_{RUN_ID}.json"),
@@ -888,8 +902,9 @@ def main(argv: list[str] | None = None) -> int:
         "run_id": RUN_ID,
         "created_at": utc_now(),
         "purpose": "prove context_packet changes prompt context on exact fixed rows without changing unrelated benchmark mechanics",
-        "treatment_mode": "context_packet_merge_top_k" if args.merge_treatment and args.merge_append_top_k and args.merge_append_top_k > 0 else ("context_packet_merge" if args.merge_treatment else "context_packet_replacement"),
+        "treatment_mode": "context_packet_merge_ref_gate" if args.merge_treatment and args.merge_ref_gate else ("context_packet_merge_top_k" if args.merge_treatment and args.merge_append_top_k and args.merge_append_top_k > 0 else ("context_packet_merge" if args.merge_treatment else "context_packet_replacement")),
         "merge_append_top_k": args.merge_append_top_k,
+        "merge_ref_gate": args.merge_ref_gate,
         "input_identity": input_identity,
         "preregistration": preregistration_proof,
         "data_sha256": data_sha,

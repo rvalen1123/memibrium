@@ -1004,6 +1004,66 @@ class QueryExpansionTests(unittest.TestCase):
         )
         self.assertTrue(all('dentist appointment extra memory' in line for line in prompt_lines[locomo_bench_v2.RECALL_TOP_K:]))
 
+    def test_context_packet_merge_ref_gate_keeps_only_packet_evidence_matching_missing_gold_refs(self):
+        calls = []
+        seen_messages = []
+
+        def fake_mcp_post(tool, payload, retries=3):
+            calls.append((tool, payload))
+            if tool == 'recall':
+                return {'results': [
+                    {'id': 'b01', 'content': 'baseline covers first gold', 'refs': {'session_index': 1, 'turn_start': 5}},
+                    *[
+                        {'id': f'b{i:02d}', 'content': f'baseline filler {i:02d}'}
+                        for i in range(2, locomo_bench_v2.RECALL_TOP_K + 1)
+                    ],
+                ]}
+            if tool == 'context_packet':
+                return {
+                    'schema': 'memibrium.context_packet.v1',
+                    'episodic_evidence': [
+                        {'memory_id': 'p_bad', 'content': 'packet distractor no gold ref', 'refs': {'session_index': 9, 'turn_start': 1, 'turn_end': 3}},
+                        {'memory_id': 'p_gold', 'content': 'packet covers missing gold', 'refs': {'session_index': 12, 'turn_start': 6, 'turn_end': 10}},
+                    ],
+                    'provenance_summary': {'memory_ids': ['p_bad', 'p_gold']},
+                }
+            raise AssertionError(tool)
+
+        def fake_llm_call(messages, model=locomo_bench_v2.ANSWER_MODEL, max_tokens=200, retries=3):
+            seen_messages.append(messages)
+            return 'ref gated answer'
+
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', False), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_PACKET', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_PACKET_MERGE', True
+        ), patch.object(
+            locomo_bench_v2, 'CONTEXT_PACKET_MERGE_APPEND_TOP_K', 0
+        ), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_PACKET_MERGE_REF_GATE', True
+        ), patch.object(
+            locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+        ), patch.object(locomo_bench_v2, 'llm_call', side_effect=fake_llm_call):
+            answer, memory_count, telemetry = locomo_bench_v2.answer_question(
+                'What changed?',
+                'locomo-1',
+                return_telemetry=True,
+                evidence_refs=[
+                    {'session_index': 1, 'turn_start': 5},
+                    'D2:7',
+                ],
+            )
+
+        self.assertEqual(answer, 'ref gated answer')
+        self.assertEqual(memory_count, locomo_bench_v2.RECALL_TOP_K + 1)
+        prompt_text = seen_messages[0][1]['content']
+        self.assertIn('packet covers missing gold', prompt_text)
+        self.assertNotIn('packet distractor no gold ref', prompt_text)
+        self.assertEqual(telemetry['counts']['context_packet_merge_ref_gate_enabled'], True)
+        self.assertEqual(telemetry['counts']['packet_episodic_candidate_count'], 2)
+        self.assertEqual(telemetry['counts']['packet_episodic_added_count'], 1)
+        self.assertEqual(telemetry['counts']['packet_episodic_ref_gated_count'], 1)
+
     def test_context_packet_merge_top2_cap_limits_appended_packet_evidence(self):
         calls = []
         seen_messages = []
