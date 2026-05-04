@@ -95,6 +95,9 @@ APPEND_CONTEXT_RECALL_TOP_K = 20
 ANSWER_CONTEXT_TOP_K = 15
 APPEND_CONTEXT_EXTRA_K = 5
 CONTEXT_PACKET_TOP_K = 8
+# Optional prompt-noise ablation: cap the number of new packet episodic
+# memories appended after baseline context in merge mode. <=0 means uncapped.
+CONTEXT_PACKET_MERGE_APPEND_TOP_K = int(os.environ.get("CONTEXT_PACKET_MERGE_APPEND_TOP_K", "0") or 0)
 RERANK_PRESERVE_PREFIX_K = 2
 GATED_APPEND_MIN_EXTRA_OVERLAP = 1
 GATED_APPEND_STRONG_BASE_OVERLAP = 2
@@ -574,18 +577,23 @@ def _render_plain_context(memories, question):
     return "\n".join(context_lines)
 
 
-def _append_packet_evidence_to_baseline(base_memories, packet):
+def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None):
     merged = list(base_memories or [])
     seen = {_memory_dedupe_key(memory) for memory in merged}
     packet_added = []
+    candidate_count = 0
     for memory in _dedupe_context_packet_episodic_evidence((packet or {}).get("episodic_evidence") or []):
         key = _memory_dedupe_key(memory)
         if key in seen:
             continue
+        candidate_count += 1
+        if max_added is not None and max_added > 0 and len(packet_added) >= max_added:
+            continue
         seen.add(key)
         merged.append(memory)
         packet_added.append(memory)
-    return merged, packet_added
+    capped_count = max(0, candidate_count - len(packet_added))
+    return merged, packet_added, candidate_count, capped_count
 
 
 def _memory_refs(memory):
@@ -1000,10 +1008,17 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
                     _memory_telemetry_projection(memory, rank=idx)
                     for idx, memory in enumerate(base_context_memories, start=1)
                 ]
-                memories, packet_added_memories = _append_packet_evidence_to_baseline(base_context_memories, packet)
+                memories, packet_added_memories, packet_candidate_count, packet_capped_count = _append_packet_evidence_to_baseline(
+                    base_context_memories,
+                    packet,
+                    max_added=CONTEXT_PACKET_MERGE_APPEND_TOP_K,
+                )
                 recall_telemetry["counts"]["context_packet_merge_enabled"] = True
                 recall_telemetry["counts"]["base_final_answer_context_count"] = len(base_context_memories)
                 recall_telemetry["counts"]["packet_episodic_added_count"] = len(packet_added_memories)
+                recall_telemetry["counts"]["packet_episodic_candidate_count"] = packet_candidate_count
+                recall_telemetry["counts"]["packet_episodic_capped_count"] = packet_capped_count
+                recall_telemetry["counts"]["context_packet_merge_append_top_k"] = CONTEXT_PACKET_MERGE_APPEND_TOP_K
                 recall_telemetry["context_packet"] = _context_packet_telemetry_projection(packet)
 
     recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
@@ -1101,6 +1116,7 @@ def result_suffix(
     use_full_domain_context=None,
     use_context_packet=None,
     use_context_packet_merge=None,
+    context_packet_merge_append_top_k=None,
 ):
     if no_expansion_arm_b:
         if use_query_expansion is True:
@@ -1152,6 +1168,9 @@ def result_suffix(
         suffix += "_full_domain_context"
     if use_context_packet_merge:
         suffix += "_context_packet_merge"
+        cap = CONTEXT_PACKET_MERGE_APPEND_TOP_K if context_packet_merge_append_top_k is None else context_packet_merge_append_top_k
+        if cap and cap > 0:
+            suffix += f"_top{cap}"
     elif use_context_packet:
         suffix += "_context_packet"
     return suffix
@@ -1168,8 +1187,9 @@ def result_output_path(
     use_full_domain_context=None,
     use_context_packet=None,
     use_context_packet_merge=None,
+    context_packet_merge_append_top_k=None,
 ):
-    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context, use_context_packet, use_context_packet_merge)}.json"
+    return f"/tmp/locomo_results{result_suffix(normalize_dates, use_query_expansion, use_context_rerank, use_append_context_expansion, use_gated_append_context_expansion, no_expansion_arm_b, use_legacy_context_assembly, use_full_domain_context, use_context_packet, use_context_packet_merge, context_packet_merge_append_top_k)}.json"
 
 
 def _category_name(cat):
@@ -1256,6 +1276,7 @@ def build_results_payload(
             "full_domain_context": bool(use_full_domain_context),
             "context_packet": bool(use_context_packet),
             "context_packet_merge": bool(use_context_packet_merge),
+            "context_packet_merge_append_top_k": CONTEXT_PACKET_MERGE_APPEND_TOP_K if use_context_packet_merge else None,
         },
         "expand_query_fallback_count": expand_fallback_count,
         "expand_query_fallback_rate": round(expand_fallback_rate, 4),
@@ -1589,6 +1610,7 @@ if __name__ == "__main__":
     parser.add_argument("--full-domain-context", action="store_true", help="Enable opt-in full-domain transcript context spike")
     parser.add_argument("--context-packet", action="store_true", help="Enable default-off Context Graph v0 context packet prompt integration")
     parser.add_argument("--context-packet-merge", action="store_true", help="Enable default-off baseline+Context Packet append/dedupe canary")
+    parser.add_argument("--context-packet-merge-append-top-k", type=int, default=None, help="Cap new packet episodic evidence appended in merge mode; <=0 means uncapped")
     args = parser.parse_args()
 
     if args.max_questions is not None and args.max_questions <= 0:
@@ -1612,6 +1634,8 @@ if __name__ == "__main__":
         USE_CONTEXT_PACKET = True
     if args.context_packet_merge:
         USE_CONTEXT_PACKET_MERGE = True
+    if args.context_packet_merge_append_top_k is not None:
+        CONTEXT_PACKET_MERGE_APPEND_TOP_K = args.context_packet_merge_append_top_k
     validate_retrieval_modes()
 
     skip = {5} if args.skip_adversarial else set()

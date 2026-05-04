@@ -1004,6 +1004,60 @@ class QueryExpansionTests(unittest.TestCase):
         )
         self.assertTrue(all('dentist appointment extra memory' in line for line in prompt_lines[locomo_bench_v2.RECALL_TOP_K:]))
 
+    def test_context_packet_merge_top2_cap_limits_appended_packet_evidence(self):
+        calls = []
+        seen_messages = []
+
+        def fake_mcp_post(tool, payload, retries=3):
+            calls.append((tool, payload))
+            if tool == 'recall':
+                return {'results': [
+                    {'id': f'b{i:02d}', 'content': f'baseline memory {i:02d}'}
+                    for i in range(1, locomo_bench_v2.RECALL_TOP_K + 1)
+                ]}
+            if tool == 'context_packet':
+                return {
+                    'schema': 'memibrium.context_packet.v1',
+                    'episodic_evidence': [
+                        {'memory_id': 'p01', 'content': 'first packet evidence'},
+                        {'memory_id': 'p02', 'content': 'second packet evidence'},
+                        {'memory_id': 'p03', 'content': 'third packet evidence should be capped'},
+                    ],
+                    'provenance_summary': {'memory_ids': ['p01', 'p02', 'p03']},
+                }
+            raise AssertionError(tool)
+
+        def fake_llm_call(messages, model=locomo_bench_v2.ANSWER_MODEL, max_tokens=200, retries=3):
+            seen_messages.append(messages)
+            return 'capped answer'
+
+        with patch.object(locomo_bench_v2, 'USE_QUERY_EXPANSION', False), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_PACKET', False
+        ), patch.object(
+            locomo_bench_v2, 'USE_CONTEXT_PACKET_MERGE', True
+        ), patch.object(
+            locomo_bench_v2, 'CONTEXT_PACKET_MERGE_APPEND_TOP_K', 2
+        ), patch.object(
+            locomo_bench_v2, 'mcp_post', side_effect=fake_mcp_post
+        ), patch.object(locomo_bench_v2, 'llm_call', side_effect=fake_llm_call):
+            answer, memory_count, telemetry = locomo_bench_v2.answer_question(
+                'What changed?',
+                'locomo-1',
+                return_telemetry=True,
+            )
+
+        self.assertEqual(answer, 'capped answer')
+        self.assertEqual([call[0] for call in calls], ['recall', 'context_packet'])
+        self.assertEqual(memory_count, locomo_bench_v2.RECALL_TOP_K + 2)
+        prompt_text = seen_messages[0][1]['content']
+        self.assertIn('first packet evidence', prompt_text)
+        self.assertIn('second packet evidence', prompt_text)
+        self.assertNotIn('third packet evidence should be capped', prompt_text)
+        self.assertEqual(telemetry['counts']['context_packet_merge_append_top_k'], 2)
+        self.assertEqual(telemetry['counts']['packet_episodic_candidate_count'], 3)
+        self.assertEqual(telemetry['counts']['packet_episodic_added_count'], 2)
+        self.assertEqual(telemetry['counts']['packet_episodic_capped_count'], 1)
+
     def test_context_packet_merge_preserves_baseline_context_and_appends_deduped_packet_evidence(self):
         calls = []
         seen_messages = []

@@ -131,7 +131,14 @@ def normalize_mcp_url(url: str) -> str:
     return url if url.endswith("/mcp") else f"{url}/mcp"
 
 
-def build_benchmark_env(base_env: dict[str, str], *, mcp_url: str, context_packet: bool, context_packet_merge: bool = False) -> dict[str, str]:
+def build_benchmark_env(
+    base_env: dict[str, str],
+    *,
+    mcp_url: str,
+    context_packet: bool,
+    context_packet_merge: bool = False,
+    context_packet_merge_append_top_k: int | None = None,
+) -> dict[str, str]:
     """Build arm envs with explicit Context Packet condition flags."""
     env = load_dotenv(base_env)
     env.update({
@@ -170,6 +177,10 @@ def build_benchmark_env(base_env: dict[str, str], *, mcp_url: str, context_packe
         env["USE_CONTEXT_PACKET_MERGE"] = "1"
     else:
         env.pop("USE_CONTEXT_PACKET_MERGE", None)
+    if context_packet_merge_append_top_k is not None:
+        env["CONTEXT_PACKET_MERGE_APPEND_TOP_K"] = str(context_packet_merge_append_top_k)
+    else:
+        env.pop("CONTEXT_PACKET_MERGE_APPEND_TOP_K", None)
     return env
 
 
@@ -554,10 +565,18 @@ def import_benchmark_module(env: dict[str, str]):
         os.environ.update(old_env)
 
 
-def configure_benchmark_module(module: Any, *, context_packet: bool, context_packet_merge: bool = False) -> None:
+def configure_benchmark_module(
+    module: Any,
+    *,
+    context_packet: bool,
+    context_packet_merge: bool = False,
+    context_packet_merge_append_top_k: int | None = None,
+) -> None:
     module.USE_QUERY_EXPANSION = False
     module.USE_CONTEXT_PACKET = bool(context_packet)
     module.USE_CONTEXT_PACKET_MERGE = bool(context_packet_merge)
+    if context_packet_merge_append_top_k is not None:
+        module.CONTEXT_PACKET_MERGE_APPEND_TOP_K = int(context_packet_merge_append_top_k)
     module.INCLUDE_RECALL_TELEMETRY = True
     module.USE_CONTEXT_RERANK = False
     module.USE_APPEND_CONTEXT_EXPANSION = False
@@ -637,12 +656,18 @@ def run_arm(
     *,
     context_packet: bool,
     context_packet_merge: bool = False,
+    context_packet_merge_append_top_k: int | None = None,
     data: list[dict[str, Any]],
     fixed_rows: list[dict[str, Any]],
     env: dict[str, str],
 ) -> dict[str, Any]:
     module = import_benchmark_module(env)
-    configure_benchmark_module(module, context_packet=context_packet, context_packet_merge=context_packet_merge)
+    configure_benchmark_module(
+        module,
+        context_packet=context_packet,
+        context_packet_merge=context_packet_merge,
+        context_packet_merge_append_top_k=context_packet_merge_append_top_k,
+    )
     conv_data = data[0]
     conv = conv_data.get("conversation", conv_data)
     qa_list = conv_data.get("qa", conv_data.get("qa_list", []))
@@ -790,6 +815,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mcp-url", default=os.environ.get("MCP_URL", "http://localhost:9999/mcp"))
     parser.add_argument("--identity-only", action="store_true", help="Validate data/fixed-row identity without DB or benchmark mutation")
     parser.add_argument("--merge-treatment", action="store_true", help="Use baseline+packet append/dedupe treatment instead of packet replacement")
+    parser.add_argument("--merge-append-top-k", type=int, default=None, help="Cap new packet episodic evidence appended in merge treatment; <=0 means uncapped")
     args = parser.parse_args(argv)
 
     data_path = Path(args.data_path)
@@ -820,6 +846,7 @@ def main(argv: list[str] | None = None) -> int:
         mcp_url=args.mcp_url,
         context_packet=not args.merge_treatment,
         context_packet_merge=args.merge_treatment,
+        context_packet_merge_append_top_k=args.merge_append_top_k,
     )
     live_status = health_and_tools(args.mcp_url)
     if not live_status.get("context_packet_present"):
@@ -831,6 +858,7 @@ def main(argv: list[str] | None = None) -> int:
         treatment_arm,
         context_packet=not args.merge_treatment,
         context_packet_merge=args.merge_treatment,
+        context_packet_merge_append_top_k=args.merge_append_top_k,
         data=data,
         fixed_rows=fixed_rows,
         env=treatment_env,
@@ -844,18 +872,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     final_hygiene = locomo_hygiene()
 
+    treatment_suffix = ""
+    if args.merge_treatment:
+        treatment_suffix = "_merge"
+        if args.merge_append_top_k and args.merge_append_top_k > 0:
+            treatment_suffix += f"_top{args.merge_append_top_k}"
     paths = {
         "baseline": str(RESULTS_DIR / f"locomo_context_packet_canary_baseline_{RUN_ID}.json"),
-        "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment{'_merge' if args.merge_treatment else ''}_{RUN_ID}.json"),
-        "summary": str(RESULTS_DIR / f"locomo_context_packet_canary_summary{'_merge' if args.merge_treatment else ''}_{RUN_ID}.json"),
-        "markdown": str(RESULTS_DIR / f"locomo_context_packet_canary_result{'_merge' if args.merge_treatment else ''}_{RUN_ID}.md"),
+        "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment{treatment_suffix}_{RUN_ID}.json"),
+        "summary": str(RESULTS_DIR / f"locomo_context_packet_canary_summary{treatment_suffix}_{RUN_ID}.json"),
+        "markdown": str(RESULTS_DIR / f"locomo_context_packet_canary_result{treatment_suffix}_{RUN_ID}.md"),
     }
     summary = {
         "schema": "memibrium.locomo.context_packet_canary.summary.v1",
         "run_id": RUN_ID,
         "created_at": utc_now(),
         "purpose": "prove context_packet changes prompt context on exact fixed rows without changing unrelated benchmark mechanics",
-        "treatment_mode": "context_packet_merge" if args.merge_treatment else "context_packet_replacement",
+        "treatment_mode": "context_packet_merge_top_k" if args.merge_treatment and args.merge_append_top_k and args.merge_append_top_k > 0 else ("context_packet_merge" if args.merge_treatment else "context_packet_replacement"),
+        "merge_append_top_k": args.merge_append_top_k,
         "input_identity": input_identity,
         "preregistration": preregistration_proof,
         "data_sha256": data_sha,
