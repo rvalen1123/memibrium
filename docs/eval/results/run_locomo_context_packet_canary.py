@@ -324,6 +324,44 @@ def _baseline_prefix_preserved(baseline_row: dict[str, Any], treatment_row: dict
     return treatment_ids[:len(baseline_ids)] == baseline_ids
 
 
+def _packet_added_count(row: dict[str, Any]) -> int:
+    counts = ((row.get("recall_telemetry") or {}).get("counts") or {})
+    try:
+        return int(counts.get("packet_episodic_added_count") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _mean_score_delta(rows: list[dict[str, Any]]) -> float | None:
+    deltas = [row.get("score_delta") for row in rows if row.get("score_delta") is not None]
+    if not deltas:
+        return None
+    return round(sum(float(delta) for delta in deltas) / len(deltas), 4)
+
+
+def _category_regression_gates(baseline: dict[str, Any], treatment: dict[str, Any], *, severe_drop_pp: float = 20.0) -> dict[str, Any]:
+    b_scores = baseline.get("category_scores") or {}
+    t_scores = treatment.get("category_scores") or {}
+    gates: dict[str, Any] = {}
+    deltas = []
+    for cat in sorted(set(b_scores) | set(t_scores)):
+        b_score = b_scores.get(cat)
+        t_score = t_scores.get(cat)
+        delta = None
+        severe = False
+        if b_score is not None and t_score is not None:
+            delta = round(float(t_score) - float(b_score), 4)
+            severe = delta < -abs(severe_drop_pp)
+            deltas.append(delta)
+        gates[cat] = {"baseline": b_score, "treatment": t_score, "delta": delta, "severe_regression": severe}
+    gates["no_severe_category_collapse"] = not any(
+        isinstance(value, dict) and value.get("severe_regression") for value in gates.values()
+    )
+    gates["minimum_category_delta"] = min(deltas) if deltas else None
+    gates["severe_drop_pp"] = severe_drop_pp
+    return gates
+
+
 def validate_paired_artifacts(
     baseline: dict[str, Any],
     treatment: dict[str, Any],
@@ -384,6 +422,7 @@ def validate_paired_artifacts(
         for i in range(len(fixed_rows))
     ]
     answer_change_diagnostics = []
+    packet_appended_by_row = []
     for i in range(len(fixed_rows)):
         b_row = baseline_details[i]
         t_row = treatment_details[i]
@@ -392,16 +431,34 @@ def validate_paired_artifacts(
         score_delta = None
         if b_score is not None and t_score is not None:
             score_delta = round(float(t_score) - float(b_score), 4)
+        packet_added_count = _packet_added_count(t_row)
+        packet_appended = packet_added_count > 0
+        packet_appended_by_row.append(packet_appended)
         answer_change_diagnostics.append({
             "one_based_index": (b_row.get("row_identity") or {}).get("one_based_index"),
             "label": (b_row.get("row_identity") or {}).get("label"),
+            "cat": b_row.get("cat") or (b_row.get("row_identity") or {}).get("cat"),
             "answer_changed": b_row.get("predicted") != t_row.get("predicted"),
             "baseline_score": b_score,
             "treatment_score": t_score,
             "score_delta": score_delta,
+            "packet_appended": packet_appended,
+            "packet_added_count": packet_added_count,
             "baseline_gold_hits": ((b_row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {}).get("canary_final_context_refs_matched", ((b_row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {}).get("final_context_refs_matched")),
             "treatment_gold_hits": ((t_row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {}).get("canary_final_context_refs_matched", ((t_row.get("recall_telemetry") or {}).get("gold_evidence_ref_coverage") or {}).get("final_context_refs_matched")),
         })
+
+    appended_rows = [row for row in answer_change_diagnostics if row.get("packet_appended")]
+    no_append_rows = [row for row in answer_change_diagnostics if not row.get("packet_appended")]
+    packet_append_attribution = {
+        "rows_with_packet_append": len(appended_rows),
+        "rows_without_packet_append": len(no_append_rows),
+        "score_delta_when_packet_appended": _mean_score_delta(appended_rows),
+        "score_delta_when_no_packet_appended": _mean_score_delta(no_append_rows),
+        "changed_when_packet_appended": sum(1 for row in appended_rows if row.get("answer_changed")),
+        "changed_when_no_packet_appended": sum(1 for row in no_append_rows if row.get("answer_changed")),
+    }
+    category_regression_gates = _category_regression_gates(baseline, treatment)
 
     return {
         "row_identity_ok": True,
@@ -415,6 +472,9 @@ def validate_paired_artifacts(
         "gold_evidence_ref_hit_delta": hit_delta,
         "baseline_prefix_preserved_by_row": baseline_prefix_by_row,
         "baseline_prefix_preserved_rate": round(sum(1 for ok in baseline_prefix_by_row if ok) / len(baseline_prefix_by_row), 4) if baseline_prefix_by_row else None,
+        "packet_appended_by_row": packet_appended_by_row,
+        "packet_append_attribution": packet_append_attribution,
+        "category_regression_gates": category_regression_gates,
         "answer_change_diagnostics": answer_change_diagnostics,
         "baseline_context_hashes": [row.get("answer_prompt_context_sha256") for row in baseline_details],
         "treatment_context_hashes": [row.get("answer_prompt_context_sha256") for row in treatment_details],
@@ -804,6 +864,8 @@ def make_markdown(summary: dict[str, Any]) -> str:
         f"- Condition metadata: `{comparison.get('condition_metadata_ok')}`",
         f"- Context packet telemetry: `{comparison.get('context_packet_telemetry_ok')}`",
         f"- Gold-evidence hit rates: `baseline={comparison.get('gold_evidence_ref_hit_rate', {}).get('baseline')}`, `treatment={comparison.get('gold_evidence_ref_hit_rate', {}).get('treatment')}`, `delta={comparison.get('gold_evidence_ref_hit_delta')}`",
+        f"- Packet append attribution: `{comparison.get('packet_append_attribution')}`",
+        f"- Category regression gates: `{comparison.get('category_regression_gates')}`",
         f"- Prompt context changed by row: `{comparison.get('prompt_context_changed_by_row')}`",
         f"- Final cleanup: `{summary.get('final_hygiene', {}).get('ok')}`",
         "",

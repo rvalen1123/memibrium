@@ -254,6 +254,106 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertEqual(comparison['answer_change_diagnostics'][0]['answer_changed'], True)
         self.assertEqual(comparison['answer_change_diagnostics'][0]['score_delta'], 0.5)
 
+    def test_paired_artifact_validation_reports_packet_append_attribution_and_category_gates(self):
+        fixed_rows = [
+            {
+                'one_based_index': 1,
+                'question': 'appended question',
+                'question_sha256': context_packet_canary.sha256_text('appended question'),
+                'label': 'appended_row',
+                'cat': 'temporal',
+            },
+            {
+                'one_based_index': 2,
+                'question': 'not appended question',
+                'question_sha256': context_packet_canary.sha256_text('not appended question'),
+                'label': 'not_appended_row',
+                'cat': 'adversarial',
+            },
+        ]
+        baseline = {
+            'overall_score': 50.0,
+            'category_scores': {'cat-temporal': 0.0, 'cat-adversarial': 100.0},
+            'condition': {'context_packet': False, 'context_packet_merge': False},
+            'details': [
+                {
+                    'question': 'appended question',
+                    'row_identity': fixed_rows[0],
+                    'cat': 'temporal',
+                    'predicted': 'baseline appended',
+                    'score': 0.0,
+                    'recall_telemetry': {
+                        'final_context': [{'id': 'b1'}],
+                        'counts': {'final_answer_context_count': 1},
+                        'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 0},
+                    },
+                },
+                {
+                    'question': 'not appended question',
+                    'row_identity': fixed_rows[1],
+                    'cat': 'adversarial',
+                    'predicted': 'baseline no append',
+                    'score': 1.0,
+                    'recall_telemetry': {
+                        'final_context': [{'id': 'b2'}],
+                        'counts': {'final_answer_context_count': 1},
+                        'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                    },
+                },
+            ],
+        }
+        treatment = {
+            'overall_score': 50.0,
+            'category_scores': {'cat-temporal': 100.0, 'cat-adversarial': 0.0},
+            'condition': {'context_packet': False, 'context_packet_merge': True},
+            'details': [
+                {
+                    'question': 'appended question',
+                    'row_identity': fixed_rows[0],
+                    'cat': 'temporal',
+                    'predicted': 'better appended',
+                    'score': 1.0,
+                    'recall_telemetry': {
+                        'final_context_before_packet_merge': [{'id': 'b1'}],
+                        'final_context': [{'id': 'b1'}, {'id': 'p1'}],
+                        'counts': {'context_packet_merge_enabled': True, 'packet_episodic_added_count': 1},
+                        'context_packet': {'provenance_summary': {'memory_ids': ['p1']}},
+                        'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                    },
+                },
+                {
+                    'question': 'not appended question',
+                    'row_identity': fixed_rows[1],
+                    'cat': 'adversarial',
+                    'predicted': 'worse no append',
+                    'score': 0.0,
+                    'recall_telemetry': {
+                        'final_context_before_packet_merge': [{'id': 'b2'}],
+                        'final_context': [{'id': 'b2'}],
+                        'counts': {'context_packet_merge_enabled': True, 'packet_episodic_added_count': 0},
+                        'context_packet': {'provenance_summary': {'memory_ids': []}},
+                        'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                    },
+                },
+            ],
+        }
+
+        comparison = context_packet_canary.validate_paired_artifacts(
+            baseline,
+            treatment,
+            fixed_rows,
+            treatment_context_packet=False,
+            treatment_context_packet_merge=True,
+        )
+
+        self.assertEqual(comparison['packet_append_attribution']['rows_with_packet_append'], 1)
+        self.assertEqual(comparison['packet_append_attribution']['score_delta_when_packet_appended'], 1.0)
+        self.assertEqual(comparison['packet_append_attribution']['score_delta_when_no_packet_appended'], -1.0)
+        self.assertEqual(comparison['packet_appended_by_row'], [True, False])
+        self.assertEqual(comparison['category_regression_gates']['cat-temporal']['delta'], 100.0)
+        self.assertEqual(comparison['category_regression_gates']['cat-adversarial']['delta'], -100.0)
+        self.assertFalse(comparison['category_regression_gates']['no_severe_category_collapse'])
+
     def test_preregistered_larger_slice_requires_20_to_30_rows_and_category_coverage(self):
         rows = []
         cats = ['single-hop', 'temporal', 'multi-hop', 'unanswerable', 'adversarial']
