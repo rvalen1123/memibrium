@@ -149,6 +149,7 @@ class ContextPacketCanaryTests(unittest.TestCase):
             }
         ]
         baseline = {
+            'overall_score': 50.0,
             'condition': {'context_packet': False, 'context_packet_merge': False},
             'details': [
                 {
@@ -159,6 +160,7 @@ class ContextPacketCanaryTests(unittest.TestCase):
             ],
         }
         treatment = {
+            'overall_score': 50.0,
             'condition': {'context_packet': False, 'context_packet_merge': True},
             'details': [
                 {
@@ -192,6 +194,9 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertEqual(comparison['gold_evidence_ref_hit_rate']['baseline'], 1.0)
         self.assertEqual(comparison['gold_evidence_ref_hit_rate']['treatment'], 1.0)
         self.assertEqual(comparison['gold_evidence_ref_hit_delta'], 0.0)
+        self.assertTrue(comparison['gold_evidence_ref_hit_gate'])
+        self.assertEqual(comparison['score_delta_pp'], 0.0)
+        self.assertTrue(comparison['score_non_regression_gate'])
 
         mismatched_treatment = json.loads(json.dumps(treatment))
         mismatched_treatment['details'][0]['row_identity']['question_sha256'] = '1' * 64
@@ -353,6 +358,214 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertEqual(comparison['category_regression_gates']['cat-temporal']['delta'], 100.0)
         self.assertEqual(comparison['category_regression_gates']['cat-adversarial']['delta'], -100.0)
         self.assertFalse(comparison['category_regression_gates']['no_severe_category_collapse'])
+
+    def test_answer_question_with_frozen_context_replay_uses_baseline_context_without_recall(self):
+        calls = []
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = False
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                calls.append((tool, payload))
+                if tool == 'recall':
+                    raise AssertionError('frozen replay must not call recall')
+                self.assertEqual(tool, 'context_packet')
+                return {'episodic_evidence': [{'id': 'p1', 'content': 'packet Caroline evidence', 'refs': {'turn_start': 2}}]}
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                added = packet['episodic_evidence']
+                return list(base_memories) + added, added, len(added), 0, 0
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                content = memory.get('content', '')
+                return {
+                    'rank': rank,
+                    'id': memory.get('id'),
+                    'snippet': content[:160],
+                    'refs': memory.get('refs', {}),
+                    'content_sha256': context_packet_canary.sha256_text(content),
+                }
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': {'memory_ids': [m['id'] for m in packet['episodic_evidence']]}}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return 'answer from frozen context'
+
+        answer, memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'Who found the rainbow sidewalk?',
+            'locomo-conv-26',
+            [{'id': 'b1', 'content': 'baseline Melanie evidence', 'refs': {'turn_start': 1}}],
+            evidence_refs=[{'turn_start': 1}],
+            context_packet_merge=True,
+        )
+
+        self.assertEqual(answer, 'answer from frozen context')
+        self.assertEqual(memory_count, 2)
+        self.assertEqual([call[0] for call in calls], ['context_packet'])
+        self.assertIn('baseline Melanie evidence', prompts[0])
+        self.assertIn('packet Caroline evidence', prompts[0])
+        self.assertLess(prompts[0].index('baseline Melanie evidence'), prompts[0].index('packet Caroline evidence'))
+        self.assertTrue(telemetry['counts']['frozen_context_replay_enabled'])
+        self.assertEqual([m['id'] for m in telemetry['final_context_before_packet_merge']], ['b1'])
+        self.assertEqual([m['id'] for m in telemetry['final_context']], ['b1', 'p1'])
+
+    def test_frozen_replay_allows_intentional_baseline_residue_between_arms(self):
+        dirty = {'ok': False, 'memories': 49}
+        clean = {'ok': True, 'memories': 0}
+
+        self.assertFalse(context_packet_canary.should_block_on_hygiene(dirty, clean_requested=False))
+        self.assertTrue(context_packet_canary.should_block_on_hygiene(dirty, clean_requested=True))
+        self.assertFalse(context_packet_canary.should_block_on_hygiene(clean, clean_requested=True))
+
+    def test_paired_artifact_validation_reports_frozen_context_hash_gate(self):
+        fixed_rows = [{
+            'one_based_index': 1,
+            'question': 'frozen question',
+            'question_sha256': context_packet_canary.sha256_text('frozen question'),
+            'label': 'frozen_row',
+            'cat': 'single-hop',
+        }]
+        baseline = {
+            'condition': {'context_packet': False, 'context_packet_merge': False, 'frozen_context_replay': False},
+            'details': [{
+                'question': 'frozen question',
+                'row_identity': fixed_rows[0],
+                'predicted': 'baseline answer',
+                'score': 1.0,
+                'frozen_baseline_context_sha256': context_packet_canary.frozen_context_hash([{'id': 'b1'}]),
+                'answer_prompt_context_sha256': 'baseline-prompt',
+                'recall_telemetry': {
+                    'final_context': [{'id': 'b1'}],
+                    'counts': {'final_answer_context_count': 1},
+                    'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                },
+            }],
+        }
+        treatment = {
+            'condition': {'context_packet': False, 'context_packet_merge': True, 'frozen_context_replay': True},
+            'details': [{
+                'question': 'frozen question',
+                'row_identity': fixed_rows[0],
+                'predicted': 'treatment answer',
+                'score': 1.0,
+                'frozen_baseline_context_sha256': context_packet_canary.frozen_context_hash([{'id': 'b1'}]),
+                'answer_prompt_context_sha256': 'treatment-prompt',
+                'recall_telemetry': {
+                    'final_context_before_packet_merge': [{'id': 'b1'}],
+                    'final_context': [{'id': 'b1'}, {'id': 'p1'}],
+                    'counts': {
+                        'context_packet_merge_enabled': True,
+                        'frozen_context_replay_enabled': True,
+                        'packet_episodic_added_count': 1,
+                    },
+                    'context_packet': {'provenance_summary': {'memory_ids': ['p1']}},
+                    'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                },
+            }],
+        }
+
+        comparison = context_packet_canary.validate_paired_artifacts(
+            baseline,
+            treatment,
+            fixed_rows,
+            treatment_context_packet=False,
+            treatment_context_packet_merge=True,
+            frozen_replay=True,
+        )
+
+        self.assertTrue(comparison['frozen_context_replay_ok'])
+        self.assertEqual(comparison['frozen_context_hash_match_by_row'], [True])
+        self.assertEqual(comparison['frozen_context_hash_match_rate'], 1.0)
+        self.assertEqual(comparison['prompt_context_delta_source_by_row'], ['packet_transform'])
+
+        mismatched_treatment = json.loads(json.dumps(treatment))
+        mismatched_treatment['details'][0]['frozen_baseline_context_sha256'] = 'def456'
+        with self.assertRaisesRegex(ValueError, 'frozen_context_hash_mismatch'):
+            context_packet_canary.validate_paired_artifacts(
+                baseline,
+                mismatched_treatment,
+                fixed_rows,
+                treatment_context_packet=False,
+                treatment_context_packet_merge=True,
+                frozen_replay=True,
+            )
+
+    def test_paired_artifact_validation_reports_row_183_role_attribution_regression(self):
+        fixed_rows = [{
+            'one_based_index': 183,
+            'question': 'Who found the rainbow sidewalk?',
+            'question_sha256': context_packet_canary.sha256_text('Who found the rainbow sidewalk?'),
+            'label': 'row_183',
+            'cat': 'adversarial',
+        }]
+        baseline = {
+            'condition': {'context_packet': False, 'context_packet_merge': False},
+            'details': [{
+                'question': 'Who found the rainbow sidewalk?',
+                'row_identity': fixed_rows[0],
+                'cat': 'adversarial',
+                'predicted': 'Melanie found the rainbow sidewalk.',
+                'score': 1.0,
+                'recall_telemetry': {
+                    'final_context': [{'id': 'b1'}],
+                    'counts': {'final_answer_context_count': 1},
+                    'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                },
+            }],
+        }
+        treatment = {
+            'condition': {'context_packet': False, 'context_packet_merge': True},
+            'details': [{
+                'question': 'Who found the rainbow sidewalk?',
+                'row_identity': fixed_rows[0],
+                'cat': 'adversarial',
+                'predicted': 'Caroline found it, not Melanie.',
+                'score': 0.0,
+                'recall_telemetry': {
+                    'final_context_before_packet_merge': [{'id': 'b1'}],
+                    'final_context': [{'id': 'b1'}, {'id': 'p1'}],
+                    'counts': {'context_packet_merge_enabled': True, 'packet_episodic_added_count': 1},
+                    'context_packet': {'provenance_summary': {'memory_ids': ['p1']}},
+                    'gold_evidence_ref_coverage': {'gold_ref_count': 1, 'final_context_refs_matched': 1},
+                },
+            }],
+        }
+
+        comparison = context_packet_canary.validate_paired_artifacts(
+            baseline,
+            treatment,
+            fixed_rows,
+            treatment_context_packet=False,
+            treatment_context_packet_merge=True,
+        )
+
+        diagnostic = comparison['row_183_role_attribution_diagnostic']
+        self.assertTrue(diagnostic['present'])
+        self.assertTrue(diagnostic['role_attribution_regression'])
+        self.assertFalse(diagnostic['role_attribution_regression_absent'])
+        self.assertTrue(diagnostic['baseline_mentions_melanie'])
+        self.assertTrue(diagnostic['treatment_mentions_caroline'])
+        self.assertEqual(diagnostic['score_delta'], -1.0)
 
     def test_preregistered_larger_slice_requires_20_to_30_rows_and_category_coverage(self):
         rows = []

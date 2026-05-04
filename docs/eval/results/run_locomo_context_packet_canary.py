@@ -312,6 +312,40 @@ def _memory_ids(row: dict[str, Any]) -> list[Any]:
     return [memory.get("id") for memory in final_context if isinstance(memory, dict)]
 
 
+def frozen_context_hash(context: list[dict[str, Any]]) -> str:
+    """Hash row substrate by stable identity/content projections, not ranks."""
+    projection = []
+    for memory in context or []:
+        if not isinstance(memory, dict):
+            projection.append({"raw": str(memory)})
+            continue
+        projection.append({
+            "id": memory.get("id") or memory.get("memory_id"),
+            "dedupe_key": memory.get("dedupe_key"),
+            "content_sha256": memory.get("content_sha256") or sha256_text(str(memory.get("content") or memory.get("snippet") or "")),
+            "refs": memory.get("refs") or {},
+            "created_at": memory.get("created_at"),
+        })
+    return sha256_text(json.dumps(projection, sort_keys=True, separators=(",", ":")))
+
+
+def _frozen_context_from_row(row: dict[str, Any], *, before_merge: bool = False) -> list[dict[str, Any]]:
+    telemetry = row.get("recall_telemetry") or {}
+    key = "final_context_before_packet_merge" if before_merge else "final_context"
+    context = telemetry.get(key) or []
+    return [memory for memory in context if isinstance(memory, dict)]
+
+
+def _frozen_hash_for_row(row: dict[str, Any], *, before_merge: bool = False) -> str | None:
+    existing = row.get("frozen_baseline_context_sha256")
+    if existing and not before_merge:
+        return existing
+    context = _frozen_context_from_row(row, before_merge=before_merge)
+    if not context:
+        return None
+    return frozen_context_hash(context)
+
+
 def _baseline_prefix_preserved(baseline_row: dict[str, Any], treatment_row: dict[str, Any]) -> bool:
     telemetry = treatment_row.get("recall_telemetry") or {}
     before_merge = telemetry.get("final_context_before_packet_merge")
@@ -362,6 +396,53 @@ def _category_regression_gates(baseline: dict[str, Any], treatment: dict[str, An
     return gates
 
 
+def _mentions_person(text: Any, name: str) -> bool:
+    return re.search(rf"\b{re.escape(name)}\b", str(text or ""), flags=re.IGNORECASE) is not None
+
+
+def _row_183_role_attribution_diagnostic(answer_change_diagnostics: list[dict[str, Any]]) -> dict[str, Any]:
+    rows = [row for row in answer_change_diagnostics if row.get("one_based_index") == 183]
+    if not rows:
+        return {"present": False, "role_attribution_regression": False, "role_attribution_regression_absent": True}
+    row = rows[0]
+    baseline = str(row.get("baseline_predicted") or "")
+    treatment = str(row.get("treatment_predicted") or "")
+    score_delta = row.get("score_delta")
+    baseline_mentions_melanie = _mentions_person(baseline, "Melanie")
+    treatment_mentions_caroline = _mentions_person(treatment, "Caroline")
+    treatment_mentions_melanie = _mentions_person(treatment, "Melanie")
+    baseline_gold_hits = row.get("baseline_gold_hits")
+    treatment_gold_hits = row.get("treatment_gold_hits")
+    gold_non_regressed = (
+        baseline_gold_hits is not None
+        and treatment_gold_hits is not None
+        and float(treatment_gold_hits) >= float(baseline_gold_hits)
+    )
+    role_regression = bool(
+        row.get("answer_changed")
+        and score_delta is not None
+        and float(score_delta) < 0
+        and baseline_mentions_melanie
+        and treatment_mentions_caroline
+        and gold_non_regressed
+    )
+    return {
+        "present": True,
+        "one_based_index": 183,
+        "role_attribution_regression": role_regression,
+        "role_attribution_regression_absent": not role_regression,
+        "baseline_mentions_melanie": baseline_mentions_melanie,
+        "treatment_mentions_caroline": treatment_mentions_caroline,
+        "treatment_mentions_melanie": treatment_mentions_melanie,
+        "baseline_predicted": baseline,
+        "treatment_predicted": treatment,
+        "baseline_gold_hits": baseline_gold_hits,
+        "treatment_gold_hits": treatment_gold_hits,
+        "packet_appended": row.get("packet_appended"),
+        "score_delta": score_delta,
+    }
+
+
 def validate_paired_artifacts(
     baseline: dict[str, Any],
     treatment: dict[str, Any],
@@ -369,6 +450,7 @@ def validate_paired_artifacts(
     *,
     treatment_context_packet: bool = True,
     treatment_context_packet_merge: bool = False,
+    frozen_replay: bool = False,
 ) -> dict[str, Any]:
     baseline_details = baseline.get("details", [])
     treatment_details = treatment.get("details", [])
@@ -397,6 +479,7 @@ def validate_paired_artifacts(
         and b_condition.get("context_packet_merge") is False
         and t_condition.get("context_packet") is bool(treatment_context_packet)
         and t_condition.get("context_packet_merge") is bool(treatment_context_packet_merge)
+        and (not frozen_replay or t_condition.get("frozen_context_replay") is True)
     )
     if not condition_metadata_ok:
         raise ValueError("condition_metadata_mismatch: unexpected baseline/treatment context-packet condition flags")
@@ -415,8 +498,15 @@ def validate_paired_artifacts(
     baseline_hit_rate = _gold_coverage_hit_rate(baseline_details)
     treatment_hit_rate = _gold_coverage_hit_rate(treatment_details)
     hit_delta = None
+    gold_evidence_ref_hit_gate = None
     if baseline_hit_rate is not None and treatment_hit_rate is not None:
         hit_delta = round(treatment_hit_rate - baseline_hit_rate, 4)
+        gold_evidence_ref_hit_gate = hit_delta >= 0
+    score_delta_pp = None
+    score_non_regression_gate = None
+    if baseline.get("overall_score") is not None and treatment.get("overall_score") is not None:
+        score_delta_pp = round(float(treatment["overall_score"]) - float(baseline["overall_score"]), 4)
+        score_non_regression_gate = score_delta_pp >= 0
     baseline_prefix_by_row = [
         _baseline_prefix_preserved(baseline_details[i], treatment_details[i])
         for i in range(len(fixed_rows))
@@ -439,6 +529,8 @@ def validate_paired_artifacts(
             "label": (b_row.get("row_identity") or {}).get("label"),
             "cat": b_row.get("cat") or (b_row.get("row_identity") or {}).get("cat"),
             "answer_changed": b_row.get("predicted") != t_row.get("predicted"),
+            "baseline_predicted": b_row.get("predicted"),
+            "treatment_predicted": t_row.get("predicted"),
             "baseline_score": b_score,
             "treatment_score": t_score,
             "score_delta": score_delta,
@@ -460,6 +552,23 @@ def validate_paired_artifacts(
     }
     category_regression_gates = _category_regression_gates(baseline, treatment)
 
+    frozen_context_hash_match_by_row: list[bool] = []
+    prompt_context_delta_source_by_row: list[str] = []
+    if frozen_replay:
+        for i in range(len(fixed_rows)):
+            b_hash = _frozen_hash_for_row(baseline_details[i])
+            t_hash = _frozen_hash_for_row(treatment_details[i])
+            if b_hash is None or t_hash is None or b_hash != t_hash:
+                raise ValueError(f"frozen_context_hash_mismatch: pair={i} baseline={b_hash} treatment={t_hash}")
+            before_hash = _frozen_hash_for_row(treatment_details[i], before_merge=True)
+            if before_hash is None or before_hash != b_hash:
+                raise ValueError(f"frozen_context_hash_mismatch: treatment before-merge pair={i} baseline={b_hash} treatment_before={before_hash}")
+            frozen_context_hash_match_by_row.append(True)
+            prompt_changed = baseline_details[i].get("answer_prompt_context_sha256") != treatment_details[i].get("answer_prompt_context_sha256")
+            prompt_context_delta_source_by_row.append("packet_transform" if prompt_changed else "none")
+
+    row_183_role_attribution_diagnostic = _row_183_role_attribution_diagnostic(answer_change_diagnostics)
+
     return {
         "row_identity_ok": True,
         "condition_metadata_ok": True,
@@ -470,11 +579,19 @@ def validate_paired_artifacts(
             "treatment": treatment_hit_rate,
         },
         "gold_evidence_ref_hit_delta": hit_delta,
+        "gold_evidence_ref_hit_gate": gold_evidence_ref_hit_gate,
+        "score_delta_pp": score_delta_pp,
+        "score_non_regression_gate": score_non_regression_gate,
         "baseline_prefix_preserved_by_row": baseline_prefix_by_row,
         "baseline_prefix_preserved_rate": round(sum(1 for ok in baseline_prefix_by_row if ok) / len(baseline_prefix_by_row), 4) if baseline_prefix_by_row else None,
         "packet_appended_by_row": packet_appended_by_row,
         "packet_append_attribution": packet_append_attribution,
         "category_regression_gates": category_regression_gates,
+        "frozen_context_replay_ok": bool(frozen_replay),
+        "frozen_context_hash_match_by_row": frozen_context_hash_match_by_row,
+        "frozen_context_hash_match_rate": round(sum(1 for ok in frozen_context_hash_match_by_row if ok) / len(frozen_context_hash_match_by_row), 4) if frozen_context_hash_match_by_row else None,
+        "prompt_context_delta_source_by_row": prompt_context_delta_source_by_row,
+        "row_183_role_attribution_diagnostic": row_183_role_attribution_diagnostic,
         "answer_change_diagnostics": answer_change_diagnostics,
         "baseline_context_hashes": [row.get("answer_prompt_context_sha256") for row in baseline_details],
         "treatment_context_hashes": [row.get("answer_prompt_context_sha256") for row in treatment_details],
@@ -590,6 +707,10 @@ def clean_locomo_domains() -> dict[str, Any]:
     return locomo_hygiene()
 
 
+def should_block_on_hygiene(hygiene: dict[str, Any], *, clean_requested: bool) -> bool:
+    return bool(clean_requested and not hygiene.get("ok"))
+
+
 def tool_names_from_response(tools_response: Any) -> list[str]:
     if isinstance(tools_response, dict):
         tools = tools_response.get("tools", [])
@@ -670,6 +791,18 @@ def capture_answer_prompt_wrapper(module: Any, capture: dict[str, Any]):
     return wrapped
 
 
+def capture_full_context_projection_wrapper(module: Any):
+    original_projection = module._memory_telemetry_projection
+
+    def wrapped(memory, rank=None):
+        projection = original_projection(memory, rank=rank)
+        if isinstance(memory, dict):
+            projection["content"] = str(memory.get("content") or memory.get("text") or "")
+        return projection
+
+    return wrapped
+
+
 def _parse_locomo_ref(ref: Any) -> dict[str, int] | None:
     if isinstance(ref, str):
         match = re.fullmatch(r"D(\d+):(\d+)", ref.strip())
@@ -718,6 +851,102 @@ def _count_gold_hits(evidence_refs: Any, memories: list[dict[str, Any]], session
     return sum(1 for gold_ref in refs if any(_memory_matches_gold_ref(memory, gold_ref, session_mapping) for memory in memories if isinstance(memory, dict)))
 
 
+def answer_question_with_frozen_context(
+    module: Any,
+    question: str,
+    domain: str,
+    frozen_context: list[dict[str, Any]],
+    *,
+    evidence_refs: Any = None,
+    context_packet_merge: bool = True,
+    context_packet_merge_append_top_k: int | None = None,
+    context_packet_merge_ref_gate: bool | None = None,
+) -> tuple[str, int, dict[str, Any]]:
+    """Answer using an exact frozen baseline final_context substrate plus optional packet transform.
+
+    This intentionally bypasses benchmark recall so baseline/treatment can share the
+    same retrieved substrate and isolate prompt-context transform effects.
+    """
+    def materialize(memory: dict[str, Any]) -> dict[str, Any]:
+        out = copy.deepcopy(memory)
+        if "content" not in out:
+            out["content"] = out.get("snippet") or ""
+        return out
+
+    memories = [materialize(memory) for memory in (frozen_context or [])]
+    before_merge_projection = [copy.deepcopy(memory) for memory in frozen_context or []]
+    recall_telemetry = {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": question,
+        "domain": domain,
+        "expanded_queries": [question],
+        "per_query_recall": [],
+        "counts": {
+            "frozen_context_replay_enabled": True,
+            "base_final_answer_context_count": len(memories),
+        },
+        "final_context_before_packet_merge": before_merge_projection,
+        "final_context": [],
+        "gold_evidence_ref_coverage": None,
+    }
+
+    if context_packet_merge:
+        packet = module.mcp_post("context_packet", {
+            "query": question,
+            "domain": domain,
+            "top_k": module.CONTEXT_PACKET_TOP_K,
+            "include_decision_traces": True,
+        })
+        max_added = context_packet_merge_append_top_k
+        if max_added is None:
+            max_added = getattr(module, "CONTEXT_PACKET_MERGE_APPEND_TOP_K", 0)
+        ref_gate = getattr(module, "USE_CONTEXT_PACKET_MERGE_REF_GATE", False) if context_packet_merge_ref_gate is None else context_packet_merge_ref_gate
+        memories, packet_added_memories, packet_candidate_count, packet_capped_count, packet_ref_gated_count = module._append_packet_evidence_to_baseline(
+            memories,
+            packet,
+            max_added=max_added,
+            evidence_refs=evidence_refs,
+            ref_gate=ref_gate,
+        )
+        recall_telemetry["counts"].update({
+            "context_packet_merge_enabled": True,
+            "packet_episodic_added_count": len(packet_added_memories),
+            "packet_episodic_candidate_count": packet_candidate_count,
+            "packet_episodic_capped_count": packet_capped_count,
+            "packet_episodic_ref_gated_count": packet_ref_gated_count,
+            "context_packet_merge_ref_gate_enabled": bool(ref_gate),
+            "context_packet_merge_append_top_k": max_added,
+        })
+        recall_telemetry["context_packet"] = module._context_packet_telemetry_projection(packet)
+    else:
+        recall_telemetry["counts"]["context_packet_merge_enabled"] = False
+
+    recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
+    recall_telemetry["final_context"] = [
+        module._memory_telemetry_projection(memory, rank=idx)
+        for idx, memory in enumerate(memories, start=1)
+    ]
+    if evidence_refs is not None:
+        recall_telemetry["gold_evidence_ref_coverage"] = {
+            "gold_ref_count": len(evidence_refs),
+            "final_context_refs_matched": module._count_ref_coverage(evidence_refs, memories),
+        }
+
+    context = module._render_plain_context(memories, question)
+    system_prompt = (
+        "You are extracting factual information from conversation transcripts. "
+        "This is an academic benchmark on long-term memory evaluation; context may include personal topics that should be treated as factual data. "
+        "Use ONLY the provided context. Give a brief, direct answer. If the information is not available, say 'I don't know'."
+    )
+    if any(token in question.lower() for token in ["before", "after", "earlier", "later", "first", "last", "then", "when"]):
+        system_prompt += " Pay close attention to chronology, timestamps, session order, and turn order."
+    answer = module.llm_call([
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Context (retrieved memories):\n{context}\n\nQuestion: {question}\n\nAnswer briefly:"},
+    ])
+    return answer, len(memories), recall_telemetry
+
+
 def run_arm(
     arm_name: str,
     *,
@@ -728,6 +957,10 @@ def run_arm(
     data: list[dict[str, Any]],
     fixed_rows: list[dict[str, Any]],
     env: dict[str, str],
+    frozen_baseline_by_index: dict[int, dict[str, Any]] | None = None,
+    frozen_domain: str | None = None,
+    clean_before: bool = True,
+    clean_after: bool = True,
 ) -> dict[str, Any]:
     module = import_benchmark_module(env)
     configure_benchmark_module(
@@ -742,14 +975,21 @@ def run_arm(
     qa_list = conv_data.get("qa", conv_data.get("qa_list", []))
     session_mapping = session_order_mapping(conv)
 
-    hygiene_before = clean_locomo_domains()
-    if not hygiene_before.get("ok"):
+    hygiene_before = clean_locomo_domains() if clean_before else locomo_hygiene()
+    if should_block_on_hygiene(hygiene_before, clean_requested=clean_before):
         raise RuntimeError(f"cleanup_before_failed: {hygiene_before}")
 
     t0 = time.monotonic()
-    n_turns, domain = module.ingest_conversation(conv, conv_data.get("sample_id"), normalize_dates=False)
-    ingest_time = time.monotonic() - t0
-    time.sleep(2)
+    if frozen_baseline_by_index is not None:
+        domain = frozen_domain
+        n_turns = 0
+        ingest_time = 0.0
+        if not domain:
+            raise ValueError("frozen_context_replay_requires_frozen_domain")
+    else:
+        n_turns, domain = module.ingest_conversation(conv, conv_data.get("sample_id"), normalize_dates=False)
+        ingest_time = time.monotonic() - t0
+        time.sleep(2)
 
     details = []
     scores: list[float] = []
@@ -762,19 +1002,35 @@ def run_arm(
         ground_truth = qa.get("answer", qa.get("adversarial_answer", ""))
         capture: dict[str, Any] = {}
         original_llm_call = module.llm_call
+        original_projection = module._memory_telemetry_projection
         module.llm_call = capture_answer_prompt_wrapper(module, capture)
+        module._memory_telemetry_projection = capture_full_context_projection_wrapper(module)
         try:
             t1 = time.monotonic()
-            predicted, n_memories, recall_telemetry = module.answer_question(
-                question,
-                domain,
-                return_telemetry=True,
-                evidence_refs=qa.get("evidence") or qa.get("evidence_refs"),
-            )
+            if frozen_baseline_by_index is not None:
+                frozen_row = frozen_baseline_by_index[int(fixed["one_based_index"])]
+                predicted, n_memories, recall_telemetry = answer_question_with_frozen_context(
+                    module,
+                    question,
+                    domain,
+                    copy.deepcopy(frozen_row["final_context"]),
+                    evidence_refs=qa.get("evidence") or qa.get("evidence_refs"),
+                    context_packet_merge=context_packet_merge,
+                    context_packet_merge_append_top_k=context_packet_merge_append_top_k,
+                    context_packet_merge_ref_gate=context_packet_merge_ref_gate,
+                )
+            else:
+                predicted, n_memories, recall_telemetry = module.answer_question(
+                    question,
+                    domain,
+                    return_telemetry=True,
+                    evidence_refs=qa.get("evidence") or qa.get("evidence_refs"),
+                )
             query_time = time.monotonic() - t1
             score = module.judge_answer(question, predicted, ground_truth)
         finally:
             module.llm_call = original_llm_call
+            module._memory_telemetry_projection = original_projection
 
         cat = module.normalize_category(qa["category"])
         scores.append(score)
@@ -792,6 +1048,14 @@ def run_arm(
             "canary_final_context_refs_matched": canary_gold_hits,
             "canary_mapping": session_mapping.get("ordering"),
         })
+        frozen_baseline_context = None
+        frozen_baseline_context_sha = None
+        if frozen_baseline_by_index is not None:
+            frozen_baseline_context = copy.deepcopy(frozen_baseline_by_index[int(fixed["one_based_index"])]["final_context"])
+            frozen_baseline_context_sha = frozen_context_hash(frozen_baseline_context)
+        elif not context_packet and not context_packet_merge:
+            frozen_baseline_context = copy.deepcopy(final_context)
+            frozen_baseline_context_sha = frozen_context_hash(frozen_baseline_context)
         details.append({
             "arm": arm_name,
             "row_identity": {
@@ -814,6 +1078,8 @@ def run_arm(
             "answer_prompt_context_line_count": capture.get("answer_prompt_context_line_count"),
             "answer_prompt_contains_context_packet": capture.get("answer_prompt_contains_context_packet", False),
             "answer_prompt_context_preview": prompt_context[:1000],
+            "frozen_baseline_context_sha256": frozen_baseline_context_sha,
+            "frozen_baseline_context": frozen_baseline_context,
         })
 
     payload = module.build_results_payload(
@@ -827,11 +1093,13 @@ def run_arm(
         use_context_packet_merge=context_packet_merge,
         cleaned=False,
     )
+    payload["condition"]["frozen_context_replay"] = frozen_baseline_by_index is not None
     payload.update({
         "schema": "memibrium.locomo.context_packet_canary.arm.v1",
         "run_id": RUN_ID,
         "arm": arm_name,
         "purpose": "tiny fixed-row context-packet A/B canary; not a 199Q LOCOMO benchmark",
+        "frozen_context_replay": frozen_baseline_by_index is not None,
         "started_at": utc_now(),
         "input_slice": {
             "data_path": str(DATA_PATH),
@@ -842,9 +1110,9 @@ def run_arm(
         "ingest": {"turns": n_turns, "domain": domain, "seconds": round(ingest_time, 3)},
         "hygiene_before_arm": hygiene_before,
     })
-    hygiene_after = clean_locomo_domains()
+    hygiene_after = clean_locomo_domains() if clean_after else locomo_hygiene()
     payload["hygiene_after_cleanup"] = hygiene_after
-    if not hygiene_after.get("ok"):
+    if clean_after and not hygiene_after.get("ok"):
         raise RuntimeError(f"cleanup_after_failed: {hygiene_after}")
     return payload
 
@@ -863,9 +1131,12 @@ def make_markdown(summary: dict[str, Any]) -> str:
         f"- Paired row identity: `{comparison.get('row_identity_ok')}`",
         f"- Condition metadata: `{comparison.get('condition_metadata_ok')}`",
         f"- Context packet telemetry: `{comparison.get('context_packet_telemetry_ok')}`",
-        f"- Gold-evidence hit rates: `baseline={comparison.get('gold_evidence_ref_hit_rate', {}).get('baseline')}`, `treatment={comparison.get('gold_evidence_ref_hit_rate', {}).get('treatment')}`, `delta={comparison.get('gold_evidence_ref_hit_delta')}`",
+        f"- Score non-regression: `baseline={summary.get('baseline_overall_score')}`, `treatment={summary.get('treatment_overall_score')}`, `delta_pp={comparison.get('score_delta_pp')}`, `gate={comparison.get('score_non_regression_gate')}`",
+        f"- Gold-evidence hit rates: `baseline={comparison.get('gold_evidence_ref_hit_rate', {}).get('baseline')}`, `treatment={comparison.get('gold_evidence_ref_hit_rate', {}).get('treatment')}`, `delta={comparison.get('gold_evidence_ref_hit_delta')}`, `gate={comparison.get('gold_evidence_ref_hit_gate')}`",
         f"- Packet append attribution: `{comparison.get('packet_append_attribution')}`",
         f"- Category regression gates: `{comparison.get('category_regression_gates')}`",
+        f"- Frozen baseline context hash match: `rate={comparison.get('frozen_context_hash_match_rate')}`, `by_row={comparison.get('frozen_context_hash_match_by_row')}`",
+        f"- Row 183 role-attribution diagnostic: `{comparison.get('row_183_role_attribution_diagnostic')}`",
         f"- Prompt context changed by row: `{comparison.get('prompt_context_changed_by_row')}`",
         f"- Final cleanup: `{summary.get('final_hygiene', {}).get('ok')}`",
         "",
@@ -888,6 +1159,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--merge-treatment", action="store_true", help="Use baseline+packet append/dedupe treatment instead of packet replacement")
     parser.add_argument("--merge-append-top-k", type=int, default=None, help="Cap new packet episodic evidence appended in merge treatment; <=0 means uncapped")
     parser.add_argument("--merge-ref-gate", action="store_true", help="Append only packet evidence that matches missing gold evidence refs; eval-only ablation")
+    parser.add_argument("--frozen-context-replay", action="store_true", help="Run treatment against baseline arm final_context substrate without independent treatment recall; eval-only")
     args = parser.parse_args(argv)
 
     data_path = Path(args.data_path)
@@ -910,6 +1182,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.identity_only:
         print(json.dumps({"ok": True, "identity": input_identity, "data_sha256": data_sha, "preregistration": preregistration_proof}, indent=2))
         return 0
+    if args.frozen_context_replay and not args.merge_treatment:
+        raise ValueError("frozen_context_replay_requires_merge_treatment")
 
     base_env = os.environ.copy()
     baseline_env = build_benchmark_env(base_env, mcp_url=args.mcp_url, context_packet=False)
@@ -925,7 +1199,24 @@ def main(argv: list[str] | None = None) -> int:
     if not live_status.get("context_packet_present"):
         raise RuntimeError(f"context_packet tool missing: {live_status}")
 
-    baseline = run_arm("baseline_default", context_packet=False, data=data, fixed_rows=fixed_rows, env=baseline_env)
+    baseline = run_arm(
+        "baseline_default",
+        context_packet=False,
+        data=data,
+        fixed_rows=fixed_rows,
+        env=baseline_env,
+        clean_after=not args.frozen_context_replay,
+    )
+    frozen_baseline_by_index = None
+    if args.frozen_context_replay:
+        frozen_baseline_by_index = {
+            int(row["row_identity"]["one_based_index"]): {
+                "final_context": copy.deepcopy((row.get("recall_telemetry") or {}).get("final_context") or []),
+                "frozen_baseline_context_sha256": row.get("frozen_baseline_context_sha256"),
+            }
+            for row in baseline.get("details", [])
+        }
+    frozen_domain = (baseline.get("ingest") or {}).get("domain") if args.frozen_context_replay else None
     treatment_arm = "treatment_context_packet_merge" if args.merge_treatment else "treatment_context_packet"
     treatment = run_arm(
         treatment_arm,
@@ -936,6 +1227,10 @@ def main(argv: list[str] | None = None) -> int:
         data=data,
         fixed_rows=fixed_rows,
         env=treatment_env,
+        frozen_baseline_by_index=frozen_baseline_by_index,
+        frozen_domain=frozen_domain,
+        clean_before=not args.frozen_context_replay,
+        clean_after=True,
     )
     comparison = validate_paired_artifacts(
         baseline,
@@ -943,6 +1238,7 @@ def main(argv: list[str] | None = None) -> int:
         fixed_rows,
         treatment_context_packet=not args.merge_treatment,
         treatment_context_packet_merge=args.merge_treatment,
+        frozen_replay=args.frozen_context_replay,
     )
     final_hygiene = locomo_hygiene()
 
@@ -953,6 +1249,8 @@ def main(argv: list[str] | None = None) -> int:
             treatment_suffix += f"_top{args.merge_append_top_k}"
         if args.merge_ref_gate:
             treatment_suffix += "_refgate"
+    if args.frozen_context_replay:
+        treatment_suffix += "_frozen"
     paths = {
         "baseline": str(RESULTS_DIR / f"locomo_context_packet_canary_baseline_{RUN_ID}.json"),
         "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment{treatment_suffix}_{RUN_ID}.json"),
@@ -964,9 +1262,10 @@ def main(argv: list[str] | None = None) -> int:
         "run_id": RUN_ID,
         "created_at": utc_now(),
         "purpose": "prove context_packet changes prompt context on exact fixed rows without changing unrelated benchmark mechanics",
-        "treatment_mode": "context_packet_merge_ref_gate" if args.merge_treatment and args.merge_ref_gate else ("context_packet_merge_top_k" if args.merge_treatment and args.merge_append_top_k and args.merge_append_top_k > 0 else ("context_packet_merge" if args.merge_treatment else "context_packet_replacement")),
+        "treatment_mode": "context_packet_merge_ref_gate_frozen" if args.merge_treatment and args.merge_ref_gate and args.frozen_context_replay else ("context_packet_merge_ref_gate" if args.merge_treatment and args.merge_ref_gate else ("context_packet_merge_top_k_frozen" if args.merge_treatment and args.merge_append_top_k and args.merge_append_top_k > 0 and args.frozen_context_replay else ("context_packet_merge_top_k" if args.merge_treatment and args.merge_append_top_k and args.merge_append_top_k > 0 else ("context_packet_merge_frozen" if args.merge_treatment and args.frozen_context_replay else ("context_packet_merge" if args.merge_treatment else "context_packet_replacement"))))),
         "merge_append_top_k": args.merge_append_top_k,
         "merge_ref_gate": args.merge_ref_gate,
+        "frozen_context_replay": args.frozen_context_replay,
         "input_identity": input_identity,
         "preregistration": preregistration_proof,
         "data_sha256": data_sha,
@@ -974,6 +1273,10 @@ def main(argv: list[str] | None = None) -> int:
         "live_status": live_status,
         "baseline_env": redacted_env(baseline_env),
         "treatment_env": redacted_env(treatment_env),
+        "baseline_overall_score": baseline.get("overall_score"),
+        "treatment_overall_score": treatment.get("overall_score"),
+        "baseline_category_scores": baseline.get("category_scores"),
+        "treatment_category_scores": treatment.get("category_scores"),
         "comparison": comparison,
         "final_hygiene": final_hygiene,
         "paths": paths,
