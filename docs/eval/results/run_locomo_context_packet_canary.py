@@ -909,6 +909,146 @@ def build_gold_object_coverage_telemetry(
     }
 
 
+ENTITY_ALIASES: dict[str, list[str]] = {
+    "Melanie": ["melanie", "mel"],
+    "Caroline": ["caroline"],
+}
+
+
+def _memory_ref_dict(memory: dict[str, Any]) -> dict[str, Any]:
+    refs = memory.get("refs")
+    if isinstance(refs, str):
+        try:
+            refs = json.loads(refs)
+        except Exception:
+            return {}
+    return refs if isinstance(refs, dict) else {}
+
+
+def _memory_identity(memory: dict[str, Any]) -> str:
+    explicit = memory.get("id") or memory.get("memory_id")
+    if explicit is not None:
+        return str(explicit)
+    return sha256_text(str(memory.get("content") or memory.get("snippet") or memory.get("text") or ""))
+
+
+def _canonicalize_candidate_memory(memory: dict[str, Any]) -> dict[str, Any]:
+    out = copy.deepcopy(memory)
+    if "id" not in out and out.get("memory_id") is not None:
+        out["id"] = out.get("memory_id")
+    if "content" not in out:
+        out["content"] = out.get("snippet") or out.get("text") or ""
+    return out
+
+
+def _question_entity_anchors(question: str) -> list[str]:
+    q = _normalize_gold_object_text(question)
+    anchors = []
+    for canonical, aliases in ENTITY_ALIASES.items():
+        if any(re.search(rf"\b{re.escape(alias)}\b", q) for alias in aliases):
+            anchors.append(canonical)
+    return anchors
+
+
+def _memory_mentions_anchor(memory: dict[str, Any], anchor: str) -> bool:
+    text = _gold_object_memory_text(memory)
+    return any(re.search(rf"\b{re.escape(alias)}\b", text) for alias in ENTITY_ALIASES.get(anchor, [anchor.lower()]))
+
+
+def _turn_distance(base_refs: dict[str, Any], candidate_refs: dict[str, Any]) -> int | None:
+    if base_refs.get("session_index") is None or candidate_refs.get("session_index") is None:
+        return None
+    if int(base_refs["session_index"]) != int(candidate_refs["session_index"]):
+        return None
+    base_start = int(base_refs.get("turn_start", base_refs.get("turn_end", 0)) or 0)
+    base_end = int(base_refs.get("turn_end", base_refs.get("turn_start", base_start)) or base_start)
+    cand_start = int(candidate_refs.get("turn_start", candidate_refs.get("turn_end", 0)) or 0)
+    cand_end = int(candidate_refs.get("turn_end", candidate_refs.get("turn_start", cand_start)) or cand_start)
+    if cand_end < base_start:
+        return base_start - cand_end
+    if cand_start > base_end:
+        return cand_start - base_end
+    return 0
+
+
+def _within_any_anchor_window(candidate: dict[str, Any], base_memories: list[dict[str, Any]], turn_window: int) -> bool:
+    candidate_refs = _memory_ref_dict(candidate)
+    if not candidate_refs:
+        return False
+    for base in base_memories:
+        base_refs = _memory_ref_dict(base)
+        distance = _turn_distance(base_refs, candidate_refs)
+        if distance is not None and distance <= turn_window:
+            return True
+    return False
+
+
+def apply_entity_time_constrained_expansion(
+    *,
+    question: str,
+    base_memories: list[dict[str, Any]],
+    candidate_memories: list[dict[str, Any]],
+    one_based_index: int | None,
+    ground_truth: Any,
+    max_added: int = 2,
+    turn_window: int = 3,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Eval-only expansion from packet candidates constrained by entity and nearby session/turn refs."""
+    base = [_canonicalize_candidate_memory(memory) for memory in base_memories if isinstance(memory, dict)]
+    candidates = [_canonicalize_candidate_memory(memory) for memory in candidate_memories if isinstance(memory, dict)]
+    anchors = _question_entity_anchors(question)
+    seen = {_memory_identity(memory) for memory in base}
+    coverage_before = build_gold_object_coverage_telemetry(
+        one_based_index=one_based_index,
+        ground_truth=ground_truth,
+        memories=base,
+    )
+    added: list[dict[str, Any]] = []
+    rejected_counts: dict[str, int] = {}
+    rejected: list[dict[str, Any]] = []
+
+    for candidate in candidates:
+        cid = _memory_identity(candidate)
+        reason = None
+        if cid in seen:
+            reason = "duplicate"
+        elif anchors and not any(_memory_mentions_anchor(candidate, anchor) for anchor in anchors):
+            reason = "entity_mismatch"
+        elif not _within_any_anchor_window(candidate, base, turn_window):
+            reason = "outside_time_window"
+        if reason:
+            rejected_counts[reason] = rejected_counts.get(reason, 0) + 1
+            rejected.append({"source_id": cid, "reason": reason})
+            continue
+        added.append(candidate)
+        seen.add(cid)
+        if len(added) >= max_added:
+            break
+
+    expanded = base + added
+    coverage_after = build_gold_object_coverage_telemetry(
+        one_based_index=one_based_index,
+        ground_truth=ground_truth,
+        memories=expanded,
+    )
+    telemetry = {
+        "schema": "memibrium.locomo.entity_time_constrained_expansion.v1",
+        "one_based_index": one_based_index,
+        "entity_anchors": anchors,
+        "turn_window": turn_window,
+        "max_added": max_added,
+        "candidate_count": len(candidates),
+        "eligible_candidate_count": len(added),
+        "added_count": len(added),
+        "added_source_ids": [_memory_identity(memory) for memory in added],
+        "rejected_reason_counts": rejected_counts,
+        "rejected_candidates": rejected,
+        "coverage_before": coverage_before,
+        "coverage_after": coverage_after,
+    }
+    return expanded, telemetry
+
+
 def import_benchmark_module(env: dict[str, str]):
     old_env = os.environ.copy()
     os.environ.clear()
@@ -1213,6 +1353,9 @@ def answer_question_with_frozen_context(
     one_based_index: int | None = None,
     ground_truth: Any = None,
     gold_object_coverage_telemetry: bool = False,
+    entity_time_constrained_expansion: bool = False,
+    entity_time_constrained_expansion_max_added: int = 2,
+    entity_time_constrained_expansion_turn_window: int = 3,
 ) -> tuple[str, int, dict[str, Any]]:
     """Answer using an exact frozen baseline final_context substrate plus optional packet transform.
 
@@ -1243,6 +1386,7 @@ def answer_question_with_frozen_context(
     }
 
     if context_packet_merge:
+        packet = {}
         if context_packet_merge_from_artifact:
             artifact = frozen_packet_artifact or {}
             artifact_counts = copy.deepcopy(artifact.get("counts") or artifact.get("artifact_counts") or {})
@@ -1289,6 +1433,28 @@ def answer_question_with_frozen_context(
             recall_telemetry["context_packet"] = module._context_packet_telemetry_projection(packet)
     else:
         recall_telemetry["counts"]["context_packet_merge_enabled"] = False
+
+    recall_telemetry["counts"]["entity_time_constrained_expansion_enabled"] = bool(entity_time_constrained_expansion)
+    if entity_time_constrained_expansion:
+        packet_candidates = []
+        if context_packet_merge_from_artifact:
+            packet_ids = set((recall_telemetry.get("context_packet") or {}).get("provenance_summary", {}).get("memory_ids") or [])
+            packet_candidates = [memory for memory in memories if _memory_identity(memory) in packet_ids]
+        else:
+            packet_candidates = (packet or {}).get("episodic_evidence") if isinstance(packet, dict) else []
+        memories, expansion_telemetry = apply_entity_time_constrained_expansion(
+            question=question,
+            base_memories=memories,
+            candidate_memories=packet_candidates or [],
+            one_based_index=one_based_index,
+            ground_truth=ground_truth,
+            max_added=entity_time_constrained_expansion_max_added,
+            turn_window=entity_time_constrained_expansion_turn_window,
+        )
+        recall_telemetry["entity_time_constrained_expansion"] = expansion_telemetry
+        recall_telemetry["counts"]["entity_time_constrained_expansion_added_count"] = expansion_telemetry["added_count"]
+    else:
+        recall_telemetry["counts"]["entity_time_constrained_expansion_added_count"] = 0
 
     recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
     recall_telemetry["counts"]["gold_object_coverage_telemetry_enabled"] = bool(gold_object_coverage_telemetry)
@@ -1364,6 +1530,10 @@ def run_arm(
     answer_shape_directive_categories: set[str] | None = None,
     gold_object_coverage_telemetry: bool = False,
     gold_object_coverage_categories: set[str] | None = None,
+    entity_time_constrained_expansion: bool = False,
+    entity_time_constrained_expansion_categories: set[str] | None = None,
+    entity_time_constrained_expansion_max_added: int = 2,
+    entity_time_constrained_expansion_turn_window: int = 3,
     context_packet_merge_from_artifact: bool = False,
 ) -> dict[str, Any]:
     module = import_benchmark_module(env)
@@ -1425,6 +1595,11 @@ def run_arm(
             gold_object_coverage_telemetry,
             gold_object_coverage_categories,
         )
+        use_entity_time_constrained_expansion = should_use_answer_shape_directive(
+            cat,
+            entity_time_constrained_expansion,
+            entity_time_constrained_expansion_categories,
+        )
         capture: dict[str, Any] = {}
         original_llm_call = module.llm_call
         original_projection = module._memory_telemetry_projection
@@ -1451,6 +1626,9 @@ def run_arm(
                     one_based_index=int(fixed["one_based_index"]),
                     ground_truth=ground_truth,
                     gold_object_coverage_telemetry=use_gold_object_coverage_telemetry,
+                    entity_time_constrained_expansion=use_entity_time_constrained_expansion,
+                    entity_time_constrained_expansion_max_added=entity_time_constrained_expansion_max_added,
+                    entity_time_constrained_expansion_turn_window=entity_time_constrained_expansion_turn_window,
                 )
             else:
                 predicted, n_memories, recall_telemetry = module.answer_question(
@@ -1562,6 +1740,7 @@ def _treatment_mode(
     frozen_answer_evidence_table: bool = False,
     frozen_answer_subject_guard: bool = False,
     frozen_answer_shape_directive: bool = False,
+    frozen_entity_time_constrained_expansion: bool = False,
 ) -> str:
     if not merge_treatment:
         return "context_packet_replacement"
@@ -1578,6 +1757,8 @@ def _treatment_mode(
         mode += "_subjguard"
     if frozen_answer_shape_directive:
         mode += "_shaped"
+    if frozen_entity_time_constrained_expansion:
+        mode += "_enttimeexp"
     return mode
 
 
@@ -1632,6 +1813,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--frozen-answer-shape-directive-categories", default=None, help="Optional comma-separated normalized categories that receive the frozen answer shape directive")
     parser.add_argument("--frozen-gold-object-coverage-telemetry", action="store_true", help="In frozen replay treatment only, emit eval-only gold answer atom/object coverage telemetry over final_context")
     parser.add_argument("--frozen-gold-object-coverage-telemetry-categories", default=None, help="Optional comma-separated normalized categories that receive frozen gold-object coverage telemetry")
+    parser.add_argument("--frozen-entity-time-constrained-expansion", action="store_true", help="In frozen replay treatment only, append eval-only same-entity nearby packet evidence before answer synthesis")
+    parser.add_argument("--frozen-entity-time-constrained-expansion-categories", default=None, help="Optional comma-separated normalized categories that receive frozen entity/time constrained expansion")
+    parser.add_argument("--frozen-entity-time-constrained-expansion-max-added", type=int, default=2, help="Maximum packet candidate memories appended by frozen entity/time constrained expansion")
+    parser.add_argument("--frozen-entity-time-constrained-expansion-turn-window", type=int, default=3, help="Maximum same-session turn distance for frozen entity/time constrained expansion")
     parser.add_argument("--frozen-baseline-artifact", default=None, help="Optional baseline arm artifact to pin frozen replay substrate across runs; skips fresh baseline recall/ingest")
     parser.add_argument("--frozen-baseline-artifact-final-context-replay", action="store_true", help="When using --frozen-baseline-artifact, treat artifact final_context as the complete post-packet substrate and do not call live context_packet")
     args = parser.parse_args(argv)
@@ -1666,6 +1851,10 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("frozen_answer_shape_directive_requires_frozen_context_replay")
     if args.frozen_gold_object_coverage_telemetry and not args.frozen_context_replay:
         raise ValueError("frozen_gold_object_coverage_telemetry_requires_frozen_context_replay")
+    if args.frozen_entity_time_constrained_expansion and not args.frozen_context_replay:
+        raise ValueError("frozen_entity_time_constrained_expansion_requires_frozen_context_replay")
+    if args.frozen_entity_time_constrained_expansion and not args.merge_treatment:
+        raise ValueError("frozen_entity_time_constrained_expansion_requires_merge_treatment")
     if args.frozen_baseline_artifact and not args.frozen_context_replay:
         raise ValueError("frozen_baseline_artifact_requires_frozen_context_replay")
     if args.frozen_baseline_artifact_final_context_replay and not args.frozen_baseline_artifact:
@@ -1674,6 +1863,7 @@ def main(argv: list[str] | None = None) -> int:
     answer_subject_guard_categories = parse_category_filter(args.frozen_answer_subject_guard_categories)
     answer_shape_directive_categories = parse_category_filter(args.frozen_answer_shape_directive_categories)
     gold_object_coverage_categories = parse_category_filter(args.frozen_gold_object_coverage_telemetry_categories)
+    entity_time_constrained_expansion_categories = parse_category_filter(args.frozen_entity_time_constrained_expansion_categories)
 
     base_env = os.environ.copy()
     baseline_env = build_benchmark_env(base_env, mcp_url=args.mcp_url, context_packet=False)
@@ -1743,6 +1933,10 @@ def main(argv: list[str] | None = None) -> int:
         answer_shape_directive_categories=answer_shape_directive_categories,
         gold_object_coverage_telemetry=args.frozen_gold_object_coverage_telemetry,
         gold_object_coverage_categories=gold_object_coverage_categories,
+        entity_time_constrained_expansion=args.frozen_entity_time_constrained_expansion,
+        entity_time_constrained_expansion_categories=entity_time_constrained_expansion_categories,
+        entity_time_constrained_expansion_max_added=args.frozen_entity_time_constrained_expansion_max_added,
+        entity_time_constrained_expansion_turn_window=args.frozen_entity_time_constrained_expansion_turn_window,
         context_packet_merge_from_artifact=args.frozen_baseline_artifact_final_context_replay,
     )
     comparison = validate_paired_artifacts(
@@ -1782,6 +1976,10 @@ def main(argv: list[str] | None = None) -> int:
         treatment_suffix += "_goldcov"
         if gold_object_coverage_categories:
             treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in gold_object_coverage_categories))
+    if args.frozen_entity_time_constrained_expansion:
+        treatment_suffix += "_enttimeexp"
+        if entity_time_constrained_expansion_categories:
+            treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in entity_time_constrained_expansion_categories))
     paths = {
         "baseline": str(RESULTS_DIR / f"locomo_context_packet_canary_baseline_{RUN_ID}.json"),
         "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment{treatment_suffix}_{RUN_ID}.json"),
@@ -1801,6 +1999,7 @@ def main(argv: list[str] | None = None) -> int:
             frozen_answer_evidence_table=args.frozen_answer_evidence_table,
             frozen_answer_subject_guard=args.frozen_answer_subject_guard,
             frozen_answer_shape_directive=args.frozen_answer_shape_directive,
+            frozen_entity_time_constrained_expansion=args.frozen_entity_time_constrained_expansion,
         ),
         "merge_append_top_k": args.merge_append_top_k,
         "merge_ref_gate": args.merge_ref_gate,
@@ -1813,6 +2012,10 @@ def main(argv: list[str] | None = None) -> int:
         "frozen_answer_shape_directive_categories": sorted(answer_shape_directive_categories) if answer_shape_directive_categories else None,
         "frozen_gold_object_coverage_telemetry": args.frozen_gold_object_coverage_telemetry,
         "frozen_gold_object_coverage_telemetry_categories": sorted(gold_object_coverage_categories) if gold_object_coverage_categories else None,
+        "frozen_entity_time_constrained_expansion": args.frozen_entity_time_constrained_expansion,
+        "frozen_entity_time_constrained_expansion_categories": sorted(entity_time_constrained_expansion_categories) if entity_time_constrained_expansion_categories else None,
+        "frozen_entity_time_constrained_expansion_max_added": args.frozen_entity_time_constrained_expansion_max_added,
+        "frozen_entity_time_constrained_expansion_turn_window": args.frozen_entity_time_constrained_expansion_turn_window,
         "frozen_baseline_artifact": str(Path(args.frozen_baseline_artifact)) if args.frozen_baseline_artifact else None,
         "frozen_baseline_artifact_final_context_replay": args.frozen_baseline_artifact_final_context_replay,
         "input_identity": input_identity,

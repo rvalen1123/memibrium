@@ -891,6 +891,107 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertEqual(coverage['missing_atoms'], ['Nothing is Impossible'])
         self.assertEqual(coverage['present_atom_source_ids']["Charlotte's Web"], ['m1'])
 
+    def test_entity_time_constrained_expansion_selects_same_entity_nearby_candidates(self):
+        memories, telemetry = context_packet_canary.apply_entity_time_constrained_expansion(
+            question='What activity did Melanie mention?',
+            base_memories=[
+                {'id': 'b1', 'content': 'Melanie discussed vacation plans.', 'refs': {'session_index': 7, 'turn_start': 10, 'turn_end': 10}},
+            ],
+            candidate_memories=[
+                {'id': 'p1', 'content': 'Melanie said the beach was relaxing.', 'refs': {'session_index': 7, 'turn_start': 12, 'turn_end': 12}},
+                {'id': 'p2', 'content': 'Caroline mentioned the beach.', 'refs': {'session_index': 7, 'turn_start': 11, 'turn_end': 11}},
+                {'id': 'p3', 'content': 'Melanie later discussed a museum.', 'refs': {'session_index': 7, 'turn_start': 40, 'turn_end': 40}},
+                {'id': 'b1', 'content': 'Melanie discussed vacation plans.', 'refs': {'session_index': 7, 'turn_start': 10, 'turn_end': 10}},
+            ],
+            one_based_index=41,
+            ground_truth='beach',
+            max_added=2,
+            turn_window=3,
+        )
+
+        self.assertEqual([memory['id'] for memory in memories], ['b1', 'p1'])
+        self.assertEqual(telemetry['schema'], 'memibrium.locomo.entity_time_constrained_expansion.v1')
+        self.assertEqual(telemetry['entity_anchors'], ['Melanie'])
+        self.assertEqual(telemetry['candidate_count'], 4)
+        self.assertEqual(telemetry['eligible_candidate_count'], 1)
+        self.assertEqual(telemetry['added_count'], 1)
+        self.assertEqual(telemetry['added_source_ids'], ['p1'])
+        self.assertEqual(telemetry['rejected_reason_counts']['entity_mismatch'], 1)
+        self.assertEqual(telemetry['rejected_reason_counts']['outside_time_window'], 1)
+        self.assertEqual(telemetry['rejected_reason_counts']['duplicate'], 1)
+        self.assertEqual(telemetry['coverage_before']['coverage_class'], 'no_atoms_present')
+        self.assertEqual(telemetry['coverage_after']['coverage_class'], 'all_atoms_present')
+        self.assertEqual(telemetry['coverage_after']['present_atom_source_ids']['beach'], ['p1'])
+
+    def test_answer_question_with_frozen_context_can_add_default_off_entity_time_constrained_expansion(self):
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = False
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                self.assertEqual(tool, 'context_packet')
+                return {
+                    'schema': 'memibrium.context_packet.v1',
+                    'episodic_evidence': [
+                        {'memory_id': 'p1', 'content': 'Melanie said the beach was relaxing.', 'refs': {'session_index': 7, 'turn_start': 12, 'turn_end': 12}},
+                        {'memory_id': 'p2', 'content': 'Caroline mentioned the beach.', 'refs': {'session_index': 7, 'turn_start': 11, 'turn_end': 11}},
+                    ],
+                    'provenance_summary': {'memory_ids': ['p1', 'p2']},
+                }
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                return list(base_memories), [], len(packet.get('episodic_evidence') or []), 0, 0
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id') or memory.get('memory_id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': packet.get('provenance_summary', {})}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return 'beach'
+
+        answer, memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'What activity did Melanie mention?',
+            'locomo-conv-26',
+            [{'id': 'b1', 'content': 'Melanie discussed vacation plans.', 'refs': {'session_index': 7, 'turn_start': 10, 'turn_end': 10}}],
+            context_packet_merge=True,
+            one_based_index=41,
+            ground_truth='beach',
+            gold_object_coverage_telemetry=True,
+            entity_time_constrained_expansion=True,
+            entity_time_constrained_expansion_max_added=2,
+            entity_time_constrained_expansion_turn_window=3,
+        )
+
+        self.assertEqual(answer, 'beach')
+        self.assertEqual(memory_count, 2)
+        self.assertIn('Melanie said the beach was relaxing.', prompts[0])
+        self.assertNotIn('Caroline mentioned the beach.', prompts[0])
+        self.assertTrue(telemetry['counts']['entity_time_constrained_expansion_enabled'])
+        self.assertEqual(telemetry['counts']['entity_time_constrained_expansion_added_count'], 1)
+        self.assertEqual(telemetry['entity_time_constrained_expansion']['added_source_ids'], ['p1'])
+        self.assertEqual(telemetry['gold_object_coverage']['coverage_class'], 'all_atoms_present')
+
     def test_parse_category_filter_normalizes_comma_separated_categories(self):
         self.assertEqual(
             context_packet_canary.parse_category_filter('single-hop, multi-hop,unanswerable'),
