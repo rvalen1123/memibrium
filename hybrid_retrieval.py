@@ -5,6 +5,7 @@ with optional RRF fusion, cross-encoder re-ranking, and multi-hop expansion.
 """
 
 import asyncio
+import hashlib
 import json
 import re
 from datetime import datetime, timezone, timedelta
@@ -165,9 +166,22 @@ def parse_temporal_window(query: str, now: Optional[datetime] = None) -> Optiona
 class HybridRetriever:
     """Hybrid search: semantic + lexical + temporal, with optional reranking."""
 
+    _VECTOR_TYPE_ALIASES = {
+        "pgvector": "vector",
+        "vector": "vector",
+        "ruvector": "ruvector",
+    }
+
+    @classmethod
+    def _normalize_vtype(cls, vtype: str) -> str:
+        try:
+            return cls._VECTOR_TYPE_ALIASES[vtype]
+        except KeyError as exc:
+            raise ValueError(f"Unsupported vector type: {vtype!r}") from exc
+
     def __init__(self, pool=None, vtype: str = "pgvector", embedder=None):
         self.pool = pool
-        self.vtype = vtype
+        self.vtype = self._normalize_vtype(vtype)
         self.embedder = embedder
         self._ce = None  # cross-encoder placeholder
 
@@ -365,88 +379,184 @@ class HybridRetriever:
 
     # ── Search sub-methods (async, require DB pool) ───────────────
 
+    # ── Telemetry helpers (opt-in, observation-only) ───────────────
+
+    def _telemetry_memory_projection(self, memory: dict, rank: Optional[int] = None) -> dict:
+        """Return a stable, non-mutating telemetry projection for one memory."""
+        content = str(memory.get("content") or "")
+        refs = memory.get("refs") or {}
+        if isinstance(refs, str):
+            try:
+                refs = json.loads(refs)
+            except Exception:
+                refs = {}
+        item = {
+            "rank": rank,
+            "id": memory.get("id"),
+            "refs": refs,
+            "created_at": memory.get("created_at"),
+            "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+            "snippet": content[:160],
+        }
+        for key in ("cosine_score", "bm25_score", "temporal_score", "rrf_score", "combined_score"):
+            if key in memory:
+                item[key] = memory.get(key)
+        return item
+
+    def _score_summary(self, results: List[dict], score_key: str) -> dict:
+        scores = [r.get(score_key) for r in results if r.get(score_key) is not None]
+        if not scores:
+            return {"key": score_key, "count": 0, "min": None, "max": None, "mean": None}
+        return {
+            "key": score_key,
+            "count": len(scores),
+            "min": min(scores),
+            "max": max(scores),
+            "mean": sum(scores) / len(scores),
+        }
+
+    def _stream_telemetry(self, results: List[dict], score_key: str, requested_top_k: int, path: Optional[str] = None) -> dict:
+        payload = {
+            "requested_top_k": requested_top_k,
+            "returned_count": len(results),
+            "items": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(results, start=1)],
+            "score_summary": self._score_summary(results, score_key),
+        }
+        if path is not None:
+            payload["path"] = path
+        return payload
+
+    def _new_telemetry(self, query: str, top_k: int, fetch_k: int,
+                       state_filter: Optional[list], domain: Optional[str],
+                       use_rrf: bool, rerank: bool) -> dict:
+        return {
+            "schema": "memibrium.hybrid_retrieval.telemetry.v1",
+            "query": query,
+            "requested_top_k": top_k,
+            "fetch_k": fetch_k,
+            "state_filter": list(state_filter) if state_filter else None,
+            "domain": domain,
+            "use_rrf": bool(use_rrf),
+            "rerank_requested": bool(rerank),
+            "streams": {
+                "semantic": {"requested_top_k": fetch_k, "returned_count": 0, "items": [], "score_summary": self._score_summary([], "cosine_score")},
+                "lexical": {"requested_top_k": fetch_k, "returned_count": 0, "items": [], "score_summary": self._score_summary([], "bm25_score")},
+                "temporal": {"requested_top_k": fetch_k, "returned_count": 0, "items": [], "score_summary": self._score_summary([], "temporal_score")},
+            },
+            "temporal": {"executed": False, "window_start": None, "window_end": None},
+            "fusion": {"streams_count": 0, "fused_count_before_cap": 0, "items_before_cap": []},
+            "multihop": {"executed": False, "expanded_count": None},
+            "chronology_sort": {"executed": False},
+            "final": {"returned_count": 0, "items": [], "cutoff_items": []},
+            "errors": {},
+        }
+
+    def _record_final_telemetry(self, telemetry: Optional[dict], final: List[dict], top_k: int) -> None:
+        if telemetry is None:
+            return
+        telemetry["final"] = {
+            "returned_count": len(final[:top_k]),
+            "items": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(final[:top_k], start=1)],
+            "cutoff_items": [
+                self._telemetry_memory_projection(item, rank=idx)
+                for idx, item in enumerate(final[top_k:top_k + 5], start=top_k + 1)
+            ],
+        }
+
     async def _semantic_search(self, embedding: list, top_k: int,
                                 state_filter: Optional[list] = None,
-                                domain: Optional[str] = None) -> List[dict]:
+                                domain: Optional[str] = None,
+                                telemetry: Optional[dict] = None) -> List[dict]:
         """Vector similarity search via pgvector or ruvector."""
-        if not self.pool:
+        if not self.pool or embedding is None:
+            if telemetry is not None:
+                telemetry["streams"]["semantic"] = self._stream_telemetry([], "cosine_score", top_k)
             return []
-        
+
+        params = [json.dumps(embedding), top_k]
+        where_clauses = ["state != 'shed'"]
+
+        if state_filter:
+            placeholders = ", ".join(f"${i+3}" for i in range(len(state_filter)))
+            where_clauses.append(f"state IN ({placeholders})")
+            params.extend(state_filter)
+
+        if domain:
+            where_clauses.append(f"domain = ${len(params)+1}")
+            params.append(domain)
+
+        query = f"""
+            SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
+                   entities, topics, refs, witness_chain, embedding,
+                   1 - (embedding <=> $1::{self.vtype}) AS cosine_score
+            FROM memories
+            WHERE {" AND ".join(where_clauses)}
+            ORDER BY embedding <=> $1::{self.vtype}
+            LIMIT $2
+        """
         async with self.pool.acquire() as conn:
-            if self.vtype == "ruvector":
-                # RuVector HNSW search
-                rows = await conn.fetch(
-                    """
-                    SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
-                           entities, topics, refs, witness_chain, embedding,
-                           1 - (embedding <=> $1::vector) AS cosine_score
-                    FROM memories
-                    WHERE state != 'shed'
-                    ORDER BY embedding <=> $1::vector
-                    LIMIT $2
-                    """,
-                    json.dumps(embedding), top_k
-                )
-            else:
-                # pgvector fallback
-                params = [json.dumps(embedding), top_k]
-                where_clauses = ["state != 'shed'"]
-                
-                if state_filter:
-                    placeholders = ", ".join(f"${i+3}" for i in range(len(state_filter)))
-                    where_clauses.append(f"state IN ({placeholders})")
-                    params.extend(state_filter)
-                
-                if domain:
-                    where_clauses.append(f"domain = ${len(params)+1}")
-                    params.append(domain)
-                
-                query = f"""
-                    SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
-                           entities, topics, refs, witness_chain, embedding,
-                           1 - (embedding <=> $1::vector) AS cosine_score
-                    FROM memories
-                    WHERE {" AND ".join(where_clauses)}
-                    ORDER BY embedding <=> $1::vector
-                    LIMIT $2
-                """
-                rows = await conn.fetch(query, *params)
-            
-            return [dict(r) for r in rows]
+            rows = await conn.fetch(query, *params)
+            result = [dict(r) for r in rows]
+            if telemetry is not None:
+                telemetry["streams"]["semantic"] = self._stream_telemetry(result, "cosine_score", top_k)
+            return result
 
     async def _lexical_search(self, query: str, top_k: int,
                              state_filter: Optional[list] = None,
-                             domain: Optional[str] = None) -> List[dict]:
+                             domain: Optional[str] = None,
+                             telemetry: Optional[dict] = None) -> List[dict]:
         """BM25-style text search. Falls back to ILIKE if no full-text index."""
         if not self.pool:
+            if telemetry is not None:
+                telemetry["streams"]["lexical"] = self._stream_telemetry([], "bm25_score", top_k)
             return []
         
         # Extract keywords
         words = re.findall(r"[a-zA-Z]{3,}", query.lower())
+        if telemetry is not None:
+            telemetry["streams"].setdefault("lexical", {})["words"] = list(words)
         if not words:
+            if telemetry is not None:
+                telemetry["streams"]["lexical"] = self._stream_telemetry([], "bm25_score", top_k) | {"words": []}
             return []
         
         async with self.pool.acquire() as conn:
             # Try tsvector search first
             try:
                 tsquery = " | ".join(words)
-                rows = await conn.fetch(
-                    """
+                if telemetry is not None:
+                    telemetry["streams"].setdefault("lexical", {})["tsquery"] = tsquery
+                params = [tsquery, top_k]
+                where_clauses = ["state != 'shed'", "to_tsvector('english', content) @@ to_tsquery('english', $1)"]
+                if state_filter:
+                    placeholders = ", ".join(f"${i+3}" for i in range(len(state_filter)))
+                    where_clauses.append(f"state IN ({placeholders})")
+                    params.extend(state_filter)
+                if domain:
+                    where_clauses.append(f"domain = ${len(params)+1}")
+                    params.append(domain)
+                query_sql = f"""
                     SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
                            entities, topics, refs, witness_chain, embedding,
                            ts_rank(to_tsvector('english', content), to_tsquery('english', $1)) AS bm25_score
                     FROM memories
-                    WHERE state != 'shed'
-                      AND to_tsvector('english', content) @@ to_tsquery('english', $1)
+                    WHERE {" AND ".join(where_clauses)}
                     ORDER BY bm25_score DESC
                     LIMIT $2
-                    """,
-                    tsquery, top_k
-                )
+                    """
+                rows = await conn.fetch(query_sql, *params)
                 if rows:
-                    return [dict(r) for r in rows]
-            except Exception:
-                pass
+                    result = [dict(r) for r in rows]
+                    if telemetry is not None:
+                        stream = self._stream_telemetry(result, "bm25_score", top_k, path="tsvector")
+                        stream["words"] = list(words)
+                        stream["tsquery"] = tsquery
+                        stream["tsvector_error"] = None
+                        telemetry["streams"]["lexical"] = stream
+                    return result
+            except Exception as exc:
+                if telemetry is not None:
+                    telemetry["streams"].setdefault("lexical", {})["tsvector_error"] = {"class": exc.__class__.__name__, "message": str(exc)}
             
             # Fallback: ILIKE with OR
             patterns = [f"%{w}%" for w in words[:5]]
@@ -475,13 +585,24 @@ class HybridRetriever:
                 LIMIT $1
             """
             rows = await conn.fetch(query_sql, *params)
-            return [dict(r) for r in rows]
+            result = [dict(r) for r in rows]
+            if telemetry is not None:
+                previous_error = telemetry["streams"].get("lexical", {}).get("tsvector_error")
+                stream = self._stream_telemetry(result, "bm25_score", top_k, path="ilike_fallback")
+                stream["words"] = list(words)
+                stream["tsquery"] = " | ".join(words)
+                stream["tsvector_error"] = previous_error
+                telemetry["streams"]["lexical"] = stream
+            return result
 
     async def _temporal_search(self, start: datetime, end: datetime, top_k: int,
                                 state_filter: Optional[list] = None,
-                                domain: Optional[str] = None) -> List[dict]:
+                                domain: Optional[str] = None,
+                                telemetry: Optional[dict] = None) -> List[dict]:
         """Search memories within a temporal window."""
         if not self.pool:
+            if telemetry is not None:
+                telemetry["streams"]["temporal"] = self._stream_telemetry([], "temporal_score", top_k)
             return []
         
         async with self.pool.acquire() as conn:
@@ -507,7 +628,10 @@ class HybridRetriever:
                 LIMIT $3
             """
             rows = await conn.fetch(query, *params)
-            return [dict(r) for r in rows]
+            result = [dict(r) for r in rows]
+            if telemetry is not None:
+                telemetry["streams"]["temporal"] = self._stream_telemetry(result, "temporal_score", top_k)
+            return result
 
     def _normalize_scores(self, results: List[dict], score_key: str) -> List[dict]:
         """Min-max normalize scores to [0, 1]."""
@@ -557,7 +681,8 @@ class HybridRetriever:
                      domain: Optional[str] = None,
                      temporal_window: Optional[tuple] = None,
                      use_rrf: bool = True,
-                     rerank: bool = False) -> List[dict]:
+                     rerank: bool = False,
+                     include_telemetry: bool = False):
         """
         Full hybrid search.
 
@@ -580,15 +705,23 @@ class HybridRetriever:
             temporal_window = parse_temporal_window(query)
         
         fetch_k = top_k * 2
+        telemetry = self._new_telemetry(query, top_k, fetch_k, state_filter, domain, use_rrf, rerank) if include_telemetry else None
+        if telemetry is not None and temporal_window is not None:
+            telemetry["temporal"]["window_start"] = temporal_window[0]
+            telemetry["temporal"]["window_end"] = temporal_window[1]
         
         # Launch searches concurrently
-        semantic_task = self._semantic_search(embedding, fetch_k, state_filter, domain)
-        lexical_task = self._lexical_search(query, fetch_k, state_filter, domain)
+        semantic_task = self._semantic_search(embedding, fetch_k, state_filter, domain, telemetry=telemetry)
+        lexical_task = self._lexical_search(query, fetch_k, state_filter, domain, telemetry=telemetry)
         tasks = [semantic_task, lexical_task]
         
         if temporal_window:
             start, end = temporal_window
-            temporal_task = self._temporal_search(start, end, fetch_k, state_filter, domain)
+            if telemetry is not None:
+                telemetry["temporal"]["executed"] = True
+                telemetry["temporal"]["window_start"] = start
+                telemetry["temporal"]["window_end"] = end
+            temporal_task = self._temporal_search(start, end, fetch_k, state_filter, domain, telemetry=telemetry)
             tasks.append(temporal_task)
         
         results = await asyncio.gather(*tasks)
@@ -607,7 +740,12 @@ class HybridRetriever:
                         seen.add(r["id"])
                         if len(semantic_results) >= top_k:
                             break
-            return self._normalize_scores(semantic_results, "cosine_score")[:top_k]
+            final_legacy = self._normalize_scores(semantic_results, "cosine_score")[:top_k]
+            self._record_final_telemetry(telemetry, final_legacy, top_k)
+            if telemetry is not None:
+                telemetry["fusion"]["fused_count_before_cap"] = len(semantic_results)
+                return final_legacy, telemetry
+            return final_legacy
         
         # Normalize each stream
         semantic_results = self._normalize_scores(semantic_results, "cosine_score")
@@ -621,6 +759,12 @@ class HybridRetriever:
             streams.append(temporal_results)
         
         fused = self._rrf_fuse(streams)
+        if telemetry is not None:
+            telemetry["fusion"] = {
+                "streams_count": len(streams),
+                "fused_count_before_cap": len(fused),
+                "items_before_cap": [self._telemetry_memory_projection(item, rank=idx) for idx, item in enumerate(fused, start=1)],
+            }
         
         # Optional rerank
         if rerank and self._ce:
@@ -631,6 +775,8 @@ class HybridRetriever:
         
         # Multi-hop expansion for multi-hop queries
         if self.is_multihop_query(query):
+            if telemetry is not None:
+                telemetry["multihop"]["executed"] = True
             # Session adjacency expansion only (safe baseline per benchmark findings)
             all_candidates = semantic_results + lexical_results
             seen = {r["id"] for r in all_candidates}
@@ -643,10 +789,18 @@ class HybridRetriever:
             expanded = self.expand_with_session_adjacency(final, candidates, window=1)
             # Re-sort and limit
             final = self.sort_by_chronology(expanded)
+            if telemetry is not None:
+                telemetry["multihop"]["expanded_count"] = len(final)
         
         # Chronology sort for temporal queries
         temporal_cues = ("before", "after", "earlier", "later", "first", "last", "then")
         if any(token in query.lower() for token in temporal_cues):
             final = self.sort_by_chronology(final)
+            if telemetry is not None:
+                telemetry["chronology_sort"]["executed"] = True
         
-        return final[:top_k]
+        final_results = final[:top_k]
+        self._record_final_telemetry(telemetry, final, top_k)
+        if telemetry is not None:
+            return final_results, telemetry
+        return final_results

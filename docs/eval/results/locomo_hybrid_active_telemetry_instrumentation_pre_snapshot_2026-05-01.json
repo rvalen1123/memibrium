@@ -1,0 +1,297 @@
+{
+  "captured_at": "2026-05-01T21:43:15.017658+00:00",
+  "db_probe": {
+    "command_returncode": 0,
+    "copy_returncode": 0,
+    "json": {
+      "locomo_contamination_count": 0,
+      "memories_embedding_type": "USER-DEFINED:ruvector",
+      "nonnull_embeddings": 20,
+      "ruvector_extension_version": "0.3.0",
+      "ruvector_type_count": 1,
+      "self_distance": "1.7872301e-07",
+      "vector_type_count": 0
+    },
+    "stderr": ""
+  },
+  "docker_ps": {
+    "cmd": "docker ps --format '{{.Names}}|{{.Status}}|{{.Image}}' | grep -E 'memibrium|ruvector|ollama'",
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "memibrium-server|Up 7 hours (healthy)|memibrium-memibrium\nmemibrium-ollama|Up 33 hours|ollama/ollama:latest\nmemibrium-ruvector-db|Up 33 hours (healthy)|ruvnet/ruvector-postgres:latest"
+  },
+  "git": {
+    "branch": "query-expansion",
+    "head": "cb565591a27d394d45b285c24a48390ebe3988bd",
+    "status_short": "?? docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_pre_snapshot_2026-05-01.json\n?? scripts/locomo_telemetry_mutation_window.py"
+  },
+  "health": {
+    "json": {
+      "engine": "memibrium",
+      "status": "ok"
+    },
+    "ok": true,
+    "status": 200,
+    "text": "{\"status\":\"ok\",\"engine\":\"memibrium\"}"
+  },
+  "label": "pre_mutation_uninstrumented_live",
+  "log_tail": {
+    "contains_hybrid_retrieval_failed": false,
+    "contains_telemetry_serialization": false,
+    "contains_type_vector_missing": false,
+    "returncode": 0,
+    "tail": "INFO:     127.0.0.1:41980 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56286 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:42838 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59720 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60508 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52370 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52854 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35384 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44028 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38418 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:34404 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35414 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45452 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37146 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41370 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52440 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53186 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52494 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47442 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56338 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47716 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36540 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59902 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:49878 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:51056 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40280 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:55534 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:46796 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:54626 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38862 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59744 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36920 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56090 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59736 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45894 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37646 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:34238 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48926 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:51068 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36748 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33896 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57702 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53940 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57802 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59610 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:43784 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37742 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59158 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48396 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36656 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52810 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57478 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38198 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:36724 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56966 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39570 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:46066 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:34008 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48212 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:43534 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:49398 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45098 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35232 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53804 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:43166 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33974 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59030 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39148 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:54976 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:51650 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56004 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38514 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:55014 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59190 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37548 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35790 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40630 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52860 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:42664 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:42666 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41748 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57494 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41338 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:34476 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52624 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57560 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39246 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59298 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38928 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41554 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35392 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37398 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59970 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45284 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47314 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:55168 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39864 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39050 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:55070 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40700 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40076 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33550 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53600 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47572 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45554 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45756 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:54394 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33442 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38800 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37332 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:37482 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:58924 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:42446 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53598 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39006 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:42768 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:50130 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:37316 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60708 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60716 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60732 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60744 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60756 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60762 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60772 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60786 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60802 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60814 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60830 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60838 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60470 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60852 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60866 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60878 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:60892 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45386 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59078 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:46778 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41582 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35436 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40008 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33758 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:56176 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:38776 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:34088 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:50596 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35010 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60224 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:46414 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:58962 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40620 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:58002 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:43478 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48490 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41044 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53922 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47448 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57826 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:50574 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:55412 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39952 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44826 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60314 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:41698 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40292 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35184 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60850 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52074 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:55794 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:57996 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:45070 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:47970 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:49446 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:55164 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:33786 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:52200 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39474 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:48954 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:50256 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:53302 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:54008 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:59794 - \"GET /health HTTP/1.1\" 200 OK\n2026-05-01 20:49:28,360 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}\n2026-05-01 21:19:22,517 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}\n2026-05-01 21:20:03,116 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:03,354 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:03,484 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:03,623 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:03,808 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:04,020 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:04,168 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:04,321 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:04,460 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:04,749 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:04,881 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:05,082 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:05,305 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:05,491 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:05,735 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:20:05,901 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\""
+  },
+  "server_container_inspect": {
+    "cmd": [
+      "docker",
+      "inspect",
+      "memibrium-server",
+      "--format",
+      "server_image={{.Image}} created={{.Created}} started={{.State.StartedAt}}"
+    ],
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "server_image=sha256:e61857cc17f69f5cc6c76971fabe02b6657156148847aaaf711939707b6f0356 created=2026-05-01T14:50:21.953131594Z started=2026-05-01T14:50:22.996971396Z"
+  },
+  "server_env_redacted": {
+    "AZURE_API_VERSION": "2024-06-01",
+    "AZURE_CHAT_API_KEY": "[REDACTED]",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com",
+    "AZURE_EMBEDDING_API_KEY": "[REDACTED]",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "AZURE_EMBEDDING_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "AZURE_OPENAI_API_KEY": "[REDACTED]",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "CHAT_MODEL": "gemma4:e4b",
+    "EMBEDDING_BASE_URL": "http://ollama:11434/v1",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "OPENAI_API_KEY": "[REDACTED]",
+    "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+    "RUVECTOR_GNN": "true",
+    "SLM_MODEL": "phi3:mini",
+    "USE_RUVECTOR": "true"
+  },
+  "server_image_inspect": {
+    "cmd": [
+      "docker",
+      "image",
+      "inspect",
+      "sha256:e61857cc17f69f5cc6c76971fabe02b6657156148847aaaf711939707b6f0356",
+      "--format",
+      "image_created={{.Created}} repo_tags={{json .RepoTags}}"
+    ],
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "image_created=2026-05-01T14:25:48.558179254Z repo_tags=[\"memibrium-memibrium:latest\"]"
+  },
+  "smoke_hash": {
+    "aggregate_hash": "b15c7ab85bd3d9b2d9f33b4919aa1b6717bb39556d3d107cf14d938d65217625",
+    "include_telemetry": false,
+    "queries": [
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline adoption agencies LGBTQ individuals",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Melanie charity race mental health self care",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "LGBTQ counseling workshop therapeutic methods",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pottery workshop July Melanie",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "beach with kids once or twice a year",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "camping trip meteor shower family",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Grand Canyon accident children road trip",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "necklace Sweden grandmother love faith strength",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pride parade school speech support group",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "adoption council meeting loving homes children",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "running de-stress clear her mind mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline picnic week before July 6 2023",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Nothing is Impossible book Melanie 2022",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "The Four Seasons Vivaldi classical music",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "safe and inviting place for people to grow",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "hybrid active ruvector smoke probe",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      }
+    ],
+    "top_k": 10
+  },
+  "source_checks": {
+    "container_sha256_/app/benchmark_scripts/locomo_bench_v2.py": {
+      "cmd": [
+        "docker",
+        "exec",
+        "memibrium-server",
+        "sha256sum",
+        "/app/benchmark_scripts/locomo_bench_v2.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff  /app/benchmark_scripts/locomo_bench_v2.py"
+    },
+    "container_sha256_/app/hybrid_retrieval.py": {
+      "cmd": [
+        "docker",
+        "exec",
+        "memibrium-server",
+        "sha256sum",
+        "/app/hybrid_retrieval.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07  /app/hybrid_retrieval.py"
+    },
+    "container_sha256_/app/server.py": {
+      "cmd": [
+        "docker",
+        "exec",
+        "memibrium-server",
+        "sha256sum",
+        "/app/server.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "d0532ea7a4748031aaf4759bba46deb5d563381da109eb2cb1c953ba4e747a2c  /app/server.py"
+    },
+    "host_sha256_benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+    "host_sha256_hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+    "host_sha256_server.py": "d0532ea7a4748031aaf4759bba46deb5d563381da109eb2cb1c953ba4e747a2c",
+    "host_sha256_test_server_recall_telemetry.py": "2a86eeafb6c667737ff1eec2b6496254d68c3a3730728a45ca9370fd7e1b6fd3",
+    "live_source_feature_probe": {
+      "cmd": [
+        "docker",
+        "exec",
+        "-i",
+        "memibrium-server",
+        "python3",
+        "-c",
+        "from pathlib import Path\ntext=Path('/app/hybrid_retrieval.py').read_text()\nserver=Path('/app/server.py').read_text()\nprint('hardcoded_vector_cast_present=' + str('$1::vector' in text))\nprint('dynamic_vtype_cast_present=' + str('$1::{self.vtype}' in text))\nprint('hybrid_telemetry_schema_present=' + str('memibrium.hybrid_retrieval.telemetry.v1' in text))\nprint('server_include_telemetry_present=' + str('include_telemetry' in server))"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "hardcoded_vector_cast_present=False\ndynamic_vtype_cast_present=True\nhybrid_telemetry_schema_present=True\nserver_include_telemetry_present=True"
+    }
+  }
+}

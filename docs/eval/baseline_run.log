@@ -1,0 +1,172 @@
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+======================================================================
+  Starting memories: 0
+  Conversations to process: 10
+  Total questions: 1986 (1986 evaluated, skipping cats set())
+
+  [1/10] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 11.1s
+    ... 20/199 questions, running acc: 60.0%
+    ... 40/199 questions, running acc: 56.2%
+    ... 60/199 questions, running acc: 56.7%
+    ... 80/199 questions, running acc: 56.9%
+    ... 100/199 questions, running acc: 63.5%
+    ... 120/199 questions, running acc: 67.9%
+    ... 140/199 questions, running acc: 71.4%
+    ... 160/199 questions, running acc: 68.1%
+    ... 180/199 questions, running acc: 64.2%
+    Conv accuracy: 63.6% (199 questions)
+
+  [2/10] Conv conv-30: Jon & Gina
+    Ingested 369 turns in 23.2s
+    ... 20/105 questions, running acc: 62.5%
+    ... 40/105 questions, running acc: 67.5%
+    ... 60/105 questions, running acc: 70.0%
+    ... 80/105 questions, running acc: 70.0%
+    ... 100/105 questions, running acc: 63.0%
+    Conv accuracy: 60.0% (105 questions)
+
+  [3/10] Conv conv-41: John & Maria
+    Ingested 663 turns in 33.8s
+    ... 20/193 questions, running acc: 65.0%
+    ... 40/193 questions, running acc: 71.2%
+    ... 60/193 questions, running acc: 66.7%
+    ... 80/193 questions, running acc: 70.6%
+    ... 100/193 questions, running acc: 73.0%
+    ... 120/193 questions, running acc: 75.8%
+    ... 140/193 questions, running acc: 75.7%
+    ... 160/193 questions, running acc: 72.8%
+    ... 180/193 questions, running acc: 67.8%
+    Conv accuracy: 64.2% (193 questions)
+
+  [4/10] Conv conv-42: Joanna & Nate
+    Ingested 629 turns in 45.3s
+    ... 20/260 questions, running acc: 70.0%
+    ... 40/260 questions, running acc: 61.3%
+    ... 60/260 questions, running acc: 58.3%
+    ... 80/260 questions, running acc: 55.6%
+    ... 100/260 questions, running acc: 54.0%
+    ... 120/260 questions, running acc: 58.8%
+    ... 140/260 questions, running acc: 63.6%
+    ... 160/260 questions, running acc: 65.9%
+    ... 180/260 questions, running acc: 67.2%
+    ... 200/260 questions, running acc: 68.5%
+    ... 220/260 questions, running acc: 63.9%
+    ... 240/260 questions, running acc: 60.8%
+    ... 260/260 questions, running acc: 58.1%
+    Conv accuracy: 58.1% (260 questions)
+
+  [5/10] Conv conv-43: Tim & John
+    Ingested 680 turns in 34.8s
+    ... 20/242 questions, running acc: 52.5%
+    ... 40/242 questions, running acc: 53.8%
+    ... 60/242 questions, running acc: 57.5%
+    ... 80/242 questions, running acc: 61.9%
+    ... 100/242 questions, running acc: 65.5%
+    ... 120/242 questions, running acc: 69.2%
+    ... 140/242 questions, running acc: 71.4%
+    ... 160/242 questions, running acc: 73.4%
+    ... 180/242 questions, running acc: 73.9%
+    ... 200/242 questions, running acc: 67.5%
+    ... 220/242 questions, running acc: 64.8%
+    ... 240/242 questions, running acc: 61.9%
+    Conv accuracy: 61.6% (242 questions)
+
+  [6/10] Conv conv-44: Audrey & Andrew
+    Ingested 675 turns in 30.9s
+    ... 20/158 questions, running acc: 57.5%
+    ... 40/158 questions, running acc: 62.5%
+    ... 60/158 questions, running acc: 63.3%
+    ... 80/158 questions, running acc: 68.1%
+    ... 100/158 questions, running acc: 69.0%
+    ... 120/158 questions, running acc: 70.4%
+    ... 140/158 questions, running acc: 63.6%
+    Conv accuracy: 60.1% (158 questions)
+
+  [7/10] Conv conv-47: James & John
+    Ingested 689 turns in 44.7s
+    ... 20/190 questions, running acc: 65.0%
+    ... 40/190 questions, running acc: 61.3%
+    ... 60/190 questions, running acc: 65.0%
+    ... 80/190 questions, running acc: 65.6%
+    ... 100/190 questions, running acc: 72.0%
+    ... 120/190 questions, running acc: 75.0%
+    ... 140/190 questions, running acc: 77.1%
+    ... 160/190 questions, running acc: 76.6%
+    ... 180/190 questions, running acc: 72.2%
+    Conv accuracy: 71.3% (190 questions)
+
+  [8/10] Conv conv-48: Deborah & Jolene
+    Ingested 681 turns in 43.2s
+    ... 20/239 questions, running acc: 75.0%
+    ... 40/239 questions, running acc: 65.0%
+    ... 60/239 questions, running acc: 67.5%
+    ... 80/239 questions, running acc: 65.0%
+    ... 100/239 questions, running acc: 66.0%
+    ... 120/239 questions, running acc: 65.4%
+    ... 140/239 questions, running acc: 68.9%
+    ... 160/239 questions, running acc: 71.2%
+    ... 180/239 questions, running acc: 71.1%
+    ... 200/239 questions, running acc: 68.8%
+    ... 220/239 questions, running acc: 64.3%
+    Conv accuracy: 60.5% (239 questions)
+
+  [9/10] Conv conv-49: Evan & Sam
+    Ingested 509 turns in 34.1s
+    ... 20/196 questions, running acc: 65.0%
+    ... 40/196 questions, running acc: 65.0%
+    ... 60/196 questions, running acc: 70.0%
+    ... 80/196 questions, running acc: 66.2%
+    ... 100/196 questions, running acc: 68.5%
+    ... 120/196 questions, running acc: 67.5%
+    ... 140/196 questions, running acc: 68.9%
+    ... 160/196 questions, running acc: 67.8%
+    ... 180/196 questions, running acc: 65.0%
+    Conv accuracy: 61.5% (196 questions)
+
+  [10/10] Conv conv-50: Calvin & Dave
+    Ingested 568 turns in 31.6s
+    ... 20/204 questions, running acc: 60.0%
+    ... 40/204 questions, running acc: 62.5%
+    ... 60/204 questions, running acc: 61.7%
+    ... 80/204 questions, running acc: 65.0%
+    ... 100/204 questions, running acc: 70.0%
+    ... 120/204 questions, running acc: 70.8%
+    ... 140/204 questions, running acc: 72.5%
+    ... 160/204 questions, running acc: 70.9%
+    ... 180/204 questions, running acc: 64.2%
+    ... 200/204 questions, running acc: 60.2%
+    Conv accuracy: 59.6% (204 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 62.0%
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-5              26.2%     446       3495ms
+  cat-multi-hop      49.0%      96       3298ms
+  cat-single-hop     63.8%     282       3237ms
+  cat-temporal       61.4%     321       3787ms
+  cat-unanswerable    82.0%     841       3097ms
+
+  Ingest: 33.3s avg per conversation
+  Query:  3328ms avg per question
+  Total:  6941s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  MemMachine                  84.9%
+  Zep                         80.3%
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  >>> MEMIBRIUM               62.0% <<<
+  LangMem                     58.1%
+
+  Detailed results saved to /tmp/locomo_results.json

@@ -1,0 +1,176 @@
+{
+  "step": "5k",
+  "artifact": "docs/eval/results/locomo_harness_runtime_drift_audit_2026-05-02.md",
+  "support_artifact": "docs/eval/results/locomo_harness_runtime_drift_audit_support_2026-05-02.json",
+  "per_question_artifact": "docs/eval/results/locomo_harness_runtime_drift_audit_per_question_2026-05-02.json",
+  "primary_label": "audit_supports_query_expansion_path_drift",
+  "secondary_labels": [
+    "audit_supports_artifact_mismatch",
+    "audit_supports_harness_code_drift",
+    "audit_inconclusive_artifacts_insufficient",
+    "audit_requires_commit_boundary_bisection_prereg",
+    "no_go_phase_c_still_blocked"
+  ],
+  "next_action": "go_commit_boundary_bisection_preregistration",
+  "phase_c": "blocked",
+  "benchmark_run_performed": false,
+  "live_recall_probe_performed": false,
+  "mutation_performed": false,
+  "regime_summary": {
+    "A_low_f2466c9": {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_substrate_baseline_2026-05-01.json",
+      "sha256": "d44b9288a633bfdb04061f44bb5d37b8240342e5550e2df5f1c2bc2f38187637",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 14.82,
+      "protocol_4cat_overall": 19.41,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 4.5327,
+      "n_dist": {
+        "2": 57,
+        "3": 110,
+        "11": 1,
+        "12": 3,
+        "13": 3,
+        "14": 3,
+        "15": 22
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 2.617,
+        "multi-hop": 7.2308,
+        "single-hop": 6.2188,
+        "temporal": 8.1351,
+        "unanswerable": 2.6429
+      },
+      "cat_score_mean": {
+        "adversarial": 0.0,
+        "multi-hop": 30.77,
+        "single-hop": 26.56,
+        "temporal": 39.19,
+        "unanswerable": 3.57
+      }
+    },
+    "B_high_91fede6": {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json",
+      "sha256": "7d8c911caa8753e6f920bed1402f8e1d72c0a6c4d741f82003f54de5fc2c032d",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 58.29,
+      "protocol_4cat_overall": 69.41,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 14.6231,
+      "n_dist": {
+        "11": 3,
+        "12": 6,
+        "13": 17,
+        "14": 11,
+        "15": 162
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 14.6809,
+        "multi-hop": 14.5385,
+        "single-hop": 14.6875,
+        "temporal": 14.4054,
+        "unanswerable": 14.6857
+      },
+      "cat_score_mean": {
+        "adversarial": 22.34,
+        "multi-hop": 42.31,
+        "single-hop": 64.06,
+        "temporal": 68.92,
+        "unanswerable": 77.14
+      }
+    },
+    "C_third_662514a": {
+      "path": "docs/eval/results/locomo_corrected_slice_results_query_expansion_raw_2026-05-02.json",
+      "sha256": "317dc38bb7cbe8529c3f1d10fbbefe459d6b790c539f8395cf72729dd828f9e9",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 55.28,
+      "protocol_4cat_overall": 70.07,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 11.9296,
+      "n_dist": {
+        "4": 51,
+        "12": 6,
+        "13": 10,
+        "14": 12,
+        "15": 120
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 4,
+        "multi-hop": 14.7692,
+        "single-hop": 14.75,
+        "temporal": 14.5405,
+        "unanswerable": 14.0571
+      },
+      "cat_score_mean": {
+        "adversarial": 7.45,
+        "multi-hop": 38.46,
+        "single-hop": 68.75,
+        "temporal": 75.68,
+        "unanswerable": 73.57
+      }
+    }
+  },
+  "cross_regime_alignment": null,
+  "health": "{\"status\":\"ok\",\"engine\":\"memibrium\"}",
+  "hygiene": "memories|0\ntemporal_expressions|0\nmemory_snapshots|0\nuser_feedback|0\ncontradictions|0\nmemory_edges|0"
+}

@@ -1,0 +1,109 @@
+{
+  "schema": "memibrium.locomo.step5o.prereg.fixed_rows.v1",
+  "selection_mode": "read_only_existing_artifact_selection; no benchmark/no recall/no DB mutation",
+  "source_artifacts": {
+    "A": "docs/eval/results/locomo_conv26_hybrid_active_substrate_baseline_2026-05-01.json",
+    "B": "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json",
+    "C": "docs/eval/results/locomo_corrected_slice_results_query_expansion_raw_2026-05-02.json"
+  },
+  "selected_rows": [
+    {
+      "one_based_index": 153,
+      "cat": "adversarial",
+      "question": "What did Caroline realize after her charity race?",
+      "A_n": 3,
+      "B_n": 15,
+      "C_n": 4,
+      "A_score": 0.0,
+      "B_score": 0.0,
+      "C_score": 0.0,
+      "question_sha256": "27b4847984de1d6c9dde59d26f076fd6f729ed02020feb2ba8bea5a54afae319",
+      "label": "adversarial_split_early"
+    },
+    {
+      "one_based_index": 154,
+      "cat": "adversarial",
+      "question": "What are Melanie's plans for the summer with respect to adoption?",
+      "A_n": 2,
+      "B_n": 15,
+      "C_n": 4,
+      "A_score": 0.0,
+      "B_score": 0.0,
+      "C_score": 0.0,
+      "question_sha256": "753a2d308908a185eb2cca48e15941005e2fcac20dcd978d50ecf28f95f45641",
+      "label": "adversarial_split_late"
+    },
+    {
+      "one_based_index": 83,
+      "cat": "unanswerable",
+      "question": "What did the charity race raise awareness for?",
+      "A_n": 3,
+      "B_n": 15,
+      "C_n": 15,
+      "A_score": 0.0,
+      "B_score": 1.0,
+      "C_score": 1.0,
+      "question_sha256": "d655f74fe3f7194564489450f0b77e69eacf705269e77bbae3c6d34242ab00be",
+      "label": "unanswerable_high_context"
+    },
+    {
+      "one_based_index": 149,
+      "cat": "unanswerable",
+      "question": "What was Melanie's reaction to her children enjoying the Grand Canyon?",
+      "A_n": 2,
+      "B_n": 15,
+      "C_n": 4,
+      "A_score": 0.0,
+      "B_score": 1.0,
+      "C_score": 0.0,
+      "question_sha256": "17f1b00d7eceafed2640e81b2342bf064f8284f124a4a676ef8d14d6054be2d7",
+      "label": "unanswerable_c_low_exception"
+    },
+    {
+      "one_based_index": 34,
+      "cat": "temporal",
+      "question": "When did Caroline go to a pride parade during the summer?",
+      "A_n": 3,
+      "B_n": 15,
+      "C_n": 15,
+      "A_score": 0.5,
+      "B_score": 0.5,
+      "C_score": 1.0,
+      "question_sha256": "46df9a32c68bda07d28e4b3d23f462cfc0a0839af1de47f130d74aac7afea8b3",
+      "label": "temporal_high_context"
+    },
+    {
+      "one_based_index": 33,
+      "cat": "single-hop",
+      "question": "What LGBTQ+ events has Caroline participated in?",
+      "A_n": 3,
+      "B_n": 15,
+      "C_n": 15,
+      "A_score": 0.5,
+      "B_score": 0.5,
+      "C_score": 0.5,
+      "question_sha256": "c26b7a216dfc7eacc85248cb275a25ec02964b1e0a40a550c014e7dbdc43b7a8",
+      "label": "single_hop_high_context"
+    },
+    {
+      "one_based_index": 43,
+      "cat": "multi-hop",
+      "question": "Would Melanie be more interested in going to a national park or a theme park?",
+      "A_n": 3,
+      "B_n": 15,
+      "C_n": 15,
+      "A_score": 0.0,
+      "B_score": 1.0,
+      "C_score": 1.0,
+      "question_sha256": "43ab1d1387937c9833a68417daeae616a8ac101c2473f6079464b448e0e5d42c",
+      "label": "multi_hop_high_context"
+    }
+  ],
+  "category_counts": {
+    "temporal": 37,
+    "multi-hop": 13,
+    "single-hop": 32,
+    "unanswerable": 70,
+    "adversarial": 47
+  }
+}

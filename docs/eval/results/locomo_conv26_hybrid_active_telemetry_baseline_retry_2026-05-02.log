@@ -1,0 +1,54 @@
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+======================================================================
+  Starting memories: 20
+  Conversations to process: 1
+  Total questions: 199 (199 evaluated, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 16.7s
+    ... 20/199 questions, running acc: 75.0%
+    ... 40/199 questions, running acc: 63.7%
+    ... 60/199 questions, running acc: 62.5%
+    ... 80/199 questions, running acc: 63.7%
+    ... 100/199 questions, running acc: 68.5%
+    ... 120/199 questions, running acc: 72.1%
+    ... 140/199 questions, running acc: 70.7%
+    ... 160/199 questions, running acc: 66.6%
+    ... 180/199 questions, running acc: 61.9%
+    Conv accuracy: 58.3% (199 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 58.3%
+  Query expansion fallback: 0/199 (0.00%)
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-adversarial    22.3%      47       3138ms
+  cat-multi-hop      42.3%      13       3224ms
+  cat-single-hop     64.1%      32       3210ms
+  cat-temporal       68.9%      37       3381ms
+  cat-unanswerable    77.1%      70       3342ms
+
+  Ingest: 16.7s avg per conversation
+  Query:  3272ms avg per question
+  Total:  668s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  MemMachine                  84.9%
+  Zep                         80.3%
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  >>> MEMIBRIUM               58.3% <<<
+  LangMem                     58.1%
+
+  Detailed results saved to /tmp/locomo_results_query_expansion_raw.json

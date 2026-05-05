@@ -1,0 +1,54 @@
+=== RESOLVED ENV FOR THIS RUN ===
+AZURE_CHAT_ENDPOINT=https://sector-7.services.ai.azure.com/models
+AZURE_OPENAI_ENDPOINT=<unset>
+OPENAI_BASE_URL=<unset>
+AZURE_CHAT_DEPLOYMENT=gpt-4.1-mini
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
+CHAT_MODEL=gpt-4.1-mini
+ANSWER_MODEL=gpt-4.1-mini
+JUDGE_MODEL=gpt-4.1-mini
+=================================
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+  [DATE NORMALIZATION ENABLED]
+======================================================================
+  Starting memories: 19
+  Conversations to process: 1
+  Total questions: 199 (10 evaluated, question cap 10, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 0.3s
+    Conv accuracy: 80.0% (10 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 80.0%
+  Query expansion fallback: 0/10 (0.00%)
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-multi-hop      50.0%       1       3087ms
+  cat-single-hop     50.0%       3       3510ms
+  cat-temporal      100.0%       6       3787ms
+
+  Ingest: 0.3s avg per conversation
+  Query:  3634ms avg per question
+  Total:  37s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  MemMachine                  84.9%
+  Zep                         80.3%
+  >>> MEMIBRIUM               80.0% <<<
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  LangMem                     58.1%
+
+  Detailed results saved to /tmp/locomo_results_query_expansion.json

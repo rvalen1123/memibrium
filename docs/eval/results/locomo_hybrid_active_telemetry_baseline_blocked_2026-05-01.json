@@ -1,0 +1,135 @@
+{
+  "artifact_policy": {
+    "blocked_placeholder_result_written": true,
+    "locked_comparison_path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_199q_comparison_2026-05-01.md",
+    "locked_main_result_path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_2026-05-01.json",
+    "locked_run_log_path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_2026-05-01.log",
+    "locked_traces_path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_traces_2026-05-01.json"
+  },
+  "authorized_step": "Step 5 telemetry-augmented baseline observation",
+  "benchmark_condition": {
+    "answer_model": "gpt-4.1-mini",
+    "append_or_gated_append": false,
+    "context_rerank": false,
+    "conversation": "conv-26 first LOCOMO item",
+    "dataset": "/tmp/locomo/data/locomo10.json",
+    "date_normalization": false,
+    "embedding_deployment": "text-embedding-3-small",
+    "include_recall_telemetry": true,
+    "judge_model": "gpt-4.1-mini",
+    "legacy_context_assembly": false,
+    "max_convs": 1,
+    "query_expansion": true
+  },
+  "branch": "query-expansion",
+  "captured_at": "2026-05-02T01:29:46.061979+00:00",
+  "cleanup": {
+    "captured_at": "2026-05-02T01:30:27.382011+00:00",
+    "cleanup_log": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_cleanup_2026-05-01.log",
+    "cleanup_log_sha256": "b45ccb88d4baa7580f8b811de44c4933e7c3606cb49f1c332a726c7f6605444a",
+    "count_id_after_cleanup": "0",
+    "health_after_cleanup": "{\"status\":\"ok\",\"engine\":\"memibrium\"}",
+    "linked_counts_after_cleanup": [
+      "temporal_expressions|0",
+      "memory_snapshots|0",
+      "user_feedback|0",
+      "contradictions|0",
+      "memory_edges|0"
+    ],
+    "script": "scripts/clear_locomo_domains.sh",
+    "verified_locomo_count_zero": true
+  },
+  "contamination_before_cleanup": {
+    "query_result": {
+      "cmd": "docker exec memibrium-ruvector-db psql -U memory -d memory -tA -F '|' -c \"SELECT 'memories', count(*) FROM memories WHERE domain LIKE 'locomo-%' UNION ALL SELECT 'temporal_expressions', count(*) FROM temporal_expressions WHERE memory_id IN (SELECT id FROM memories WHERE domain LIKE 'locomo-%') UNION ALL SELECT 'memory_snapshots', count(*) FROM memory_snapshots WHERE memory_id IN (SELECT id FROM memories WHERE domain LIKE 'locomo-%') UNION ALL SELECT 'user_feedback', count(*) FROM user_feedback WHERE memory_id IN (SELECT id FROM memories WHERE domain LIKE 'locomo-%') UNION ALL SELECT 'contradictions', count(*) FROM contradictions WHERE memory_a_id IN (SELECT id FROM memories WHERE domain LIKE 'locomo-%') OR memory_b_id IN (SELECT id FROM memories WHERE domain LIKE 'locomo-%') UNION ALL SELECT 'memory_edges', count(*) FROM memory_edges WHERE source_id IN (SELECT id FROM memories WHERE domain LIKE 'locomo-%') OR target_id IN (SELECT id FROM memories WHERE domain LIKE 'locomo-%');\"",
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "temporal_expressions|66\nmemory_snapshots|0\nuser_feedback|0\nmemories|49\ncontradictions|0\nmemory_edges|435\n"
+    }
+  },
+  "failed_launch_evidence": {
+    "last_progress_marker": {
+      "completed": 120,
+      "running_accuracy_percent": 72.1,
+      "total": 199
+    },
+    "mcp_recall_500_after_three_attempts": true,
+    "partial_main_result_valid": false,
+    "run_log_copy": {
+      "bytes": 1740,
+      "sha256": "a6abefbcea648e9fc0872665f65c1155eeecb7c8c2cd3b9c8b4262078ad8c8d2",
+      "source": "/tmp/locomo_conv26_hybrid_active_telemetry_baseline_2026-05-01.log",
+      "target": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_2026-05-01.log"
+    },
+    "run_log_sha256": "a6abefbcea648e9fc0872665f65c1155eeecb7c8c2cd3b9c8b4262078ad8c8d2",
+    "server_decimal_serialization_error": true,
+    "server_log_copy": {
+      "bytes": 133277,
+      "sha256": "0370ed20b635708f362be2ee2c169f5f5cafb52e43dfcaf9f97651965eda16ee",
+      "source": "/tmp/locomo_step5_failed_server_tail_full_2026-05-01.log",
+      "target": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_failed_server_log_2026-05-01.log"
+    },
+    "server_log_sha256": "0370ed20b635708f362be2ee2c169f5f5cafb52e43dfcaf9f97651965eda16ee",
+    "telemetry_traces_valid": false,
+    "tmp_result_json_present": false,
+    "traceback_present_in_run_log": true
+  },
+  "git_status_short": "?? docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_2026-05-01.log\n?? docs/eval/results/locomo_hybrid_active_telemetry_baseline_failed_server_log_2026-05-01.log\n?? docs/eval/results/locomo_hybrid_active_telemetry_baseline_prelaunch_2026-05-01.json\n",
+  "head": "328da53",
+  "phase_c_boundary": "No Phase C intervention was implemented or selected.",
+  "prelaunch_artifact": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_prelaunch_2026-05-01.json",
+  "prelaunch_summary": {
+    "db_probe": {
+      "locomo_contamination_count": 0,
+      "memories_embedding_type": "USER-DEFINED:ruvector",
+      "nonnull_embeddings": 20,
+      "ruvector_type_count": 1,
+      "self_distance": "1.7872301e-07",
+      "vector_type_count": 0
+    },
+    "env_redacted": {
+      "AZURE_API_VERSION": "2024-06-01",
+      "AZURE_CHAT_API_KEY": "[REDACTED]",
+      "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+      "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com",
+      "AZURE_EMBEDDING_API_KEY": "[REDACTED]",
+      "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+      "AZURE_EMBEDDING_ENDPOINT": "https://sector-7.openai.azure.com/",
+      "AZURE_OPENAI_API_KEY": "[REDACTED]",
+      "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+      "AZURE_OPENAI_ENDPOINT": "https://sector-7.openai.azure.com/",
+      "CHAT_MODEL": "gemma4:e4b",
+      "EMBEDDING_BASE_URL": "http://ollama:11434/v1",
+      "EMBEDDING_MODEL": "nomic-embed-text",
+      "OPENAI_API_KEY": "[REDACTED]",
+      "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+      "RUVECTOR_GNN": "true",
+      "SLM_MODEL": "phi3:mini",
+      "USE_RUVECTOR": "true"
+    },
+    "git": {
+      "branch": "query-expansion",
+      "head": "328da535f39c254d79f1fc17e3afd4402277203b",
+      "status_short": ""
+    },
+    "health": {
+      "json": {
+        "engine": "memibrium",
+        "status": "ok"
+      },
+      "status": 200
+    },
+    "log_flags": {
+      "contains_grok": false,
+      "contains_hybrid_retrieval_failed": false,
+      "contains_large_embedding": false,
+      "contains_type_vector_missing": false
+    },
+    "source_probe_stdout": "/app/server.py 114290\n/app/hybrid_retrieval.py 34349\n/app/benchmark_scripts/locomo_bench_v2.py 57728\nhardcoded_vector_cast_present=False\ndynamic_vtype_cast_present=True\nhybrid_telemetry_schema_present=True\nserver_include_telemetry_present=True\nbench_include_recall_telemetry_present=True"
+  },
+  "preregistration": "docs/eval/locomo_telemetry_augmented_baseline_preregistration_2026-05-01.md",
+  "repo": "/home/zaddy/src/Memibrium",
+  "schema": "memibrium.locomo.telemetry_baseline_blocked.v1",
+  "stop_go_output": "no_go_insufficient_evidence_expand_telemetry",
+  "verdict": "telemetry_baseline_blocked_runtime_serialization_error"
+}

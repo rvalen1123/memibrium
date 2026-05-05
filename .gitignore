@@ -13,5 +13,6 @@ terraform.tfvars
 __pycache__/
 *.pyc
 .env
+.hermes/
 wiki/
 data/

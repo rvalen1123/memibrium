@@ -1,0 +1,107 @@
+{
+  "artifact_type": "locomo_legacy_context_smoke_comparison",
+  "date": "2026-04-30",
+  "diagnostic_flag": "--legacy-context-assembly / USE_LEGACY_CONTEXT_ASSEMBLY",
+  "run_commit": "ebd4c9cee714872ddaf22b75f37eff3f9d4bc0ac",
+  "working_tree_dirty_files": [
+    " M benchmark_scripts/locomo_bench_v2.py",
+    " M test_locomo_query_expansion.py",
+    "?? docs/eval/results/locomo_conv26_legacy_context_smoke_10q_2026-04-30.json",
+    "?? docs/eval/results/locomo_conv26_legacy_context_smoke_10q_2026-04-30.log"
+  ],
+  "inference_stack": {
+    "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com/models",
+    "ANSWER_MODEL": "gpt-4.1-mini",
+    "JUDGE_MODEL": "gpt-4.1-mini",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "CHAT_MODEL": "gpt-4.1-mini",
+    "OPENAI_BASE_URL": "<unset>",
+    "AZURE_OPENAI_ENDPOINT": "<unset>",
+    "temperature": 0
+  },
+  "pre_run_hygiene": {
+    "docker": "memibrium-server, memibrium-ruvector-db, memibrium-ollama up; server/db healthy",
+    "container_toggles": {
+      "ENABLE_BACKGROUND_SCORING": "false",
+      "ENABLE_CONTRADICTION_DETECTION": "false",
+      "ENABLE_HIERARCHY_PROCESSING": "false"
+    },
+    "locomo_db_count_before": 0,
+    "tests": "test_locomo_query_expansion + test_hybrid_retrieval_ruvector + test_temporal_memory: 72 OK"
+  },
+  "cleanup": {
+    "locomo_db_count_after": 0
+  },
+  "legacy_smoke": {
+    "path": "docs/eval/results/locomo_conv26_legacy_context_smoke_10q_2026-04-30.json",
+    "log": "docs/eval/results/locomo_conv26_legacy_context_smoke_10q_2026-04-30.log",
+    "score": 85.0,
+    "total_questions": 10,
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "avg_query_ms": 4404,
+    "category_scores": {
+      "cat-temporal": 100.0,
+      "cat-multi-hop": 100.0,
+      "cat-single-hop": 50.0
+    },
+    "condition": {
+      "cleaned": true,
+      "normalize_dates": true,
+      "query_expansion": true,
+      "context_rerank": false,
+      "append_context_expansion": false,
+      "gated_append_context_expansion": false,
+      "no_expansion_arm_b": false,
+      "legacy_context_assembly": true
+    }
+  },
+  "canonical_smoke": {
+    "path": "docs/eval/results/locomo_conv26_canonical_stack_smoke_10q_2026-04-30.json",
+    "score": 80.0,
+    "total_questions": 10,
+    "fallback_count": 0,
+    "avg_query_ms": 3634,
+    "category_scores": {
+      "cat-temporal": 100.0,
+      "cat-multi-hop": 50.0,
+      "cat-single-hop": 50.0
+    }
+  },
+  "canonical_full_failed_reproduction": {
+    "path": "docs/eval/results/locomo_conv26_canonical_stack_199q_2026-04-30.json",
+    "score": 62.06,
+    "total_questions": 199,
+    "fallback_count": 0,
+    "avg_query_ms": 4212
+  },
+  "reference_2026_04_24": {
+    "path": "docs/eval/results/locomo_conv26_query_expansion_2026-04-24.json",
+    "score": 68.09,
+    "total_questions": 199,
+    "fallback_count": 0,
+    "avg_query_ms": 8026
+  },
+  "paired_smoke_overlap": {
+    "common_questions": 10,
+    "canonical_only": 0,
+    "legacy_only": 0,
+    "rescued_count": 1,
+    "harmed_count": 0,
+    "changed": [
+      {
+        "question": "What fields would Caroline be likely to pursue in her educaton?",
+        "category": "multi-hop",
+        "canonical_score": 0.5,
+        "legacy_score": 1.0,
+        "delta": 0.5,
+        "canonical_predicted": "Caroline is likely to pursue education in counseling or mental health.",
+        "legacy_predicted": "Caroline is likely to pursue education in counseling and mental health, focusing on working with transgender people and supporting their mental health.",
+        "ground_truth": "Psychology, counseling certification"
+      }
+    ]
+  },
+  "interpretation": "10Q smoke is directionally positive (+5pp vs current canonical 10Q, 0 fallback), but too small to establish the 199Q baseline; it supports legacy context assembly as a plausible code-drift candidate and justifies requesting approval for a full 199Q diagnostic run if desired.",
+  "next_step": "If approved, run full 199Q forced canonical stack with --legacy-context-assembly. Do not redefine the locked canonical-stack reproduction verdict; this is a diagnostic bisection probe."
+}

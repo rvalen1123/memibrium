@@ -1,0 +1,31 @@
+{
+  "step": "5n",
+  "primary_label": "bisection_identifies_commit_range",
+  "secondary_labels": [
+    "supports_benchmark_harness_shift",
+    "supports_telemetry_wrapper_noncausal",
+    "supports_artifact_or_runtime_mismatch",
+    "requires_step_5o_checkpoint_prereg",
+    "no_go_phase_c_still_blocked"
+  ],
+  "candidate_range": {
+    "lower_observational_boundary": "f2466c9 low-context artifact",
+    "upper_code_boundary": "cb56559 opt-in telemetry/source wrapper commit",
+    "post_boundary_stable_source_window": "cb56559 through c9a7623/662514a for benchmark/hybrid; server serialization-only at 5cb6f0b"
+  },
+  "non_culprits": {
+    "5cb6f0b": "serialization-only Decimal/date JSON support; no candidate/query/top_k/fusion/cap change",
+    "6294164": "docs/artifacts only",
+    "91fede6_through_c9a7623": "docs/artifacts/prereg/audit only for target runtime source"
+  },
+  "confidence": {
+    "range": "medium",
+    "specific_commit": "low"
+  },
+  "stop_go": "do_not_run_phase_c; preregister Step 5o only if execution is desired",
+  "forbidden_continues": [
+    "no LOCOMO full rerun without new prereg/authorization",
+    "no DB/Docker/source/env mutation",
+    "do not treat 14.82, 58.29, or 55.28 as Phase C baseline"
+  ]
+}

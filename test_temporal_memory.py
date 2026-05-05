@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
+import inspect
+import unittest
 from datetime import datetime, timezone
 
 from memory_hierarchy import parse_temporal_expressions
@@ -176,3 +178,27 @@ def test_second_hop_filter_requires_entity_overlap_or_session_match():
     ]
     filtered = retriever.filter_second_hop_candidates(first_hop, second_hop)
     assert [m["id"] for m in filtered] == ["keep-session", "keep-entity"]
+
+
+class FunctionTestCase(unittest.TestCase):
+    """Expose module-level pytest-style tests to unittest runners."""
+
+
+def _install_unittest_wrappers():
+    for name, obj in list(globals().items()):
+        if not name.startswith("test_") or not inspect.isfunction(obj):
+            continue
+
+        def _make_test(fn):
+            def _test(self):
+                fn()
+            return _test
+
+        setattr(FunctionTestCase, name, _make_test(obj))
+
+
+_install_unittest_wrappers()
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

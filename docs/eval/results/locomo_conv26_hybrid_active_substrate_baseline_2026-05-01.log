@@ -1,0 +1,54 @@
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+======================================================================
+  Starting memories: 19
+  Conversations to process: 1
+  Total questions: 199 (199 evaluated, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 14.9s
+    ... 20/199 questions, running acc: 70.0%
+    ... 40/199 questions, running acc: 55.0%
+    ... 60/199 questions, running acc: 44.2%
+    ... 80/199 questions, running acc: 33.8%
+    ... 100/199 questions, running acc: 27.5%
+    ... 120/199 questions, running acc: 24.2%
+    ... 140/199 questions, running acc: 20.7%
+    ... 160/199 questions, running acc: 18.4%
+    ... 180/199 questions, running acc: 16.4%
+    Conv accuracy: 14.8% (199 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 14.8%
+  Query expansion fallback: 0/199 (0.00%)
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-adversarial     0.0%      47       2295ms
+  cat-multi-hop      30.8%      13       2739ms
+  cat-single-hop     26.6%      32       2517ms
+  cat-temporal       39.2%      37       2671ms
+  cat-unanswerable     3.6%      70       2433ms
+
+  Ingest: 14.9s avg per conversation
+  Query:  2478ms avg per question
+  Total:  508s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  MemMachine                  84.9%
+  Zep                         80.3%
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  LangMem                     58.1%
+  >>> MEMIBRIUM               14.8% <<<
+
+  Detailed results saved to /tmp/locomo_results_query_expansion_raw.json

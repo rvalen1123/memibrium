@@ -1,0 +1,16 @@
+{
+  "log_excerpt": "INFO:     172.21.0.1:34176 - \"POST /mcp/recall HTTP/1.1\" 200 OK\n",
+  "log_flags": {
+    "contains_decimal_not_json_serializable": false,
+    "contains_hybrid_retrieval_failed": false,
+    "contains_type_error": false,
+    "contains_type_vector_missing": false
+  },
+  "response": {
+    "json": [],
+    "ok": true,
+    "status": 200,
+    "text_excerpt": "[]"
+  },
+  "started_at": "2026-05-02T12:31:21.470793+00:00"
+}

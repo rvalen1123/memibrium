@@ -1,0 +1,57 @@
+# Step 5p guarded launch started 2026-05-03T04:33:45Z
+# command: python3 benchmark_scripts/locomo_bench_v2.py --max-convs 1 --query-expansion
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+======================================================================
+  Starting memories: 22
+  Conversations to process: 1
+  Total questions: 199 (199 evaluated, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 15.2s
+    ... 20/199 questions, running acc: 67.5%
+    ... 40/199 questions, running acc: 60.0%
+    ... 60/199 questions, running acc: 60.8%
+    ... 80/199 questions, running acc: 60.0%
+    ... 100/199 questions, running acc: 65.5%
+    ... 120/199 questions, running acc: 67.9%
+    ... 140/199 questions, running acc: 67.5%
+    ... 160/199 questions, running acc: 62.2%
+    ... 180/199 questions, running acc: 58.9%
+    Conv accuracy: 54.8% (199 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 54.8%
+  Query expansion fallback: 0/199 (0.00%)
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-adversarial    22.3%      47       2527ms
+  cat-multi-hop      30.8%      13       2625ms
+  cat-single-hop     54.7%      32       2557ms
+  cat-temporal       73.0%      37       2651ms
+  cat-unanswerable    71.4%      70       2690ms
+
+  Ingest: 15.2s avg per conversation
+  Query:  2619ms avg per question
+  Total:  536s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  MemMachine                  84.9%
+  Zep                         80.3%
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  LangMem                     58.1%
+  >>> MEMIBRIUM               54.8% <<<
+
+  Detailed results saved to /tmp/locomo_results_query_expansion_raw.json
+# Step 5p guarded launch completed rc=0 guard_status=passed_startup_guard abort_reason=None

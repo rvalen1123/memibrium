@@ -1,0 +1,28 @@
+{
+  "artifact_date": "2026-05-02",
+  "cleanup_artifact": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_telemetry_off_199q_reproducibility_cleanup_2026-05-02.json",
+  "completed_199q": false,
+  "next_valid_step": "preregister corrected conv-26-only launch semantics or implement/read-only verify a harness selector that evaluates exactly conv-26/199Q without source/runtime mutation in the same window. Do not resume from partial output.",
+  "partial_log": {
+    "exists": true,
+    "mtime_utc": "2026-05-02T17:48:18.472800+00:00",
+    "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_telemetry_off_199q_reproducibility_partial_aborted_2026-05-02.log",
+    "sha256": "66fe9a85dd3c657ab87dc39432b5d5010d20000acbeebda4e51657b6956f2bfc",
+    "size": 581
+  },
+  "phase_c_still_blocked": true,
+  "preflight_status": "pass",
+  "prelaunch_artifact": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_telemetry_off_199q_reproducibility_prelaunch_2026-05-02.json",
+  "reason": "The preregistered command used --max-convs 26, but current benchmark semantics slice the first N conversations. Preflight passed and launch began, but the log showed 'Conversations to process: 10' and 'Total questions: 1986' while processing conv-26 as [1/10], not a 199Q-only run. The process was killed after 60/199 questions of the first conversation; no result JSON was produced. Partial LOCOMO ingest was cleaned and verified zero.",
+  "result_comparable": false,
+  "schema": "memibrium.locomo.telemetry_off_199q_reproducibility.labels.v1",
+  "secondary_labels": [
+    "preflight_passed",
+    "benchmark_started_then_aborted",
+    "wrong_slice_guard_triggered",
+    "no_199q_result_json",
+    "partial_log_preserved",
+    "cleanup_restored_zero"
+  ],
+  "verdict": "repro_blocked_scope_mismatch_aborted"
+}

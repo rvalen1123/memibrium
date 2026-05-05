@@ -1,0 +1,121 @@
+{
+  "answer_to_primary_question": "Artifacts prove the retry high-context regime was produced by four expanded queries times top_k=10 with no early break under query expansion, yielding 40 pre-dedupe candidates for every question and cap-level final context for 162/199. Static source reading does not show include_telemetry changing retrieval parameters or context assembly. However, artifacts cannot directly compare same-query telemetry-on/off result IDs, so telemetry perturbation is not definitively falsified. The next evidence should be a paired telemetry flag probe, not a 199Q rerun first.",
+  "artifact_date": "2026-05-02",
+  "audit_step": "5f",
+  "branch": "query-expansion",
+  "head_at_audit_start": "faaa661",
+  "key_metrics": {
+    "baseline_le3_retry_ge11": 167,
+    "baseline_mean_n_memories": 4.532663316582915,
+    "baseline_n15": 22,
+    "mean_delta_n_memories": 10.090452261306533,
+    "retry_candidate_before_dedupe_dist": {
+      "40": 199
+    },
+    "retry_final_answer_context_count_dist": {
+      "11": 3,
+      "12": 6,
+      "13": 17,
+      "14": 11,
+      "15": 162
+    },
+    "retry_four_expanded_queries_all_questions": 199,
+    "retry_mean_n_memories": 14.623115577889447,
+    "retry_n15": 162,
+    "retry_per_query_calls_result_10": 796,
+    "retry_per_query_calls_total": 796,
+    "score_improved": 106,
+    "score_unchanged": 91,
+    "score_worsened": 2
+  },
+  "next_step": "Preregister a paired telemetry flag probe: fixed small query set sampled from audit divergences, same live state, compare /mcp/recall results and IDs with include_telemetry false vs true, no benchmark scoring, cleanup not expected if read-only. If paired probe shows equality, then preregister telemetry-off 199Q reproducibility or benchmark-harness effective-runtime audit.",
+  "phase_c_boundary": "Phase C remains blocked; neither 14.82 nor 58.29 may be used as an intervention comparator until regime cause is resolved.",
+  "primary_verdict": "artifact_insufficient_requires_paired_recall_probe",
+  "repo": "/home/zaddy/src/Memibrium",
+  "schema": "memibrium.locomo.telemetry_noncomparability_audit_labels.v1",
+  "secondary_labels": [
+    "artifact_supports_analysis_or_effective_runtime_mismatch",
+    "artifact_does_not_support_static_telemetry_path_perturbation",
+    "artifact_does_not_support_simple_flag_mismatch",
+    "phase_c_still_blocked"
+  ],
+  "source_static_verdicts": [
+    {
+      "evidence_against": [
+        "server.py handle_recall passes the same query, embedding, top_k, state_filter, and domain to hybrid_retriever.search; include_telemetry is only an additional boolean argument (server.py:1901-1908).",
+        "Non-telemetry response returns search_result directly; telemetry response unwraps (result, telemetry) then serializes {'results': result, 'telemetry': ...} (server.py:1909-1963)."
+      ],
+      "evidence_for": [],
+      "mechanism": "Server include_telemetry changes retrieval parameters or branch selection",
+      "static_verdict": "not_supported_by_static_source"
+    },
+    {
+      "evidence_against": [
+        "hybrid_retrieval.py computes fetch_k=top_k*2 unconditionally before telemetry allocation (lines 707-708).",
+        "semantic, lexical, temporal searches receive same fetch_k/state/domain regardless of telemetry; telemetry only records stream projections after result lists are materialized (lines 713-727).",
+        "RRF fusion, optional rerank, multihop, chronology sorting, and final_results=final[:top_k] are outside telemetry conditionals except for recording telemetry (lines 750-805)."
+      ],
+      "evidence_for": [],
+      "mechanism": "HybridRetriever include_telemetry changes SQL top_k/fetch_k, fusion, cutoff, or return count",
+      "static_verdict": "not_supported_by_static_source"
+    },
+    {
+      "evidence_against": [
+        "Telemetry projection creates new dicts and reads fields; it does not alter memory dictionaries (hybrid_retrieval.py:384-404).",
+        "_stream_telemetry and _record_final_telemetry enumerate lists and project items; they do not pop/sort/filter returned lists (hybrid_retrieval.py:418-464)."
+      ],
+      "evidence_for": [
+        "_normalize_scores mutates score fields in result dicts before telemetry and final return, but this happens regardless of telemetry and predates telemetry instrumentation."
+      ],
+      "mechanism": "Telemetry construction mutates returned result objects or consumes shared iterators",
+      "static_verdict": "unlikely_static_mechanism"
+    },
+    {
+      "evidence_against": [
+        "answer_question always builds recall_telemetry locally, independent of return_telemetry; return_telemetry only changes the function's return tuple at the end (lines 674-683, 816-818).",
+        "recall_for_query adds payload['include_telemetry']=True only when INCLUDE_RECALL_TELEMETRY is true, then _extract_recall_payload extracts the same results list from either a list response or {'results': ...} response (lines 685-703, 548-551).",
+        "Context assembly loops over the recalled list returned by recall_for_query; there is no conditional branch on return_telemetry or INCLUDE_RECALL_TELEMETRY in dedupe/candidate/final selection (lines 705-765)."
+      ],
+      "evidence_for": [
+        "When INCLUDE_RECALL_TELEMETRY is true, benchmark calls answer_question(..., return_telemetry=True, evidence_refs=...) and stores recall_telemetry in each result row (locomo_bench_v2.py:1151-1178)."
+      ],
+      "mechanism": "Benchmark INCLUDE_RECALL_TELEMETRY changes answer-context assembly",
+      "static_verdict": "not_supported_by_static_source"
+    },
+    {
+      "evidence_against": [
+        "The locked baseline artifact reports the same condition metadata: query_expansion=True and legacy_context_assembly=False, yet its n_memories distribution is low-context. Therefore this source-level mechanism cannot by itself explain baseline-vs-retry divergence without an additional runtime/artifact/source-version difference."
+      ],
+      "evidence_for": [
+        "With USE_QUERY_EXPANSION=true, the non-legacy assembly loops over all expanded queries and only breaks early if NOT USE_QUERY_EXPANSION (locomo_bench_v2.py:729-737).",
+        "Telemetry traces show every question used 4 expanded queries, every per-query recall returned 10 memories, candidate_memories_before_dedupe was exactly 40 for all 199 questions, and final context hit cap 15 for 162/199.",
+        "This mechanism directly matches the retry high-context shape."
+      ],
+      "mechanism": "Query expansion plus current non-legacy assembly explains high context counts independently of telemetry",
+      "static_verdict": "mechanism_explains_retry_shape_not_divergence"
+    },
+    {
+      "evidence_against": [
+        "Retry prelaunch benchmark env explicitly set INCLUDE_RECALL_TELEMETRY=1; blocked attempt benchmark_condition also recorded include_recall_telemetry=True; benchmark source probe confirmed bench_include_recall_telemetry_present=True.",
+        "This is documentation naming drift, not evidence of failed telemetry activation."
+      ],
+      "evidence_for": [
+        "Prereg text used LOCOMO_RETRIEVAL_TELEMETRY, while benchmark code-effective flag is INCLUDE_RECALL_TELEMETRY."
+      ],
+      "mechanism": "Effective flag-name mismatch caused unintended telemetry state",
+      "static_verdict": "documentation_alias_drift_not_condition_mismatch"
+    },
+    {
+      "evidence_against": [
+        "Baseline prelaunch reported source/hash/substrate checks and condition metadata matching canonical stack, and no direct baseline telemetry traces exist to prove its internal assembly path.",
+        "Artifact-only audit cannot inspect live f2466c9-era effective benchmark function behavior during that exact run beyond committed metadata."
+      ],
+      "evidence_for": [
+        "The baseline low-context distribution is consistent with early-break/legacy-style assembly over expanded queries: many rows at n=2 or n=3 rather than cap 15.",
+        "The current source with query_expansion=True and legacy_context_assembly=False should collect candidates from all four expanded queries and usually fill 15, as the retry traces demonstrate."
+      ],
+      "mechanism": "Baseline artifact was produced by a different effective benchmark code/context assembly than its condition metadata indicates",
+      "static_verdict": "plausible_artifact_or_effective_runtime_mismatch_requires_disambiguation"
+    }
+  ]
+}

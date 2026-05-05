@@ -1,0 +1,260 @@
+{
+  "artifacts": {
+    "query_expansion": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_query_expansion_2026-04-24.json",
+    "pure_rerank": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_query_expansion_reranked_2026-04-26.json",
+    "prefix_rerank": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_query_expansion_prefix_rerank_2026-04-26.json",
+    "append": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_query_expansion_appended_2026-04-26.json"
+  },
+  "summary": {
+    "query_expansion": {
+      "full_5cat_overall": 68.09,
+      "protocol_4cat_overall": 79.93,
+      "avg_query_ms": 8026,
+      "fallback_count": 0,
+      "condition": {},
+      "category_scores": {
+        "cat-temporal": 86.49,
+        "cat-multi-hop": 50.0,
+        "cat-single-hop": 64.06,
+        "cat-unanswerable": 89.29,
+        "cat-5": 29.79
+      },
+      "total_questions": 199
+    },
+    "pure_rerank": {
+      "full_5cat_overall": 59.3,
+      "protocol_4cat_overall": 70.39,
+      "avg_query_ms": 3979,
+      "fallback_count": 0,
+      "condition": {
+        "cleaned": true,
+        "normalize_dates": true,
+        "query_expansion": true,
+        "context_rerank": true
+      },
+      "category_scores": {
+        "cat-temporal": 87.84,
+        "cat-multi-hop": 34.62,
+        "cat-single-hop": 64.06,
+        "cat-unanswerable": 70.71,
+        "cat-5": 23.4
+      },
+      "total_questions": 199
+    },
+    "prefix_rerank": {
+      "full_5cat_overall": 60.55,
+      "protocol_4cat_overall": 72.37,
+      "avg_query_ms": 3810,
+      "fallback_count": 0,
+      "condition": {
+        "cleaned": true,
+        "normalize_dates": true,
+        "query_expansion": true,
+        "context_rerank": true
+      },
+      "category_scores": {
+        "cat-temporal": 86.49,
+        "cat-multi-hop": 38.46,
+        "cat-single-hop": 64.06,
+        "cat-unanswerable": 75.0,
+        "cat-5": 22.34
+      },
+      "total_questions": 199
+    },
+    "append": {
+      "full_5cat_overall": 61.81,
+      "protocol_4cat_overall": 74.01,
+      "avg_query_ms": 3073,
+      "fallback_count": 0,
+      "condition": {
+        "cleaned": true,
+        "normalize_dates": true,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": true
+      },
+      "category_scores": {
+        "cat-temporal": 86.49,
+        "cat-multi-hop": 38.46,
+        "cat-single-hop": 68.75,
+        "cat-unanswerable": 76.43,
+        "cat-5": 22.34
+      },
+      "total_questions": 199
+    }
+  },
+  "paired_vs_query_expansion": {
+    "common": 199,
+    "rescued": 10,
+    "harmed": 21,
+    "unchanged_correct": 95,
+    "unchanged_wrong": 36,
+    "partial_changed": 14,
+    "same_partial": 23,
+    "category_deltas": {
+      "5": -7.45,
+      "multi-hop": -11.54,
+      "single-hop": 4.69,
+      "temporal": 0.0,
+      "unanswerable": -12.86
+    },
+    "category_movements": {
+      "5": {
+        "rescued": 3,
+        "harmed": 5,
+        "unchanged_correct": 6,
+        "unchanged_wrong": 26,
+        "partial_changed": 6,
+        "same_partial": 1
+      },
+      "multi-hop": {
+        "rescued": 0,
+        "harmed": 1,
+        "unchanged_correct": 4,
+        "unchanged_wrong": 5,
+        "partial_changed": 1,
+        "same_partial": 2
+      },
+      "single-hop": {
+        "rescued": 4,
+        "harmed": 1,
+        "unchanged_correct": 10,
+        "unchanged_wrong": 0,
+        "partial_changed": 3,
+        "same_partial": 14
+      },
+      "temporal": {
+        "rescued": 2,
+        "harmed": 3,
+        "unchanged_correct": 28,
+        "unchanged_wrong": 3,
+        "partial_changed": 0,
+        "same_partial": 1
+      },
+      "unanswerable": {
+        "rescued": 1,
+        "harmed": 11,
+        "unchanged_correct": 47,
+        "unchanged_wrong": 2,
+        "partial_changed": 4,
+        "same_partial": 5
+      }
+    }
+  },
+  "paired_vs_pure_rerank": {
+    "common": 199,
+    "rescued": 14,
+    "harmed": 10,
+    "unchanged_correct": 91,
+    "unchanged_wrong": 47,
+    "partial_changed": 14,
+    "same_partial": 23,
+    "category_deltas": {
+      "5": -1.06,
+      "multi-hop": 3.85,
+      "single-hop": 4.69,
+      "temporal": -1.35,
+      "unanswerable": 5.71
+    },
+    "category_movements": {
+      "5": {
+        "rescued": 4,
+        "harmed": 3,
+        "unchanged_correct": 5,
+        "unchanged_wrong": 28,
+        "partial_changed": 5,
+        "same_partial": 2
+      },
+      "multi-hop": {
+        "rescued": 0,
+        "harmed": 0,
+        "unchanged_correct": 4,
+        "unchanged_wrong": 7,
+        "partial_changed": 1,
+        "same_partial": 1
+      },
+      "single-hop": {
+        "rescued": 4,
+        "harmed": 1,
+        "unchanged_correct": 10,
+        "unchanged_wrong": 1,
+        "partial_changed": 2,
+        "same_partial": 14
+      },
+      "temporal": {
+        "rescued": 2,
+        "harmed": 4,
+        "unchanged_correct": 28,
+        "unchanged_wrong": 1,
+        "partial_changed": 1,
+        "same_partial": 1
+      },
+      "unanswerable": {
+        "rescued": 4,
+        "harmed": 2,
+        "unchanged_correct": 44,
+        "unchanged_wrong": 10,
+        "partial_changed": 5,
+        "same_partial": 5
+      }
+    }
+  },
+  "paired_vs_prefix_rerank": {
+    "common": 199,
+    "rescued": 14,
+    "harmed": 13,
+    "unchanged_correct": 91,
+    "unchanged_wrong": 50,
+    "partial_changed": 7,
+    "same_partial": 24,
+    "category_deltas": {
+      "5": 0.0,
+      "multi-hop": 0.0,
+      "single-hop": 4.69,
+      "temporal": 0.0,
+      "unanswerable": 1.43
+    },
+    "category_movements": {
+      "5": {
+        "rescued": 3,
+        "harmed": 4,
+        "unchanged_correct": 6,
+        "unchanged_wrong": 32,
+        "partial_changed": 1,
+        "same_partial": 1
+      },
+      "multi-hop": {
+        "rescued": 0,
+        "harmed": 0,
+        "unchanged_correct": 4,
+        "unchanged_wrong": 7,
+        "partial_changed": 0,
+        "same_partial": 2
+      },
+      "single-hop": {
+        "rescued": 6,
+        "harmed": 5,
+        "unchanged_correct": 8,
+        "unchanged_wrong": 2,
+        "partial_changed": 1,
+        "same_partial": 10
+      },
+      "temporal": {
+        "rescued": 2,
+        "harmed": 2,
+        "unchanged_correct": 28,
+        "unchanged_wrong": 1,
+        "partial_changed": 2,
+        "same_partial": 2
+      },
+      "unanswerable": {
+        "rescued": 3,
+        "harmed": 2,
+        "unchanged_correct": 45,
+        "unchanged_wrong": 8,
+        "partial_changed": 3,
+        "same_partial": 9
+      }
+    }
+  }
+}

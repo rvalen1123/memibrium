@@ -1,0 +1,146 @@
+{
+  "avg_query_ms": 3272,
+  "captured_at": "2026-05-02T12:55:32.231276+00:00",
+  "category_summary": {
+    "adversarial": {
+      "count": 47,
+      "mean_n_memories": 14.6809,
+      "score_percent": 22.34
+    },
+    "multi-hop": {
+      "count": 13,
+      "mean_n_memories": 14.5385,
+      "score_percent": 42.31
+    },
+    "single-hop": {
+      "count": 32,
+      "mean_n_memories": 14.6875,
+      "score_percent": 64.06
+    },
+    "temporal": {
+      "count": 37,
+      "mean_n_memories": 14.4054,
+      "score_percent": 68.92
+    },
+    "unanswerable": {
+      "count": 70,
+      "mean_n_memories": 14.6857,
+      "score_percent": 77.14
+    }
+  },
+  "comparability": {
+    "dominant_bucket_gate": false,
+    "high_n_bucket_gate": false,
+    "mean_n_memories": 14.6231,
+    "mean_n_memories_gate": false,
+    "n15_saturation": 162,
+    "n15_saturation_gate": false,
+    "no_hybrid_fallback_strings_gate": true,
+    "overall_comparable": false,
+    "query_expansion_fallback_gate": true,
+    "structural_regime_note": "changed_or_requires_review"
+  },
+  "decision": "telemetry_baseline_rejected_noncomparable",
+  "log_flags": {
+    "contains_decimal_not_json_serializable": false,
+    "contains_hybrid_retrieval_failed": false,
+    "contains_internal_server_error": false,
+    "contains_type_error": false,
+    "contains_type_vector_missing": false
+  },
+  "mean_n_memories": 14.6231,
+  "n15_saturation_count": 162,
+  "n15_saturation_rate": 0.8141,
+  "n_memories_distribution": {
+    "11": 3,
+    "12": 6,
+    "13": 17,
+    "14": 11,
+    "15": 162
+  },
+  "overall_5cat_percent": 58.29,
+  "phase_c_boundary": "No Phase C intervention implemented or selected.",
+  "protocol_4cat_percent": 69.41,
+  "query_expansion_fallback_count": 0,
+  "query_expansion_fallback_rate": 0.0,
+  "schema": "memibrium.locomo.telemetry_baseline_retry_summary.v1",
+  "source_log": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.log",
+  "source_result": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json",
+  "source_server_log": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_server_log_2026-05-02.log",
+  "telemetry": {
+    "adversarial_summary": {
+      "any_final_context_gold_rows": 0,
+      "final_context_gold_rows": 0,
+      "nonzero": 13,
+      "total": 47,
+      "zero": 34
+    },
+    "per_query_recall_count_shapes_sample": [
+      [
+        10,
+        10,
+        10,
+        10
+      ],
+      [
+        10,
+        10,
+        10,
+        10
+      ],
+      [
+        10,
+        10,
+        10,
+        10
+      ],
+      [
+        10,
+        10,
+        10,
+        10
+      ],
+      [
+        10,
+        10,
+        10,
+        10
+      ]
+    ],
+    "per_question_expanded_query_counts_distribution": {
+      "4": 199
+    },
+    "rows_with_gold_coverage_object": 197,
+    "rows_with_recall_telemetry": 199,
+    "server_telemetry_sample_count_objects": [
+      {
+        "count": 0,
+        "expanded_count": 20,
+        "fused_count_before_cap": 20,
+        "response_result_count": 10,
+        "returned_count": 0,
+        "streams_count": 2
+      },
+      {
+        "count": 0,
+        "expanded_count": null,
+        "fused_count_before_cap": 20,
+        "response_result_count": 10,
+        "returned_count": 0,
+        "streams_count": 2
+      },
+      {
+        "count": 0,
+        "expanded_count": null,
+        "fused_count_before_cap": 20,
+        "response_result_count": 10,
+        "returned_count": 0,
+        "streams_count": 2
+      }
+    ],
+    "zero_score_local_cause_conservative_counts": {
+      "evidence_present_synthesis_or_attribution_or_unresolved": 62
+    }
+  },
+  "total_questions": 199
+}

@@ -1,0 +1,7 @@
+{
+  "blocked_artifact": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_blocked_2026-05-01.json",
+  "reason": "No valid trace artifact was emitted because the benchmark aborted during opt-in telemetry recall response serialization.",
+  "schema": "memibrium.locomo.telemetry_traces_placeholder.v1",
+  "status": "blocked_no_complete_trace_export",
+  "valid_for_failure_mode_audit": false
+}
