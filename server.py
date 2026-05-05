@@ -50,7 +50,7 @@ import os
 import uuid
 from datetime import date, datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -430,6 +430,47 @@ def _normalize_evidence_memory(memory: dict) -> dict:
         "score": memory.get("combined_score", memory.get("cosine_score", memory.get("score"))),
         "created_at": memory.get("created_at"),
         "refs": memory.get("refs", {}),
+    }
+
+
+def _context_packet_evidence_source_projection(memory: dict, rank: int) -> dict:
+    content = str(memory.get("content") or memory.get("text") or "")
+    return {
+        "rank": rank,
+        "id": memory.get("memory_id") or memory.get("id"),
+        "stage": "context_packet_episodic_evidence",
+        "refs": memory.get("refs", {}),
+        "score": memory.get("combined_score", memory.get("cosine_score", memory.get("score"))),
+        "created_at": memory.get("created_at"),
+        "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        "snippet": content[:160],
+    }
+
+
+def build_context_packet_source_attribution(
+    *,
+    query: str,
+    top_k: int,
+    domain: Optional[str],
+    retrieval_path: str,
+    recall_result: Any = None,
+    episodic_evidence=None,
+) -> dict:
+    """Compact opt-in provenance for context-packet internal recall."""
+    recall_tier = recall_result.get("tier") if isinstance(recall_result, dict) else None
+    total_searched = recall_result.get("total_searched") if isinstance(recall_result, dict) else None
+    evidence = [
+        _context_packet_evidence_source_projection(memory, rank=idx)
+        for idx, memory in enumerate(_coerce_list(episodic_evidence), start=1)
+        if isinstance(memory, dict)
+    ]
+    return {
+        "schema": "memibrium.context_packet.source_attribution.v1",
+        "request": {"query": query, "domain": domain, "top_k": top_k},
+        "retrieval_path": retrieval_path,
+        "recall_tier": recall_tier,
+        "total_searched": total_searched,
+        "evidence": evidence,
     }
 
 
@@ -2665,19 +2706,42 @@ async def handle_context_packet(request: Request) -> JSONResponse:
     if not query:
         return JSONResponse({"error": "query required"}, status_code=400)
 
+    include_source_attribution = bool(body.get("include_source_attribution", False))
+    source_attribution = None
+    top_k = int(body.get("top_k", 8))
+    domain = body.get("domain")
     episodic_evidence = body.get("episodic_evidence")
     if episodic_evidence is None:
         try:
             recall = await query_agent.recall(
                 query,
-                top_k=int(body.get("top_k", 8)),
-                domain=body.get("domain"),
+                top_k=top_k,
+                domain=domain,
                 expand=body.get("expand", True),
             )
             episodic_evidence = recall.get("results", recall.get("memories", recall)) if isinstance(recall, dict) else recall
+            if include_source_attribution:
+                source_attribution = build_context_packet_source_attribution(
+                    query=query,
+                    top_k=top_k,
+                    domain=domain,
+                    retrieval_path="query_agent.recall",
+                    recall_result=recall,
+                    episodic_evidence=episodic_evidence,
+                )
         except Exception as e:
             log.warning(f"Context packet recall failed: {e}")
             episodic_evidence = []
+            if include_source_attribution:
+                source_attribution = build_context_packet_source_attribution(
+                    query=query,
+                    top_k=top_k,
+                    domain=domain,
+                    retrieval_path="query_agent.recall_error",
+                    recall_result={"tier": "error", "total_searched": 0},
+                    episodic_evidence=[],
+                )
+                source_attribution["error"] = {"class": e.__class__.__name__, "message": str(e)}
 
     entities = body.get("entities")
     if entities is None:
@@ -2713,6 +2777,8 @@ async def handle_context_packet(request: Request) -> JSONResponse:
         decision_traces=decision_traces,
         query_type=body.get("query_type"),
     )
+    if source_attribution is not None:
+        packet["source_attribution"] = source_attribution
     return JSONResponse(_serialize_result(packet))
 
 

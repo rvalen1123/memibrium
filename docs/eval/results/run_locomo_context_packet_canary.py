@@ -1357,6 +1357,7 @@ def frozen_baseline_rows_from_artifact(
             "frozen_baseline_context_sha256": frozen_context_hash(final_context),
             "context_packet": copy.deepcopy(telemetry.get("context_packet") or {}),
             "context_packet_candidate_pool": candidate_pool,
+            "context_packet_source_attribution": copy.deepcopy(telemetry.get("context_packet_source_attribution") or {}),
             "artifact_counts": counts,
             "artifact_packet_added_count": int(counts.get("packet_episodic_added_count") or 0),
         }
@@ -1435,13 +1436,18 @@ def answer_question_with_frozen_context(
             })
             recall_telemetry["context_packet"] = copy.deepcopy(artifact.get("context_packet") or {})
             recall_telemetry["context_packet_candidate_pool"] = copy.deepcopy(artifact.get("context_packet_candidate_pool") or [])
+            if artifact.get("context_packet_source_attribution"):
+                recall_telemetry["context_packet_source_attribution"] = copy.deepcopy(artifact.get("context_packet_source_attribution") or {})
         else:
-            packet = module.mcp_post("context_packet", {
+            payload = {
                 "query": question,
                 "domain": domain,
                 "top_k": module.CONTEXT_PACKET_TOP_K,
                 "include_decision_traces": True,
-            })
+            }
+            if getattr(module, "INCLUDE_CONTEXT_PACKET_SOURCE_ATTRIBUTION", False):
+                payload["include_source_attribution"] = True
+            packet = module.mcp_post("context_packet", payload)
             max_added = context_packet_merge_append_top_k
             if max_added is None:
                 max_added = getattr(module, "CONTEXT_PACKET_MERGE_APPEND_TOP_K", 0)
@@ -1465,6 +1471,8 @@ def answer_question_with_frozen_context(
             })
             recall_telemetry["context_packet"] = module._context_packet_telemetry_projection(packet)
             recall_telemetry["context_packet_candidate_pool"] = copy.deepcopy((packet or {}).get("episodic_evidence") or [])
+            if isinstance(packet, dict) and packet.get("source_attribution"):
+                recall_telemetry["context_packet_source_attribution"] = copy.deepcopy(packet.get("source_attribution") or {})
     else:
         recall_telemetry["counts"]["context_packet_merge_enabled"] = False
 

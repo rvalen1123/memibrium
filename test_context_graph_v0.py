@@ -292,6 +292,37 @@ class ContextGraphV0Tests(unittest.TestCase):
         self.assertEqual(recalled_packet_payload["episodic_evidence"][0]["content"], "Recalled episodic evidence from the active domain.")
         self.assertIn("mem_recalled", recalled_packet_payload["provenance_summary"]["memory_ids"])
 
+    def test_context_packet_source_attribution_is_opt_in_and_records_internal_recall_source(self):
+        fake_store = FakeContextStore()
+        fake_agent = FakeQueryAgent()
+
+        with patch.object(server, "store", fake_store), patch.object(server, "query_agent", fake_agent):
+            plain_response = self.run_async(server.handle_context_packet(FakeRequest({
+                "query": "What did active recall return?",
+                "domain": "locomo-test",
+                "top_k": 3,
+            })))
+            attributed_response = self.run_async(server.handle_context_packet(FakeRequest({
+                "query": "What did active recall return?",
+                "domain": "locomo-test",
+                "top_k": 3,
+                "include_source_attribution": True,
+            })))
+
+        plain_payload = self.decode_response(plain_response)
+        attributed_payload = self.decode_response(attributed_response)
+
+        self.assertNotIn("source_attribution", plain_payload)
+        source = attributed_payload["source_attribution"]
+        self.assertEqual(source["schema"], "memibrium.context_packet.source_attribution.v1")
+        self.assertEqual(source["request"]["query"], "What did active recall return?")
+        self.assertEqual(source["request"]["domain"], "locomo-test")
+        self.assertEqual(source["request"]["top_k"], 3)
+        self.assertEqual(source["retrieval_path"], "query_agent.recall")
+        self.assertEqual(source["recall_tier"], "fake")
+        self.assertEqual(source["evidence"][0]["id"], "mem_recalled")
+        self.assertIn("content_sha256", source["evidence"][0])
+
 
 if __name__ == "__main__":
     unittest.main()

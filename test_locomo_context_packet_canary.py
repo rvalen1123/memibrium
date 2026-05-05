@@ -454,6 +454,93 @@ class ContextPacketCanaryTests(unittest.TestCase):
             'Melanie said the beach was relaxing.',
         )
 
+    def test_frozen_baseline_rows_from_artifact_preserves_context_packet_source_attribution(self):
+        artifact = {
+            'ingest': {'domain': 'locomo-conv-26'},
+            'details': [{
+                'row_identity': {'one_based_index': 80},
+                'recall_telemetry': {
+                    'final_context': [{'id': 'b1', 'content': 'baseline context'}],
+                    'context_packet_source_attribution': {
+                        'schema': 'memibrium.context_packet.source_attribution.v1',
+                        'request': {'query': 'Who was adopted?', 'domain': 'locomo-conv-26', 'top_k': 8},
+                        'retrieval_path': 'query_agent.recall',
+                        'evidence': [{'id': 'p1', 'rank': 1, 'stage': 'context_packet_episodic_evidence'}],
+                    },
+                },
+            }],
+        }
+
+        frozen_rows, _domain = context_packet_canary.frozen_baseline_rows_from_artifact(artifact)
+
+        source = frozen_rows[80]['context_packet_source_attribution']
+        self.assertEqual(source['request']['query'], 'Who was adopted?')
+        self.assertEqual(source['evidence'][0]['id'], 'p1')
+        artifact['details'][0]['recall_telemetry']['context_packet_source_attribution']['evidence'][0]['id'] = 'mutated'
+        self.assertEqual(frozen_rows[80]['context_packet_source_attribution']['evidence'][0]['id'], 'p1')
+
+    def test_answer_question_with_frozen_context_replay_preserves_artifact_source_attribution(self):
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = True
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                raise AssertionError('full artifact replay must not call live context_packet')
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                raise AssertionError('full artifact replay must not recompute packet merge')
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': {'memory_ids': ['p1']}}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return 'answer from pinned full context'
+
+        _answer, _memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'Who was adopted?',
+            'locomo-conv-26',
+            [{'id': 'b1', 'content': 'baseline context'}],
+            context_packet_merge=True,
+            context_packet_merge_from_artifact=True,
+            frozen_packet_artifact={
+                'counts': {'packet_episodic_candidate_count': 1},
+                'context_packet_source_attribution': {
+                    'schema': 'memibrium.context_packet.source_attribution.v1',
+                    'request': {'query': 'Who was adopted?', 'domain': 'locomo-conv-26', 'top_k': 8},
+                    'retrieval_path': 'query_agent.recall',
+                    'evidence': [{'id': 'p1', 'rank': 1, 'stage': 'context_packet_episodic_evidence'}],
+                },
+            },
+        )
+
+        self.assertEqual(
+            telemetry['context_packet_source_attribution']['schema'],
+            'memibrium.context_packet.source_attribution.v1',
+        )
+        self.assertEqual(telemetry['context_packet_source_attribution']['evidence'][0]['id'], 'p1')
+
     def test_answer_question_with_frozen_context_can_replay_full_packet_artifact_without_live_packet_call(self):
         prompts = []
 

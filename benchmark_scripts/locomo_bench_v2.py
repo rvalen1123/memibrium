@@ -92,6 +92,10 @@ USE_CONTEXT_PACKET_MERGE = _env_flag("USE_CONTEXT_PACKET_MERGE", default=False)
 USE_CONTEXT_PACKET_MERGE_REF_GATE = _env_flag("CONTEXT_PACKET_MERGE_REF_GATE", default=False)
 # Observation-only telemetry for preregistered LOCOMO diagnostic runs.
 INCLUDE_RECALL_TELEMETRY = _env_flag("INCLUDE_RECALL_TELEMETRY", default=False)
+# Context-packet source attribution is default-off/eval-only diagnostic
+# telemetry. It asks /mcp/context_packet to return provenance for its
+# internal recall call and preserves that outside the answer prompt.
+INCLUDE_CONTEXT_PACKET_SOURCE_ATTRIBUTION = _env_flag("INCLUDE_CONTEXT_PACKET_SOURCE_ATTRIBUTION", default=False)
 RECALL_TOP_K = 10
 RERANK_RECALL_TOP_K = 20
 APPEND_CONTEXT_RECALL_TOP_K = 20
@@ -734,6 +738,28 @@ def _context_packet_telemetry_projection(packet):
     }
 
 
+def _context_packet_source_attribution_projection(packet):
+    """Preserve opt-in context-packet source attribution outside prompt telemetry."""
+    if not isinstance(packet, dict):
+        return None
+    source_attribution = packet.get("source_attribution")
+    if not isinstance(source_attribution, dict):
+        return None
+    return json.loads(json.dumps(source_attribution, default=str))
+
+
+def _context_packet_request_payload(query, domain, top_k, *, include_decision_traces=True):
+    payload = {
+        "query": query,
+        "domain": domain,
+        "top_k": top_k,
+        "include_decision_traces": include_decision_traces,
+    }
+    if INCLUDE_CONTEXT_PACKET_SOURCE_ATTRIBUTION:
+        payload["include_source_attribution"] = True
+    return payload
+
+
 def _render_context_packet_context(packet):
     """Render a Context Graph packet into answer-model context without inventing facts."""
     if not isinstance(packet, dict):
@@ -963,21 +989,25 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
         return recalled
 
     if USE_CONTEXT_PACKET:
-        packet = mcp_post("context_packet", {
-            "query": question,
-            "domain": domain,
-            "top_k": CONTEXT_PACKET_TOP_K,
-            "include_decision_traces": True,
-        })
+        packet = mcp_post("context_packet", _context_packet_request_payload(
+            question,
+            domain,
+            CONTEXT_PACKET_TOP_K,
+            include_decision_traces=True,
+        ))
         memories = _dedupe_context_packet_episodic_evidence(packet.get("episodic_evidence") or []) if isinstance(packet, dict) else []
         context = _render_context_packet_context(packet)
         recall_telemetry["counts"]["context_packet_enabled"] = True
+        recall_telemetry["counts"]["context_packet_source_attribution_enabled"] = INCLUDE_CONTEXT_PACKET_SOURCE_ATTRIBUTION
         recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
         recall_telemetry["final_context"] = [
             _memory_telemetry_projection(memory, rank=idx)
             for idx, memory in enumerate(memories, start=1)
         ]
         recall_telemetry["context_packet"] = _context_packet_telemetry_projection(packet)
+        source_attribution = _context_packet_source_attribution_projection(packet)
+        if source_attribution is not None:
+            recall_telemetry["context_packet_source_attribution"] = source_attribution
     else:
         packet = None
         packet_added_memories = []
@@ -1050,12 +1080,12 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
                 memories = candidates[:ANSWER_CONTEXT_TOP_K]
             if USE_CONTEXT_PACKET_MERGE:
                 base_context_memories = list(memories)
-                packet = mcp_post("context_packet", {
-                    "query": question,
-                    "domain": domain,
-                    "top_k": CONTEXT_PACKET_TOP_K,
-                    "include_decision_traces": True,
-                })
+                packet = mcp_post("context_packet", _context_packet_request_payload(
+                    question,
+                    domain,
+                    CONTEXT_PACKET_TOP_K,
+                    include_decision_traces=True,
+                ))
                 recall_telemetry["final_context_before_packet_merge"] = [
                     _memory_telemetry_projection(memory, rank=idx)
                     for idx, memory in enumerate(base_context_memories, start=1)
@@ -1075,7 +1105,11 @@ def answer_question(question, domain, return_telemetry=False, evidence_refs=None
                 recall_telemetry["counts"]["packet_episodic_ref_gated_count"] = packet_ref_gated_count
                 recall_telemetry["counts"]["context_packet_merge_ref_gate_enabled"] = USE_CONTEXT_PACKET_MERGE_REF_GATE
                 recall_telemetry["counts"]["context_packet_merge_append_top_k"] = CONTEXT_PACKET_MERGE_APPEND_TOP_K
+                recall_telemetry["counts"]["context_packet_source_attribution_enabled"] = INCLUDE_CONTEXT_PACKET_SOURCE_ATTRIBUTION
                 recall_telemetry["context_packet"] = _context_packet_telemetry_projection(packet)
+                source_attribution = _context_packet_source_attribution_projection(packet)
+                if source_attribution is not None:
+                    recall_telemetry["context_packet_source_attribution"] = source_attribution
 
     recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
     recall_telemetry["final_context"] = [
