@@ -819,6 +819,78 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertTrue(context_packet_canary.should_use_answer_shape_directive('single-hop', True, {'single-hop'}))
         self.assertFalse(context_packet_canary.should_use_answer_shape_directive('single-hop', False, {'single-hop'}))
 
+    def test_gold_object_coverage_telemetry_reports_atoms_sources_and_conflicts(self):
+        coverage = context_packet_canary.build_gold_object_coverage_telemetry(
+            one_based_index=185,
+            ground_truth='She plays clarinet and violin.',
+            memories=[
+                {'id': 'm1', 'content': 'Melanie said she plays clarinet and violin.', 'refs': {'session_index': 3}},
+                {'id': 'm2', 'content': 'Caroline practiced acoustic guitar last week.', 'refs': {'session_index': 4}},
+            ],
+        )
+
+        self.assertEqual(coverage['expected_atoms'], ['clarinet', 'violin'])
+        self.assertEqual(coverage['present_atoms'], ['clarinet', 'violin'])
+        self.assertEqual(coverage['missing_atoms'], [])
+        self.assertEqual(coverage['conflict_terms_present'], ['acoustic guitar', 'guitar'])
+        self.assertEqual(coverage['coverage_class'], 'all_atoms_present_with_conflicts')
+        self.assertEqual(coverage['present_atom_source_ids']['clarinet'], ['m1'])
+        self.assertEqual(coverage['present_atom_source_ids']['violin'], ['m1'])
+        self.assertEqual(coverage['conflict_term_source_ids']['acoustic guitar'], ['m2'])
+
+    def test_answer_question_with_frozen_context_can_add_default_off_gold_object_coverage_telemetry(self):
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = False
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                return {'episodic_evidence': []}
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                return list(base_memories), [], 0, 0, 0
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': {'memory_ids': []}}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                return 'Charlotte\'s Web'
+
+        answer, _, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'What books has Melanie read?',
+            'locomo-conv-26',
+            [{'id': 'm1', 'content': 'Melanie read Charlotte\'s Web.', 'refs': {'session_index': 2}}],
+            one_based_index=24,
+            ground_truth='Nothing is Impossible and Charlotte\'s Web',
+            gold_object_coverage_telemetry=True,
+        )
+
+        self.assertEqual(answer, 'Charlotte\'s Web')
+        self.assertTrue(telemetry['counts']['gold_object_coverage_telemetry_enabled'])
+        coverage = telemetry['gold_object_coverage']
+        self.assertEqual(coverage['coverage_class'], 'partial_atoms_present')
+        self.assertEqual(coverage['present_atoms'], ["Charlotte's Web"])
+        self.assertEqual(coverage['missing_atoms'], ['Nothing is Impossible'])
+        self.assertEqual(coverage['present_atom_source_ids']["Charlotte's Web"], ['m1'])
+
     def test_parse_category_filter_normalizes_comma_separated_categories(self):
         self.assertEqual(
             context_packet_canary.parse_category_filter('single-hop, multi-hop,unanswerable'),

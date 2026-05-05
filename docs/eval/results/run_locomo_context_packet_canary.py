@@ -778,6 +778,137 @@ def should_use_answer_shape_directive(category: Any, enabled: bool, category_fil
     return str(category) in category_filter
 
 
+GOLD_OBJECT_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "because", "been", "being",
+    "by", "did", "do", "does", "for", "from", "had", "has", "have", "he",
+    "her", "hers", "him", "his", "how", "i", "in", "into", "is", "it", "its",
+    "me", "mel", "melanie", "my", "of", "on", "or", "our", "she", "that",
+    "the", "their", "them", "they", "this", "to", "was", "we", "what", "when",
+    "where", "who", "why", "with", "would", "you", "your", "caroline",
+}
+
+GOLD_OBJECT_MANUAL_ATOMS: dict[int, list[str]] = {
+    24: ["Nothing is Impossible", "Charlotte's Web"],
+    41: ["beach"],
+    113: ["sunset", "palm tree"],
+    123: ["catch the eye", "make people smile"],
+    163: ["nature", "roasted marshmallows", "hike"],
+    185: ["clarinet", "violin"],
+}
+
+GOLD_OBJECT_CONFLICT_TERMS: dict[int, list[str]] = {
+    113: ["flowers", "nature-inspired"],
+    123: ["express emotions", "self-expression", "relax"],
+    185: ["acoustic guitar", "guitar"],
+}
+
+
+def _normalize_gold_object_text(value: Any) -> str:
+    if isinstance(value, str):
+        text = value
+    else:
+        text = json.dumps(value, ensure_ascii=False, sort_keys=True)
+    text = text.lower().replace("’", "'").replace("“", '"').replace("”", '"')
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+
+def _gold_object_atom_present(atom: str, context_text: str) -> bool:
+    normalized_atom = _normalize_gold_object_text(atom)
+    if normalized_atom in context_text:
+        return True
+    words = [word for word in re.findall(r"[a-z0-9']+", normalized_atom) if word not in GOLD_OBJECT_STOPWORDS]
+    if len(words) >= 2:
+        return all(re.search(rf"\b{re.escape(word)}\b", context_text) for word in words)
+    if len(words) == 1:
+        return re.search(rf"\b{re.escape(words[0])}\b", context_text) is not None
+    return False
+
+
+def derive_gold_object_atoms(row_index: int | None, ground_truth: Any) -> list[str]:
+    if row_index in GOLD_OBJECT_MANUAL_ATOMS:
+        return list(GOLD_OBJECT_MANUAL_ATOMS[int(row_index)])
+    text = str(ground_truth or "")
+    quoted = re.findall(r'"([^"]+)"', text)
+    if quoted:
+        return quoted
+    parts = re.split(r"\s*(?:,|;|\band\b|\bor\b)\s*", text)
+    atoms: list[str] = []
+    for part in parts:
+        clean = part.strip(" .;:,\n\t\"'")
+        if not clean:
+            continue
+        words = [word for word in re.findall(r"[A-Za-z0-9']+", clean) if word.lower() not in GOLD_OBJECT_STOPWORDS]
+        if len(words) == 1 and len(words[0]) <= 2:
+            continue
+        if words:
+            atoms.append(clean)
+    return atoms[:8] if atoms else ([text.strip()] if text.strip() else [])
+
+
+def _gold_object_coverage_class(atom_count: int, present_count: int, conflict_count: int) -> str:
+    if atom_count and present_count == atom_count:
+        return "all_atoms_present_with_conflicts" if conflict_count else "all_atoms_present"
+    if present_count > 0:
+        return "partial_atoms_present_with_conflicts" if conflict_count else "partial_atoms_present"
+    return "no_atoms_present_conflicting_context" if conflict_count else "no_atoms_present"
+
+
+def _gold_object_source_id(memory: dict[str, Any]) -> str:
+    return str(memory.get("id") or memory.get("memory_id") or "unknown")
+
+
+def _gold_object_memory_text(memory: dict[str, Any]) -> str:
+    return _normalize_gold_object_text(memory.get("content") or memory.get("snippet") or memory.get("text") or "")
+
+
+def build_gold_object_coverage_telemetry(
+    *,
+    one_based_index: int | None,
+    ground_truth: Any,
+    memories: list[dict[str, Any]],
+) -> dict[str, Any]:
+    atoms = derive_gold_object_atoms(one_based_index, ground_truth)
+    conflict_terms = list(GOLD_OBJECT_CONFLICT_TERMS.get(int(one_based_index), [])) if one_based_index is not None else []
+    normalized_memories = [memory for memory in memories if isinstance(memory, dict)]
+    present_atoms: list[str] = []
+    missing_atoms: list[str] = []
+    present_sources: dict[str, list[str]] = {}
+    for atom in atoms:
+        sources = [
+            _gold_object_source_id(memory)
+            for memory in normalized_memories
+            if _gold_object_atom_present(atom, _gold_object_memory_text(memory))
+        ]
+        if sources:
+            present_atoms.append(atom)
+            present_sources[atom] = sources
+        else:
+            missing_atoms.append(atom)
+    conflicts_present: list[str] = []
+    conflict_sources: dict[str, list[str]] = {}
+    for term in conflict_terms:
+        sources = [
+            _gold_object_source_id(memory)
+            for memory in normalized_memories
+            if _gold_object_atom_present(term, _gold_object_memory_text(memory))
+        ]
+        if sources:
+            conflicts_present.append(term)
+            conflict_sources[term] = sources
+    return {
+        "schema": "memibrium.locomo.gold_object_coverage.v1",
+        "one_based_index": one_based_index,
+        "expected_atoms": atoms,
+        "present_atoms": present_atoms,
+        "missing_atoms": missing_atoms,
+        "conflict_terms_present": conflicts_present,
+        "present_atom_source_ids": present_sources,
+        "conflict_term_source_ids": conflict_sources,
+        "coverage_class": _gold_object_coverage_class(len(atoms), len(present_atoms), len(conflicts_present)),
+    }
+
+
 def import_benchmark_module(env: dict[str, str]):
     old_env = os.environ.copy()
     os.environ.clear()
@@ -1079,6 +1210,9 @@ def answer_question_with_frozen_context(
     answer_shape_directive: bool = False,
     context_packet_merge_from_artifact: bool = False,
     frozen_packet_artifact: dict[str, Any] | None = None,
+    one_based_index: int | None = None,
+    ground_truth: Any = None,
+    gold_object_coverage_telemetry: bool = False,
 ) -> tuple[str, int, dict[str, Any]]:
     """Answer using an exact frozen baseline final_context substrate plus optional packet transform.
 
@@ -1157,6 +1291,13 @@ def answer_question_with_frozen_context(
         recall_telemetry["counts"]["context_packet_merge_enabled"] = False
 
     recall_telemetry["counts"]["final_answer_context_count"] = len(memories)
+    recall_telemetry["counts"]["gold_object_coverage_telemetry_enabled"] = bool(gold_object_coverage_telemetry)
+    if gold_object_coverage_telemetry:
+        recall_telemetry["gold_object_coverage"] = build_gold_object_coverage_telemetry(
+            one_based_index=one_based_index,
+            ground_truth=ground_truth,
+            memories=memories,
+        )
     recall_telemetry["final_context"] = [
         module._memory_telemetry_projection(memory, rank=idx)
         for idx, memory in enumerate(memories, start=1)
@@ -1221,6 +1362,8 @@ def run_arm(
     answer_subject_guard_categories: set[str] | None = None,
     answer_shape_directive: bool = False,
     answer_shape_directive_categories: set[str] | None = None,
+    gold_object_coverage_telemetry: bool = False,
+    gold_object_coverage_categories: set[str] | None = None,
     context_packet_merge_from_artifact: bool = False,
 ) -> dict[str, Any]:
     module = import_benchmark_module(env)
@@ -1277,6 +1420,11 @@ def run_arm(
             answer_shape_directive,
             answer_shape_directive_categories,
         )
+        use_gold_object_coverage_telemetry = should_use_answer_shape_directive(
+            cat,
+            gold_object_coverage_telemetry,
+            gold_object_coverage_categories,
+        )
         capture: dict[str, Any] = {}
         original_llm_call = module.llm_call
         original_projection = module._memory_telemetry_projection
@@ -1300,6 +1448,9 @@ def run_arm(
                     answer_shape_directive=use_answer_shape_directive,
                     context_packet_merge_from_artifact=context_packet_merge_from_artifact,
                     frozen_packet_artifact=frozen_row,
+                    one_based_index=int(fixed["one_based_index"]),
+                    ground_truth=ground_truth,
+                    gold_object_coverage_telemetry=use_gold_object_coverage_telemetry,
                 )
             else:
                 predicted, n_memories, recall_telemetry = module.answer_question(
@@ -1479,6 +1630,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--frozen-answer-subject-guard-categories", default=None, help="Optional comma-separated normalized categories that receive the frozen answer subject guard")
     parser.add_argument("--frozen-answer-shape-directive", action="store_true", help="In frozen replay treatment only, add eval-only answer-shape/list/count/inference directive above raw answer context")
     parser.add_argument("--frozen-answer-shape-directive-categories", default=None, help="Optional comma-separated normalized categories that receive the frozen answer shape directive")
+    parser.add_argument("--frozen-gold-object-coverage-telemetry", action="store_true", help="In frozen replay treatment only, emit eval-only gold answer atom/object coverage telemetry over final_context")
+    parser.add_argument("--frozen-gold-object-coverage-telemetry-categories", default=None, help="Optional comma-separated normalized categories that receive frozen gold-object coverage telemetry")
     parser.add_argument("--frozen-baseline-artifact", default=None, help="Optional baseline arm artifact to pin frozen replay substrate across runs; skips fresh baseline recall/ingest")
     parser.add_argument("--frozen-baseline-artifact-final-context-replay", action="store_true", help="When using --frozen-baseline-artifact, treat artifact final_context as the complete post-packet substrate and do not call live context_packet")
     args = parser.parse_args(argv)
@@ -1511,6 +1664,8 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("frozen_answer_subject_guard_requires_frozen_context_replay")
     if args.frozen_answer_shape_directive and not args.frozen_context_replay:
         raise ValueError("frozen_answer_shape_directive_requires_frozen_context_replay")
+    if args.frozen_gold_object_coverage_telemetry and not args.frozen_context_replay:
+        raise ValueError("frozen_gold_object_coverage_telemetry_requires_frozen_context_replay")
     if args.frozen_baseline_artifact and not args.frozen_context_replay:
         raise ValueError("frozen_baseline_artifact_requires_frozen_context_replay")
     if args.frozen_baseline_artifact_final_context_replay and not args.frozen_baseline_artifact:
@@ -1518,6 +1673,7 @@ def main(argv: list[str] | None = None) -> int:
     answer_evidence_table_categories = parse_category_filter(args.frozen_answer_evidence_table_categories)
     answer_subject_guard_categories = parse_category_filter(args.frozen_answer_subject_guard_categories)
     answer_shape_directive_categories = parse_category_filter(args.frozen_answer_shape_directive_categories)
+    gold_object_coverage_categories = parse_category_filter(args.frozen_gold_object_coverage_telemetry_categories)
 
     base_env = os.environ.copy()
     baseline_env = build_benchmark_env(base_env, mcp_url=args.mcp_url, context_packet=False)
@@ -1585,6 +1741,8 @@ def main(argv: list[str] | None = None) -> int:
         answer_subject_guard_categories=answer_subject_guard_categories,
         answer_shape_directive=args.frozen_answer_shape_directive,
         answer_shape_directive_categories=answer_shape_directive_categories,
+        gold_object_coverage_telemetry=args.frozen_gold_object_coverage_telemetry,
+        gold_object_coverage_categories=gold_object_coverage_categories,
         context_packet_merge_from_artifact=args.frozen_baseline_artifact_final_context_replay,
     )
     comparison = validate_paired_artifacts(
@@ -1620,6 +1778,10 @@ def main(argv: list[str] | None = None) -> int:
         treatment_suffix += "_shaped"
         if answer_shape_directive_categories:
             treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in answer_shape_directive_categories))
+    if args.frozen_gold_object_coverage_telemetry:
+        treatment_suffix += "_goldcov"
+        if gold_object_coverage_categories:
+            treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in gold_object_coverage_categories))
     paths = {
         "baseline": str(RESULTS_DIR / f"locomo_context_packet_canary_baseline_{RUN_ID}.json"),
         "treatment": str(RESULTS_DIR / f"locomo_context_packet_canary_treatment{treatment_suffix}_{RUN_ID}.json"),
@@ -1649,6 +1811,8 @@ def main(argv: list[str] | None = None) -> int:
         "frozen_answer_subject_guard_categories": sorted(answer_subject_guard_categories) if answer_subject_guard_categories else None,
         "frozen_answer_shape_directive": args.frozen_answer_shape_directive,
         "frozen_answer_shape_directive_categories": sorted(answer_shape_directive_categories) if answer_shape_directive_categories else None,
+        "frozen_gold_object_coverage_telemetry": args.frozen_gold_object_coverage_telemetry,
+        "frozen_gold_object_coverage_telemetry_categories": sorted(gold_object_coverage_categories) if gold_object_coverage_categories else None,
         "frozen_baseline_artifact": str(Path(args.frozen_baseline_artifact)) if args.frozen_baseline_artifact else None,
         "frozen_baseline_artifact_final_context_replay": args.frozen_baseline_artifact_final_context_replay,
         "input_identity": input_identity,
