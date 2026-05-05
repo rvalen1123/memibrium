@@ -1321,10 +1321,12 @@ def frozen_baseline_rows_from_artifact(
         telemetry = row.get("recall_telemetry") or {}
         final_context = copy.deepcopy(telemetry.get("final_context") or [])
         counts = copy.deepcopy(telemetry.get("counts") or {})
+        candidate_pool = copy.deepcopy(telemetry.get("context_packet_candidate_pool") or [])
         frozen_rows[int(one_based_index)] = {
             "final_context": final_context,
             "frozen_baseline_context_sha256": frozen_context_hash(final_context),
             "context_packet": copy.deepcopy(telemetry.get("context_packet") or {}),
+            "context_packet_candidate_pool": candidate_pool,
             "artifact_counts": counts,
             "artifact_packet_added_count": int(counts.get("packet_episodic_added_count") or 0),
         }
@@ -1402,6 +1404,7 @@ def answer_question_with_frozen_context(
                 "context_packet_merge_append_top_k": int(artifact_counts.get("context_packet_merge_append_top_k") or 0),
             })
             recall_telemetry["context_packet"] = copy.deepcopy(artifact.get("context_packet") or {})
+            recall_telemetry["context_packet_candidate_pool"] = copy.deepcopy(artifact.get("context_packet_candidate_pool") or [])
         else:
             packet = module.mcp_post("context_packet", {
                 "query": question,
@@ -1431,6 +1434,7 @@ def answer_question_with_frozen_context(
                 "context_packet_merge_append_top_k": max_added,
             })
             recall_telemetry["context_packet"] = module._context_packet_telemetry_projection(packet)
+            recall_telemetry["context_packet_candidate_pool"] = copy.deepcopy((packet or {}).get("episodic_evidence") or [])
     else:
         recall_telemetry["counts"]["context_packet_merge_enabled"] = False
 
@@ -1438,8 +1442,15 @@ def answer_question_with_frozen_context(
     if entity_time_constrained_expansion:
         packet_candidates = []
         if context_packet_merge_from_artifact:
-            packet_ids = set((recall_telemetry.get("context_packet") or {}).get("provenance_summary", {}).get("memory_ids") or [])
-            packet_candidates = [memory for memory in memories if _memory_identity(memory) in packet_ids]
+            artifact = frozen_packet_artifact or {}
+            packet_candidates = copy.deepcopy(
+                artifact.get("context_packet_candidate_pool")
+                or recall_telemetry.get("context_packet_candidate_pool")
+                or []
+            )
+            if not packet_candidates:
+                packet_ids = set((recall_telemetry.get("context_packet") or {}).get("provenance_summary", {}).get("memory_ids") or [])
+                packet_candidates = [memory for memory in memories if _memory_identity(memory) in packet_ids]
         else:
             packet_candidates = (packet or {}).get("episodic_evidence") if isinstance(packet, dict) else []
         memories, expansion_telemetry = apply_entity_time_constrained_expansion(

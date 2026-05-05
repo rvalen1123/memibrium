@@ -425,6 +425,35 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertEqual(frozen_rows[5]['artifact_packet_added_count'], 1)
         self.assertEqual(frozen_rows[5]['context_packet']['provenance_summary']['memory_ids'], ['p1'])
 
+    def test_frozen_baseline_rows_from_artifact_preserves_full_packet_candidate_pool(self):
+        artifact = {
+            'ingest': {'domain': 'locomo-conv-26'},
+            'details': [{
+                'row_identity': {'one_based_index': 41},
+                'recall_telemetry': {
+                    'final_context': [{'id': 'b1', 'content': 'Melanie discussed vacation plans.'}],
+                    'context_packet_candidate_pool': [
+                        {'memory_id': 'p1', 'content': 'Melanie said the beach was relaxing.', 'refs': {'session_index': 7, 'turn_start': 12}},
+                        {'memory_id': 'p2', 'content': 'Caroline mentioned the beach.', 'refs': {'session_index': 7, 'turn_start': 11}},
+                    ],
+                    'counts': {'packet_episodic_candidate_count': 2},
+                    'context_packet': {'provenance_summary': {'memory_ids': ['p1', 'p2']}},
+                },
+            }],
+        }
+
+        frozen_rows, _domain = context_packet_canary.frozen_baseline_rows_from_artifact(artifact)
+
+        self.assertEqual(
+            [m['memory_id'] for m in frozen_rows[41]['context_packet_candidate_pool']],
+            ['p1', 'p2'],
+        )
+        artifact['details'][0]['recall_telemetry']['context_packet_candidate_pool'][0]['content'] = 'mutated'
+        self.assertEqual(
+            frozen_rows[41]['context_packet_candidate_pool'][0]['content'],
+            'Melanie said the beach was relaxing.',
+        )
+
     def test_answer_question_with_frozen_context_can_replay_full_packet_artifact_without_live_packet_call(self):
         prompts = []
 
@@ -990,6 +1019,77 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertTrue(telemetry['counts']['entity_time_constrained_expansion_enabled'])
         self.assertEqual(telemetry['counts']['entity_time_constrained_expansion_added_count'], 1)
         self.assertEqual(telemetry['entity_time_constrained_expansion']['added_source_ids'], ['p1'])
+        self.assertEqual(telemetry['gold_object_coverage']['coverage_class'], 'all_atoms_present')
+
+    def test_answer_question_with_frozen_context_uses_artifact_candidate_pool_for_expansion(self):
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = True
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                raise AssertionError('artifact candidate replay must not call live context_packet')
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                raise AssertionError('artifact candidate replay must not recompute packet merge')
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id') or memory.get('memory_id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': packet.get('provenance_summary', {})}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return 'beach'
+
+        answer, memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'How many times has Melanie gone to the beach in 2023?',
+            'locomo-conv-26',
+            [{'id': 'b1', 'content': 'Melanie discussed vacation plans.', 'refs': {'session_index': 7, 'turn_start': 10, 'turn_end': 10}}],
+            context_packet_merge=True,
+            context_packet_merge_from_artifact=True,
+            frozen_packet_artifact={
+                'artifact_counts': {'packet_episodic_added_count': 0, 'packet_episodic_candidate_count': 2},
+                'context_packet': {'provenance_summary': {'memory_ids': ['p1', 'p2']}},
+                'context_packet_candidate_pool': [
+                    {'memory_id': 'p1', 'content': 'Melanie said the beach was relaxing.', 'refs': {'session_index': 7, 'turn_start': 12, 'turn_end': 12}},
+                    {'memory_id': 'p2', 'content': 'Caroline mentioned the beach.', 'refs': {'session_index': 7, 'turn_start': 11, 'turn_end': 11}},
+                ],
+            },
+            one_based_index=41,
+            ground_truth='beach',
+            gold_object_coverage_telemetry=True,
+            entity_time_constrained_expansion=True,
+            entity_time_constrained_expansion_max_added=2,
+            entity_time_constrained_expansion_turn_window=3,
+        )
+
+        self.assertEqual(answer, 'beach')
+        self.assertEqual(memory_count, 2)
+        self.assertIn('Melanie said the beach was relaxing.', prompts[0])
+        self.assertNotIn('Caroline mentioned the beach.', prompts[0])
+        self.assertEqual(telemetry['counts']['entity_time_constrained_expansion_added_count'], 1)
+        self.assertEqual(telemetry['entity_time_constrained_expansion']['candidate_count'], 2)
+        self.assertEqual(telemetry['entity_time_constrained_expansion']['added_source_ids'], ['p1'])
+        self.assertEqual(telemetry['entity_time_constrained_expansion']['rejected_reason_counts']['entity_mismatch'], 1)
         self.assertEqual(telemetry['gold_object_coverage']['coverage_class'], 'all_atoms_present')
 
     def test_parse_category_filter_normalizes_comma_separated_categories(self):
