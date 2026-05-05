@@ -952,6 +952,52 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertEqual(telemetry['coverage_after']['coverage_class'], 'all_atoms_present')
         self.assertEqual(telemetry['coverage_after']['present_atom_source_ids']['beach'], ['p1'])
 
+    def test_entity_time_constrained_expansion_prefers_candidates_that_add_missing_gold_atoms(self):
+        memories, telemetry = context_packet_canary.apply_entity_time_constrained_expansion(
+            question='What books has Melanie read?',
+            base_memories=[
+                {'id': 'b1', 'content': 'Melanie discussed vacation plans.', 'refs': {'session_index': 7, 'turn_start': 10, 'turn_end': 10}},
+            ],
+            candidate_memories=[
+                {'id': 'p_noise', 'content': 'Melanie talked about adoption interviews and family figurines.', 'refs': {'session_index': 7, 'turn_start': 11, 'turn_end': 11}},
+                {'id': 'p_gold', 'content': 'Melanie said she read Nothing is Impossible last week.', 'refs': {'session_index': 7, 'turn_start': 12, 'turn_end': 12}},
+            ],
+            one_based_index=24,
+            ground_truth='"Nothing is Impossible", "Charlotte\'s Web"',
+            max_added=2,
+            turn_window=3,
+        )
+
+        self.assertEqual([memory['id'] for memory in memories], ['b1', 'p_gold'])
+        self.assertEqual(telemetry['added_source_ids'], ['p_gold'])
+        self.assertEqual(telemetry['rejected_reason_counts']['no_missing_gold_atom'], 1)
+        self.assertEqual(
+            telemetry['added_missing_atom_source_ids'],
+            {'Nothing is Impossible': ['p_gold']},
+        )
+        self.assertEqual(telemetry['coverage_after']['coverage_class'], 'partial_atoms_present')
+
+    def test_entity_time_constrained_expansion_does_not_add_when_coverage_already_satisfied(self):
+        memories, telemetry = context_packet_canary.apply_entity_time_constrained_expansion(
+            question='How many times has Melanie gone to the beach in 2023?',
+            base_memories=[
+                {'id': 'b1', 'content': 'Melanie went to the beach twice in 2023.', 'refs': {'session_index': 7, 'turn_start': 10, 'turn_end': 10}},
+            ],
+            candidate_memories=[
+                {'id': 'p1', 'content': 'Melanie said the beach was relaxing.', 'refs': {'session_index': 7, 'turn_start': 11, 'turn_end': 11}},
+            ],
+            one_based_index=41,
+            ground_truth='2',
+            max_added=2,
+            turn_window=3,
+        )
+
+        self.assertEqual([memory['id'] for memory in memories], ['b1'])
+        self.assertEqual(telemetry['added_count'], 0)
+        self.assertEqual(telemetry['rejected_reason_counts']['coverage_already_satisfied'], 1)
+        self.assertEqual(telemetry['coverage_before']['coverage_class'], 'all_atoms_present')
+        self.assertEqual(telemetry['coverage_after']['coverage_class'], 'all_atoms_present')
+
     def test_answer_question_with_frozen_context_can_add_default_off_entity_time_constrained_expansion(self):
         prompts = []
 

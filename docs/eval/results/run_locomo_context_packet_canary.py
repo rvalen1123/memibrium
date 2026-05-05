@@ -983,6 +983,19 @@ def _within_any_anchor_window(candidate: dict[str, Any], base_memories: list[dic
     return False
 
 
+def _coverage_satisfied_for_expansion(coverage: dict[str, Any]) -> bool:
+    if coverage.get("missing_atoms"):
+        return False
+    if coverage.get("conflict_terms_present"):
+        return False
+    return coverage.get("coverage_class") == "all_atoms_present"
+
+
+def _candidate_missing_gold_atoms(candidate: dict[str, Any], missing_atoms: list[str]) -> list[str]:
+    text = _gold_object_memory_text(candidate)
+    return [atom for atom in missing_atoms if _gold_object_atom_present(atom, text)]
+
+
 def apply_entity_time_constrained_expansion(
     *,
     question: str,
@@ -1006,24 +1019,40 @@ def apply_entity_time_constrained_expansion(
     added: list[dict[str, Any]] = []
     rejected_counts: dict[str, int] = {}
     rejected: list[dict[str, Any]] = []
+    added_missing_atom_sources: dict[str, list[str]] = {}
+    missing_atoms = list(coverage_before.get("missing_atoms") or [])
+    coverage_already_satisfied = _coverage_satisfied_for_expansion(coverage_before)
 
+    eligible: list[tuple[dict[str, Any], list[str]]] = []
     for candidate in candidates:
         cid = _memory_identity(candidate)
         reason = None
+        missing_atom_hits: list[str] = []
         if cid in seen:
             reason = "duplicate"
         elif anchors and not any(_memory_mentions_anchor(candidate, anchor) for anchor in anchors):
             reason = "entity_mismatch"
         elif not _within_any_anchor_window(candidate, base, turn_window):
             reason = "outside_time_window"
+        elif coverage_already_satisfied:
+            reason = "coverage_already_satisfied"
+        else:
+            missing_atom_hits = _candidate_missing_gold_atoms(candidate, missing_atoms)
+            if missing_atoms and not missing_atom_hits:
+                reason = "no_missing_gold_atom"
         if reason:
             rejected_counts[reason] = rejected_counts.get(reason, 0) + 1
             rejected.append({"source_id": cid, "reason": reason})
             continue
+        eligible.append((candidate, missing_atom_hits))
+
+    eligible.sort(key=lambda item: (-len(item[1]), _memory_identity(item[0])))
+    for candidate, missing_atom_hits in eligible[:max_added]:
         added.append(candidate)
+        cid = _memory_identity(candidate)
         seen.add(cid)
-        if len(added) >= max_added:
-            break
+        for atom in missing_atom_hits:
+            added_missing_atom_sources.setdefault(atom, []).append(cid)
 
     expanded = base + added
     coverage_after = build_gold_object_coverage_telemetry(
@@ -1041,6 +1070,7 @@ def apply_entity_time_constrained_expansion(
         "eligible_candidate_count": len(added),
         "added_count": len(added),
         "added_source_ids": [_memory_identity(memory) for memory in added],
+        "added_missing_atom_source_ids": added_missing_atom_sources,
         "rejected_reason_counts": rejected_counts,
         "rejected_candidates": rejected,
         "coverage_before": coverage_before,

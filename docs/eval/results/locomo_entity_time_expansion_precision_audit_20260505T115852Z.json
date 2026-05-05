@@ -1,0 +1,964 @@
+{
+  "schema": "memibrium.locomo.entity_time_expansion_precision_audit.v1",
+  "created_at": "2026-05-05T14:32:14.132200+00:00",
+  "source_run_id": "20260505T115852Z",
+  "source_artifact": "locomo_context_packet_canary_treatment_merge_refgate_frozen_artifactctx_shaped_multihop_temporal_goldcov_enttimeexp_20260505T115852Z.json",
+  "baseline_artifact": "locomo_context_packet_canary_baseline_20260505T115852Z.json",
+  "summary_artifact": "locomo_context_packet_canary_summary_merge_refgate_frozen_artifactctx_shaped_multihop_temporal_goldcov_enttimeexp_20260505T115852Z.json",
+  "mode": "artifact_only_no_db_no_docker_no_benchmark",
+  "total_rows": 25,
+  "rows_with_additions": 14,
+  "added_candidate_count": 19,
+  "class_counts": {
+    "irrelevant_topic_noise": 6,
+    "supportive_context_not_answer_object": 1,
+    "mixed_related_extra_beach_context": 1,
+    "supportive_inference_not_gold_literal": 2,
+    "neutral_no_gold_or_conflict": 1,
+    "irrelevant_or_wrong_temporal_neighbor": 8
+  },
+  "coverage_class_changes": [],
+  "score_context": {
+    "baseline_overall_score": 54.0,
+    "treatment_overall_score": 64.0,
+    "not_benchmark_claim": true
+  },
+  "headline_findings": [
+    "19 candidates were added across 14 rows, but none changed gold-object coverage class.",
+    "0/19 additions supplied a previously missing gold atom under existing telemetry atoms.",
+    "Most additions are entity-name/nearby-turn matches that are semantically unrelated to the asked object.",
+    "Rows 24, 39, 40, 80, 113, and 172 show clear topic/temporal-neighbor noise.",
+    "Row 163 had no added candidate; failure is answer attribution/subject-guard despite all gold atoms present, not expansion addition harm."
+  ],
+  "rows": [
+    {
+      "row": 5,
+      "cat": "single-hop",
+      "score": 1.0,
+      "question": "What is Caroline's identity?",
+      "ground_truth": "Transgender woman",
+      "predicted": "Caroline is a transgender woman.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_61d9a85cc27d"
+      ],
+      "row_added_classes": [
+        "irrelevant_topic_noise"
+      ],
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "Transgender woman"
+      ],
+      "missing_after": [
+        "Transgender woman"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "outside_time_window": 5,
+        "duplicate": 2
+      }
+    },
+    {
+      "row": 24,
+      "cat": "single-hop",
+      "score": 0.5,
+      "question": "What books has Melanie read?",
+      "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "predicted": "Melanie loved reading \"Charlotte's Web\" as a child.",
+      "added_count": 2,
+      "added_ids": [
+        "mem_9e8127a47935",
+        "mem_035231f14925"
+      ],
+      "row_added_classes": [
+        "irrelevant_topic_noise",
+        "irrelevant_topic_noise"
+      ],
+      "coverage_before": "partial_atoms_present",
+      "coverage_after": "partial_atoms_present",
+      "missing_before": [
+        "Nothing is Impossible"
+      ],
+      "missing_after": [
+        "Nothing is Impossible"
+      ],
+      "present_before": [
+        "Charlotte's Web"
+      ],
+      "present_after": [
+        "Charlotte's Web"
+      ],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "outside_time_window": 3,
+        "duplicate": 1
+      }
+    },
+    {
+      "row": 31,
+      "cat": "multi-hop",
+      "score": 1.0,
+      "question": "Would Melanie be considered a member of the LGBTQ community?",
+      "ground_truth": "Likely no, she does not refer to herself as part of it",
+      "predicted": "Likely no; the context shows Melanie supports Caroline, who is transgender and active in LGBTQ advocacy, but there is no indication Melanie identifies as LGBTQ herself.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_562b1c73b337"
+      ],
+      "row_added_classes": [
+        "supportive_context_not_answer_object"
+      ],
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "Likely no",
+        "she does not refer to herself as part of it"
+      ],
+      "missing_after": [
+        "Likely no",
+        "she does not refer to herself as part of it"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 6,
+        "outside_time_window": 1
+      }
+    },
+    {
+      "row": 39,
+      "cat": "single-hop",
+      "score": 0.5,
+      "question": "What activities has Melanie done with her family?",
+      "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+      "predicted": "Melanie has gone camping with her family, roasting marshmallows, telling stories around the campfire, watching the Perseid meteor shower, and spending time at the beach with her kids.",
+      "added_count": 2,
+      "added_ids": [
+        "mem_9e8127a47935",
+        "mem_035231f14925"
+      ],
+      "row_added_classes": [
+        "irrelevant_topic_noise",
+        "irrelevant_topic_noise"
+      ],
+      "coverage_before": "partial_atoms_present",
+      "coverage_after": "partial_atoms_present",
+      "missing_before": [
+        "museum",
+        "hiking"
+      ],
+      "missing_after": [
+        "museum",
+        "hiking"
+      ],
+      "present_before": [
+        "Pottery",
+        "painting",
+        "camping",
+        "swimming"
+      ],
+      "present_after": [
+        "Pottery",
+        "painting",
+        "camping",
+        "swimming"
+      ],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 4,
+        "outside_time_window": 1
+      }
+    },
+    {
+      "row": 40,
+      "cat": "single-hop",
+      "score": 1.0,
+      "question": "In what ways is Caroline participating in the LGBTQ community?",
+      "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "predicted": "Caroline is participating in the LGBTQ community by joining an activist group, mentoring LGBTQ youth, speaking at school events about her transgender journey, attending pride parades, and being involved in support groups.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_ab40259ed9db"
+      ],
+      "row_added_classes": [
+        "irrelevant_topic_noise"
+      ],
+      "coverage_before": "partial_atoms_present",
+      "coverage_after": "partial_atoms_present",
+      "missing_before": [
+        "Joining activist group",
+        "going to pride parades",
+        "participating in an art show"
+      ],
+      "missing_after": [
+        "Joining activist group",
+        "going to pride parades",
+        "participating in an art show"
+      ],
+      "present_before": [
+        "mentoring program"
+      ],
+      "present_after": [
+        "mentoring program"
+      ],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 4,
+        "outside_time_window": 3
+      }
+    },
+    {
+      "row": 41,
+      "cat": "single-hop",
+      "score": 0.5,
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "ground_truth": 2,
+      "predicted": "Melanie went to the beach once or twice in 2023.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_824ed468a72a"
+      ],
+      "row_added_classes": [
+        "mixed_related_extra_beach_context"
+      ],
+      "coverage_before": "all_atoms_present",
+      "coverage_after": "all_atoms_present",
+      "missing_before": [],
+      "missing_after": [],
+      "present_before": [
+        "beach"
+      ],
+      "present_after": [
+        "beach"
+      ],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 4,
+        "outside_time_window": 3
+      }
+    },
+    {
+      "row": 51,
+      "cat": "multi-hop",
+      "score": 1.0,
+      "question": "What would Caroline's political leaning likely be?",
+      "ground_truth": "Liberal",
+      "predicted": "Caroline's political leaning is likely progressive or left-leaning, as she is actively involved in LGBTQ activism, supports mental health awareness, advocates for LGBTQ rights, and promotes inclusivity and acceptance.",
+      "added_count": 2,
+      "added_ids": [
+        "mem_8d80b22b2fb2",
+        "mem_035231f14925"
+      ],
+      "row_added_classes": [
+        "supportive_inference_not_gold_literal",
+        "supportive_inference_not_gold_literal"
+      ],
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "Liberal"
+      ],
+      "missing_after": [
+        "Liberal"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "outside_time_window": 3,
+        "duplicate": 2
+      }
+    },
+    {
+      "row": 55,
+      "cat": "temporal",
+      "score": 1.0,
+      "question": "When did Caroline draw a self-portrait?",
+      "ground_truth": "The week before 23 August 2023",
+      "predicted": "Caroline drew a self-portrait last week before 23 August 2023.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_e048d7a36489"
+      ],
+      "row_added_classes": [
+        "neutral_no_gold_or_conflict"
+      ],
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "The week before 23 August 2023"
+      ],
+      "missing_after": [
+        "The week before 23 August 2023"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 5,
+        "outside_time_window": 2
+      }
+    },
+    {
+      "row": 74,
+      "cat": "temporal",
+      "score": 1.0,
+      "question": "When did Melanie get hurt?",
+      "ground_truth": "September 2023",
+      "predicted": "Melanie got hurt last month before 13 October 2023.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_8d80b22b2fb2"
+      ],
+      "row_added_classes": [
+        "irrelevant_or_wrong_temporal_neighbor"
+      ],
+      "coverage_before": "all_atoms_present",
+      "coverage_after": "all_atoms_present",
+      "missing_before": [],
+      "missing_after": [],
+      "present_before": [
+        "September 2023"
+      ],
+      "present_after": [
+        "September 2023"
+      ],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 3,
+        "outside_time_window": 4
+      }
+    },
+    {
+      "row": 78,
+      "cat": "multi-hop",
+      "score": 1.0,
+      "question": "Would Melanie go on another roadtrip soon?",
+      "ground_truth": "Likely no; since this one went badly",
+      "predicted": "Likely no; Melanie said the roadtrip had a bad start with an accident that was a real scary experience.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_e048d7a36489"
+      ],
+      "row_added_classes": [
+        "irrelevant_or_wrong_temporal_neighbor"
+      ],
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "Likely no",
+        "since this one went badly"
+      ],
+      "missing_after": [
+        "Likely no",
+        "since this one went badly"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "outside_time_window": 4,
+        "duplicate": 3
+      }
+    },
+    {
+      "row": 80,
+      "cat": "temporal",
+      "score": 0.0,
+      "question": "When did Caroline pass the adoption interview?",
+      "ground_truth": "The Friday before 22 October 2023",
+      "predicted": "I don't know.",
+      "added_count": 2,
+      "added_ids": [
+        "mem_035231f14925",
+        "mem_ab40259ed9db"
+      ],
+      "row_added_classes": [
+        "irrelevant_or_wrong_temporal_neighbor",
+        "irrelevant_or_wrong_temporal_neighbor"
+      ],
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "The Friday before 22 October 2023"
+      ],
+      "missing_after": [
+        "The Friday before 22 October 2023"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 1,
+        "outside_time_window": 1
+      }
+    },
+    {
+      "row": 113,
+      "cat": "unanswerable",
+      "score": 0.0,
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "ground_truth": "a sunset with a palm tree",
+      "predicted": "Mel and her kids painted a nature-inspired painting featuring lovely flowers in their latest project in July 2023.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_9b079c82f34e"
+      ],
+      "row_added_classes": [
+        "irrelevant_or_wrong_temporal_neighbor"
+      ],
+      "coverage_before": "no_atoms_present_conflicting_context",
+      "coverage_after": "no_atoms_present_conflicting_context",
+      "missing_before": [
+        "sunset",
+        "palm tree"
+      ],
+      "missing_after": [
+        "sunset",
+        "palm tree"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [
+        "flowers",
+        "nature-inspired"
+      ],
+      "conflicts_after": [
+        "flowers",
+        "nature-inspired"
+      ],
+      "reject_counts": {
+        "duplicate": 6,
+        "outside_time_window": 1
+      }
+    },
+    {
+      "row": 123,
+      "cat": "unanswerable",
+      "score": 0.5,
+      "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+      "ground_truth": "She wanted to catch the eye and make people smile.",
+      "predicted": "Melanie chose to use colors and patterns in her pottery project to express her emotions and creativity, finding it calming and joyful.",
+      "added_count": 0,
+      "added_ids": [],
+      "row_added_classes": [],
+      "coverage_before": "no_atoms_present_conflicting_context",
+      "coverage_after": "no_atoms_present_conflicting_context",
+      "missing_before": [
+        "catch the eye",
+        "make people smile"
+      ],
+      "missing_after": [
+        "catch the eye",
+        "make people smile"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [
+        "express emotions",
+        "self-expression",
+        "relax"
+      ],
+      "conflicts_after": [
+        "express emotions",
+        "self-expression",
+        "relax"
+      ],
+      "reject_counts": {
+        "outside_time_window": 5,
+        "duplicate": 3
+      }
+    },
+    {
+      "row": 128,
+      "cat": "unanswerable",
+      "score": 1.0,
+      "question": "What did Caroline make for a local church?",
+      "ground_truth": "a stained glass window",
+      "predicted": "Caroline made a stained glass window for a local church.",
+      "added_count": 1,
+      "added_ids": [
+        "mem_946204d143a3"
+      ],
+      "row_added_classes": [
+        "irrelevant_or_wrong_temporal_neighbor"
+      ],
+      "coverage_before": "all_atoms_present",
+      "coverage_after": "all_atoms_present",
+      "missing_before": [],
+      "missing_after": [],
+      "present_before": [
+        "a stained glass window"
+      ],
+      "present_after": [
+        "a stained glass window"
+      ],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "outside_time_window": 3,
+        "duplicate": 4
+      }
+    },
+    {
+      "row": 163,
+      "cat": "adversarial",
+      "score": 0.0,
+      "question": "What did Caroline and her family do while camping?",
+      "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+      "predicted": "Caroline did not mention camping herself; Melanie and her family went camping, where they explored nature, roasted marshmallows around the campfire, went on a hike, and enjoyed the view from the top.",
+      "added_count": 0,
+      "added_ids": [],
+      "row_added_classes": [],
+      "coverage_before": "all_atoms_present",
+      "coverage_after": "all_atoms_present",
+      "missing_before": [],
+      "missing_after": [],
+      "present_before": [
+        "nature",
+        "roasted marshmallows",
+        "hike"
+      ],
+      "present_after": [
+        "nature",
+        "roasted marshmallows",
+        "hike"
+      ],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 4,
+        "outside_time_window": 4
+      }
+    },
+    {
+      "row": 172,
+      "cat": "adversarial",
+      "score": 0.0,
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "predicted": "I don't know.",
+      "added_count": 2,
+      "added_ids": [
+        "mem_035231f14925",
+        "mem_ab40259ed9db"
+      ],
+      "row_added_classes": [
+        "irrelevant_or_wrong_temporal_neighbor",
+        "irrelevant_or_wrong_temporal_neighbor"
+      ],
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "missing_after": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "present_before": [],
+      "present_after": [],
+      "conflicts_before": [],
+      "conflicts_after": [],
+      "reject_counts": {
+        "duplicate": 1,
+        "outside_time_window": 1
+      }
+    },
+    {
+      "row": 185,
+      "cat": "adversarial",
+      "score": 0.0,
+      "question": "What type of instrument does Caroline play?",
+      "ground_truth": "clarinet and violin",
+      "predicted": "Caroline plays acoustic guitar.",
+      "added_count": 0,
+      "added_ids": [],
+      "row_added_classes": [],
+      "coverage_before": "all_atoms_present_with_conflicts",
+      "coverage_after": "all_atoms_present_with_conflicts",
+      "missing_before": [],
+      "missing_after": [],
+      "present_before": [
+        "clarinet",
+        "violin"
+      ],
+      "present_after": [
+        "clarinet",
+        "violin"
+      ],
+      "conflicts_before": [
+        "acoustic guitar",
+        "guitar"
+      ],
+      "conflicts_after": [
+        "acoustic guitar",
+        "guitar"
+      ],
+      "reject_counts": {
+        "duplicate": 4,
+        "outside_time_window": 4
+      }
+    }
+  ],
+  "added_candidates": [
+    {
+      "row": 5,
+      "cat": "single-hop",
+      "score": 1.0,
+      "question": "What is Caroline's identity?",
+      "ground_truth": "Transgender woman",
+      "predicted": "Caroline is a transgender woman.",
+      "source_id": "mem_61d9a85cc27d",
+      "class": "irrelevant_topic_noise",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 5,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[3:31 pm on 23 August, 2023] Caroline: Hi Melanie! Hope you're doing good. Guess what I did this week? I took the first step towards becoming a mom - I applied to adoption agencies! It's a big decision, but I think I'm ready to give all my love to a child. I got lots of help from this adoption advice/assistance group I attended. It was great! | Melanie: Caroline, congrats! So proud of you for taking this step. How does it feel? Also, do you have any pets? | Caroline: Thanks, Mel! Exciting but ki"
+    },
+    {
+      "row": 24,
+      "cat": "single-hop",
+      "score": 0.5,
+      "question": "What books has Melanie read?",
+      "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "predicted": "Melanie loved reading \"Charlotte's Web\" as a child.",
+      "source_id": "mem_9e8127a47935",
+      "class": "irrelevant_topic_noise",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 11,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[9:55 am on 22 October, 2023] Caroline: Woohoo Melanie! I passed the adoption agency interviews last Friday! I'm so excited and thankful. This is a big move towards my goal of having a family. | Melanie: Congrats, Caroline! Adoption sounds awesome. I'm so happy for you. These figurines I bought yesterday remind me of family love. Tell me, what's your vision for the future? | Caroline: Thanks so much, Melanie! It's beautiful! It really brings home how much love's in families - both blood and the "
+    },
+    {
+      "row": 24,
+      "cat": "single-hop",
+      "score": 0.5,
+      "question": "What books has Melanie read?",
+      "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "predicted": "Melanie loved reading \"Charlotte's Web\" as a child.",
+      "source_id": "mem_035231f14925",
+      "class": "irrelevant_topic_noise",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activist group last Tues. I'm meeting so many cool people who are as passionate as I am about rights and community support. I'm giving my voice and making a real difference, plus it's fulfilling in so many ways. It's just great, you know? | Melan"
+    },
+    {
+      "row": 31,
+      "cat": "multi-hop",
+      "score": 1.0,
+      "question": "Would Melanie be considered a member of the LGBTQ community?",
+      "ground_truth": "Likely no, she does not refer to herself as part of it",
+      "predicted": "Likely no; the context shows Melanie supports Caroline, who is transgender and active in LGBTQ advocacy, but there is no indication Melanie identifies as LGBTQ herself.",
+      "source_id": "mem_562b1c73b337",
+      "class": "supportive_context_not_answer_object",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 12,
+      "turn_start": 10,
+      "turn_end": 16,
+      "min_turn_distance": 1,
+      "snippet": "[1:14 pm on 25 May, 2023] Melanie: Wow, that agency looks great! What made you pick it? | Caroline: I chose them 'cause they help LGBTQ+ folks with adoption. Their inclusivity and support really spoke to me. | Melanie: That's great, Caroline! Loving the inclusivity and support. Anything you're excited for in the adoption process? | Caroline: I'm thrilled to make a family for kids who need one. It'll be tough as a single parent, but I'm up for the challenge! | Melanie: You're doing something amaz"
+    },
+    {
+      "row": 39,
+      "cat": "single-hop",
+      "score": 0.5,
+      "question": "What activities has Melanie done with her family?",
+      "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+      "predicted": "Melanie has gone camping with her family, roasting marshmallows, telling stories around the campfire, watching the Perseid meteor shower, and spending time at the beach with her kids.",
+      "source_id": "mem_9e8127a47935",
+      "class": "irrelevant_topic_noise",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 11,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[9:55 am on 22 October, 2023] Caroline: Woohoo Melanie! I passed the adoption agency interviews last Friday! I'm so excited and thankful. This is a big move towards my goal of having a family. | Melanie: Congrats, Caroline! Adoption sounds awesome. I'm so happy for you. These figurines I bought yesterday remind me of family love. Tell me, what's your vision for the future? | Caroline: Thanks so much, Melanie! It's beautiful! It really brings home how much love's in families - both blood and the "
+    },
+    {
+      "row": 39,
+      "cat": "single-hop",
+      "score": 0.5,
+      "question": "What activities has Melanie done with her family?",
+      "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+      "predicted": "Melanie has gone camping with her family, roasting marshmallows, telling stories around the campfire, watching the Perseid meteor shower, and spending time at the beach with her kids.",
+      "source_id": "mem_035231f14925",
+      "class": "irrelevant_topic_noise",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activist group last Tues. I'm meeting so many cool people who are as passionate as I am about rights and community support. I'm giving my voice and making a real difference, plus it's fulfilling in so many ways. It's just great, you know? | Melan"
+    },
+    {
+      "row": 40,
+      "cat": "single-hop",
+      "score": 1.0,
+      "question": "In what ways is Caroline participating in the LGBTQ community?",
+      "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "predicted": "Caroline is participating in the LGBTQ community by joining an activist group, mentoring LGBTQ youth, speaking at school events about her transgender journey, attending pride parades, and being involved in support groups.",
+      "source_id": "mem_ab40259ed9db",
+      "class": "irrelevant_topic_noise",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 20,
+      "turn_end": 23,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Aw, that's sweet, Mel! Those milestones are great reminders of how special our bonds are. | Melanie: Yeah, they sure are. It's special moments like these that make me appreciate life and how lucky I am to be with my family and have our love. | Caroline: Wow, Melanie, what a beautiful moment! Lucky you to have such an awesome family! | Melanie: Thanks, Caroline! I'm really lucky to have my family; they bring so much joy and love."
+    },
+    {
+      "row": 41,
+      "cat": "single-hop",
+      "score": 0.5,
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "ground_truth": 2,
+      "predicted": "Melanie went to the beach once or twice in 2023.",
+      "source_id": "mem_824ed468a72a",
+      "class": "mixed_related_extra_beach_context",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [
+        "beach"
+      ],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 10,
+      "turn_end": 19,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Sounds special, those beach trips! Do you have any other summer traditions you all do together? Create those memories! | Melanie: We always look forward to our family camping trip. We roast marshmallows, tell stories around the campfire and just enjoy each other's company. It's the highlight of our summer! | Caroline: Wow, Mel, that's awesome! What's your best camping memory? | Melanie: I'll always remember our camping trip last year when we saw the Perseid m"
+    },
+    {
+      "row": 51,
+      "cat": "multi-hop",
+      "score": 1.0,
+      "question": "What would Caroline's political leaning likely be?",
+      "ground_truth": "Liberal",
+      "predicted": "Caroline's political leaning is likely progressive or left-leaning, as she is actively involved in LGBTQ activism, supports mental health awareness, advocates for LGBTQ rights, and promotes inclusivity and acceptance.",
+      "source_id": "mem_8d80b22b2fb2",
+      "class": "supportive_inference_not_gold_literal",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 1,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[1:56 pm on 8 May, 2023] Caroline: Hey Mel! Good to see you! How have you been? | Melanie: Hey Caroline! Good to see you! I'm swamped with the kids & work. What's up with you? Anything new? | Caroline: I went to a LGBTQ support group yesterday and it was so powerful. | Melanie: Wow, that's cool, Caroline! What happened that was so awesome? Did you hear any inspiring stories? | Caroline: The transgender stories were so inspiring! I was so happy and thankful for all the support. | Melanie: Wow, lo"
+    },
+    {
+      "row": 51,
+      "cat": "multi-hop",
+      "score": 1.0,
+      "question": "What would Caroline's political leaning likely be?",
+      "ground_truth": "Liberal",
+      "predicted": "Caroline's political leaning is likely progressive or left-leaning, as she is actively involved in LGBTQ activism, supports mental health awareness, advocates for LGBTQ rights, and promotes inclusivity and acceptance.",
+      "source_id": "mem_035231f14925",
+      "class": "supportive_inference_not_gold_literal",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activist group last Tues. I'm meeting so many cool people who are as passionate as I am about rights and community support. I'm giving my voice and making a real difference, plus it's fulfilling in so many ways. It's just great, you know? | Melan"
+    },
+    {
+      "row": 55,
+      "cat": "temporal",
+      "score": 1.0,
+      "question": "When did Caroline draw a self-portrait?",
+      "ground_truth": "The week before 23 August 2023",
+      "predicted": "Caroline drew a self-portrait last week before 23 August 2023.",
+      "source_id": "mem_e048d7a36489",
+      "class": "neutral_no_gold_or_conflict",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 3,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[2:24 pm on 14 August, 2023] Melanie: Hey Caroline! Last night was amazing! We celebrated my daughter's birthday with a concert surrounded by music, joy and the warm summer breeze. Seeing my kids' smiles was so awesome, and I'm so thankful for our special moments together. | Caroline: Wow, sounds wonderful! Your love for your kids is so awesome. What concert was it? The advocacy event was a cool experience - so much love and support, amazing! | Melanie: Thanks, Caroline! It was Matt Patterson, h"
+    },
+    {
+      "row": 74,
+      "cat": "temporal",
+      "score": 1.0,
+      "question": "When did Melanie get hurt?",
+      "ground_truth": "September 2023",
+      "predicted": "Melanie got hurt last month before 13 October 2023.",
+      "source_id": "mem_8d80b22b2fb2",
+      "class": "irrelevant_or_wrong_temporal_neighbor",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 1,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[1:56 pm on 8 May, 2023] Caroline: Hey Mel! Good to see you! How have you been? | Melanie: Hey Caroline! Good to see you! I'm swamped with the kids & work. What's up with you? Anything new? | Caroline: I went to a LGBTQ support group yesterday and it was so powerful. | Melanie: Wow, that's cool, Caroline! What happened that was so awesome? Did you hear any inspiring stories? | Caroline: The transgender stories were so inspiring! I was so happy and thankful for all the support. | Melanie: Wow, lo"
+    },
+    {
+      "row": 78,
+      "cat": "multi-hop",
+      "score": 1.0,
+      "question": "Would Melanie go on another roadtrip soon?",
+      "ground_truth": "Likely no; since this one went badly",
+      "predicted": "Likely no; Melanie said the roadtrip had a bad start with an accident that was a real scary experience.",
+      "source_id": "mem_e048d7a36489",
+      "class": "irrelevant_or_wrong_temporal_neighbor",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 3,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[2:24 pm on 14 August, 2023] Melanie: Hey Caroline! Last night was amazing! We celebrated my daughter's birthday with a concert surrounded by music, joy and the warm summer breeze. Seeing my kids' smiles was so awesome, and I'm so thankful for our special moments together. | Caroline: Wow, sounds wonderful! Your love for your kids is so awesome. What concert was it? The advocacy event was a cool experience - so much love and support, amazing! | Melanie: Thanks, Caroline! It was Matt Patterson, h"
+    },
+    {
+      "row": 80,
+      "cat": "temporal",
+      "score": 0.0,
+      "question": "When did Caroline pass the adoption interview?",
+      "ground_truth": "The Friday before 22 October 2023",
+      "predicted": "I don't know.",
+      "source_id": "mem_035231f14925",
+      "class": "irrelevant_or_wrong_temporal_neighbor",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activist group last Tues. I'm meeting so many cool people who are as passionate as I am about rights and community support. I'm giving my voice and making a real difference, plus it's fulfilling in so many ways. It's just great, you know? | Melan"
+    },
+    {
+      "row": 80,
+      "cat": "temporal",
+      "score": 0.0,
+      "question": "When did Caroline pass the adoption interview?",
+      "ground_truth": "The Friday before 22 October 2023",
+      "predicted": "I don't know.",
+      "source_id": "mem_ab40259ed9db",
+      "class": "irrelevant_or_wrong_temporal_neighbor",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 20,
+      "turn_end": 23,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Aw, that's sweet, Mel! Those milestones are great reminders of how special our bonds are. | Melanie: Yeah, they sure are. It's special moments like these that make me appreciate life and how lucky I am to be with my family and have our love. | Caroline: Wow, Melanie, what a beautiful moment! Lucky you to have such an awesome family! | Melanie: Thanks, Caroline! I'm really lucky to have my family; they bring so much joy and love."
+    },
+    {
+      "row": 113,
+      "cat": "unanswerable",
+      "score": 0.0,
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "ground_truth": "a sunset with a palm tree",
+      "predicted": "Mel and her kids painted a nature-inspired painting featuring lovely flowers in their latest project in July 2023.",
+      "source_id": "mem_9b079c82f34e",
+      "class": "irrelevant_or_wrong_temporal_neighbor",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 4,
+      "turn_start": 20,
+      "turn_end": 20,
+      "min_turn_distance": 1,
+      "snippet": "[1:50 pm on 17 August, 2023] Caroline: Yeah, Mel! Life's all about creating memories. Can't wait for the trip!"
+    },
+    {
+      "row": 128,
+      "cat": "unanswerable",
+      "score": 1.0,
+      "question": "What did Caroline make for a local church?",
+      "ground_truth": "a stained glass window",
+      "predicted": "Caroline made a stained glass window for a local church.",
+      "source_id": "mem_946204d143a3",
+      "class": "irrelevant_or_wrong_temporal_neighbor",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 8,
+      "turn_start": 10,
+      "turn_end": 19,
+      "min_turn_distance": 1,
+      "snippet": "[12:09 am on 13 September, 2023] Caroline: I haven't done pottery yet, but I'm game for trying new art. I might try it sometime! Check out this piece I made! | Melanie: Wow, Caroline! This painting is awesome. Love the red and blue. What gave you the idea? | Caroline: Thanks, Melanie! I made this painting to show my path as a trans woman. The red and blue are for the binary gender system, and the mix of colors means smashing that rigid thinking. It's a reminder to love my authentic self - it's t"
+    },
+    {
+      "row": 172,
+      "cat": "adversarial",
+      "score": 0.0,
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "predicted": "I don't know.",
+      "source_id": "mem_035231f14925",
+      "class": "irrelevant_or_wrong_temporal_neighbor",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 0,
+      "turn_end": 9,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activist group last Tues. I'm meeting so many cool people who are as passionate as I am about rights and community support. I'm giving my voice and making a real difference, plus it's fulfilling in so many ways. It's just great, you know? | Melan"
+    },
+    {
+      "row": 172,
+      "cat": "adversarial",
+      "score": 0.0,
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "predicted": "I don't know.",
+      "source_id": "mem_ab40259ed9db",
+      "class": "irrelevant_or_wrong_temporal_neighbor",
+      "adds_missing_atoms": [],
+      "mentions_atoms": [],
+      "conflicts": [],
+      "session_index": 2,
+      "turn_start": 20,
+      "turn_end": 23,
+      "min_turn_distance": 1,
+      "snippet": "[8:56 pm on 20 July, 2023] Caroline: Aw, that's sweet, Mel! Those milestones are great reminders of how special our bonds are. | Melanie: Yeah, they sure are. It's special moments like these that make me appreciate life and how lucky I am to be with my family and have our love. | Caroline: Wow, Melanie, what a beautiful moment! Lucky you to have such an awesome family! | Melanie: Thanks, Caroline! I'm really lucky to have my family; they bring so much joy and love."
+    }
+  ]
+}
