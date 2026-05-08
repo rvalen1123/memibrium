@@ -14,8 +14,13 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[3]
 RESULTS_DIR = ROOT / "docs/eval/results"
@@ -57,6 +62,149 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w") as f:
         for row in rows:
             print(json.dumps(row, ensure_ascii=False), file=f)
+
+
+def load_dotenv(path: Path) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip().lstrip("export ").strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key, value)
+
+
+def endpoint_metadata(endpoint: str) -> dict[str, Any]:
+    parsed = urllib.parse.urlparse(endpoint or "")
+    return {
+        "scheme": parsed.scheme,
+        "host": parsed.netloc,
+        "path": parsed.path,
+        "configured": bool(endpoint),
+    }
+
+
+def chat_completions_call(
+    messages: list[dict[str, str]],
+    *,
+    model: str,
+    max_tokens: int,
+    endpoint: str | None = None,
+    api_key: str | None = None,
+    retries: int = 3,
+) -> str:
+    endpoint = (endpoint or os.environ.get("AZURE_CHAT_ENDPOINT") or "https://sector-7.services.ai.azure.com").rstrip("/")
+    api_key = api_key or os.environ.get("AZURE_CHAT_API_KEY") or os.environ.get("AZURE_OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("missing_azure_chat_api_key")
+    url = f"{endpoint}/models/chat/completions"
+    payload = json.dumps({
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": 0,
+    }).encode("utf-8")
+    headers = {"api-key": api_key, "Content-Type": "application/json"}
+    last_error: Exception | None = None
+    for attempt in range(retries):
+        try:
+            request = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+            with urllib.request.urlopen(request, timeout=120) as response:
+                data = json.loads(response.read().decode("utf-8"))
+            content = data["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise RuntimeError("empty_chat_completion_content")
+            return content.strip()
+        except Exception as exc:  # pragma: no cover - network path covered by live run
+            last_error = exc
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            if isinstance(exc, urllib.error.HTTPError):
+                body = exc.read().decode("utf-8", errors="replace")[:1000]
+                raise RuntimeError(f"azure_chat_http_error:{exc.code}:{body}") from exc
+            raise RuntimeError(f"azure_chat_call_failed:{exc}") from exc
+    raise RuntimeError(f"azure_chat_call_failed:{last_error}")
+
+
+def build_judge_prompt(row: dict[str, Any], hypothesis: str) -> str:
+    question_type = row.get("question_type")
+    question = row.get("question", "")
+    answer = row.get("answer", "")
+    if str(row.get("question_id", "")).endswith("_abs"):
+        template = "I will give you an unanswerable question, an explanation, and a response from a model. Please answer yes if the model correctly identifies the question as unanswerable. The model could say that the information is incomplete, or some other information is given but the asked information is not.\n\nQuestion: {}\n\nExplanation: {}\n\nModel Response: {}\n\nDoes the model correctly identify the question as unanswerable? Answer yes or no only."
+        return template.format(question, answer, hypothesis)
+    if question_type in ["single-session-user", "single-session-assistant", "multi-session"]:
+        template = "I will give you a question, a correct answer, and a response from a model. Please answer yes if the response contains the correct answer. Otherwise, answer no. If the response is equivalent to the correct answer or contains all the intermediate steps to get the correct answer, you should also answer yes. If the response only contains a subset of the information required by the answer, answer no. \n\nQuestion: {}\n\nCorrect Answer: {}\n\nModel Response: {}\n\nIs the model response correct? Answer yes or no only."
+    elif question_type == "temporal-reasoning":
+        template = "I will give you a question, a correct answer, and a response from a model. Please answer yes if the response contains the correct answer. Otherwise, answer no. If the response is equivalent to the correct answer or contains all the intermediate steps to get the correct answer, you should also answer yes. If the response only contains a subset of the information required by the answer, answer no. In addition, do not penalize off-by-one errors for the number of days. If the question asks for the number of days/weeks/months, etc., and the model makes off-by-one errors (e.g., predicting 19 days when the answer is 18), the model's response is still correct. \n\nQuestion: {}\n\nCorrect Answer: {}\n\nModel Response: {}\n\nIs the model response correct? Answer yes or no only."
+    elif question_type == "knowledge-update":
+        template = "I will give you a question, a correct answer, and a response from a model. Please answer yes if the response contains the correct answer. Otherwise, answer no. If the response contains some previous information along with an updated answer, the response should be considered as correct as long as the updated answer is the required answer.\n\nQuestion: {}\n\nCorrect Answer: {}\n\nModel Response: {}\n\nIs the model response correct? Answer yes or no only."
+    elif question_type == "single-session-preference":
+        template = "I will give you a question, a rubric for desired personalized response, and a response from a model. Please answer yes if the response satisfies the desired response. Otherwise, answer no. The model does not need to reflect all the points in the rubric. The response is correct as long as it recalls and utilizes the user's personal information correctly.\n\nQuestion: {}\n\nRubric: {}\n\nModel Response: {}\n\nIs the model response correct? Answer yes or no only."
+    else:
+        raise ValueError(f"unsupported_question_type:{question_type}")
+    return template.format(question, answer, hypothesis)
+
+
+def evaluate_predictions(
+    selected_rows: list[dict[str, Any]],
+    predictions: list[dict[str, Any]],
+    *,
+    chat_fn: Callable[..., str],
+    judge_model: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    by_id = {row["question_id"]: row for row in selected_rows}
+    eval_rows = []
+    by_type: dict[str, list[bool]] = {}
+    for prediction in predictions:
+        row = by_id[prediction["question_id"]]
+        prompt = build_judge_prompt(row, prediction["hypothesis"])
+        response = chat_fn([{"role": "user", "content": prompt}], model=judge_model, max_tokens=10)
+        label = "yes" in response.lower()
+        qtype = row.get("question_type", "")
+        by_type.setdefault(qtype, []).append(label)
+        eval_rows.append({
+            "question_id": prediction["question_id"],
+            "hypothesis": prediction["hypothesis"],
+            "autoeval_label": {
+                "model": judge_model,
+                "version": "2024-11-20",
+                "label": label,
+                "raw_response": response,
+            },
+        })
+    labels = [item["autoeval_label"]["label"] for item in eval_rows]
+    summary = {
+        "accuracy": sum(1 for label in labels if label) / len(labels) if labels else 0.0,
+        "correct": sum(1 for label in labels if label),
+        "total": len(labels),
+        "by_question_type": {
+            qtype: {
+                "accuracy": sum(1 for label in labels if label) / len(labels) if labels else 0.0,
+                "correct": sum(1 for label in labels if label),
+                "total": len(labels),
+            }
+            for qtype, labels in sorted(by_type.items())
+        },
+    }
+    return eval_rows, summary
+
+
+def generate_predictions(
+    prompts: list[dict[str, Any]],
+    *,
+    chat_fn: Callable[..., str],
+    answer_model: str,
+) -> list[dict[str, str]]:
+    predictions = []
+    for item in prompts:
+        hypothesis = chat_fn([{"role": "user", "content": item["prompt"]}], model=answer_model, max_tokens=256)
+        predictions.append({"question_id": item["question_id"], "hypothesis": hypothesis})
+    return predictions
 
 
 def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any], *, dataset_sha256: str) -> dict[str, Any]:
@@ -207,19 +355,86 @@ def prepare_oracle_canary(
     *,
     allow_answer_generation: bool = False,
     dataset_sha256: str = EXPECTED_ORACLE_SHA256,
+    chat_fn: Callable[..., str] | None = None,
+    answer_model: str = "gpt-4o",
+    judge_model: str = "gpt-4o",
+    endpoint_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if allow_answer_generation:
-        raise ValueError("answer_generation_requires_explicit_launch_path_not_implemented")
     proof = validate_selection(dataset, selection, dataset_sha256=dataset_sha256)
     by_id = {entry["question_id"]: entry for entry in dataset}
     selected_rows = [by_id[row["question_id"]] for row in selection["rows"]]
 
     baseline_prompts = [build_oracle_prompt(row, treatment=False) for row in selected_rows]
     treatment_prompts = [build_oracle_prompt(row, treatment=True) for row in selected_rows]
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if allow_answer_generation:
+        if chat_fn is None:
+            chat_fn = chat_completions_call
+        baseline_jsonl = generate_predictions(baseline_prompts, chat_fn=chat_fn, answer_model=answer_model)
+        treatment_jsonl = generate_predictions(treatment_prompts, chat_fn=chat_fn, answer_model=answer_model)
+        baseline_path = out_dir / "longmemeval_oracle_canary_baseline_predictions.jsonl"
+        treatment_path = out_dir / "longmemeval_oracle_canary_treatment_predictions.jsonl"
+        baseline_eval_path = out_dir / "longmemeval_oracle_canary_baseline_eval_results.jsonl"
+        treatment_eval_path = out_dir / "longmemeval_oracle_canary_treatment_eval_results.jsonl"
+        metadata_path = out_dir / "longmemeval_oracle_canary_scored_metadata.json"
+        summary_path = out_dir / "longmemeval_oracle_canary_scored_summary.json"
+        write_jsonl(baseline_path, baseline_jsonl)
+        write_jsonl(treatment_path, treatment_jsonl)
+        baseline_evals, baseline_summary = evaluate_predictions(
+            selected_rows, baseline_jsonl, chat_fn=chat_fn, judge_model=judge_model
+        )
+        treatment_evals, treatment_summary = evaluate_predictions(
+            selected_rows, treatment_jsonl, chat_fn=chat_fn, judge_model=judge_model
+        )
+        write_jsonl(baseline_eval_path, baseline_evals)
+        write_jsonl(treatment_eval_path, treatment_evals)
+        summary = {
+            "mode": "scored_oracle_canary",
+            "row_count": proof["row_count"],
+            "baseline": baseline_summary,
+            "treatment": treatment_summary,
+            "answer_model": {"model": answer_model, "temperature": 0},
+            "judge_model": {"model": judge_model, "version": "2024-11-20", "temperature": 0},
+            "selection_sha256": sha256_file(DEFAULT_SELECTION_PATH) if DEFAULT_SELECTION_PATH.exists() else None,
+        }
+        metadata = {
+            "mode": "scored_oracle_canary",
+            "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            "selection_proof": proof,
+            "baseline_prediction_file": str(baseline_path),
+            "treatment_prediction_file": str(treatment_path),
+            "baseline_eval_file": str(baseline_eval_path),
+            "treatment_eval_file": str(treatment_eval_path),
+            "baseline_prompts": baseline_prompts,
+            "treatment_prompts": treatment_prompts,
+            "answer_model": summary["answer_model"],
+            "judge_model": summary["judge_model"],
+            "endpoint_metadata": endpoint_metadata or {},
+            "guardrails": [
+                "oracle evidence only",
+                "no DB/Docker/runtime mutation",
+                "no full LongMemEval _s/_m run",
+            ],
+        }
+        write_json(summary_path, summary)
+        write_json(metadata_path, metadata)
+        return {
+            "mode": "scored_oracle_canary",
+            "row_count": proof["row_count"],
+            "baseline_prediction_file": str(baseline_path),
+            "treatment_prediction_file": str(treatment_path),
+            "baseline_eval_file": str(baseline_eval_path),
+            "treatment_eval_file": str(treatment_eval_path),
+            "metadata_file": str(metadata_path),
+            "summary_file": str(summary_path),
+            "baseline_accuracy": baseline_summary["accuracy"],
+            "treatment_accuracy": treatment_summary["accuracy"],
+        }
+
     baseline_jsonl = [{"question_id": item["question_id"], "hypothesis": ""} for item in baseline_prompts]
     treatment_jsonl = [{"question_id": item["question_id"], "hypothesis": ""} for item in treatment_prompts]
 
-    out_dir.mkdir(parents=True, exist_ok=True)
     baseline_path = out_dir / "longmemeval_oracle_canary_baseline_placeholder.jsonl"
     treatment_path = out_dir / "longmemeval_oracle_canary_treatment_placeholder.jsonl"
     metadata_path = out_dir / "longmemeval_oracle_canary_preparation_metadata.json"
@@ -257,25 +472,45 @@ def prepare_oracle_canary(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Prepare LongMemEval oracle canary placeholder artifacts without model calls.")
+    parser = argparse.ArgumentParser(description="Prepare or run LongMemEval oracle canary artifacts.")
     parser.add_argument("--dataset", type=Path, default=DEFAULT_DATASET_PATH)
     parser.add_argument("--selection", type=Path, default=DEFAULT_SELECTION_PATH)
     parser.add_argument("--out-dir", type=Path, default=RESULTS_DIR / f"longmemeval_oracle_canary_prepare_{RUN_ID}")
-    parser.add_argument("--allow-answer-generation", action="store_true", help="Reserved for future explicit launch path; currently refuses.")
+    parser.add_argument("--allow-answer-generation", action="store_true", help="Explicit scored oracle canary launch path; makes answer and judge model calls.")
+    parser.add_argument("--answer-model", default=os.environ.get("ANSWER_MODEL", "gpt-4o"))
+    parser.add_argument("--judge-model", default=os.environ.get("JUDGE_MODEL", "gpt-4o"))
+    parser.add_argument("--dotenv", type=Path, default=ROOT / ".env", help="Load non-exported env vars from this .env without printing secrets.")
+    parser.add_argument("--preflight-only", action="store_true", help="Validate dataset/selection/env and run one tiny chat call, then exit.")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    load_dotenv(args.dotenv)
     dataset_sha256 = sha256_file(args.dataset)
     dataset = load_json(args.dataset)
     selection = load_json(args.selection)
+    validate_selection(dataset, selection, dataset_sha256=dataset_sha256)
+    if args.preflight_only:
+        chat_completions_call([{"role": "user", "content": "Reply with exactly OK."}], model=args.answer_model, max_tokens=5)
+        print(json.dumps({
+            "mode": "preflight_only",
+            "dataset_sha256": dataset_sha256,
+            "selection_rows": len(selection.get("rows") or []),
+            "answer_model": args.answer_model,
+            "judge_model": args.judge_model,
+            "endpoint_metadata": endpoint_metadata(os.environ.get("AZURE_CHAT_ENDPOINT", "")),
+        }, indent=2))
+        return
     result = prepare_oracle_canary(
         dataset,
         selection,
         args.out_dir,
         allow_answer_generation=args.allow_answer_generation,
         dataset_sha256=dataset_sha256,
+        answer_model=args.answer_model,
+        judge_model=args.judge_model,
+        endpoint_metadata=endpoint_metadata(os.environ.get("AZURE_CHAT_ENDPOINT", "")),
     )
     print(json.dumps(result, indent=2))
 

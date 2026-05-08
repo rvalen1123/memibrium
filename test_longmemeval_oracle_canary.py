@@ -99,14 +99,11 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertNotIn('Answer with the exact items', baseline['prompt'])
         self.assertEqual(treatment['metadata_projection'], 'no-op')
 
-    def test_prepare_predictions_requires_explicit_launch_flag_and_writes_placeholder_jsonl(self):
+    def test_prepare_predictions_requires_placeholder_mode_without_explicit_launch(self):
         rows = self.sample_rows()
         selection = self.make_selection(rows)
         with tempfile.TemporaryDirectory() as tmp:
             out_dir = Path(tmp)
-            with self.assertRaisesRegex(ValueError, 'answer_generation_requires_explicit_launch'):
-                longmem_canary.prepare_oracle_canary(rows, selection, out_dir, allow_answer_generation=True)
-
             result = longmem_canary.prepare_oracle_canary(rows, selection, out_dir, allow_answer_generation=False)
             baseline_lines = (out_dir / 'longmemeval_oracle_canary_baseline_placeholder.jsonl').read_text().splitlines()
             treatment_lines = (out_dir / 'longmemeval_oracle_canary_treatment_placeholder.jsonl').read_text().splitlines()
@@ -116,6 +113,47 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(len(treatment_lines), 2)
         self.assertEqual(json.loads(baseline_lines[0]), {'question_id': 'ku_abs', 'hypothesis': ''})
         self.assertEqual(json.loads(treatment_lines[0]), {'question_id': 'ku_abs', 'hypothesis': ''})
+
+    def test_prepare_oracle_canary_scored_launch_writes_predictions_evals_and_summary(self):
+        rows = self.sample_rows()
+        selection = self.make_selection(rows)
+        calls = []
+
+        def fake_chat(messages, *, model, max_tokens):
+            content = messages[-1]['content']
+            calls.append({'model': model, 'max_tokens': max_tokens, 'content': content})
+            if 'Is the model response correct?' in content or 'Does the model correctly identify' in content:
+                return 'yes' if 'writing and hiking' in content or 'information provided is not enough' in content else 'no'
+            if 'Which two hobbies' in content:
+                return 'writing and hiking'
+            return 'The information provided is not enough.'
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            result = longmem_canary.prepare_oracle_canary(
+                rows,
+                selection,
+                out_dir,
+                allow_answer_generation=True,
+                chat_fn=fake_chat,
+                answer_model='answer-model',
+                judge_model='judge-model',
+                endpoint_metadata={'host': 'example.test'},
+            )
+            baseline_predictions = [json.loads(line) for line in (out_dir / 'longmemeval_oracle_canary_baseline_predictions.jsonl').read_text().splitlines()]
+            treatment_predictions = [json.loads(line) for line in (out_dir / 'longmemeval_oracle_canary_treatment_predictions.jsonl').read_text().splitlines()]
+            baseline_evals = [json.loads(line) for line in (out_dir / 'longmemeval_oracle_canary_baseline_eval_results.jsonl').read_text().splitlines()]
+            summary = json.loads((out_dir / 'longmemeval_oracle_canary_scored_summary.json').read_text())
+
+        self.assertEqual(result['mode'], 'scored_oracle_canary')
+        self.assertEqual([row['hypothesis'] for row in baseline_predictions], ['The information provided is not enough.', 'writing and hiking'])
+        self.assertEqual([row['question_id'] for row in treatment_predictions], ['ku_abs', 'multi_1'])
+        self.assertEqual(baseline_evals[0]['autoeval_label']['model'], 'judge-model')
+        self.assertEqual(summary['baseline']['accuracy'], 1.0)
+        self.assertEqual(summary['treatment']['accuracy'], 1.0)
+        self.assertEqual(summary['row_count'], 2)
+        self.assertTrue(any(call['model'] == 'answer-model' for call in calls))
+        self.assertTrue(any(call['model'] == 'judge-model' for call in calls))
 
     def test_validate_selection_recomputes_selection_hash_and_quota_groups(self):
         dataset = self.sample_rows()
