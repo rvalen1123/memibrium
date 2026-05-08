@@ -76,11 +76,83 @@ python3 docs/eval/results/run_locomo_context_packet_canary.py \
 # exit 0
 ```
 
-No 25-row scored rerun was launched in this implementation step because the live runner checks `/mcp/tools`, and the current standing constraint is not to retry direct `/mcp/tools` inspection without permission.
+No 25-row scored rerun was launched in the implementation step because the live runner checks `/mcp/tools`, and the current standing constraint was not to retry direct `/mcp/tools` inspection without permission.
 
-## Suggested next canary, pending explicit approval
+## Approved same-slice canary result — 2026-05-08
 
-Run the same fixed 25-row artifact-pinned/frozen canary, scoped first to likely affected categories/rows, with default-off diagnostics enabled. Candidate flag shape:
+After explicit approval, the same fixed 25-row artifact-pinned/frozen canary was run with default-off diagnostics enabled.
+
+Run ID: `20260508T003138Z`
+
+Command shape:
+
+```bash
+python3 docs/eval/results/run_locomo_context_packet_canary.py \
+  --fixed-rows-path docs/eval/results/locomo_context_packet_merge_prereg_25rows_2026-05-03.json \
+  --min-prereg-rows 20 \
+  --max-prereg-rows 30 \
+  --merge-treatment \
+  --merge-ref-gate \
+  --frozen-context-replay \
+  --frozen-baseline-artifact docs/eval/results/locomo_context_packet_canary_treatment_merge_refgate_frozen_shaped_multihop_temporal_goldcov_20260506T103203Z.json \
+  --frozen-baseline-artifact-final-context-replay \
+  --frozen-answer-shape-directive \
+  --frozen-answer-shape-directive-categories multi-hop,temporal \
+  --frozen-answer-subject-guard \
+  --frozen-answer-subject-guard-categories adversarial \
+  --frozen-multimodal-metadata-projection \
+  --frozen-multimodal-metadata-projection-categories single-hop,unanswerable \
+  --frozen-gold-object-coverage-telemetry \
+  --frozen-gold-object-coverage-telemetry-categories single-hop,temporal,multi-hop,unanswerable,adversarial
+```
+
+Result summary:
+
+- Baseline artifact full-context replay: `54.0`
+- Treatment with answer-side diagnostics: `72.0`
+- Delta: `+18.0 pp`
+- Gold-evidence hit rate: `0.8696 -> 0.8696` (unchanged)
+- Frozen context hash match: `25/25`
+- Baseline prefix preserved: `25/25`
+- Packet append rows: `0/25`; this was an answer-prompt diagnostic over the same final-context substrate, not a retrieval/candidate-pool improvement.
+- Final hygiene: clean (`0` rows in LOCOMO-linked tables checked by the canary cleanup probe)
+- No severe category collapse.
+
+Category movement:
+
+- single-hop: `70.0 -> 70.0`
+- temporal: `100.0 -> 100.0`
+- multi-hop: `30.0 -> 100.0`
+- unanswerable: `70.0 -> 80.0`
+- adversarial: `0.0 -> 10.0`
+
+Rows with score improvement:
+
+- Row 31 multi-hop: `0.0 -> 1.0`
+- Row 51 multi-hop: `0.0 -> 1.0`
+- Row 70 multi-hop: `0.5 -> 1.0`
+- Row 78 multi-hop: `0.0 -> 1.0`
+- Row 113 unanswerable: `0.0 -> 0.5` via multimodal metadata projection (`sunset with a palm tree` surfaced)
+- Row 172 adversarial: `0.0 -> 0.5`
+
+Persistent failure notes:
+
+- Row 185 remained `0.0`: subject guard exposed the adversarial target, but answer synthesis still chose acoustic guitar over `clarinet and violin`.
+- Row 163 remained `0.0`: context/gold coverage exists, but answer synthesis still returned `I don't know`.
+- Row 183 role-attribution regression remained absent.
+
+Artifacts:
+
+- `docs/eval/results/locomo_context_packet_canary_baseline_20260508T003138Z.json`
+- `docs/eval/results/locomo_context_packet_canary_treatment_merge_refgate_frozen_artifactctx_subjguard_adversarial_shaped_multihop_temporal_mmmeta_singlehop_unanswerable_goldcov_adversarial_multihop_singlehop_temporal_unanswerable_20260508T003138Z.json`
+- `docs/eval/results/locomo_context_packet_canary_summary_merge_refgate_frozen_artifactctx_subjguard_adversarial_shaped_multihop_temporal_mmmeta_singlehop_unanswerable_goldcov_adversarial_multihop_singlehop_temporal_unanswerable_20260508T003138Z.json`
+- `docs/eval/results/locomo_context_packet_canary_result_merge_refgate_frozen_artifactctx_subjguard_adversarial_shaped_multihop_temporal_mmmeta_singlehop_unanswerable_goldcov_adversarial_multihop_singlehop_temporal_unanswerable_20260508T003138Z.md`
+
+Interpretation: same-slice diagnostic evidence only. The result supports structured answer-shape directives for multi-hop and multimodal metadata projection for image/object questions, but adversarial conflict resolution remains weak. Do not promote to full 199Q or cumulative benchmark without separate explicit approval.
+
+## Suggested next canary, if continuing diagnostics
+
+Run a narrower fixed 25-row artifact-pinned/frozen follow-up focused on the remaining answer-conflict rows, especially adversarial row 185 and answer abstention row 163. Candidate baseline command shape from this run:
 
 ```bash
 python3 docs/eval/results/run_locomo_context_packet_canary.py \
