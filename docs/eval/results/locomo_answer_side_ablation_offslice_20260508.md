@@ -125,6 +125,36 @@ Off-slice preregistration and final replay artifacts preserved:
 
 Exploratory side-combination artifacts not referenced by this document were intentionally not preserved.
 
+## Remaining caveats before 199Q
+
+This evidence now supports a defensible mechanism story, but not a stable size/scope claim.
+
+What the evidence supports:
+
+- Shape directive is a real generation-side mechanism, not just retrieval movement: standalone same-slice `+14 pp`, off-slice same-conversation `+10 pp`, with flat gold-hit rates.
+- Multimodal metadata projection is narrow image/object support, approximately a `+4 pp` same-slice mechanism in this slice, not a broad answer-side intervention.
+- Subject guard should be excluded from the locked candidate for now: its standalone movement was narrow, it did not add orthogonal aggregate signal beyond shape+mmmeta, and row 185 remained unresolved.
+- The same-slice additivity check passed: shape (`+14`) + mmmeta (`+4`) matched shape+mmmeta (`+18`), with no obvious hidden interaction in this slice.
+
+What the evidence still does not support:
+
+- Cross-conversation generalization. Both fixed slices are `conv-26`; the off-slice is different rows, not a different conversation/discourse style.
+- Stable magnitude. The off-slice `+10 pp` is still n=25, roughly 2-3 questions of movement.
+- Harmlessness on list-completion questions. Row 53 regressed by dropping `Bailey`, a direct example of concise-shape pressure under-listing a required list.
+- Solved adversarial/conflict handling. Adversarial was flat off-slice, and row 185 remains a key failure.
+
+## Recommended next gate
+
+Before any full 199Q quote run, add one more diagnostic gate:
+
+1. Select a second off-slice 25-row sample from a different conversation ID using the same deterministic hash-stratified procedure, before scoring.
+2. Run the same locked cleaned candidate: answer-shape for `multi-hop,temporal`, multimodal metadata for `single-hop,unanswerable`, no subject guard.
+3. Do not tune after seeing the cross-conversation result.
+4. Predeclare 199Q thresholds before promotion. Candidate thresholds:
+   - multi-hop shape benefit must be at least `+6 pp` on 199Q multi-hop or an equivalent preregistered category metric;
+   - list-completion regressions should be no worse than `-1 pp`, or more than two row-53-class under-listing regressions should trigger rollback/no-claim;
+   - adversarial/conflict handling must not be framed as improved unless separately tested.
+
 ## Recommendation
 
-Do not run or quote a full 199Q yet by default. The evidence now supports a narrow hypothesis: answer-shape directives improve multi-hop synthesis on frozen context and show off-slice directionality. Before promotion, preserve row-level failure analysis and decide whether to preregister a single 199Q candidate with the cleaned shape+mmmeta treatment, explicitly excluding subject guard unless separately fixed/tested.
+Do not run or quote a full 199Q yet by default. The evidence now supports a narrow hypothesis: answer-shape directives improve multi-hop synthesis on frozen context and show same-conversation off-slice directionality. The missing gating step is cross-conversation off-slice validation plus preregistered effect-size/rollback thresholds. If promotion is later approved, use one locked candidate: shape+mmmeta, excluding subject guard unless separately fixed/tested.
