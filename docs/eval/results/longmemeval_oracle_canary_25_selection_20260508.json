@@ -1,0 +1,47 @@
+{
+  "dataset": "xiaowu0162/longmemeval-cleaned",
+  "source_file": "longmemeval_oracle.json",
+  "hf_revision": "98d7416c24c778c2fee6e6f3006e7a073259d48f",
+  "source_sha256": "821a2034d219ab45846873dd14c14f12cfe7776e73527a483f9dac095d38620c",
+  "seed": "memibrium-longmemeval-oracle-canary-2026-05-08-v1",
+  "selection_rule": "For each question_type, select 4 rows by sha256(seed:question_id:question). If the question_type has abstention rows, reserve one slot for the lowest-hash _abs row and fill the other 3 slots with the lowest-hash non-abstention rows. Add one extra lowest-hash not-yet-selected knowledge-update row as product-telemetry oversample. Commit question IDs before answer generation or judging.",
+  "counts": {
+    "total": 25,
+    "by_question_type": {
+      "knowledge-update": 5,
+      "multi-session": 4,
+      "single-session-assistant": 4,
+      "single-session-preference": 4,
+      "single-session-user": 4,
+      "temporal-reasoning": 4
+    },
+    "abstention": 4
+  },
+  "rows": [
+    {"question_id": "0ddfec37_abs", "question_type": "knowledge-update", "abstention": true, "selection_hash": "17f632aa1302a11bb54ac91b501cb4b93853276f01aefac9aafc5fe97feae722", "selection_group": "knowledge-update:reserved-abstention", "selection_index": 1},
+    {"question_id": "a1eacc2a", "question_type": "knowledge-update", "abstention": false, "selection_hash": "03aac3fca50dd7f698fed44e4eb8bfa8b074cf5382483cff6da1c88fb823c688", "selection_group": "knowledge-update:non-abstention-fill", "selection_index": 2},
+    {"question_id": "852ce960", "question_type": "knowledge-update", "abstention": false, "selection_hash": "06f0773558a25b8742c93c4f0d485ef7b3d346231d651945ce61c1e8353689b6", "selection_group": "knowledge-update:non-abstention-fill", "selection_index": 3},
+    {"question_id": "eace081b", "question_type": "knowledge-update", "abstention": false, "selection_hash": "0801ff9507cb357caf3270e3671c0b936b59099c44e5b923283f6d822a405a0f", "selection_group": "knowledge-update:non-abstention-fill", "selection_index": 4},
+    {"question_id": "09ba9854_abs", "question_type": "multi-session", "abstention": true, "selection_hash": "1b42036017bdb222f73f21daf2591c95928c0c71aabe8474ae4ca9571aeaecee", "selection_group": "multi-session:reserved-abstention", "selection_index": 5},
+    {"question_id": "b3c15d39", "question_type": "multi-session", "abstention": false, "selection_hash": "09498f8d8ff91817d371708ab171e9f64f470ed8eb725d0d0c09f769523683e4", "selection_group": "multi-session:non-abstention-fill", "selection_index": 6},
+    {"question_id": "3c1045c8", "question_type": "multi-session", "abstention": false, "selection_hash": "0bddbbc99502766a2627d926a009b88cf362176ee2c8e676cd5dae90f97ada79", "selection_group": "multi-session:non-abstention-fill", "selection_index": 7},
+    {"question_id": "gpt4_731e37d7", "question_type": "multi-session", "abstention": false, "selection_hash": "0c8647181b046d1bd825afbf7f587e5cb5e4dabde91b54a927953fe88cd47305", "selection_group": "multi-session:non-abstention-fill", "selection_index": 8},
+    {"question_id": "dc439ea3", "question_type": "single-session-assistant", "abstention": false, "selection_hash": "07b9e1033d29ab57a6f8082963a7faf1b6e1e541612d21b0fc55b9b39e0c1294", "selection_group": "single-session-assistant:hash-fill", "selection_index": 9},
+    {"question_id": "58470ed2", "question_type": "single-session-assistant", "abstention": false, "selection_hash": "07d7622674fa503faa62cf52b2ea01b86070e870a226d3ab0724e00b0cfe5325", "selection_group": "single-session-assistant:hash-fill", "selection_index": 10},
+    {"question_id": "71a3fd6b", "question_type": "single-session-assistant", "abstention": false, "selection_hash": "0bcd2c404bab48c6cb9e06a2586912f0b61e1fd9be4b4e125d7629bd1d203517", "selection_group": "single-session-assistant:hash-fill", "selection_index": 11},
+    {"question_id": "fca762bc", "question_type": "single-session-assistant", "abstention": false, "selection_hash": "114117367cd4f76c7fabb61dd57bd3ab74733c6f95837a01215c59eeb641e30d", "selection_group": "single-session-assistant:hash-fill", "selection_index": 12},
+    {"question_id": "35a27287", "question_type": "single-session-preference", "abstention": false, "selection_hash": "10abd91e7315851c47ac87c3677d0a6bb468cbf96478c230bfdf99cf3d79d0b7", "selection_group": "single-session-preference:hash-fill", "selection_index": 13},
+    {"question_id": "06878be2", "question_type": "single-session-preference", "abstention": false, "selection_hash": "1146dbb6fef4df75b2bd0bbdb04afe9d77ae30e7a170d2bfcc0bba4216ec5ce8", "selection_group": "single-session-preference:hash-fill", "selection_index": 14},
+    {"question_id": "a89d7624", "question_type": "single-session-preference", "abstention": false, "selection_hash": "12230da59085267edc39dc8488e2b51affd4bacc0d36bad7149f71325b62fc84", "selection_group": "single-session-preference:hash-fill", "selection_index": 15},
+    {"question_id": "d6233ab6", "question_type": "single-session-preference", "abstention": false, "selection_hash": "192da50768d042c283282864063ec6bd0896f35e5a21d64ec37279a6b9e37103", "selection_group": "single-session-preference:hash-fill", "selection_index": 16},
+    {"question_id": "29f2956b_abs", "question_type": "single-session-user", "abstention": true, "selection_hash": "0d61b041eb801576f81ffee328e45d8384d3d64e9c31eae7ad67b9c4c2af3171", "selection_group": "single-session-user:reserved-abstention", "selection_index": 17},
+    {"question_id": "3f1e9474", "question_type": "single-session-user", "abstention": false, "selection_hash": "00a6b7d1ea97d84025d93e38221a9927e4b6ce5ad64f2f22185cee804bcd1349", "selection_group": "single-session-user:non-abstention-fill", "selection_index": 18},
+    {"question_id": "af8d2e46", "question_type": "single-session-user", "abstention": false, "selection_hash": "08c243d7b25d8e49f35c0e384051986f713c7a5b504bbb43976a578f2db9ee02", "selection_group": "single-session-user:non-abstention-fill", "selection_index": 19},
+    {"question_id": "6f9b354f", "question_type": "single-session-user", "abstention": false, "selection_hash": "0c85af39945e31e83662b3228bf10c28b5153d9396fb1dd7c56878188bdc87d8", "selection_group": "single-session-user:non-abstention-fill", "selection_index": 20},
+    {"question_id": "gpt4_fe651585_abs", "question_type": "temporal-reasoning", "abstention": true, "selection_hash": "14752d954208eb97c8de55ad4d0bdd5f498d32931e1f5926669f72194eba74de", "selection_group": "temporal-reasoning:reserved-abstention", "selection_index": 21},
+    {"question_id": "0db4c65d", "question_type": "temporal-reasoning", "abstention": false, "selection_hash": "00c6e82585f2adb165a55c1aed2508be5f690fe444376d41a92ff2b671ba0be0", "selection_group": "temporal-reasoning:non-abstention-fill", "selection_index": 22},
+    {"question_id": "b9cfe692", "question_type": "temporal-reasoning", "abstention": false, "selection_hash": "03661e0d42f42cef57725e65f291c950594e6e9e6c257f0cc0dcaa7255f06eb0", "selection_group": "temporal-reasoning:non-abstention-fill", "selection_index": 23},
+    {"question_id": "gpt4_68e94288", "question_type": "temporal-reasoning", "abstention": false, "selection_hash": "063192db6b1a16d00b59da357a2d64cf441393ab952afef2b19e5537ecf00e1b", "selection_group": "temporal-reasoning:non-abstention-fill", "selection_index": 24},
+    {"question_id": "45dc21b6", "question_type": "knowledge-update", "abstention": false, "selection_hash": "08bbe0546f6a743f02318267a2cc1454987ab740910140269e56b3a9c6caaf04", "selection_group": "knowledge-update:extra-product-telemetry", "selection_index": 25}
+  ]
+}

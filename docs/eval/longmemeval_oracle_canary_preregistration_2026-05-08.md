@@ -36,12 +36,15 @@ wget https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main
 wget https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_m_cleaned.json
 ```
 
-Before any launch, record:
+Pinned cleaned dataset revision and file identities for this preregistration:
 
-- downloaded file paths;
-- byte sizes;
-- SHA256 hashes;
-- HuggingFace revision or resolved commit, if available.
+- HuggingFace dataset: `xiaowu0162/longmemeval-cleaned`.
+- HuggingFace revision: `98d7416c24c778c2fee6e6f3006e7a073259d48f`.
+- `longmemeval_oracle.json`: 15,388,478 bytes, SHA256 `821a2034d219ab45846873dd14c14f12cfe7776e73527a483f9dac095d38620c`.
+- `longmemeval_s_cleaned.json`: 277,383,467 bytes, SHA256 `d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442`.
+- `longmemeval_m_cleaned.json`: 2,737,100,077 bytes, HuggingFace LFS SHA256 `9d79e5524794a2e6900a3aa9cb7d9152c5a3e8319c9a87c25494ba1eacee495f`.
+
+The local first download of `_m` timed out at 1,445,072,896 bytes and is not a valid local file hash. The `_m` identity above is from the HuggingFace tree/LFS metadata at the pinned revision. This preregistration still does not authorize `_m` execution.
 
 ## Upstream LongMemEval repo
 
@@ -99,16 +102,47 @@ The first LongMemEval canary is limited to a hash-stratified 25-row oracle slice
 
 ## Slice construction
 
-Predeclare a deterministic slice before scoring:
+Predeclared deterministic slice:
 
 - Seed: `memibrium-longmemeval-oracle-canary-2026-05-08-v1`.
-- Source: `longmemeval_oracle.json` from the cleaned HuggingFace dataset.
+- Source: `longmemeval_oracle.json` from `xiaowu0162/longmemeval-cleaned` revision `98d7416c24c778c2fee6e6f3006e7a073259d48f`.
 - Unit: LongMemEval question row keyed by `question_id`.
-- Stratification: across available LongMemEval question/category labels, with explicit inclusion of `knowledge-update` and abstention (`question_id` ending in `_abs`) if present.
-- Ranking rule: within each stratum, rank rows by `sha256(seed + ':' + question_id + ':' + question)` and take the predeclared quota.
-- If a category has fewer rows than quota, document the shortfall and redistribute by the same hash ranking rule before scoring.
+- Selection artifact: `docs/eval/results/longmemeval_oracle_canary_25_selection_20260508.json`.
+- Hash rule: `sha256(seed + ':' + question_id + ':' + question)`.
+- Quotas: 4 rows per `question_type`; for question types with abstention rows, reserve one slot for the lowest-hash `_abs` row and fill the other 3 slots with the lowest-hash non-abstention rows; add 1 extra lowest-hash not-yet-selected `knowledge-update` row as product-telemetry oversample.
+- Counts: 25 rows total; `knowledge-update` 5, `multi-session` 4, `single-session-assistant` 4, `single-session-preference` 4, `single-session-user` 4, `temporal-reasoning` 4; abstention rows 4.
 
-The exact selected `question_id` list must be committed before any answer generation or judging.
+Selected `question_id` list:
+
+| # | question_id | question_type | abstention |
+|---:|---|---|---|
+| 1 | `0ddfec37_abs` | `knowledge-update` | yes |
+| 2 | `a1eacc2a` | `knowledge-update` | no |
+| 3 | `852ce960` | `knowledge-update` | no |
+| 4 | `eace081b` | `knowledge-update` | no |
+| 5 | `09ba9854_abs` | `multi-session` | yes |
+| 6 | `b3c15d39` | `multi-session` | no |
+| 7 | `3c1045c8` | `multi-session` | no |
+| 8 | `gpt4_731e37d7` | `multi-session` | no |
+| 9 | `dc439ea3` | `single-session-assistant` | no |
+| 10 | `58470ed2` | `single-session-assistant` | no |
+| 11 | `71a3fd6b` | `single-session-assistant` | no |
+| 12 | `fca762bc` | `single-session-assistant` | no |
+| 13 | `35a27287` | `single-session-preference` | no |
+| 14 | `06878be2` | `single-session-preference` | no |
+| 15 | `a89d7624` | `single-session-preference` | no |
+| 16 | `d6233ab6` | `single-session-preference` | no |
+| 17 | `29f2956b_abs` | `single-session-user` | yes |
+| 18 | `3f1e9474` | `single-session-user` | no |
+| 19 | `af8d2e46` | `single-session-user` | no |
+| 20 | `6f9b354f` | `single-session-user` | no |
+| 21 | `gpt4_fe651585_abs` | `temporal-reasoning` | yes |
+| 22 | `0db4c65d` | `temporal-reasoning` | no |
+| 23 | `b9cfe692` | `temporal-reasoning` | no |
+| 24 | `gpt4_68e94288` | `temporal-reasoning` | no |
+| 25 | `45dc21b6` | `knowledge-update` | no |
+
+No answer generation or judging may occur until this selection artifact is committed.
 
 ## Candidate under test
 
