@@ -47,18 +47,29 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             },
         ]
 
-    def test_validate_selection_requires_unique_rows_and_dataset_hash(self):
-        dataset = self.sample_rows()
-        selection = {
+    def make_selection(self, rows=None):
+        rows = rows or self.sample_rows()
+        seed = 'memibrium-longmemeval-oracle-canary-2026-05-08-v1'
+        return {
             'source_file': 'longmemeval_oracle.json',
             'hf_revision': longmem_canary.EXPECTED_HF_REVISION,
             'source_sha256': longmem_canary.EXPECTED_ORACLE_SHA256,
-            'counts': {'total': 2, 'abstention': 1, 'by_question_type': {'knowledge-update': 1, 'multi-session': 1}},
+            'counts': {'total': len(rows), 'abstention': 1, 'by_question_type': {'knowledge-update': 1, 'multi-session': 1}},
             'rows': [
-                {'question_id': 'ku_abs', 'question_type': 'knowledge-update', 'abstention': True, 'selection_hash': 'a' * 64, 'selection_index': 1},
-                {'question_id': 'multi_1', 'question_type': 'multi-session', 'abstention': False, 'selection_hash': 'b' * 64, 'selection_index': 2},
+                {
+                    'question_id': row['question_id'],
+                    'question_type': row['question_type'],
+                    'abstention': row['question_id'].endswith('_abs'),
+                    'selection_hash': longmem_canary.sha256_text(f"{seed}:{row['question_id']}:{row['question']}"),
+                    'selection_index': index,
+                }
+                for index, row in enumerate(rows, start=1)
             ],
         }
+
+    def test_validate_selection_requires_unique_rows_and_dataset_hash(self):
+        dataset = self.sample_rows()
+        selection = self.make_selection(dataset)
 
         proof = longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
 
@@ -90,15 +101,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
 
     def test_prepare_predictions_requires_explicit_launch_flag_and_writes_placeholder_jsonl(self):
         rows = self.sample_rows()
-        selection = {
-            'source_file': 'longmemeval_oracle.json',
-            'hf_revision': longmem_canary.EXPECTED_HF_REVISION,
-            'source_sha256': longmem_canary.EXPECTED_ORACLE_SHA256,
-            'counts': {'total': 1, 'abstention': 1, 'by_question_type': {'knowledge-update': 1}},
-            'rows': [
-                {'question_id': 'ku_abs', 'question_type': 'knowledge-update', 'abstention': True, 'selection_hash': 'a' * 64, 'selection_index': 1},
-            ],
-        }
+        selection = self.make_selection(rows)
         with tempfile.TemporaryDirectory() as tmp:
             out_dir = Path(tmp)
             with self.assertRaisesRegex(ValueError, 'answer_generation_requires_explicit_launch'):
@@ -109,10 +112,71 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             treatment_lines = (out_dir / 'longmemeval_oracle_canary_treatment_placeholder.jsonl').read_text().splitlines()
 
         self.assertEqual(result['mode'], 'preparation_only_no_answer_generation')
-        self.assertEqual(len(baseline_lines), 1)
-        self.assertEqual(len(treatment_lines), 1)
+        self.assertEqual(len(baseline_lines), 2)
+        self.assertEqual(len(treatment_lines), 2)
         self.assertEqual(json.loads(baseline_lines[0]), {'question_id': 'ku_abs', 'hypothesis': ''})
         self.assertEqual(json.loads(treatment_lines[0]), {'question_id': 'ku_abs', 'hypothesis': ''})
+
+    def test_validate_selection_recomputes_selection_hash_and_quota_groups(self):
+        dataset = self.sample_rows()
+        selection = self.make_selection(dataset)
+
+        selection['rows'][0]['selection_hash'] = '0' * 64
+        with self.assertRaisesRegex(ValueError, 'selection_hash_mismatch:ku_abs'):
+            longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+        selection = self.make_selection(dataset)
+        selection['selection_rule'] = 'reserve one slot for abstention rows'
+        selection['rows'][0]['selection_group'] = 'knowledge-update:reserved-abstention'
+        selection['rows'][1]['selection_group'] = 'multi-session:wrong-fill'
+        with self.assertRaisesRegex(ValueError, 'selection_group_mismatch:multi_1'):
+            longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+    def test_validate_selection_accepts_hash_fill_groups_when_type_has_no_abstention(self):
+        dataset = [
+            dict(
+                self.sample_rows()[0],
+                question_id='assistant_1',
+                question_type='single-session-assistant',
+                question='What did you suggest?',
+            ),
+            dict(
+                self.sample_rows()[1],
+                question_id='assistant_2',
+                question_type='single-session-assistant',
+                question='What else did you suggest?',
+            ),
+        ]
+        selection = self.make_selection(dataset)
+        selection['counts'] = {'total': 2, 'abstention': 0, 'by_question_type': {'single-session-assistant': 2}}
+        selection['rows'][0]['selection_group'] = 'single-session-assistant:hash-fill'
+        selection['rows'][1]['selection_group'] = 'single-session-assistant:hash-fill'
+
+        proof = longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+        self.assertEqual(proof['question_type_counts'], {'single-session-assistant': 2})
+
+    def test_validate_selection_rejects_wrong_seed_and_non_preregistered_extra_group(self):
+        dataset = self.sample_rows()
+        selection = self.make_selection(dataset)
+        selection['seed'] = 'wrong-seed'
+        with self.assertRaisesRegex(ValueError, 'selection_seed_mismatch'):
+            longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+        selection = self.make_selection(dataset)
+        selection['rows'][1]['selection_group'] = 'multi-session:extra-product-telemetry'
+        with self.assertRaisesRegex(ValueError, 'selection_group_mismatch:multi_1'):
+            longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+        selection = self.make_selection(dataset)
+        selection['rows'][0]['selection_group'] = 'knowledge-update:extra-product-telemetry'
+        with self.assertRaisesRegex(ValueError, 'selection_group_mismatch:ku_abs'):
+            longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+        selection = self.make_selection(dataset)
+        selection['rows'][1]['selection_group'] = 'multi-session:reserved-abstention'
+        with self.assertRaisesRegex(ValueError, 'selection_group_mismatch:multi_1'):
+            longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
 
 
 if __name__ == '__main__':

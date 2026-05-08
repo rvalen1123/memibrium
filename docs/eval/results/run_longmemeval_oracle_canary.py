@@ -23,6 +23,7 @@ DEFAULT_DATASET_PATH = Path("/tmp/longmemeval-cleaned-pin/longmemeval_oracle.jso
 DEFAULT_SELECTION_PATH = RESULTS_DIR / "longmemeval_oracle_canary_25_selection_20260508.json"
 EXPECTED_HF_REVISION = "98d7416c24c778c2fee6e6f3006e7a073259d48f"
 EXPECTED_ORACLE_SHA256 = "821a2034d219ab45846873dd14c14f12cfe7776e73527a483f9dac095d38620c"
+EXPECTED_SELECTION_SEED = "memibrium-longmemeval-oracle-canary-2026-05-08-v1"
 RUN_ID = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 ANSWER_SHAPE_TYPES = {"multi-session", "temporal-reasoning"}
 
@@ -65,6 +66,8 @@ def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any],
         raise ValueError(
             f"source_sha256_mismatch: selection={selection.get('source_sha256')} dataset={dataset_sha256}"
         )
+    if "seed" in selection and selection.get("seed") != EXPECTED_SELECTION_SEED:
+        raise ValueError(f"selection_seed_mismatch:{selection.get('seed')}")
     rows = selection.get("rows")
     if not isinstance(rows, list) or not rows:
         raise ValueError("selection_rows_invalid")
@@ -92,6 +95,22 @@ def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any],
         abstention = str(question_id).endswith("_abs")
         if bool(row.get("abstention")) != abstention:
             raise ValueError(f"abstention_flag_mismatch:{question_id}")
+        expected_selection_hash = sha256_text(
+            f"{selection.get('seed', EXPECTED_SELECTION_SEED)}:{question_id}:{source.get('question', '')}"
+        )
+        if row.get("selection_hash") != expected_selection_hash:
+            raise ValueError(f"selection_hash_mismatch:{question_id}")
+        if "selection_group" in row:
+            actual_group = row.get("selection_group")
+            allowed_groups = {f"{question_type}:hash-fill"}
+            if abstention:
+                allowed_groups.add(f"{question_type}:reserved-abstention")
+            else:
+                allowed_groups.add(f"{question_type}:non-abstention-fill")
+            if question_type == "knowledge-update" and expected_index > 4 and not abstention:
+                allowed_groups.add(f"{question_type}:extra-product-telemetry")
+            if actual_group not in allowed_groups:
+                raise ValueError(f"selection_group_mismatch:{question_id}")
         qtype_counts[question_type] = qtype_counts.get(question_type, 0) + 1
         abstention_count += 1 if abstention else 0
         proof_rows.append({
@@ -100,6 +119,7 @@ def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any],
             "question_type": question_type,
             "abstention": abstention,
             "question_sha256": sha256_text(source.get("question", "")),
+            "selection_hash": expected_selection_hash,
         })
 
     counts = selection.get("counts") or {}
