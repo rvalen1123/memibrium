@@ -1,0 +1,264 @@
+{
+  "schema": "memibrium.locomo.answer_side.off_slice.fixed_rows.v1",
+  "selection_mode": "deterministic_hash_stratified_read_only; exclude locomo_context_packet_merge_prereg_25rows_2026-05-03 selected rows; sha256(conv-26:index:question), first 5 per category after exclusion; no score-aware tuning",
+  "source_dataset": "/tmp/locomo/data/locomo10.json",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "sample_id": "conv-26",
+  "target_rows": 25,
+  "category_target_each": 5,
+  "excluded_fixed_rows_path": "docs/eval/results/locomo_context_packet_merge_prereg_25rows_2026-05-03.json",
+  "excluded_one_based_indexes": [
+    5,
+    24,
+    30,
+    31,
+    39,
+    40,
+    41,
+    47,
+    51,
+    55,
+    69,
+    70,
+    74,
+    78,
+    80,
+    101,
+    113,
+    121,
+    123,
+    128,
+    163,
+    172,
+    183,
+    185,
+    195
+  ],
+  "selected_rows": [
+    {
+      "one_based_index": 44,
+      "cat": "single-hop",
+      "question": "What kind of art does Caroline make?",
+      "question_sha256": "f0eb252c4dd6207a9d88614acdc5a60e433b8782c320e58ffe8813f4260dc7cc",
+      "selection_sha256": "31043b14f7848171a3e4620a7f3fb294e9ccf0e7e7c602d4e096e47f2d384c8e",
+      "label": "offslice_hash_stratified_single_hop_1",
+      "evidence_ref_count": 3
+    },
+    {
+      "one_based_index": 53,
+      "cat": "single-hop",
+      "question": "What are Melanie's pets' names?",
+      "question_sha256": "51987f741d3e6db653474cad498821cf83d257df2c2b6da3a723f4e43ccc55c4",
+      "selection_sha256": "36bf7a1c701d951c8f81651af875229f05480c6266295d47d508576440e5989d",
+      "label": "offslice_hash_stratified_single_hop_2",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 72,
+      "cat": "single-hop",
+      "question": "What book did Melanie read from Caroline's suggestion?",
+      "question_sha256": "ab72046c19a275009fb99bc9acb1b7012bb0f47d6e0387621f065cb80a39c83e",
+      "selection_sha256": "3a0caef3ce0dfa654aa683a44db07f0098054c39fd7c0b1b32f306e75544142f",
+      "label": "offslice_hash_stratified_single_hop_3",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 57,
+      "cat": "single-hop",
+      "question": "What symbols are important to Caroline?",
+      "question_sha256": "b4ecda73e6e886e4a4bd4bdcc6682dce88d75af4aa2b5d21461584627f604d48",
+      "selection_sha256": "40d637b9e07d09384cff5a4fbf006e384878a42a5fcd2bacbb9c9b3935e87714",
+      "label": "offslice_hash_stratified_single_hop_4",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 16,
+      "cat": "single-hop",
+      "question": "What activities does Melanie partake in?",
+      "question_sha256": "638838d7d352ab65f7844000b6085b1c2710d2935a28a0be5042272b91768b9e",
+      "selection_sha256": "43cc21a37421dc8ba0c2c706a605a3fc45e2acc83371457479ba78f50bda2a4d",
+      "label": "offslice_hash_stratified_single_hop_5",
+      "evidence_ref_count": 4
+    },
+    {
+      "one_based_index": 36,
+      "cat": "temporal",
+      "question": "When did Melanie go camping in July?",
+      "question_sha256": "461207449f86df51ddd48e34b18824f6e964d8792dc433364073cd8fea19d5a1",
+      "selection_sha256": "3886db89750f5199adc768c8ff1f9d1f78ec73114078313d59f21e1733bf715a",
+      "label": "offslice_hash_stratified_temporal_1",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 1,
+      "cat": "temporal",
+      "question": "When did Caroline go to the LGBTQ support group?",
+      "question_sha256": "db23cff112433bc3f25a9807266bec8880a28e9960e82494cdb341841c24fb77",
+      "selection_sha256": "3f54e69dea566baf71336fa7834573b3c1d0263ab541bc82492d32f115fc2250",
+      "label": "offslice_hash_stratified_temporal_2",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 27,
+      "cat": "temporal",
+      "question": "When did Melanie read the book \"nothing is impossible\"?",
+      "question_sha256": "d289625006f69f522a942b27d3f317080168e764d55d74c7e79fe8f8a8a87f2f",
+      "selection_sha256": "4128429403a5f01011b685a65a508100b7211877c1e8e885bc94b356e3d483c3",
+      "label": "offslice_hash_stratified_temporal_3",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 42,
+      "cat": "temporal",
+      "question": "When did Caroline join a new activist group?",
+      "question_sha256": "d61cb67bf5c832e3c72e1eaad3c81e9f09821130c588cc8c2075947b810fc157",
+      "selection_sha256": "53070e846f55ae458e309d4d7756f24cae88a2bc0c315db5502701f3deb1cdf3",
+      "label": "offslice_hash_stratified_temporal_4",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 7,
+      "cat": "temporal",
+      "question": "When is Melanie planning on going camping?",
+      "question_sha256": "fe8c6f5262f6e7aa6f3a900e78f2866c68ea1e0afa9c6b7e32d20edc667a4847",
+      "selection_sha256": "5525241f4fc5b3cd04f524163607506038ab744605e26f70dadc2e81269a21e6",
+      "label": "offslice_hash_stratified_temporal_5",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 15,
+      "cat": "multi-hop",
+      "question": "Would Caroline still want to pursue counseling as a career if she hadn't received support growing up?",
+      "question_sha256": "8537ab6fd33e3f981c7fc96d3a7e9d131cfc1d12c54f9458649873c245108b5e",
+      "selection_sha256": "92fd4bdfeb03e970e1685aafce3875bd63f4c3cf72aafae3b2ce9991e065ef82",
+      "label": "offslice_hash_stratified_multi_hop_1",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 43,
+      "cat": "multi-hop",
+      "question": "Would Melanie be more interested in going to a national park or a theme park?",
+      "question_sha256": "43ab1d1387937c9833a68417daeae616a8ac101c2473f6079464b448e0e5d42c",
+      "selection_sha256": "937c28bfaef71c14952dd68d510fca141c7ba67ba10de61b52ced6f8933bafa8",
+      "label": "offslice_hash_stratified_multi_hop_2",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 23,
+      "cat": "multi-hop",
+      "question": "Would Caroline likely have Dr. Seuss books on her bookshelf?",
+      "question_sha256": "904d29cd1c012d13458b865cb5df22ffc2b1234470c7440f9cbd198b6cfa6fca",
+      "selection_sha256": "a9f4d5ecfdf86bdaca0c9dc49f137499936e8ef4fb9e3cac63ffc4a91342fd53",
+      "label": "offslice_hash_stratified_multi_hop_3",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 60,
+      "cat": "multi-hop",
+      "question": "Would Caroline be considered religious?",
+      "question_sha256": "3ad06b077dbc9c86af7e399a1183e8f682ee01645168ef569683573cb88c2573",
+      "selection_sha256": "aa6b1be1250e76f94d9dcc40a9bfc843bbbd597e513a96027913bd0664373653",
+      "label": "offslice_hash_stratified_multi_hop_4",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 65,
+      "cat": "multi-hop",
+      "question": "Would Melanie likely enjoy the song \"The Four Seasons\" by Vivaldi?",
+      "question_sha256": "084b07697efeeb0d1253a3b9809a823187b5fe7c9278c76061061f0e10794242",
+      "selection_sha256": "abd155774063197aa621292d33efe089c98b823b2a61baf0120d7f64de9af1ec",
+      "label": "offslice_hash_stratified_multi_hop_5",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 111,
+      "cat": "unanswerable",
+      "question": "What kind of pot did Mel and her kids make with clay?",
+      "question_sha256": "95369437155aedd2548a7ffb54ae625cd5a6cdeb991f2535e16b5ba0e3f70ee4",
+      "selection_sha256": "0e4f0a14c76c4aa7fe90f298a9fef54bed2f9aa19bcd444cd1d38d5c67ca1cc9",
+      "label": "offslice_hash_stratified_unanswerable_1",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 83,
+      "cat": "unanswerable",
+      "question": "What did the charity race raise awareness for?",
+      "question_sha256": "d655f74fe3f7194564489450f0b77e69eacf705269e77bbae3c6d34242ab00be",
+      "selection_sha256": "15d9ea90fb1e7b14883a47a448ccf34aaa1d2867d269da7de96b63c83535705c",
+      "label": "offslice_hash_stratified_unanswerable_2",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 144,
+      "cat": "unanswerable",
+      "question": "What happened to Melanie's son on their road trip?",
+      "question_sha256": "d4774af24423f4e931187e41cd89e754f1fee4f077e39a488a18a46bafa5bb96",
+      "selection_sha256": "1a6896ed1624288445e681817572a583d5dde46aa40750e1286fb1526b0ebd68",
+      "label": "offslice_hash_stratified_unanswerable_3",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 117,
+      "cat": "unanswerable",
+      "question": "What inspired Caroline's painting for the art show?",
+      "question_sha256": "1b548849675076f6fcf11e042f3eb7e802ebcdfca4fde40a01a89c3b6147a943",
+      "selection_sha256": "1ab41fc1e78fd7036d07100e973ca9777384b42a28e26d925b5328068d080886",
+      "label": "offslice_hash_stratified_unanswerable_4",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 140,
+      "cat": "unanswerable",
+      "question": "What was the poetry reading that Caroline attended about?",
+      "question_sha256": "5b6b63939332954563ca77f1bd94e2b85ac194032857b9e5a32b2084b6a64bfb",
+      "selection_sha256": "1b7d034050bdf8cd3dfb7fd2b65ffe75bfc2a8b5a0f7d980dbec59e3d2845fdd",
+      "label": "offslice_hash_stratified_unanswerable_5",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 175,
+      "cat": "adversarial",
+      "question": "How often does Caroline go to the beach with her kids?",
+      "question_sha256": "619bf62b22a743e18b1aa0377020e9cd99a5ee614b0ff298f7b468fabf6d6bdb",
+      "selection_sha256": "142c58d666ab861a8d70396ee5592b0a6911d3bf67c8624a67190b08511af1ab",
+      "label": "offslice_hash_stratified_adversarial_1",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 188,
+      "cat": "adversarial",
+      "question": "What precautionary sign did Caroline see at the caf\u00e9?",
+      "question_sha256": "e5ea682188e04b8b9a7f15dfda43b39ea96dbddc92e5f1132082dde3365f8d2a",
+      "selection_sha256": "1659fd04277522be230cb3423a731089a817a6db10a17fa83cd71f53e7c4cf23",
+      "label": "offslice_hash_stratified_adversarial_2",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 176,
+      "cat": "adversarial",
+      "question": "What did Caroline and her family see during their camping trip last year?",
+      "question_sha256": "950fe70076ea6bd8933c808402b15d5d9efd033cf17915de320b8a3136956203",
+      "selection_sha256": "1c310299b39b9f8a59abde1f698c097690d0ac03fe1267fbfa62eb30a54d410c",
+      "label": "offslice_hash_stratified_adversarial_3",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 192,
+      "cat": "adversarial",
+      "question": "What happened to Caroline's son on their road trip?",
+      "question_sha256": "1bb086a1f0a59209c44b1d6a9af9283fd622f090ca8727ee752ead2e51eef1aa",
+      "selection_sha256": "20e4e32de32a8067b9dfb7ba5c9e8acda015c5ae6c8eb8c3904a24c6afa9206c",
+      "label": "offslice_hash_stratified_adversarial_4",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 193,
+      "cat": "adversarial",
+      "question": "How did Caroline's son handle the accident?",
+      "question_sha256": "b34b6d26a673722c457d16017c248de2931340c226dc6a9f0ec0d818fa3664c9",
+      "selection_sha256": "22898f7d34332cbac5da2ba59f10c013022bffff0f4884d8a0e14ec36fa78b6e",
+      "label": "offslice_hash_stratified_adversarial_5",
+      "evidence_ref_count": 2
+    }
+  ]
+}
