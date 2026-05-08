@@ -35,7 +35,11 @@ SECOND_SLICE_GATES = {
     "total_score": "category_contract_v1 >= baseline on the same slice",
     "knowledge_update": "knowledge-update >= baseline on the same slice",
     "preference_recovery": "preference_recovered / preference_baseline_wrong >= 50%",
-    "moved_row_win_loss": "recovered/regressed >= 2:1",
+    "preference_recovery_zero_denominator": "if preference_baseline_wrong == 0, preference gate is automatically satisfied because no recovery is needed",
+    "moved_row_minimum": "moved_rows = recovered + regressed >= 3",
+    "moved_row_win_loss": "moved_rows >= 3 and recovered/regressed >= 2:1",
+    "moved_row_win_loss_rationale": "2:1 is the minimum ratio that still constitutes evidence of a working mechanism rather than noise; neutral movement is not replication evidence",
+    "zero_movement": "moved_rows == 0 fails the replication/mechanism gate",
     "category_collapse": "no non-watch category drops by more than one row",
     "communication_boundary": "oracle answer-side mechanism evidence only; no retrieval/product benchmark claim",
 }

@@ -66,7 +66,10 @@ If, and only if, a future explicit launch is approved for model and judge calls,
 1. Total score: `category_contract_v1 >= baseline` on the same slice.
 2. Knowledge-update: `knowledge-update >= baseline` on the same slice. This is a hard threshold.
 3. Preference mechanism: `preference_recovered / preference_baseline_wrong >= 50%`.
-4. Moved-row stability: `recovered/regressed >= 2:1`. A `1:1` moved-row ratio does not pass.
+   - If `preference_baseline_wrong == 0`, this gate is automatically satisfied because no recovery is needed.
+4. Moved-row stability: `moved_rows = recovered + regressed >= 3` and `recovered/regressed >= 2:1`.
+   - `moved_rows == 0` fails the replication/mechanism gate because the contract did not reproduce a measurable mechanism effect.
+   - The `2:1` floor is the minimum ratio that still constitutes evidence of a working mechanism rather than noise; neutral movement is not replication evidence. A `1:1` moved-row ratio does not pass.
 5. Category collapse: no non-watch category drops by more than one row.
 
 ## Communication boundary

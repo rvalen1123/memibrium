@@ -351,8 +351,23 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(result['mode'], 'preparation_only_no_answer_generation')
         self.assertEqual(metadata['selection_proof']['seed'], second_seed)
         self.assertEqual(metadata['preregistered_gates']['total_score'], 'category_contract_v1 >= baseline on the same slice')
-        self.assertEqual(metadata['preregistered_gates']['moved_row_win_loss'], 'recovered/regressed >= 2:1')
+        self.assertEqual(metadata['preregistered_gates']['moved_row_win_loss'], 'moved_rows >= 3 and recovered/regressed >= 2:1')
+        self.assertIn('preference_baseline_wrong == 0', metadata['preregistered_gates']['preference_recovery_zero_denominator'])
+        self.assertIn('minimum ratio that still constitutes evidence', metadata['preregistered_gates']['moved_row_win_loss_rationale'])
         self.assertNotIn('1:1', json.dumps(metadata['preregistered_gates']))
+
+    def test_second_slice_gates_define_zero_denominators_and_minimum_movement(self):
+        gates = longmem_canary.SECOND_SLICE_GATES
+
+        self.assertEqual(
+            gates['preference_recovery_zero_denominator'],
+            'if preference_baseline_wrong == 0, preference gate is automatically satisfied because no recovery is needed',
+        )
+        self.assertEqual(gates['moved_row_minimum'], 'moved_rows = recovered + regressed >= 3')
+        self.assertEqual(gates['zero_movement'], 'moved_rows == 0 fails the replication/mechanism gate')
+        self.assertEqual(gates['moved_row_win_loss'], 'moved_rows >= 3 and recovered/regressed >= 2:1')
+        self.assertIn('minimum ratio that still constitutes evidence', gates['moved_row_win_loss_rationale'])
+        self.assertNotIn('1:1', json.dumps(gates))
 
 
 if __name__ == '__main__':
