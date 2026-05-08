@@ -45,13 +45,16 @@ Before any launch, record:
 
 ## Upstream LongMemEval repo
 
-Fork and pin `xiaowu0162/LongMemEval` before building runner infrastructure. Before any scored run, record:
+Upstream source is pinned before runner infrastructure:
 
-- fork URL;
-- upstream commit hash;
-- local fork commit hash;
-- exact `evaluate_qa.py` judge prompt text or a prompt file hash;
-- `requirements-lite.txt` hash.
+- Upstream URL: `https://github.com/xiaowu0162/LongMemEval`.
+- Default branch: `main`.
+- Upstream HEAD inspected for this preregistration: `982fbd7045c9977e9119b5424cab0d7790d19413`.
+- Judge script path: `src/evaluation/evaluate_qa.py`.
+- Judge script SHA256: `ecce9c4c79dc89d99534ac17b383a5cbb5b9f0c69ee98adaf0684742e3d95251`.
+- `requirements-lite.txt` SHA256: `d9d66e3c70fa859855f0fb47f3b3ee39b881d599e27f9b10ba725c7796a9d14b`.
+
+Before any scored run, still record the local fork URL/commit if Memibrium carries a patched evaluator. If the evaluator is adapted for Azure AI Foundry, keep the upstream prompt text unchanged and document the adapter diff separately.
 
 Install the lite environment only unless explicitly reproducing upstream retrieval/generation baselines:
 
@@ -71,7 +74,9 @@ LongMemEval judge for the first Memibrium product canary is pinned as:
 - Judge model name/deployment: `gpt-4o`.
 - Judge model version: `2024-11-20`.
 - Temperature: `0`.
-- Judge prompt: verbatim from pinned fork commit of upstream `evaluate_qa.py`; capture before launch.
+- Judge prompt: verbatim from upstream `src/evaluation/evaluate_qa.py` at `982fbd7045c9977e9119b5424cab0d7790d19413`; preserve task-specific prompts from `get_anscheck_prompt()`.
+
+Upstream's current `model_zoo` maps `gpt-4o` to `gpt-4o-2024-08-06`. Memibrium's first comparable LongMemEval judge intentionally uses Azure AI Foundry `gpt-4o` version `2024-11-20` instead. Treat this as an explicit Memibrium judge-stack pin, not an upstream-default reproduction.
 
 Recommended scoring env shape for the LongMemEval judge process:
 
