@@ -448,6 +448,56 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertFalse(result['gates']['category_collapse']['pass'])
         self.assertEqual(result['gates']['category_collapse']['drops'], {'multi-session': -2})
 
+    def test_offline_gate_report_loads_eval_jsonl_and_writes_report_without_chat(self):
+        rows = [
+            *self.sample_rows()[:4],
+            dict(self.sample_rows()[1], question_id='multi_2', question_type='multi-session'),
+            dict(self.sample_rows()[2], question_id='pref_2', question_type='single-session-preference'),
+            dict(self.sample_rows()[3], question_id='temp_2', question_type='temporal-reasoning'),
+        ]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        baseline_evals = self.make_eval_rows([('ku_abs', True), ('multi_1', False), ('pref_1', False), ('temp_1', True), ('multi_2', True), ('pref_2', True), ('temp_2', True)])
+        treatment_evals = self.make_eval_rows([('ku_abs', True), ('multi_1', True), ('pref_1', True), ('temp_1', False), ('multi_2', False), ('pref_2', True), ('temp_2', True)])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            baseline_path = tmp_path / 'baseline_eval.jsonl'
+            treatment_path = tmp_path / 'treatment_eval.jsonl'
+            report_path = tmp_path / 'gate_report.json'
+            longmem_canary.write_jsonl(baseline_path, baseline_evals)
+            longmem_canary.write_jsonl(treatment_path, treatment_evals)
+
+            report = longmem_canary.write_second_slice_gate_report(
+                rows,
+                selection,
+                baseline_path,
+                treatment_path,
+                report_path,
+                dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256,
+            )
+            written = json.loads(report_path.read_text())
+
+        self.assertEqual(report['mode'], 'second_slice_gate_evaluation_offline')
+        self.assertEqual(written['mode'], 'second_slice_gate_evaluation_offline')
+        self.assertEqual(written['selection_proof']['seed'], longmem_canary.SECOND_SLICE_SELECTION_SEED)
+        self.assertEqual(written['input_files']['baseline_eval_file'], str(baseline_path))
+        self.assertEqual(written['paired_outcomes']['moved_rows'], 4)
+        self.assertEqual(written['communication_boundary'], 'oracle answer-side mechanism evidence only; retrieval untested')
+        self.assertFalse(written['gates']['overall']['pass'])
+
+    def test_parse_args_supports_offline_gate_report_without_allow_answer_generation(self):
+        args = longmem_canary.parse_args([
+            '--offline-gate-report',
+            '--baseline-eval-file', 'baseline.jsonl',
+            '--treatment-eval-file', 'treatment.jsonl',
+        ])
+
+        self.assertTrue(args.offline_gate_report)
+        self.assertFalse(args.allow_answer_generation)
+        self.assertEqual(args.baseline_eval_file, Path('baseline.jsonl'))
+        self.assertEqual(args.treatment_eval_file, Path('treatment.jsonl'))
+
     def test_second_slice_gates_define_zero_denominators_and_minimum_movement(self):
         gates = longmem_canary.SECOND_SLICE_GATES
 

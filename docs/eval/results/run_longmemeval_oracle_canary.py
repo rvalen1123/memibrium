@@ -80,6 +80,23 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             print(json.dumps(row, ensure_ascii=False), file=f)
 
 
+def load_jsonl(path: Path) -> list[dict[str, Any]]:
+    rows = []
+    with path.open() as f:
+        for line_number, line in enumerate(f, start=1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            try:
+                row = json.loads(stripped)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"jsonl_decode_error:{path}:{line_number}:{exc.msg}") from exc
+            if not isinstance(row, dict):
+                raise ValueError(f"jsonl_row_not_object:{path}:{line_number}")
+            rows.append(row)
+    return rows
+
+
 def load_dotenv(path: Path) -> None:
     if not path.exists():
         return
@@ -404,6 +421,42 @@ def evaluate_second_slice_gates(
     }
 
 
+def write_second_slice_gate_report(
+    dataset: list[dict[str, Any]],
+    selection: dict[str, Any],
+    baseline_eval_file: Path,
+    treatment_eval_file: Path,
+    report_file: Path,
+    *,
+    dataset_sha256: str = EXPECTED_ORACLE_SHA256,
+) -> dict[str, Any]:
+    proof = validate_selection(dataset, selection, dataset_sha256=dataset_sha256)
+    by_id = {entry["question_id"]: entry for entry in dataset}
+    selected_rows = [by_id[row["question_id"]] for row in selection["rows"]]
+    baseline_eval_rows = load_jsonl(baseline_eval_file)
+    treatment_eval_rows = load_jsonl(treatment_eval_file)
+    report = evaluate_second_slice_gates(selected_rows, baseline_eval_rows, treatment_eval_rows)
+    report.update({
+        "selection_proof": proof,
+        "input_files": {
+            "baseline_eval_file": str(baseline_eval_file),
+            "treatment_eval_file": str(treatment_eval_file),
+            "selection_file": str(selection.get("_selection_file", "")),
+        },
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "guardrails": [
+            "offline existing eval labels only",
+            "no answer generation",
+            "no judging/model calls",
+            "no prompt retuning",
+            "no retrieval ingestion",
+            "no DB/Docker/runtime mutation",
+        ],
+    })
+    write_json(report_file, report)
+    return report
+
+
 def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any], *, dataset_sha256: str) -> dict[str, Any]:
     if selection.get("hf_revision") != EXPECTED_HF_REVISION:
         raise ValueError(f"hf_revision_mismatch: {selection.get('hf_revision')}")
@@ -725,7 +778,7 @@ def prepare_oracle_canary(
     }
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare or run LongMemEval oracle canary artifacts.")
     parser.add_argument("--dataset", type=Path, default=DEFAULT_DATASET_PATH)
     parser.add_argument("--selection", type=Path, default=DEFAULT_SELECTION_PATH)
@@ -736,7 +789,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dotenv", type=Path, default=ROOT / ".env", help="Load non-exported env vars from this .env without printing secrets.")
     parser.add_argument("--preflight-only", action="store_true", help="Validate dataset/selection/env and run one tiny chat call, then exit.")
     parser.add_argument("--condition", choices=sorted(SUPPORTED_CANDIDATE_CONDITIONS), default=DEFAULT_CANDIDATE_CONDITION, help="Candidate prompt condition for the non-baseline arm.")
-    return parser.parse_args()
+    parser.add_argument("--offline-gate-report", action="store_true", help="Evaluate preregistered second-slice gates from existing eval JSONL files only; no model or judge calls.")
+    parser.add_argument("--baseline-eval-file", type=Path, help="Existing baseline eval_results JSONL for --offline-gate-report.")
+    parser.add_argument("--treatment-eval-file", type=Path, help="Existing treatment eval_results JSONL for --offline-gate-report.")
+    parser.add_argument("--gate-report-file", type=Path, help="Output JSON report path for --offline-gate-report; defaults under --out-dir.")
+    args = parser.parse_args(argv)
+    if args.offline_gate_report and args.allow_answer_generation:
+        parser.error("--offline-gate-report cannot be combined with --allow-answer-generation")
+    if args.offline_gate_report and (args.baseline_eval_file is None or args.treatment_eval_file is None):
+        parser.error("--offline-gate-report requires --baseline-eval-file and --treatment-eval-file")
+    return args
 
 
 def main() -> None:
@@ -745,7 +807,25 @@ def main() -> None:
     dataset_sha256 = sha256_file(args.dataset)
     dataset = load_json(args.dataset)
     selection = load_json(args.selection)
+    selection["_selection_file"] = str(args.selection)
     validate_selection(dataset, selection, dataset_sha256=dataset_sha256)
+    if args.offline_gate_report:
+        report_file = args.gate_report_file or (args.out_dir / "longmemeval_oracle_canary_second_slice_gate_report.json")
+        result = write_second_slice_gate_report(
+            dataset,
+            selection,
+            args.baseline_eval_file,
+            args.treatment_eval_file,
+            report_file,
+            dataset_sha256=dataset_sha256,
+        )
+        print(json.dumps({
+            "mode": result["mode"],
+            "gate_report_file": str(report_file),
+            "overall_pass": result["gates"]["overall"]["pass"],
+            "communication_boundary": result["communication_boundary"],
+        }, indent=2))
+        return
     if args.preflight_only:
         chat_completions_call([{"role": "user", "content": "Reply with exactly OK."}], model=args.answer_model, max_tokens=5)
         print(json.dumps({
