@@ -241,23 +241,63 @@ def generate_predictions(
 
 
 def eval_label(row: dict[str, Any]) -> bool:
-    label = row.get("autoeval_label", {}).get("label")
+    qid = row.get("question_id", "<missing_question_id>")
+    if "autoeval_label" not in row or not isinstance(row.get("autoeval_label"), dict):
+        raise ValueError(f"missing_autoeval_label:{qid}")
+    if "label" not in row["autoeval_label"]:
+        raise ValueError(f"missing_autoeval_label:{qid}")
+    label = row["autoeval_label"]["label"]
     if isinstance(label, bool):
         return label
     if isinstance(label, str):
-        return label.strip().lower() in {"yes", "true", "1"}
-    return bool(label)
+        normalized = label.strip().lower()
+        if normalized in {"yes", "true", "1"}:
+            return True
+        if normalized in {"no", "false", "0"}:
+            return False
+        raise ValueError(f"invalid_autoeval_label:{qid}")
+    if isinstance(label, int) and label in {0, 1}:
+        return bool(label)
+    raise ValueError(f"invalid_autoeval_label:{qid}")
+
+
+def duplicate_question_ids(rows: list[dict[str, Any]]) -> list[str]:
+    seen = set()
+    duplicates = set()
+    for row in rows:
+        qid = row.get("question_id")
+        if qid in seen:
+            duplicates.add(qid)
+        seen.add(qid)
+    return sorted(qid for qid in duplicates if qid is not None)
+
+
+def validate_eval_rows_for_selection(
+    selected_rows: list[dict[str, Any]],
+    eval_rows: list[dict[str, Any]],
+    *,
+    label: str,
+) -> dict[str, dict[str, Any]]:
+    prefix = f"{label}_" if label else ""
+    duplicates = duplicate_question_ids(eval_rows)
+    if duplicates:
+        raise ValueError(f"duplicate_{prefix}eval_rows:{','.join(duplicates)}")
+    source_ids = [row["question_id"] for row in selected_rows]
+    by_eval_id = {row["question_id"]: row for row in eval_rows}
+    missing = sorted(set(source_ids) - set(by_eval_id))
+    extra = sorted(set(by_eval_id) - set(source_ids))
+    if missing:
+        raise ValueError(f"missing_{prefix}eval_rows:{','.join(missing)}")
+    if extra:
+        raise ValueError(f"unknown_{prefix}eval_rows:{','.join(extra)}")
+    for qid in source_ids:
+        eval_label(by_eval_id[qid])
+    return by_eval_id
 
 
 def summarize_labels(selected_rows: list[dict[str, Any]], eval_rows: list[dict[str, Any]]) -> dict[str, Any]:
     by_source_id = {row["question_id"]: row for row in selected_rows}
-    by_eval_id = {row["question_id"]: row for row in eval_rows}
-    missing = sorted(set(by_source_id) - set(by_eval_id))
-    extra = sorted(set(by_eval_id) - set(by_source_id))
-    if missing:
-        raise ValueError(f"missing_eval_rows:{','.join(missing)}")
-    if extra:
-        raise ValueError(f"unknown_eval_rows:{','.join(extra)}")
+    by_eval_id = validate_eval_rows_for_selection(selected_rows, eval_rows, label="")
 
     labels_by_type: dict[str, list[bool]] = {}
     for row in selected_rows:
@@ -285,23 +325,11 @@ def evaluate_second_slice_gates(
     baseline_eval_rows: list[dict[str, Any]],
     treatment_eval_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    baseline_by_id = {row["question_id"]: row for row in baseline_eval_rows}
-    treatment_by_id = {row["question_id"]: row for row in treatment_eval_rows}
+    baseline_by_id = validate_eval_rows_for_selection(selected_rows, baseline_eval_rows, label="baseline")
+    treatment_by_id = validate_eval_rows_for_selection(selected_rows, treatment_eval_rows, label="treatment")
     source_ids = [row["question_id"] for row in selected_rows]
     if len(set(source_ids)) != len(source_ids):
         raise ValueError("duplicate_selected_question_id")
-    missing_baseline = sorted(set(source_ids) - set(baseline_by_id))
-    missing_treatment = sorted(set(source_ids) - set(treatment_by_id))
-    extra_baseline = sorted(set(baseline_by_id) - set(source_ids))
-    extra_treatment = sorted(set(treatment_by_id) - set(source_ids))
-    if missing_baseline:
-        raise ValueError(f"missing_baseline_eval_rows:{','.join(missing_baseline)}")
-    if missing_treatment:
-        raise ValueError(f"missing_treatment_eval_rows:{','.join(missing_treatment)}")
-    if extra_baseline:
-        raise ValueError(f"unknown_baseline_eval_rows:{','.join(extra_baseline)}")
-    if extra_treatment:
-        raise ValueError(f"unknown_treatment_eval_rows:{','.join(extra_treatment)}")
 
     baseline_summary = summarize_labels(selected_rows, baseline_eval_rows)
     treatment_summary = summarize_labels(selected_rows, treatment_eval_rows)

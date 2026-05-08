@@ -486,6 +486,65 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(written['communication_boundary'], 'oracle answer-side mechanism evidence only; retrieval untested')
         self.assertFalse(written['gates']['overall']['pass'])
 
+    def test_offline_gate_report_rejects_duplicate_eval_rows_before_scoring(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        baseline = self.make_eval_rows([('ku_abs', True), ('multi_1', False), ('multi_1', True)])
+        treatment = self.make_eval_rows([('ku_abs', True), ('multi_1', True)])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            baseline_path = tmp_path / 'baseline_eval.jsonl'
+            treatment_path = tmp_path / 'treatment_eval.jsonl'
+            report_path = tmp_path / 'gate_report.json'
+            longmem_canary.write_jsonl(baseline_path, baseline)
+            longmem_canary.write_jsonl(treatment_path, treatment)
+
+            with self.assertRaisesRegex(ValueError, 'duplicate_baseline_eval_rows:multi_1'):
+                longmem_canary.write_second_slice_gate_report(
+                    rows,
+                    selection,
+                    baseline_path,
+                    treatment_path,
+                    report_path,
+                    dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256,
+                )
+
+        self.assertFalse(report_path.exists())
+
+    def test_offline_gate_report_rejects_missing_extra_and_missing_labels(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        valid_treatment = self.make_eval_rows([('ku_abs', True), ('multi_1', True)])
+
+        cases = [
+            ('missing_baseline_eval_rows:multi_1', self.make_eval_rows([('ku_abs', True)])),
+            ('unknown_baseline_eval_rows:extra_1', self.make_eval_rows([('ku_abs', True), ('multi_1', False), ('extra_1', True)])),
+            ('missing_autoeval_label:multi_1', [{'question_id': 'ku_abs', 'autoeval_label': {'label': True}}, {'question_id': 'multi_1'}]),
+            ('invalid_autoeval_label:multi_1', [{'question_id': 'ku_abs', 'autoeval_label': {'label': True}}, {'question_id': 'multi_1', 'autoeval_label': {'label': 'maybe'}}]),
+        ]
+
+        for expected_error, baseline in cases:
+            with self.subTest(expected_error=expected_error):
+                with tempfile.TemporaryDirectory() as tmp:
+                    tmp_path = Path(tmp)
+                    baseline_path = tmp_path / 'baseline_eval.jsonl'
+                    treatment_path = tmp_path / 'treatment_eval.jsonl'
+                    report_path = tmp_path / 'gate_report.json'
+                    longmem_canary.write_jsonl(baseline_path, baseline)
+                    longmem_canary.write_jsonl(treatment_path, valid_treatment)
+
+                    with self.assertRaisesRegex(ValueError, expected_error):
+                        longmem_canary.write_second_slice_gate_report(
+                            rows,
+                            selection,
+                            baseline_path,
+                            treatment_path,
+                            report_path,
+                            dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256,
+                        )
+                    self.assertFalse(report_path.exists())
+
     def test_parse_args_supports_offline_gate_report_without_allow_answer_generation(self):
         args = longmem_canary.parse_args([
             '--offline-gate-report',
