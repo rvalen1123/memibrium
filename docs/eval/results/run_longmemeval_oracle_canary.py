@@ -29,6 +29,16 @@ DEFAULT_SELECTION_PATH = RESULTS_DIR / "longmemeval_oracle_canary_25_selection_2
 EXPECTED_HF_REVISION = "98d7416c24c778c2fee6e6f3006e7a073259d48f"
 EXPECTED_ORACLE_SHA256 = "821a2034d219ab45846873dd14c14f12cfe7776e73527a483f9dac095d38620c"
 EXPECTED_SELECTION_SEED = "memibrium-longmemeval-oracle-canary-2026-05-08-v1"
+SECOND_SLICE_SELECTION_SEED = "memibrium-longmemeval-oracle-canary-2026-05-08-v2"
+ALLOWED_SELECTION_SEEDS = {EXPECTED_SELECTION_SEED, SECOND_SLICE_SELECTION_SEED}
+SECOND_SLICE_GATES = {
+    "total_score": "category_contract_v1 >= baseline on the same slice",
+    "knowledge_update": "knowledge-update >= baseline on the same slice",
+    "preference_recovery": "preference_recovered / preference_baseline_wrong >= 50%",
+    "moved_row_win_loss": "recovered/regressed >= 2:1",
+    "category_collapse": "no non-watch category drops by more than one row",
+    "communication_boundary": "oracle answer-side mechanism evidence only; no retrieval/product benchmark claim",
+}
 RUN_ID = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 ANSWER_SHAPE_TYPES = {"multi-session", "temporal-reasoning"}
 DEFAULT_CANDIDATE_CONDITION = "locked_answer_shape"
@@ -216,8 +226,10 @@ def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any],
         raise ValueError(
             f"source_sha256_mismatch: selection={selection.get('source_sha256')} dataset={dataset_sha256}"
         )
-    if "seed" in selection and selection.get("seed") != EXPECTED_SELECTION_SEED:
-        raise ValueError(f"selection_seed_mismatch:{selection.get('seed')}")
+    seed = selection.get("seed", EXPECTED_SELECTION_SEED)
+    if seed not in ALLOWED_SELECTION_SEEDS:
+        raise ValueError(f"selection_seed_mismatch:{seed}")
+    prior_slice_ids = set(selection.get("prior_slice_question_ids") or [])
     rows = selection.get("rows")
     if not isinstance(rows, list) or not rows:
         raise ValueError("selection_rows_invalid")
@@ -233,6 +245,8 @@ def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any],
             raise ValueError(f"missing_question_id:index={expected_index}")
         if question_id in seen:
             raise ValueError(f"duplicate_question_id:{question_id}")
+        if question_id in prior_slice_ids:
+            raise ValueError(f"prior_slice_overlap:{question_id}")
         seen.add(question_id)
         source = by_id.get(question_id)
         if source is None:
@@ -246,7 +260,7 @@ def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any],
         if bool(row.get("abstention")) != abstention:
             raise ValueError(f"abstention_flag_mismatch:{question_id}")
         expected_selection_hash = sha256_text(
-            f"{selection.get('seed', EXPECTED_SELECTION_SEED)}:{question_id}:{source.get('question', '')}"
+            f"{seed}:{question_id}:{source.get('question', '')}"
         )
         if row.get("selection_hash") != expected_selection_hash:
             raise ValueError(f"selection_hash_mismatch:{question_id}")
@@ -282,6 +296,9 @@ def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any],
 
     return {
         "ok": True,
+        "slice_id": selection.get("slice_id"),
+        "seed": seed,
+        "prior_slice_overlap_count": len(seen & prior_slice_ids),
         "row_count": len(rows),
         "question_type_counts": qtype_counts,
         "abstention_count": abstention_count,
@@ -491,6 +508,9 @@ def prepare_oracle_canary(
         "condition": condition,
         "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "selection_proof": proof,
+        "preregistered_gates": selection.get("preregistered_gates") or (
+            SECOND_SLICE_GATES if selection.get("seed") == SECOND_SLICE_SELECTION_SEED else None
+        ),
         "baseline_prediction_file": str(baseline_path),
         "treatment_prediction_file": str(treatment_path),
         "baseline_prompts": baseline_prompts,

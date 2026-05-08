@@ -74,13 +74,14 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             },
         ]
 
-    def make_selection(self, rows=None):
+    def make_selection(self, rows=None, *, seed=None, prior_question_ids=None):
         rows = rows or self.sample_rows()
-        seed = 'memibrium-longmemeval-oracle-canary-2026-05-08-v1'
-        return {
+        seed = seed or 'memibrium-longmemeval-oracle-canary-2026-05-08-v1'
+        selection = {
             'source_file': 'longmemeval_oracle.json',
             'hf_revision': longmem_canary.EXPECTED_HF_REVISION,
             'source_sha256': longmem_canary.EXPECTED_ORACLE_SHA256,
+            'seed': seed,
             'counts': {
                 'total': len(rows),
                 'abstention': sum(1 for row in rows if row['question_id'].endswith('_abs')),
@@ -100,6 +101,9 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 for index, row in enumerate(rows, start=1)
             ],
         }
+        if prior_question_ids is not None:
+            selection['prior_slice_question_ids'] = list(prior_question_ids)
+        return selection
 
     def test_validate_selection_requires_unique_rows_and_dataset_hash(self):
         dataset = self.sample_rows()[:2]
@@ -295,6 +299,60 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         selection['rows'][1]['selection_group'] = 'multi-session:reserved-abstention'
         with self.assertRaisesRegex(ValueError, 'selection_group_mismatch:multi_1'):
             longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+    def test_second_slice_selection_uses_distinct_seed_and_rejects_prior_overlap(self):
+        dataset = self.sample_rows()
+        second_seed = 'memibrium-longmemeval-oracle-canary-2026-05-08-v2'
+        selection = self.make_selection(
+            dataset[1:],
+            seed=second_seed,
+            prior_question_ids=['ku_abs'],
+        )
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        selection['selection_rule'] = 'second hash-stratified slice excluding prior-slice question IDs'
+
+        proof = longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+        self.assertEqual(proof['seed'], second_seed)
+        self.assertEqual(proof['slice_id'], 'longmemeval_oracle_canary_25_second_slice_20260508')
+        self.assertEqual(proof['prior_slice_overlap_count'], 0)
+        self.assertEqual(proof['row_count'], 3)
+
+        overlapping = json.loads(json.dumps(selection))
+        overlapping['rows'][0]['question_id'] = 'ku_abs'
+        overlapping['rows'][0]['question_type'] = 'knowledge-update'
+        overlapping['rows'][0]['abstention'] = True
+        overlapping['rows'][0]['selection_hash'] = longmem_canary.sha256_text(f"{second_seed}:ku_abs:What football did I collect?")
+        with self.assertRaisesRegex(ValueError, 'prior_slice_overlap:ku_abs'):
+            longmem_canary.validate_selection(dataset, overlapping, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
+
+    def test_preparation_metadata_records_second_slice_gates_and_forbids_chat(self):
+        rows = self.sample_rows()
+        second_seed = 'memibrium-longmemeval-oracle-canary-2026-05-08-v2'
+        selection = self.make_selection(rows, seed=second_seed, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        selection['preregistered_gates'] = longmem_canary.SECOND_SLICE_GATES
+
+        def forbidden_chat(*args, **kwargs):
+            raise AssertionError('second-slice prep must not call chat')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            result = longmem_canary.prepare_oracle_canary(
+                rows,
+                selection,
+                out_dir,
+                allow_answer_generation=False,
+                condition='category_contract_v1',
+                chat_fn=forbidden_chat,
+            )
+            metadata = json.loads((out_dir / 'longmemeval_oracle_canary_preparation_metadata.json').read_text())
+
+        self.assertEqual(result['mode'], 'preparation_only_no_answer_generation')
+        self.assertEqual(metadata['selection_proof']['seed'], second_seed)
+        self.assertEqual(metadata['preregistered_gates']['total_score'], 'category_contract_v1 >= baseline on the same slice')
+        self.assertEqual(metadata['preregistered_gates']['moved_row_win_loss'], 'recovered/regressed >= 2:1')
+        self.assertNotIn('1:1', json.dumps(metadata['preregistered_gates']))
 
 
 if __name__ == '__main__':

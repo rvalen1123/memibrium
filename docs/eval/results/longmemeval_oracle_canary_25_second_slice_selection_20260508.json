@@ -1,0 +1,260 @@
+{
+  "dataset": "xiaowu0162/longmemeval-cleaned",
+  "source_file": "longmemeval_oracle.json",
+  "hf_revision": "98d7416c24c778c2fee6e6f3006e7a073259d48f",
+  "source_sha256": "821a2034d219ab45846873dd14c14f12cfe7776e73527a483f9dac095d38620c",
+  "slice_id": "longmemeval_oracle_canary_25_second_slice_20260508",
+  "seed": "memibrium-longmemeval-oracle-canary-2026-05-08-v2",
+  "prior_slice_selection_artifact": "docs/eval/results/longmemeval_oracle_canary_25_selection_20260508.json",
+  "prior_slice_selection_sha256": "8bd4ae95fbd768866b0af05f2cb91a6bc998d5210221e5201b007bb879ecf6b8",
+  "prior_slice_question_ids": [
+    "0ddfec37_abs",
+    "a1eacc2a",
+    "852ce960",
+    "eace081b",
+    "09ba9854_abs",
+    "b3c15d39",
+    "3c1045c8",
+    "gpt4_731e37d7",
+    "dc439ea3",
+    "58470ed2",
+    "71a3fd6b",
+    "fca762bc",
+    "35a27287",
+    "06878be2",
+    "a89d7624",
+    "d6233ab6",
+    "29f2956b_abs",
+    "3f1e9474",
+    "af8d2e46",
+    "6f9b354f",
+    "gpt4_fe651585_abs",
+    "0db4c65d",
+    "b9cfe692",
+    "gpt4_68e94288",
+    "45dc21b6"
+  ],
+  "selection_rule": "Second hash-stratified 25-row oracle slice. Exclude all prior-slice question IDs. For each question_type, select 4 rows by sha256(seed:question_id:question). If the question_type has remaining abstention rows, reserve one slot for the lowest-hash _abs row and fill the other 3 slots with the lowest-hash non-abstention rows; otherwise fill all 4 slots by lowest hash. Add one extra lowest-hash not-yet-selected non-abstention knowledge-update row as product-telemetry oversample. Commit question IDs before answer generation or judging.",
+  "preregistered_gates": {
+    "total_score": "category_contract_v1 >= baseline on the same slice",
+    "knowledge_update": "knowledge-update >= baseline on the same slice",
+    "preference_recovery": "preference_recovered / preference_baseline_wrong >= 50%",
+    "moved_row_win_loss": "recovered/regressed >= 2:1",
+    "category_collapse": "no non-watch category drops by more than one row",
+    "communication_boundary": "oracle answer-side mechanism evidence only; no retrieval/product benchmark claim"
+  },
+  "counts": {
+    "total": 25,
+    "by_question_type": {
+      "knowledge-update": 5,
+      "multi-session": 4,
+      "single-session-assistant": 4,
+      "single-session-preference": 4,
+      "single-session-user": 4,
+      "temporal-reasoning": 4
+    },
+    "abstention": 4
+  },
+  "rows": [
+    {
+      "question_id": "031748ae_abs",
+      "question_type": "knowledge-update",
+      "abstention": true,
+      "selection_hash": "09a4aa066fb4841e851527d837282fc49dabaa4583709ebafd1c384acb7699b8",
+      "selection_group": "knowledge-update:reserved-abstention",
+      "selection_index": 1
+    },
+    {
+      "question_id": "07741c44",
+      "question_type": "knowledge-update",
+      "abstention": false,
+      "selection_hash": "00ced35395d8c94bdbb6dc38e09bae6cf354548c978cbff89a38b8c681109da6",
+      "selection_group": "knowledge-update:non-abstention-fill",
+      "selection_index": 2
+    },
+    {
+      "question_id": "b6019101",
+      "question_type": "knowledge-update",
+      "abstention": false,
+      "selection_hash": "01156075da9b0c1888eae4b2353806666f51f830fc79af3e1d6038e190d9ee64",
+      "selection_group": "knowledge-update:non-abstention-fill",
+      "selection_index": 3
+    },
+    {
+      "question_id": "f685340e",
+      "question_type": "knowledge-update",
+      "abstention": false,
+      "selection_hash": "0264703f5f1119f87fd186ccc9c0ecc64bf1dab04155affb2593f6cf61d3a97f",
+      "selection_group": "knowledge-update:non-abstention-fill",
+      "selection_index": 4
+    },
+    {
+      "question_id": "6456829e_abs",
+      "question_type": "multi-session",
+      "abstention": true,
+      "selection_hash": "06d19c797bcedc8456f328edfc29762aa3a2596790efae96f785374647de0a63",
+      "selection_group": "multi-session:reserved-abstention",
+      "selection_index": 5
+    },
+    {
+      "question_id": "4adc0475",
+      "question_type": "multi-session",
+      "abstention": false,
+      "selection_hash": "00520c2f1fc09468fd9e1f4109e82874494d0c007bfed1e440f7a981e0f75309",
+      "selection_group": "multi-session:non-abstention-fill",
+      "selection_index": 6
+    },
+    {
+      "question_id": "55241a1f",
+      "question_type": "multi-session",
+      "abstention": false,
+      "selection_hash": "008c9e786e0cddbc55f6ae52d64c795d5db5f38c9950570457ce9da4574084a9",
+      "selection_group": "multi-session:non-abstention-fill",
+      "selection_index": 7
+    },
+    {
+      "question_id": "d851d5ba",
+      "question_type": "multi-session",
+      "abstention": false,
+      "selection_hash": "009a966a9ec91da359ffc4a86e84c9ee7a7715846a87c44b1ccc27b1461273ac",
+      "selection_group": "multi-session:non-abstention-fill",
+      "selection_index": 8
+    },
+    {
+      "question_id": "cc539528",
+      "question_type": "single-session-assistant",
+      "abstention": false,
+      "selection_hash": "019046df0aeea8f1766f8645b3cdfc9a5d53106c18978b2604491bdb50b01627",
+      "selection_group": "single-session-assistant:hash-fill",
+      "selection_index": 9
+    },
+    {
+      "question_id": "28bcfaac",
+      "question_type": "single-session-assistant",
+      "abstention": false,
+      "selection_hash": "032afb8b166f0b89fb7a951a035704bbb1a65b75055d27adf2719ccd283a36a8",
+      "selection_group": "single-session-assistant:hash-fill",
+      "selection_index": 10
+    },
+    {
+      "question_id": "51b23612",
+      "question_type": "single-session-assistant",
+      "abstention": false,
+      "selection_hash": "071912d3371ecadce8726bef67baed97563b2d385c12aa4d577e05e10dae4b52",
+      "selection_group": "single-session-assistant:hash-fill",
+      "selection_index": 11
+    },
+    {
+      "question_id": "e3fc4d6e",
+      "question_type": "single-session-assistant",
+      "abstention": false,
+      "selection_hash": "119c39d57de253b7c69c2ab92b54fd34217c109620dfecdbdd56e2a0656f02c6",
+      "selection_group": "single-session-assistant:hash-fill",
+      "selection_index": 12
+    },
+    {
+      "question_id": "1da05512",
+      "question_type": "single-session-preference",
+      "abstention": false,
+      "selection_hash": "0308134eee55f284737c003c7129cb808ce72a277e45d1e239ebe9e791369151",
+      "selection_group": "single-session-preference:hash-fill",
+      "selection_index": 13
+    },
+    {
+      "question_id": "1c0ddc50",
+      "question_type": "single-session-preference",
+      "abstention": false,
+      "selection_hash": "0d01a2533e0a2fa62143b805ee8d6fe08f931a1998142693b0199a5fee9d6c33",
+      "selection_group": "single-session-preference:hash-fill",
+      "selection_index": 14
+    },
+    {
+      "question_id": "32260d93",
+      "question_type": "single-session-preference",
+      "abstention": false,
+      "selection_hash": "1e19ed468d9bce1e6e5188595375ef69a167c35ac95d2a284db50a61b5268c8c",
+      "selection_group": "single-session-preference:hash-fill",
+      "selection_index": 15
+    },
+    {
+      "question_id": "06f04340",
+      "question_type": "single-session-preference",
+      "abstention": false,
+      "selection_hash": "1e2ed23c4750c16a580d9cf13adfd3a8ef1bb81ac28013a34e5c0edf1a32476d",
+      "selection_group": "single-session-preference:hash-fill",
+      "selection_index": 16
+    },
+    {
+      "question_id": "bc8a6e93_abs",
+      "question_type": "single-session-user",
+      "abstention": true,
+      "selection_hash": "1ded00f5656a7e7cf3ff4168ba0be46655607c97f1b1ebc847a9fee0643cf592",
+      "selection_group": "single-session-user:reserved-abstention",
+      "selection_index": 17
+    },
+    {
+      "question_id": "8a137a7f",
+      "question_type": "single-session-user",
+      "abstention": false,
+      "selection_hash": "127eec4c7905217417901470b116386a9b67ded747988989e6c4ded7e6d08b9b",
+      "selection_group": "single-session-user:non-abstention-fill",
+      "selection_index": 18
+    },
+    {
+      "question_id": "a06e4cfe",
+      "question_type": "single-session-user",
+      "abstention": false,
+      "selection_hash": "15012aff93916a1185e17af9f30f932a57cfde8e415e92109cbe8d27ce3738cd",
+      "selection_group": "single-session-user:non-abstention-fill",
+      "selection_index": 19
+    },
+    {
+      "question_id": "58bf7951",
+      "question_type": "single-session-user",
+      "abstention": false,
+      "selection_hash": "210b52eb98537fc65c27345e2b41df7d20e46d4bd0b257f0b8d2317622d6510a",
+      "selection_group": "single-session-user:non-abstention-fill",
+      "selection_index": 20
+    },
+    {
+      "question_id": "gpt4_70e84552_abs",
+      "question_type": "temporal-reasoning",
+      "abstention": true,
+      "selection_hash": "120b733ae779dfc2b7a01c4aa9ff32cba04dcb24e505d600121d4861d1ad31c8",
+      "selection_group": "temporal-reasoning:reserved-abstention",
+      "selection_index": 21
+    },
+    {
+      "question_id": "gpt4_61e13b3c",
+      "question_type": "temporal-reasoning",
+      "abstention": false,
+      "selection_hash": "01b785e6cca4fe9a584032429f89914a647b3d0f2f452b036250c962da02a7a2",
+      "selection_group": "temporal-reasoning:non-abstention-fill",
+      "selection_index": 22
+    },
+    {
+      "question_id": "gpt4_2487a7cb",
+      "question_type": "temporal-reasoning",
+      "abstention": false,
+      "selection_hash": "0241e9bb74a1516d70f320b1aeed1fe9839a6b5dbe0de7c81b00afd60d8a7886",
+      "selection_group": "temporal-reasoning:non-abstention-fill",
+      "selection_index": 23
+    },
+    {
+      "question_id": "gpt4_78cf46a3",
+      "question_type": "temporal-reasoning",
+      "abstention": false,
+      "selection_hash": "033a1bb7945aa2145b093ac2610fb74bb900446c7ceca59eff7bcfde43e56c70",
+      "selection_group": "temporal-reasoning:non-abstention-fill",
+      "selection_index": 24
+    },
+    {
+      "question_id": "a2f3aa27",
+      "question_type": "knowledge-update",
+      "abstention": false,
+      "selection_hash": "02b96b869c4297565eca55b9b2e5730a69cbf7f7a12130ac4db5e69cd7631229",
+      "selection_group": "knowledge-update:extra-product-telemetry",
+      "selection_index": 25
+    }
+  ]
+}
