@@ -144,6 +144,25 @@ Selected `question_id` list:
 
 No answer generation or judging may occur until this selection artifact is committed.
 
+## Preparation-only runner
+
+Committed harness:
+
+```bash
+python3 docs/eval/results/run_longmemeval_oracle_canary.py \
+  --dataset /tmp/longmemeval-cleaned-pin/longmemeval_oracle.json
+```
+
+The runner validates the pinned dataset SHA256 and selection artifact, then writes placeholder upstream-shaped JSONL files with empty hypotheses plus prompt metadata. It is preparation-only by design:
+
+- no LLM answer generation;
+- no judge calls;
+- no benchmark score;
+- no DB/Docker/runtime mutation;
+- refuses `--allow-answer-generation` until a future explicit launch path is implemented.
+
+Unit coverage: `test_longmemeval_oracle_canary.py`.
+
 ## Candidate under test
 
 Carry forward the locked answer-side candidate without post-LOCOMO retuning:
