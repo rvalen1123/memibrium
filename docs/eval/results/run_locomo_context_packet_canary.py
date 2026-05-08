@@ -276,12 +276,25 @@ def validate_fixed_row_identity(data: list[dict[str, Any]], fixed_rows: list[dic
     }
 
 
-def validate_canary_input_slice(data: list[dict[str, Any]], fixed_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def select_canary_data_slice(data: list[dict[str, Any]], sample_id: str = "conv-26") -> list[dict[str, Any]]:
+    matches = [row for row in data if str(row.get("sample_id")) == str(sample_id)]
+    if len(matches) != 1:
+        raise ValueError(f"input_slice_mismatch: sample_id={sample_id!r} matches={len(matches)}")
+    return [matches[0]]
+
+
+def validate_canary_input_slice(
+    data: list[dict[str, Any]],
+    fixed_rows: list[dict[str, Any]],
+    *,
+    expected_sample_id: str = "conv-26",
+    expected_qa_count: int | None = 199,
+) -> dict[str, Any]:
     proof = validate_fixed_row_identity(data, fixed_rows)
-    if proof["sample_id"] != "conv-26":
-        raise ValueError(f"input_slice_mismatch: first sample_id is {proof['sample_id']!r}, expected 'conv-26'")
-    if proof["qa_count"] != 199:
-        raise ValueError(f"input_slice_mismatch: conv-26 qa_count is {proof['qa_count']}, expected 199")
+    if proof["sample_id"] != expected_sample_id:
+        raise ValueError(f"input_slice_mismatch: first sample_id is {proof['sample_id']!r}, expected {expected_sample_id!r}")
+    if expected_qa_count is not None and proof["qa_count"] != expected_qa_count:
+        raise ValueError(f"input_slice_mismatch: {expected_sample_id} qa_count is {proof['qa_count']}, expected {expected_qa_count}")
     return proof
 
 
@@ -1930,6 +1943,7 @@ def run_arm(
             "data_sha256": sha256_file(DATA_PATH) if DATA_PATH.exists() else None,
             "fixed_rows_path": str(FIXED_ROWS_PATH),
             "fixed_row_count": len(fixed_rows),
+            "sample_id": conv_data.get("sample_id"),
         },
         "ingest": {"turns": n_turns, "domain": domain, "seconds": round(ingest_time, 3)},
         "hygiene_before_arm": hygiene_before,
@@ -2009,6 +2023,8 @@ def make_markdown(summary: dict[str, Any]) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run a tiny fixed-row Context Packet A/B canary.")
     parser.add_argument("--data-path", default=str(DATA_PATH))
+    parser.add_argument("--sample-id", default="conv-26", help="Conversation sample_id for this fixed-row canary; defaults to the historical conv-26 slice")
+    parser.add_argument("--expected-qa-count", type=int, default=199, help="Expected QA count for --sample-id; set <=0 to skip count check for cross-conversation gates")
     parser.add_argument("--fixed-rows-path", default=str(FIXED_ROWS_PATH))
     parser.add_argument("--min-prereg-rows", type=int, default=None, help="Require fixed-row preregistration to contain at least this many rows")
     parser.add_argument("--max-prereg-rows", type=int, default=None, help="Require fixed-row preregistration to contain at most this many rows")
@@ -2038,7 +2054,8 @@ def main(argv: list[str] | None = None) -> int:
 
     data_path = Path(args.data_path)
     fixed_rows_path = Path(args.fixed_rows_path)
-    data = load_json(data_path)
+    all_data = load_json(data_path)
+    data = select_canary_data_slice(all_data, args.sample_id)
     fixed_rows_payload = load_json(fixed_rows_path)
     fixed_rows = fixed_rows_payload["selected_rows"]
     preregistration_proof = None
@@ -2048,7 +2065,12 @@ def main(argv: list[str] | None = None) -> int:
             min_rows=args.min_prereg_rows or 1,
             max_rows=args.max_prereg_rows or 10_000,
         )
-    input_identity = validate_canary_input_slice(data, fixed_rows)
+    input_identity = validate_canary_input_slice(
+        data,
+        fixed_rows,
+        expected_sample_id=args.sample_id,
+        expected_qa_count=args.expected_qa_count if args.expected_qa_count and args.expected_qa_count > 0 else None,
+    )
     data_sha = sha256_file(data_path)
     if data_path == DATA_PATH and data_sha != EXPECTED_DATA_SHA256:
         raise ValueError(f"data_sha256_mismatch: {data_sha} != {EXPECTED_DATA_SHA256}")
@@ -2249,6 +2271,8 @@ def main(argv: list[str] | None = None) -> int:
         "preregistration": preregistration_proof,
         "data_sha256": data_sha,
         "fixed_rows_path": str(fixed_rows_path),
+        "sample_id": args.sample_id,
+        "expected_qa_count": args.expected_qa_count if args.expected_qa_count and args.expected_qa_count > 0 else None,
         "live_status": live_status,
         "baseline_env": redacted_env(baseline_env),
         "treatment_env": redacted_env(treatment_env),

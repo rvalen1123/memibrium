@@ -45,6 +45,44 @@ class ContextPacketCanaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'row_identity_mismatch'):
             context_packet_canary.validate_fixed_row_identity(data, bad_rows)
 
+    def test_canary_input_slice_can_select_non_conv26_sample_for_crossconv_gates(self):
+        data = [
+            {
+                'sample_id': 'conv-26',
+                'qa': [{'category': 1, 'question': 'conv 26 question', 'answer': 'a'}],
+            },
+            {
+                'sample_id': 'conv-44',
+                'qa': [
+                    {'category': 1, 'question': 'conv 44 first', 'answer': 'b'},
+                    {'category': 2, 'question': 'conv 44 second', 'answer': 'c'},
+                ],
+            },
+        ]
+        fixed_rows = [
+            {
+                'one_based_index': 2,
+                'cat': 'temporal',
+                'question': 'conv 44 second',
+                'question_sha256': context_packet_canary.sha256_text('conv 44 second'),
+                'label': 'conv44-temporal',
+            }
+        ]
+
+        selected = context_packet_canary.select_canary_data_slice(data, 'conv-44')
+        proof = context_packet_canary.validate_canary_input_slice(
+            selected,
+            fixed_rows,
+            expected_sample_id='conv-44',
+            expected_qa_count=2,
+        )
+
+        self.assertEqual(len(selected), 1)
+        self.assertEqual(proof['sample_id'], 'conv-44')
+        self.assertEqual(proof['qa_count'], 2)
+        with self.assertRaisesRegex(ValueError, 'input_slice_mismatch'):
+            context_packet_canary.select_canary_data_slice(data, 'conv-missing')
+
     def test_arm_envs_only_differ_by_context_packet_flag(self):
         base_env = {
             'USE_CONTEXT_RERANK': '1',
