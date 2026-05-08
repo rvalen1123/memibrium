@@ -223,6 +223,187 @@ def generate_predictions(
     return predictions
 
 
+def eval_label(row: dict[str, Any]) -> bool:
+    label = row.get("autoeval_label", {}).get("label")
+    if isinstance(label, bool):
+        return label
+    if isinstance(label, str):
+        return label.strip().lower() in {"yes", "true", "1"}
+    return bool(label)
+
+
+def summarize_labels(selected_rows: list[dict[str, Any]], eval_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    by_source_id = {row["question_id"]: row for row in selected_rows}
+    by_eval_id = {row["question_id"]: row for row in eval_rows}
+    missing = sorted(set(by_source_id) - set(by_eval_id))
+    extra = sorted(set(by_eval_id) - set(by_source_id))
+    if missing:
+        raise ValueError(f"missing_eval_rows:{','.join(missing)}")
+    if extra:
+        raise ValueError(f"unknown_eval_rows:{','.join(extra)}")
+
+    labels_by_type: dict[str, list[bool]] = {}
+    for row in selected_rows:
+        qid = row["question_id"]
+        qtype = row.get("question_type", "")
+        labels_by_type.setdefault(qtype, []).append(eval_label(by_eval_id[qid]))
+    labels = [label for qtype_labels in labels_by_type.values() for label in qtype_labels]
+    return {
+        "correct": sum(1 for label in labels if label),
+        "total": len(labels),
+        "accuracy": sum(1 for label in labels if label) / len(labels) if labels else 0.0,
+        "by_question_type": {
+            qtype: {
+                "correct": sum(1 for label in labels if label),
+                "total": len(labels),
+                "accuracy": sum(1 for label in labels if label) / len(labels) if labels else 0.0,
+            }
+            for qtype, labels in sorted(labels_by_type.items())
+        },
+    }
+
+
+def evaluate_second_slice_gates(
+    selected_rows: list[dict[str, Any]],
+    baseline_eval_rows: list[dict[str, Any]],
+    treatment_eval_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    baseline_by_id = {row["question_id"]: row for row in baseline_eval_rows}
+    treatment_by_id = {row["question_id"]: row for row in treatment_eval_rows}
+    source_ids = [row["question_id"] for row in selected_rows]
+    if len(set(source_ids)) != len(source_ids):
+        raise ValueError("duplicate_selected_question_id")
+    missing_baseline = sorted(set(source_ids) - set(baseline_by_id))
+    missing_treatment = sorted(set(source_ids) - set(treatment_by_id))
+    extra_baseline = sorted(set(baseline_by_id) - set(source_ids))
+    extra_treatment = sorted(set(treatment_by_id) - set(source_ids))
+    if missing_baseline:
+        raise ValueError(f"missing_baseline_eval_rows:{','.join(missing_baseline)}")
+    if missing_treatment:
+        raise ValueError(f"missing_treatment_eval_rows:{','.join(missing_treatment)}")
+    if extra_baseline:
+        raise ValueError(f"unknown_baseline_eval_rows:{','.join(extra_baseline)}")
+    if extra_treatment:
+        raise ValueError(f"unknown_treatment_eval_rows:{','.join(extra_treatment)}")
+
+    baseline_summary = summarize_labels(selected_rows, baseline_eval_rows)
+    treatment_summary = summarize_labels(selected_rows, treatment_eval_rows)
+    outcomes = {"same_correct": 0, "same_wrong": 0, "recovered": 0, "regressed": 0, "moved_rows": 0}
+    preference_baseline_wrong = 0
+    preference_recovered = 0
+    paired_rows = []
+    for row in selected_rows:
+        qid = row["question_id"]
+        qtype = row.get("question_type", "")
+        baseline_correct = eval_label(baseline_by_id[qid])
+        treatment_correct = eval_label(treatment_by_id[qid])
+        if baseline_correct and treatment_correct:
+            outcome = "same_correct"
+        elif not baseline_correct and not treatment_correct:
+            outcome = "same_wrong"
+        elif not baseline_correct and treatment_correct:
+            outcome = "recovered"
+        else:
+            outcome = "regressed"
+        outcomes[outcome] += 1
+        if outcome in {"recovered", "regressed"}:
+            outcomes["moved_rows"] += 1
+        if qtype == "single-session-preference":
+            if not baseline_correct:
+                preference_baseline_wrong += 1
+            if outcome == "recovered":
+                preference_recovered += 1
+        paired_rows.append({
+            "question_id": qid,
+            "question_type": qtype,
+            "baseline_correct": baseline_correct,
+            "treatment_correct": treatment_correct,
+            "outcome": outcome,
+        })
+
+    recovered = outcomes["recovered"]
+    regressed = outcomes["regressed"]
+    moved_rows = outcomes["moved_rows"]
+    if preference_baseline_wrong == 0:
+        preference_pass = True
+        preference_reason = "zero_denominator_no_recovery_needed"
+        preference_rate = None
+    else:
+        preference_rate = preference_recovered / preference_baseline_wrong
+        preference_pass = preference_rate >= 0.5
+        preference_reason = "ok" if preference_pass else "preference_recovery_below_50_percent"
+
+    if moved_rows < 3:
+        movement_pass = False
+        movement_reason = "minimum_moved_rows_not_met"
+    elif regressed == 0:
+        movement_pass = recovered > 0
+        movement_reason = "ok" if movement_pass else "zero_movement"
+    elif recovered / regressed >= 2:
+        movement_pass = True
+        movement_reason = "ok"
+    else:
+        movement_pass = False
+        movement_reason = "recovered_regressed_ratio_below_2_to_1"
+
+    non_watch_drops = {}
+    watch_categories = {"knowledge-update"}
+    for qtype, baseline_type in baseline_summary["by_question_type"].items():
+        treatment_type = treatment_summary["by_question_type"].get(qtype, {"correct": 0})
+        delta = treatment_type["correct"] - baseline_type["correct"]
+        if qtype not in watch_categories and delta < -1:
+            non_watch_drops[qtype] = delta
+
+    knowledge_baseline = baseline_summary["by_question_type"].get("knowledge-update", {"correct": 0, "total": 0})
+    knowledge_treatment = treatment_summary["by_question_type"].get("knowledge-update", {"correct": 0, "total": 0})
+    gates = {
+        "total_score": {
+            "pass": treatment_summary["correct"] >= baseline_summary["correct"],
+            "baseline_correct": baseline_summary["correct"],
+            "treatment_correct": treatment_summary["correct"],
+        },
+        "knowledge_update": {
+            "pass": knowledge_treatment["correct"] >= knowledge_baseline["correct"],
+            "baseline_correct": knowledge_baseline["correct"],
+            "treatment_correct": knowledge_treatment["correct"],
+        },
+        "preference_recovery": {
+            "pass": preference_pass,
+            "reason": preference_reason,
+            "recovered": preference_recovered,
+            "baseline_wrong": preference_baseline_wrong,
+            "rate": preference_rate,
+        },
+        "moved_row_stability": {
+            "pass": movement_pass,
+            "reason": movement_reason,
+            "moved_rows": moved_rows,
+            "recovered": recovered,
+            "regressed": regressed,
+        },
+        "category_collapse": {
+            "pass": not non_watch_drops,
+            "drops": non_watch_drops,
+        },
+    }
+    gates["overall"] = {"pass": all(gate["pass"] for gate in gates.values())}
+    return {
+        "mode": "second_slice_gate_evaluation_offline",
+        "gates": gates,
+        "baseline": baseline_summary,
+        "treatment": treatment_summary,
+        "paired_outcomes": outcomes,
+        "preference": {
+            "baseline_wrong": preference_baseline_wrong,
+            "recovered": preference_recovered,
+            "recovery_rate": preference_rate,
+        },
+        "paired_rows": paired_rows,
+        "preregistered_gates": SECOND_SLICE_GATES,
+        "communication_boundary": "oracle answer-side mechanism evidence only; retrieval untested",
+    }
+
+
 def validate_selection(dataset: list[dict[str, Any]], selection: dict[str, Any], *, dataset_sha256: str) -> dict[str, Any]:
     if selection.get("hf_revision") != EXPECTED_HF_REVISION:
         raise ValueError(f"hf_revision_mismatch: {selection.get('hf_revision')}")

@@ -356,6 +356,98 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertIn('minimum ratio that still constitutes evidence', metadata['preregistered_gates']['moved_row_win_loss_rationale'])
         self.assertNotIn('1:1', json.dumps(metadata['preregistered_gates']))
 
+    def make_eval_rows(self, labels):
+        return [
+            {'question_id': question_id, 'autoeval_label': {'label': label}}
+            for question_id, label in labels
+        ]
+
+    def test_second_slice_gate_evaluator_predeclares_preference_zero_denominator(self):
+        rows = [
+            dict(self.sample_rows()[0], question_id='ku_1', question_type='knowledge-update'),
+            dict(self.sample_rows()[2], question_id='pref_1', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_2', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_3', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_4', question_type='single-session-preference'),
+        ]
+        baseline = self.make_eval_rows([
+            ('ku_1', True),
+            ('pref_1', True),
+            ('pref_2', True),
+            ('pref_3', True),
+            ('pref_4', True),
+        ])
+        treatment = self.make_eval_rows([
+            ('ku_1', True),
+            ('pref_1', True),
+            ('pref_2', True),
+            ('pref_3', True),
+            ('pref_4', True),
+        ])
+
+        result = longmem_canary.evaluate_second_slice_gates(rows, baseline, treatment)
+
+        self.assertTrue(result['gates']['preference_recovery']['pass'])
+        self.assertEqual(result['gates']['preference_recovery']['reason'], 'zero_denominator_no_recovery_needed')
+        self.assertEqual(result['preference']['baseline_wrong'], 0)
+
+    def test_second_slice_gate_evaluator_rejects_zero_or_too_few_moved_rows(self):
+        rows = [
+            dict(self.sample_rows()[0], question_id='ku_1', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='multi_1', question_type='multi-session'),
+            dict(self.sample_rows()[2], question_id='pref_1', question_type='single-session-preference'),
+        ]
+        baseline = self.make_eval_rows([('ku_1', True), ('multi_1', False), ('pref_1', False)])
+        treatment = self.make_eval_rows([('ku_1', True), ('multi_1', False), ('pref_1', True)])
+
+        result = longmem_canary.evaluate_second_slice_gates(rows, baseline, treatment)
+
+        self.assertEqual(result['paired_outcomes']['moved_rows'], 1)
+        self.assertFalse(result['gates']['moved_row_stability']['pass'])
+        self.assertEqual(result['gates']['moved_row_stability']['reason'], 'minimum_moved_rows_not_met')
+
+    def test_second_slice_gate_evaluator_requires_two_to_one_moved_row_ratio(self):
+        rows = [
+            dict(self.sample_rows()[0], question_id='ku_1', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='multi_1', question_type='multi-session'),
+            dict(self.sample_rows()[2], question_id='pref_1', question_type='single-session-preference'),
+            dict(self.sample_rows()[3], question_id='temp_1', question_type='temporal-reasoning'),
+            dict(self.sample_rows()[1], question_id='multi_2', question_type='multi-session'),
+            dict(self.sample_rows()[2], question_id='pref_2', question_type='single-session-preference'),
+        ]
+        passing = longmem_canary.evaluate_second_slice_gates(
+            rows,
+            self.make_eval_rows([('ku_1', True), ('multi_1', False), ('pref_1', False), ('temp_1', True), ('multi_2', True), ('pref_2', True)]),
+            self.make_eval_rows([('ku_1', True), ('multi_1', True), ('pref_1', True), ('temp_1', False), ('multi_2', True), ('pref_2', True)]),
+        )
+        failing = longmem_canary.evaluate_second_slice_gates(
+            rows,
+            self.make_eval_rows([('ku_1', True), ('multi_1', False), ('pref_1', False), ('temp_1', True), ('multi_2', True), ('pref_2', False)]),
+            self.make_eval_rows([('ku_1', True), ('multi_1', True), ('pref_1', False), ('temp_1', False), ('multi_2', False), ('pref_2', True)]),
+        )
+
+        self.assertTrue(passing['gates']['moved_row_stability']['pass'])
+        self.assertEqual(passing['paired_outcomes']['recovered'], 2)
+        self.assertEqual(passing['paired_outcomes']['regressed'], 1)
+        self.assertFalse(failing['gates']['moved_row_stability']['pass'])
+        self.assertEqual(failing['gates']['moved_row_stability']['reason'], 'recovered_regressed_ratio_below_2_to_1')
+
+    def test_second_slice_gate_evaluator_flags_category_collapse_and_knowledge_update(self):
+        rows = [
+            dict(self.sample_rows()[0], question_id='ku_1', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='multi_1', question_type='multi-session'),
+            dict(self.sample_rows()[1], question_id='multi_2', question_type='multi-session'),
+            dict(self.sample_rows()[2], question_id='pref_1', question_type='single-session-preference'),
+        ]
+        baseline = self.make_eval_rows([('ku_1', True), ('multi_1', True), ('multi_2', True), ('pref_1', False)])
+        treatment = self.make_eval_rows([('ku_1', False), ('multi_1', False), ('multi_2', False), ('pref_1', True)])
+
+        result = longmem_canary.evaluate_second_slice_gates(rows, baseline, treatment)
+
+        self.assertFalse(result['gates']['knowledge_update']['pass'])
+        self.assertFalse(result['gates']['category_collapse']['pass'])
+        self.assertEqual(result['gates']['category_collapse']['drops'], {'multi-session': -2})
+
     def test_second_slice_gates_define_zero_denominators_and_minimum_movement(self):
         gates = longmem_canary.SECOND_SLICE_GATES
 
