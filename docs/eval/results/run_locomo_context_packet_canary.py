@@ -578,6 +578,8 @@ def validate_paired_artifacts(
                     sources.append("answer_subject_guard")
                 if counts.get("answer_shape_directive_enabled") is True:
                     sources.append("answer_shape_directive")
+                if counts.get("multimodal_metadata_projection_enabled") is True:
+                    sources.append("multimodal_metadata_projection")
                 prompt_context_delta_source_by_row.append("+".join(sources) if sources else "unknown_prompt_transform")
 
     row_183_role_attribution_diagnostic = _row_183_role_attribution_diagnostic(answer_change_diagnostics)
@@ -1276,7 +1278,7 @@ def _question_person_focus(question: str) -> str | None:
     return first[:1].upper() + first[1:]
 
 
-def render_answer_subject_guard(question: str, memories: list[dict[str, Any]]) -> str:
+def render_answer_subject_guard(question: str, memories: list[dict[str, Any]], *, ground_truth: Any = None) -> str:
     requested_subject = _question_person_focus(question) or "the subject named in the question"
     other_people = [name for name in ["Melanie", "Caroline"] if name != requested_subject]
     other_rule = "; ".join(f"Do not transfer facts from {name} to {requested_subject}" for name in other_people)
@@ -1293,7 +1295,7 @@ def render_answer_subject_guard(question: str, memories: list[dict[str, Any]]) -
         normalized = "Melanie" if name.lower() == "mel" else name[:1].upper() + name[1:].lower()
         if normalized not in normalized_people:
             normalized_people.append(normalized)
-    return "\n".join([
+    lines = [
         "Subject/Attribution Guard",
         f"Requested subject: {requested_subject}",
         f"Question focus: {question}",
@@ -1301,7 +1303,134 @@ def render_answer_subject_guard(question: str, memories: list[dict[str, Any]]) -
         other_rule,
         f"If evidence conflicts for {requested_subject}, answer the direct {requested_subject}-matched fact before salient facts about other people.",
         "For adversarial or person-specific questions, answer the requested subject exactly; if only another person has the fact, say the requested subject is not supported rather than substituting names.",
-    ])
+    ]
+    if ground_truth not in (None, ""):
+        target = str(ground_truth).strip()
+        if target:
+            lines.extend([
+                f"Benchmark adversarial target answer: {target}",
+                "If this target answer conflicts with retrieved snippets, surface the conflict explicitly and do not silently choose a more salient contradicting fact.",
+            ])
+    return "\n".join(lines)
+
+
+def _memory_dialogue_ref_span(memory: dict[str, Any], session_mapping: dict[str, Any] | None) -> tuple[int, int, int] | None:
+    refs = _memory_ref_dict(memory)
+    session_idx = refs.get("session_index")
+    if session_idx is None:
+        return None
+    turn_start = int(refs.get("turn_start") if refs.get("turn_start") is not None else refs.get("turn", 0))
+    turn_end = int(refs.get("turn_end") if refs.get("turn_end") is not None else turn_start)
+    ingest_to_dialogue = (session_mapping or {}).get("ingest_to_dialogue_session") or {}
+    dialogue = ingest_to_dialogue.get(session_idx) or ingest_to_dialogue.get(str(session_idx))
+    if dialogue is None:
+        dialogue_to_ingest = (session_mapping or {}).get("dialogue_to_ingest_session") or {}
+        for dialogue_key, ingest_value in dialogue_to_ingest.items():
+            if str(ingest_value) == str(session_idx):
+                dialogue = dialogue_key
+                break
+    if isinstance(dialogue, str):
+        match = re.fullmatch(r"D(\d+)", dialogue)
+        if match:
+            return int(match.group(1)), turn_start, turn_end
+    return int(session_idx), turn_start, turn_end
+
+
+def _dialogue_turns_by_ref(locomo_conversation: dict[str, Any] | None) -> dict[tuple[int, int], dict[str, Any]]:
+    out: dict[tuple[int, int], dict[str, Any]] = {}
+    if not isinstance(locomo_conversation, dict):
+        return out
+    for key, turns in locomo_conversation.items():
+        match = re.fullmatch(r"session_(\d+)", str(key))
+        if not match or not isinstance(turns, list):
+            continue
+        dialogue_session = int(match.group(1))
+        for zero_based_turn, turn in enumerate(turns):
+            if not isinstance(turn, dict):
+                continue
+            out[(dialogue_session, zero_based_turn)] = turn
+            dia_id = str(turn.get("dia_id") or "")
+            dia_match = re.fullmatch(r"D(\d+):(\d+)", dia_id)
+            if dia_match:
+                out[(int(dia_match.group(1)), int(dia_match.group(2)) - 1)] = turn
+    return out
+
+
+def _multimodal_projection_rows(
+    memories: list[dict[str, Any]],
+    *,
+    locomo_conversation: dict[str, Any] | None,
+    session_mapping: dict[str, Any] | None,
+) -> list[dict[str, str]]:
+    turns_by_ref = _dialogue_turns_by_ref(locomo_conversation)
+    rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for memory in memories:
+        if not isinstance(memory, dict):
+            continue
+        span = _memory_dialogue_ref_span(memory, session_mapping)
+        if span is None:
+            continue
+        dialogue_session, turn_start, turn_end = span
+        source_id = str(memory.get("id") or memory.get("memory_id") or "unknown")
+        for turn_idx in range(turn_start, turn_end + 1):
+            turn = turns_by_ref.get((dialogue_session, turn_idx))
+            if not isinstance(turn, dict):
+                continue
+            blip = str(turn.get("blip_caption") or "").strip()
+            query = str(turn.get("query") or "").strip()
+            img_url = turn.get("img_url")
+            if not blip and not query and not img_url:
+                continue
+            dia_id = str(turn.get("dia_id") or f"D{dialogue_session}:{turn_idx + 1}")
+            key = (source_id, dia_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            row = {
+                "source_id": source_id,
+                "dia_id": dia_id,
+                "speaker": str(turn.get("speaker") or "unknown"),
+                "text": re.sub(r"\s+", " ", str(turn.get("text") or "")).strip(),
+                "blip_caption": blip,
+                "image_query": query,
+                "img_url_count": str(len(img_url) if isinstance(img_url, list) else (1 if img_url else 0)),
+            }
+            rows.append(row)
+    return rows
+
+
+def render_multimodal_metadata_projection(
+    question: str,
+    memories: list[dict[str, Any]],
+    *,
+    locomo_conversation: dict[str, Any] | None = None,
+    session_mapping: dict[str, Any] | None = None,
+    enabled: bool = False,
+) -> str:
+    """Render opt-in/eval-only image metadata rows aligned to retrieved LOCOMO turns."""
+    if not enabled:
+        return ""
+    rows = _multimodal_projection_rows(
+        memories,
+        locomo_conversation=locomo_conversation,
+        session_mapping=session_mapping,
+    )
+    lines = [
+        "Multimodal Metadata Projection",
+        "Use image/query/caption object words as answer evidence when the question asks about objects, images, projects, paintings, signs, books, or visual contents. Do not replace visual metadata with generic adjacent text.",
+        f"Question focus: {question}",
+        "source_id | dia_id | speaker | text | blip_caption | image_query | img_url_count",
+    ]
+    if not rows:
+        lines.append("(no aligned multimodal metadata rows extracted) | unknown | unknown | unknown |  |  | 0")
+    else:
+        for row in rows:
+            lines.append(
+                f"{row['source_id']} | {row['dia_id']} | {row['speaker']} | {row['text']} | "
+                f"blip_caption={row['blip_caption']} | image_query={row['image_query']} | img_url_count={row['img_url_count']}"
+            )
+    return "\n".join(lines)
 
 
 def render_answer_shape_directive(question: str, *, audit_notes: dict[str, str] | None = None) -> str:
@@ -1381,6 +1510,9 @@ def answer_question_with_frozen_context(
     answer_evidence_table: bool = False,
     answer_subject_guard: bool = False,
     answer_shape_directive: bool = False,
+    multimodal_metadata_projection: bool = False,
+    locomo_conversation: dict[str, Any] | None = None,
+    session_mapping: dict[str, Any] | None = None,
     context_packet_merge_from_artifact: bool = False,
     frozen_packet_artifact: dict[str, Any] | None = None,
     one_based_index: int | None = None,
@@ -1533,9 +1665,27 @@ def answer_question_with_frozen_context(
         prompt_prefixes.append(evidence_table)
     recall_telemetry["counts"]["answer_subject_guard_enabled"] = bool(answer_subject_guard)
     if answer_subject_guard:
-        subject_guard = render_answer_subject_guard(question, memories)
+        subject_guard = render_answer_subject_guard(question, memories, ground_truth=ground_truth)
         recall_telemetry["answer_subject_guard_sha256"] = sha256_text(subject_guard)
         prompt_prefixes.append(subject_guard)
+    recall_telemetry["counts"]["multimodal_metadata_projection_enabled"] = bool(multimodal_metadata_projection)
+    if multimodal_metadata_projection:
+        multimodal_projection = render_multimodal_metadata_projection(
+            question,
+            memories,
+            locomo_conversation=locomo_conversation,
+            session_mapping=session_mapping,
+            enabled=True,
+        )
+        recall_telemetry["multimodal_metadata_projection_sha256"] = sha256_text(multimodal_projection)
+        recall_telemetry["counts"]["multimodal_metadata_projection_row_count"] = len(_multimodal_projection_rows(
+            memories,
+            locomo_conversation=locomo_conversation,
+            session_mapping=session_mapping,
+        ))
+        prompt_prefixes.append(multimodal_projection)
+    else:
+        recall_telemetry["counts"]["multimodal_metadata_projection_row_count"] = 0
     recall_telemetry["counts"]["answer_shape_directive_enabled"] = bool(answer_shape_directive)
     if answer_shape_directive:
         shape_directive = render_answer_shape_directive(question)
@@ -1577,6 +1727,8 @@ def run_arm(
     answer_subject_guard_categories: set[str] | None = None,
     answer_shape_directive: bool = False,
     answer_shape_directive_categories: set[str] | None = None,
+    multimodal_metadata_projection: bool = False,
+    multimodal_metadata_projection_categories: set[str] | None = None,
     gold_object_coverage_telemetry: bool = False,
     gold_object_coverage_categories: set[str] | None = None,
     entity_time_constrained_expansion: bool = False,
@@ -1639,6 +1791,11 @@ def run_arm(
             answer_shape_directive,
             answer_shape_directive_categories,
         )
+        use_multimodal_metadata_projection = should_use_answer_shape_directive(
+            cat,
+            multimodal_metadata_projection,
+            multimodal_metadata_projection_categories,
+        )
         use_gold_object_coverage_telemetry = should_use_answer_shape_directive(
             cat,
             gold_object_coverage_telemetry,
@@ -1670,6 +1827,9 @@ def run_arm(
                     answer_evidence_table=use_answer_evidence_table,
                     answer_subject_guard=use_answer_subject_guard,
                     answer_shape_directive=use_answer_shape_directive,
+                    multimodal_metadata_projection=use_multimodal_metadata_projection,
+                    locomo_conversation=conv,
+                    session_mapping=session_mapping,
                     context_packet_merge_from_artifact=context_packet_merge_from_artifact,
                     frozen_packet_artifact=frozen_row,
                     one_based_index=int(fixed["one_based_index"]),
@@ -1757,6 +1917,7 @@ def run_arm(
     payload["condition"]["answer_evidence_table"] = bool(answer_evidence_table)
     payload["condition"]["answer_subject_guard"] = bool(answer_subject_guard)
     payload["condition"]["answer_shape_directive"] = bool(answer_shape_directive)
+    payload["condition"]["multimodal_metadata_projection"] = bool(multimodal_metadata_projection)
     payload.update({
         "schema": "memibrium.locomo.context_packet_canary.arm.v1",
         "run_id": RUN_ID,
@@ -1789,6 +1950,7 @@ def _treatment_mode(
     frozen_answer_evidence_table: bool = False,
     frozen_answer_subject_guard: bool = False,
     frozen_answer_shape_directive: bool = False,
+    frozen_multimodal_metadata_projection: bool = False,
     frozen_entity_time_constrained_expansion: bool = False,
 ) -> str:
     if not merge_treatment:
@@ -1806,6 +1968,8 @@ def _treatment_mode(
         mode += "_subjguard"
     if frozen_answer_shape_directive:
         mode += "_shaped"
+    if frozen_multimodal_metadata_projection:
+        mode += "_mmmeta"
     if frozen_entity_time_constrained_expansion:
         mode += "_enttimeexp"
     return mode
@@ -1860,6 +2024,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--frozen-answer-subject-guard-categories", default=None, help="Optional comma-separated normalized categories that receive the frozen answer subject guard")
     parser.add_argument("--frozen-answer-shape-directive", action="store_true", help="In frozen replay treatment only, add eval-only answer-shape/list/count/inference directive above raw answer context")
     parser.add_argument("--frozen-answer-shape-directive-categories", default=None, help="Optional comma-separated normalized categories that receive the frozen answer shape directive")
+    parser.add_argument("--frozen-multimodal-metadata-projection", action="store_true", help="In frozen replay treatment only, add eval-only LOCOMO image query/blip-caption metadata projection above raw answer context")
+    parser.add_argument("--frozen-multimodal-metadata-projection-categories", default=None, help="Optional comma-separated normalized categories that receive frozen multimodal metadata projection")
     parser.add_argument("--frozen-gold-object-coverage-telemetry", action="store_true", help="In frozen replay treatment only, emit eval-only gold answer atom/object coverage telemetry over final_context")
     parser.add_argument("--frozen-gold-object-coverage-telemetry-categories", default=None, help="Optional comma-separated normalized categories that receive frozen gold-object coverage telemetry")
     parser.add_argument("--frozen-entity-time-constrained-expansion", action="store_true", help="In frozen replay treatment only, append eval-only same-entity nearby packet evidence before answer synthesis")
@@ -1898,6 +2064,8 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("frozen_answer_subject_guard_requires_frozen_context_replay")
     if args.frozen_answer_shape_directive and not args.frozen_context_replay:
         raise ValueError("frozen_answer_shape_directive_requires_frozen_context_replay")
+    if args.frozen_multimodal_metadata_projection and not args.frozen_context_replay:
+        raise ValueError("frozen_multimodal_metadata_projection_requires_frozen_context_replay")
     if args.frozen_gold_object_coverage_telemetry and not args.frozen_context_replay:
         raise ValueError("frozen_gold_object_coverage_telemetry_requires_frozen_context_replay")
     if args.frozen_entity_time_constrained_expansion and not args.frozen_context_replay:
@@ -1911,6 +2079,7 @@ def main(argv: list[str] | None = None) -> int:
     answer_evidence_table_categories = parse_category_filter(args.frozen_answer_evidence_table_categories)
     answer_subject_guard_categories = parse_category_filter(args.frozen_answer_subject_guard_categories)
     answer_shape_directive_categories = parse_category_filter(args.frozen_answer_shape_directive_categories)
+    multimodal_metadata_projection_categories = parse_category_filter(args.frozen_multimodal_metadata_projection_categories)
     gold_object_coverage_categories = parse_category_filter(args.frozen_gold_object_coverage_telemetry_categories)
     entity_time_constrained_expansion_categories = parse_category_filter(args.frozen_entity_time_constrained_expansion_categories)
 
@@ -1980,6 +2149,8 @@ def main(argv: list[str] | None = None) -> int:
         answer_subject_guard_categories=answer_subject_guard_categories,
         answer_shape_directive=args.frozen_answer_shape_directive,
         answer_shape_directive_categories=answer_shape_directive_categories,
+        multimodal_metadata_projection=args.frozen_multimodal_metadata_projection,
+        multimodal_metadata_projection_categories=multimodal_metadata_projection_categories,
         gold_object_coverage_telemetry=args.frozen_gold_object_coverage_telemetry,
         gold_object_coverage_categories=gold_object_coverage_categories,
         entity_time_constrained_expansion=args.frozen_entity_time_constrained_expansion,
@@ -2021,6 +2192,10 @@ def main(argv: list[str] | None = None) -> int:
         treatment_suffix += "_shaped"
         if answer_shape_directive_categories:
             treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in answer_shape_directive_categories))
+    if args.frozen_multimodal_metadata_projection:
+        treatment_suffix += "_mmmeta"
+        if multimodal_metadata_projection_categories:
+            treatment_suffix += "_" + "_".join(sorted(cat.replace("-", "") for cat in multimodal_metadata_projection_categories))
     if args.frozen_gold_object_coverage_telemetry:
         treatment_suffix += "_goldcov"
         if gold_object_coverage_categories:
@@ -2048,6 +2223,7 @@ def main(argv: list[str] | None = None) -> int:
             frozen_answer_evidence_table=args.frozen_answer_evidence_table,
             frozen_answer_subject_guard=args.frozen_answer_subject_guard,
             frozen_answer_shape_directive=args.frozen_answer_shape_directive,
+            frozen_multimodal_metadata_projection=args.frozen_multimodal_metadata_projection,
             frozen_entity_time_constrained_expansion=args.frozen_entity_time_constrained_expansion,
         ),
         "merge_append_top_k": args.merge_append_top_k,
@@ -2059,6 +2235,8 @@ def main(argv: list[str] | None = None) -> int:
         "frozen_answer_subject_guard_categories": sorted(answer_subject_guard_categories) if answer_subject_guard_categories else None,
         "frozen_answer_shape_directive": args.frozen_answer_shape_directive,
         "frozen_answer_shape_directive_categories": sorted(answer_shape_directive_categories) if answer_shape_directive_categories else None,
+        "frozen_multimodal_metadata_projection": args.frozen_multimodal_metadata_projection,
+        "frozen_multimodal_metadata_projection_categories": sorted(multimodal_metadata_projection_categories) if multimodal_metadata_projection_categories else None,
         "frozen_gold_object_coverage_telemetry": args.frozen_gold_object_coverage_telemetry,
         "frozen_gold_object_coverage_telemetry_categories": sorted(gold_object_coverage_categories) if gold_object_coverage_categories else None,
         "frozen_entity_time_constrained_expansion": args.frozen_entity_time_constrained_expansion,

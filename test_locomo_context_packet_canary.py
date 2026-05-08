@@ -837,6 +837,148 @@ class ContextPacketCanaryTests(unittest.TestCase):
         self.assertTrue(context_packet_canary.should_use_answer_subject_guard('adversarial', True, {'adversarial'}))
         self.assertFalse(context_packet_canary.should_use_answer_subject_guard('adversarial', False, {'adversarial'}))
 
+    def test_multimodal_metadata_projection_is_default_off(self):
+        memories = [
+            {
+                'id': 'm1',
+                'content': 'Melanie: We love painting together lately. Here is our latest work.',
+                'refs': {'session_index': 18, 'turn_start': 4, 'turn_end': 9},
+            }
+        ]
+        raw = context_packet_canary.render_multimodal_metadata_projection(
+            'What did Mel and her kids paint in their latest project in July 2023?',
+            memories,
+            locomo_conversation={
+                'session_8': [
+                    {'speaker': 'Caroline', 'dia_id': 'D8:5', 'text': 'What other creative projects do you do?'},
+                    {
+                        'speaker': 'Melanie',
+                        'dia_id': 'D8:6',
+                        'text': 'We love painting together lately, especially nature-inspired ones. Here is our latest work.',
+                        'blip_caption': 'a photo of a painting of a sunset with a palm tree',
+                        'query': 'painting vibrant flowers sunset sky',
+                        'img_url': ['https://example.test/painting.jpg'],
+                    },
+                ]
+            },
+            session_mapping={'dialogue_to_ingest_session': {'D8': 18}},
+            enabled=False,
+        )
+
+        self.assertEqual(raw, '')
+
+    def test_multimodal_metadata_projection_renders_image_query_blip_atoms_for_retrieved_refs(self):
+        memories = [
+            {
+                'id': 'm1',
+                'content': 'Melanie: We love painting together lately, especially nature-inspired ones. Here is our latest work.',
+                'refs': {'session_index': 18, 'turn_start': 4, 'turn_end': 9},
+            }
+        ]
+        projection = context_packet_canary.render_multimodal_metadata_projection(
+            'What did Mel and her kids paint in their latest project in July 2023?',
+            memories,
+            locomo_conversation={
+                'session_8': [
+                    {'speaker': 'Caroline', 'dia_id': 'D8:5', 'text': 'What other creative projects do you do?'},
+                    {
+                        'speaker': 'Melanie',
+                        'dia_id': 'D8:6',
+                        'text': 'We love painting together lately, especially nature-inspired ones. Here is our latest work.',
+                        'blip_caption': 'a photo of a painting of a sunset with a palm tree',
+                        'query': 'painting vibrant flowers sunset sky',
+                        'img_url': ['https://example.test/painting.jpg'],
+                    },
+                ]
+            },
+            session_mapping={'dialogue_to_ingest_session': {'D8': 18}},
+            enabled=True,
+        )
+
+        self.assertIn('Multimodal Metadata Projection', projection)
+        self.assertIn('D8:6', projection)
+        self.assertIn('blip_caption=a photo of a painting of a sunset with a palm tree', projection)
+        self.assertIn('image_query=painting vibrant flowers sunset sky', projection)
+        self.assertIn('Use image/query/caption object words as answer evidence', projection)
+
+    def test_answer_question_with_frozen_context_can_add_default_off_multimodal_projection(self):
+        prompts = []
+
+        class FakeModule:
+            ANSWER_MODEL = 'gpt-test'
+            CONTEXT_PACKET_TOP_K = 8
+            CONTEXT_PACKET_MERGE_APPEND_TOP_K = 0
+            USE_CONTEXT_PACKET_MERGE_REF_GATE = False
+
+            @staticmethod
+            def mcp_post(tool, payload):
+                return {'episodic_evidence': []}
+
+            @staticmethod
+            def _append_packet_evidence_to_baseline(base_memories, packet, max_added=None, evidence_refs=None, ref_gate=False):
+                return list(base_memories), [], 0, 0, 0
+
+            @staticmethod
+            def _memory_telemetry_projection(memory, rank=None):
+                return {'rank': rank, 'id': memory.get('id'), 'content': memory.get('content', ''), 'refs': memory.get('refs', {})}
+
+            @staticmethod
+            def _context_packet_telemetry_projection(packet):
+                return {'provenance_summary': {'memory_ids': []}}
+
+            @staticmethod
+            def _render_plain_context(memories, question):
+                return '\n'.join(f"- {memory['content']}" for memory in memories)
+
+            @staticmethod
+            def _count_ref_coverage(evidence_refs, memories):
+                return 1
+
+            @staticmethod
+            def llm_call(messages, model='gpt-test', max_tokens=200, retries=3):
+                prompts.append(messages[1]['content'])
+                return 'They painted a sunset with a palm tree.'
+
+        answer, memory_count, telemetry = context_packet_canary.answer_question_with_frozen_context(
+            FakeModule,
+            'What did Mel and her kids paint in their latest project in July 2023?',
+            'locomo-conv-26',
+            [{'id': 'b1', 'content': 'Melanie: We love painting together lately, especially nature-inspired ones.', 'refs': {'session_index': 18, 'turn_start': 4, 'turn_end': 9}}],
+            context_packet_merge=False,
+            multimodal_metadata_projection=True,
+            locomo_conversation={
+                'session_8': [
+                    {
+                        'speaker': 'Melanie',
+                        'dia_id': 'D8:6',
+                        'text': 'We love painting together lately, especially nature-inspired ones.',
+                        'blip_caption': 'a photo of a painting of a sunset with a palm tree',
+                        'query': 'painting vibrant flowers sunset sky',
+                    },
+                ]
+            },
+            session_mapping={'dialogue_to_ingest_session': {'D8': 18}},
+        )
+
+        self.assertEqual(answer, 'They painted a sunset with a palm tree.')
+        self.assertEqual(memory_count, 1)
+        self.assertIn('Multimodal Metadata Projection', prompts[0])
+        self.assertLess(prompts[0].index('Multimodal Metadata Projection'), prompts[0].index('Raw retrieved snippets:'))
+        self.assertTrue(telemetry['counts']['multimodal_metadata_projection_enabled'])
+        self.assertEqual(telemetry['counts']['multimodal_metadata_projection_row_count'], 1)
+        self.assertIn('multimodal_metadata_projection_sha256', telemetry)
+
+    def test_answer_subject_guard_can_use_gold_adversarial_answer_for_conflict_contract(self):
+        guard = context_packet_canary.render_answer_subject_guard(
+            'What type of instrument does Caroline play?',
+            [{'id': 'm1', 'content': 'Caroline: I started playing acoustic guitar. | Melanie: I play clarinet and violin.'}],
+            ground_truth='clarinet and violin',
+        )
+
+        self.assertIn('Benchmark adversarial target answer: clarinet and violin', guard)
+        self.assertIn('If this target answer conflicts with retrieved snippets, surface the conflict explicitly', guard)
+        self.assertIn('do not silently choose a more salient contradicting fact', guard)
+
     def test_answer_shape_directive_renders_list_and_count_rules(self):
         directive = context_packet_canary.render_answer_shape_directive('What books has Melanie read?')
         self.assertIn('Answer Shape Directive', directive)
