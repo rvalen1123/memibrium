@@ -144,3 +144,33 @@ Additional preregistration files:
 - `docs/eval/results/locomo_answer_side_crossconv_prereg_25rows_2026-05-08.json`
 - `docs/eval/results/locomo_answer_side_crossconv_prereg_conv-44_2026-05-08.json`
 - `docs/eval/results/locomo_answer_side_crossconv_prereg_conv-41_2026-05-08.json`
+
+## Handoff closeout
+
+Repository state at closeout:
+
+- Branch: `query-expansion`.
+- Latest pushed result commit before this handoff note: `a804547 eval: add LOCOMO cross-conversation answer gate`.
+- The cross-conversation gate doc, preregistration files, runner/test changes, and final `20260508T023558Z` / `20260508T023704Z` artifacts were committed and pushed in `a804547`.
+- Verification for that commit passed: `python3 -m unittest -q test_locomo_context_packet_canary.py` (`48` tests OK), `py_compile` for runner/tests/benchmark, `git diff --check`, per-conversation identity preflights, and redaction sanity over final summaries.
+- Current intentionally untracked items remain outside the evidence package: `docs/reference/` plus older/exploratory canary artifacts, including `20260505T111609Z`, `20260508T014920Z`, `20260508T015059Z`, `20260508T020434Z`, `20260508T023155Z`, and `20260508T023359Z` artifact families.
+
+Current locked candidate for any future preregistered 199Q preparation:
+
+- answer-shape directive scoped to `multi-hop,temporal`;
+- multimodal metadata projection scoped to `single-hop,unanswerable`;
+- no subject guard;
+- preserve frozen/artifact-pinned comparability where possible;
+- predeclare thresholds and rollback criteria before execution.
+
+Blocked without separate explicit approval:
+
+- full 199Q LOCOMO;
+- cumulative benchmark;
+- DB/Docker/runtime mutation;
+- direct `/mcp/tools` curl inspection;
+- touching or committing `docs/reference/`.
+
+Copy/paste bottom line:
+
+> On frozen 25-row diagnostics, answer-shape directives show generation-side sensitivity with flat gold-hit, same-conversation off-slice support, and a hash-selected cross-conversation gate that cleared the multi-hop watchpoint but was heterogeneous. This supports preparing a preregistered 199Q candidate if explicitly approved; it is not a benchmark claim.
