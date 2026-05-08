@@ -108,9 +108,18 @@ Under-listing audit:
 - `conv-41` row 168 (adversarial): gold list; both returned salads, sandwiches, homemade desserts.
 - Row-53-class under-listing failures by the predeclared definition: `0`.
 
-## Interpretation
+## Historical judge caveat
 
-This gate is mixed, and it should be treated as a diagnostic result only.
+The final cross-conversation artifacts record `ANSWER_MODEL=gpt-4.1-mini`, `JUDGE_MODEL=gpt-4.1-mini`, and `CHAT_MODEL=gpt-4.1-mini` under the Sector 7 Azure/Foundry chat stack.
+
+Implication:
+
+- This gate is internally comparable to the surrounding Memibrium LOCOMO diagnostic history that used the same judge family.
+- It is not directly comparable to published/default GPT-4o-class benchmark numbers.
+- The planned LongMemEval transition uses a separate judge pin: Azure AI Foundry `gpt-4o`, version `2024-11-20`, deployment/model `gpt-4o`, via `https://sector-7.services.ai.azure.com/models`.
+- Do not treat the LOCOMO diagnostic series and future GPT-4o-judged LongMemEval series as one continuous score curve.
+
+## Interpretation
 
 What it supports:
 
