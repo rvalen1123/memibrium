@@ -45,6 +45,33 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 ],
                 'answer_session_ids': ['sess_multi_1', 'sess_multi_2'],
             },
+            {
+                'question_id': 'pref_1',
+                'question_type': 'single-session-preference',
+                'question': 'Can you recommend weekend events?',
+                'answer': 'The user prefers Spanish and French language-practice cultural events.',
+                'question_date': '2023/06/18 (Sun) 03:13',
+                'haystack_dates': ['2023/05/23 (Tue) 12:00'],
+                'haystack_session_ids': ['sess_pref_1'],
+                'haystack_sessions': [[
+                    {'role': 'user', 'content': 'I like cultural events where I can practice Spanish and French.', 'has_answer': True},
+                ]],
+                'answer_session_ids': ['sess_pref_1'],
+            },
+            {
+                'question_id': 'temp_1',
+                'question_type': 'temporal-reasoning',
+                'question': 'How many days after Monday was the event?',
+                'answer': '3 days',
+                'question_date': '2023/06/19 (Mon) 03:13',
+                'haystack_dates': ['2023/05/01 (Mon) 09:00', '2023/05/04 (Thu) 09:00'],
+                'haystack_session_ids': ['sess_temp_1', 'sess_temp_2'],
+                'haystack_sessions': [
+                    [{'role': 'user', 'content': 'I finished the book on Monday.', 'has_answer': True}],
+                    [{'role': 'user', 'content': 'I attended the related event on Thursday.', 'has_answer': True}],
+                ],
+                'answer_session_ids': ['sess_temp_1', 'sess_temp_2'],
+            },
         ]
 
     def make_selection(self, rows=None):
@@ -54,7 +81,14 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             'source_file': 'longmemeval_oracle.json',
             'hf_revision': longmem_canary.EXPECTED_HF_REVISION,
             'source_sha256': longmem_canary.EXPECTED_ORACLE_SHA256,
-            'counts': {'total': len(rows), 'abstention': 1, 'by_question_type': {'knowledge-update': 1, 'multi-session': 1}},
+            'counts': {
+                'total': len(rows),
+                'abstention': sum(1 for row in rows if row['question_id'].endswith('_abs')),
+                'by_question_type': {
+                    qtype: sum(1 for row in rows if row['question_type'] == qtype)
+                    for qtype in sorted({row['question_type'] for row in rows})
+                },
+            },
             'rows': [
                 {
                     'question_id': row['question_id'],
@@ -68,7 +102,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         }
 
     def test_validate_selection_requires_unique_rows_and_dataset_hash(self):
-        dataset = self.sample_rows()
+        dataset = self.sample_rows()[:2]
         selection = self.make_selection(dataset)
 
         proof = longmem_canary.validate_selection(dataset, selection, dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256)
@@ -99,8 +133,54 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertNotIn('Answer with the exact items', baseline['prompt'])
         self.assertEqual(treatment['metadata_projection'], 'no-op')
 
-    def test_prepare_predictions_requires_placeholder_mode_without_explicit_launch(self):
+    def test_category_contract_prompts_are_category_specific_without_changing_evidence(self):
+        rows = {row['question_type']: row for row in self.sample_rows()}
+
+        preference = longmem_canary.build_oracle_prompt(rows['single-session-preference'], condition='category_contract_v1')
+        preference_baseline = longmem_canary.build_oracle_prompt(rows['single-session-preference'], condition='baseline')
+        knowledge = longmem_canary.build_oracle_prompt(rows['knowledge-update'], condition='category_contract_v1')
+        multi = longmem_canary.build_oracle_prompt(rows['multi-session'], condition='category_contract_v1')
+        temporal = longmem_canary.build_oracle_prompt(rows['temporal-reasoning'], condition='category_contract_v1')
+
+        self.assertEqual(preference['evidence_hash'], preference_baseline['evidence_hash'])
+        self.assertEqual(preference['condition'], 'category_contract_v1')
+        self.assertIn('recommender/advisor', preference['prompt'])
+        self.assertIn('personalized suggestions', preference['prompt'])
+        self.assertNotIn('merely because no concrete local events', preference_baseline['prompt'])
+        self.assertIn('latest matching fact', knowledge['prompt'])
+        self.assertIn('Do not substitute adjacent entities', knowledge['prompt'])
+        self.assertIn('combine all relevant evidence items', multi['prompt'])
+        self.assertIn('Use dates in the evidence', temporal['prompt'])
+        self.assertNotIn('Answer with the exact items, counts, names, or dates requested', multi['prompt'])
+
+    def test_prepare_category_contract_writes_placeholder_and_prompt_metadata_without_chat_calls(self):
         rows = self.sample_rows()
+        selection = self.make_selection(rows)
+
+        def forbidden_chat(*args, **kwargs):
+            raise AssertionError('prep mode must not call chat')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            result = longmem_canary.prepare_oracle_canary(
+                rows,
+                selection,
+                out_dir,
+                allow_answer_generation=False,
+                condition='category_contract_v1',
+                chat_fn=forbidden_chat,
+            )
+            metadata = json.loads((out_dir / 'longmemeval_oracle_canary_preparation_metadata.json').read_text())
+            treatment_lines = (out_dir / 'longmemeval_oracle_canary_category_contract_v1_placeholder.jsonl').read_text().splitlines()
+
+        self.assertEqual(result['mode'], 'preparation_only_no_answer_generation')
+        self.assertEqual(result['condition'], 'category_contract_v1')
+        self.assertEqual(metadata['condition'], 'category_contract_v1')
+        self.assertEqual(metadata['candidate_prompts'][0]['condition'], 'category_contract_v1')
+        self.assertEqual(json.loads(treatment_lines[0]), {'question_id': 'ku_abs', 'hypothesis': ''})
+
+    def test_prepare_predictions_requires_placeholder_mode_without_explicit_launch(self):
+        rows = self.sample_rows()[:2]
         selection = self.make_selection(rows)
         with tempfile.TemporaryDirectory() as tmp:
             out_dir = Path(tmp)
@@ -115,7 +195,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(json.loads(treatment_lines[0]), {'question_id': 'ku_abs', 'hypothesis': ''})
 
     def test_prepare_oracle_canary_scored_launch_writes_predictions_evals_and_summary(self):
-        rows = self.sample_rows()
+        rows = self.sample_rows()[:2]
         selection = self.make_selection(rows)
         calls = []
 

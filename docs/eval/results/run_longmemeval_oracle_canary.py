@@ -31,6 +31,8 @@ EXPECTED_ORACLE_SHA256 = "821a2034d219ab45846873dd14c14f12cfe7776e73527a483f9dac
 EXPECTED_SELECTION_SEED = "memibrium-longmemeval-oracle-canary-2026-05-08-v1"
 RUN_ID = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 ANSWER_SHAPE_TYPES = {"multi-session", "temporal-reasoning"}
+DEFAULT_CANDIDATE_CONDITION = "locked_answer_shape"
+SUPPORTED_CANDIDATE_CONDITIONS = {"locked_answer_shape", "category_contract_v1"}
 
 
 def sha256_text(text: str) -> str:
@@ -305,7 +307,23 @@ def render_evidence(row: dict[str, Any]) -> tuple[str, str]:
     return evidence_text, sha256_text(evidence_text)
 
 
-def build_oracle_prompt(row: dict[str, Any], *, treatment: bool) -> dict[str, Any]:
+def build_oracle_prompt(
+    row: dict[str, Any],
+    *,
+    treatment: bool | None = None,
+    condition: str | None = None,
+) -> dict[str, Any]:
+    if condition is None:
+        condition = "locked_answer_shape" if treatment else "baseline"
+    if condition == "baseline":
+        treatment = False
+    elif condition == "locked_answer_shape":
+        treatment = True
+    elif condition == "category_contract_v1":
+        treatment = False
+    else:
+        raise ValueError(f"unsupported_prompt_condition:{condition}")
+
     evidence_text, evidence_hash = render_evidence(row)
     qtype = row.get("question_type", "")
     directives = [
@@ -313,14 +331,34 @@ def build_oracle_prompt(row: dict[str, Any], *, treatment: bool) -> dict[str, An
         "If the evidence is insufficient, say the information provided is not enough.",
         "Answer concisely and do not invent facts.",
     ]
-    if treatment and qtype in ANSWER_SHAPE_TYPES:
-        directives.append(
-            "Answer with the exact items, counts, names, or dates requested; include all required parts rather than a partial subset."
-        )
-    if treatment and qtype == "knowledge-update":
-        directives.append("Prefer the latest updated fact when the evidence contains stale and newer information.")
-    if treatment and str(row.get("question_id", "")).endswith("_abs"):
-        directives.append("For unanswerable questions, explicitly state that the evidence is insufficient.")
+    if condition == "locked_answer_shape":
+        if qtype in ANSWER_SHAPE_TYPES:
+            directives.append(
+                "Answer with the exact items, counts, names, or dates requested; include all required parts rather than a partial subset."
+            )
+        if qtype == "knowledge-update":
+            directives.append("Prefer the latest updated fact when the evidence contains stale and newer information.")
+        if str(row.get("question_id", "")).endswith("_abs"):
+            directives.append("For unanswerable questions, explicitly state that the evidence is insufficient.")
+    elif condition == "category_contract_v1":
+        if qtype == "single-session-preference":
+            directives.extend([
+                "Use recommender/advisor mode: provide helpful personalized suggestions grounded in the oracle evidence.",
+                "Do not say the information provided is not enough merely because no concrete local events, venues, products, or schedules are present; use remembered preferences to shape the recommendation.",
+            ])
+        elif qtype == "knowledge-update":
+            directives.extend([
+                "Use the latest matching fact when stale and newer evidence describe the same asked entity and attribute.",
+                "Do not substitute adjacent entities; if the asked entity or attribute is absent, state that the evidence is insufficient.",
+            ])
+        elif qtype == "multi-session":
+            directives.append(
+                "For numeric or list questions, combine all relevant evidence items across sessions and avoid partial subsets."
+            )
+        elif qtype == "temporal-reasoning":
+            directives.append(
+                "Use dates in the evidence for temporal arithmetic; return the supported duration, date, or activity when the evidence supports it."
+            )
 
     prompt = "\n".join([
         "LongMemEval oracle answer task.",
@@ -342,6 +380,7 @@ def build_oracle_prompt(row: dict[str, Any], *, treatment: bool) -> dict[str, An
         "evidence_session_ids": list(row.get("haystack_session_ids") or []),
         "answer_session_ids": list(row.get("answer_session_ids") or []),
         "evidence_hash": evidence_hash,
+        "condition": condition,
         "prompt": prompt,
         "prompt_sha256": sha256_text(prompt),
         "metadata_projection": "no-op",
@@ -359,13 +398,16 @@ def prepare_oracle_canary(
     answer_model: str = "gpt-4o",
     judge_model: str = "gpt-4o",
     endpoint_metadata: dict[str, Any] | None = None,
+    condition: str = DEFAULT_CANDIDATE_CONDITION,
 ) -> dict[str, Any]:
+    if condition not in SUPPORTED_CANDIDATE_CONDITIONS:
+        raise ValueError(f"unsupported_candidate_condition:{condition}")
     proof = validate_selection(dataset, selection, dataset_sha256=dataset_sha256)
     by_id = {entry["question_id"]: entry for entry in dataset}
     selected_rows = [by_id[row["question_id"]] for row in selection["rows"]]
 
-    baseline_prompts = [build_oracle_prompt(row, treatment=False) for row in selected_rows]
-    treatment_prompts = [build_oracle_prompt(row, treatment=True) for row in selected_rows]
+    baseline_prompts = [build_oracle_prompt(row, condition="baseline") for row in selected_rows]
+    treatment_prompts = [build_oracle_prompt(row, condition=condition) for row in selected_rows]
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if allow_answer_generation:
@@ -391,6 +433,7 @@ def prepare_oracle_canary(
         write_jsonl(treatment_eval_path, treatment_evals)
         summary = {
             "mode": "scored_oracle_canary",
+            "condition": condition,
             "row_count": proof["row_count"],
             "baseline": baseline_summary,
             "treatment": treatment_summary,
@@ -400,6 +443,7 @@ def prepare_oracle_canary(
         }
         metadata = {
             "mode": "scored_oracle_canary",
+            "condition": condition,
             "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
             "selection_proof": proof,
             "baseline_prediction_file": str(baseline_path),
@@ -421,6 +465,7 @@ def prepare_oracle_canary(
         write_json(metadata_path, metadata)
         return {
             "mode": "scored_oracle_canary",
+            "condition": condition,
             "row_count": proof["row_count"],
             "baseline_prediction_file": str(baseline_path),
             "treatment_prediction_file": str(treatment_path),
@@ -435,19 +480,22 @@ def prepare_oracle_canary(
     baseline_jsonl = [{"question_id": item["question_id"], "hypothesis": ""} for item in baseline_prompts]
     treatment_jsonl = [{"question_id": item["question_id"], "hypothesis": ""} for item in treatment_prompts]
 
+    treatment_label = "treatment" if condition == DEFAULT_CANDIDATE_CONDITION else condition
     baseline_path = out_dir / "longmemeval_oracle_canary_baseline_placeholder.jsonl"
-    treatment_path = out_dir / "longmemeval_oracle_canary_treatment_placeholder.jsonl"
+    treatment_path = out_dir / f"longmemeval_oracle_canary_{treatment_label}_placeholder.jsonl"
     metadata_path = out_dir / "longmemeval_oracle_canary_preparation_metadata.json"
     write_jsonl(baseline_path, baseline_jsonl)
     write_jsonl(treatment_path, treatment_jsonl)
     metadata = {
         "mode": "preparation_only_no_answer_generation",
+        "condition": condition,
         "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "selection_proof": proof,
         "baseline_prediction_file": str(baseline_path),
         "treatment_prediction_file": str(treatment_path),
         "baseline_prompts": baseline_prompts,
         "treatment_prompts": treatment_prompts,
+        "candidate_prompts": treatment_prompts,
         "judge_target": {
             "provider": "Azure AI Foundry Sector 7",
             "model": "gpt-4o",
@@ -464,6 +512,7 @@ def prepare_oracle_canary(
     write_json(metadata_path, metadata)
     return {
         "mode": "preparation_only_no_answer_generation",
+        "condition": condition,
         "row_count": proof["row_count"],
         "baseline_prediction_file": str(baseline_path),
         "treatment_prediction_file": str(treatment_path),
@@ -481,6 +530,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--judge-model", default=os.environ.get("JUDGE_MODEL", "gpt-4o"))
     parser.add_argument("--dotenv", type=Path, default=ROOT / ".env", help="Load non-exported env vars from this .env without printing secrets.")
     parser.add_argument("--preflight-only", action="store_true", help="Validate dataset/selection/env and run one tiny chat call, then exit.")
+    parser.add_argument("--condition", choices=sorted(SUPPORTED_CANDIDATE_CONDITIONS), default=DEFAULT_CANDIDATE_CONDITION, help="Candidate prompt condition for the non-baseline arm.")
     return parser.parse_args()
 
 
@@ -499,6 +549,7 @@ def main() -> None:
             "selection_rows": len(selection.get("rows") or []),
             "answer_model": args.answer_model,
             "judge_model": args.judge_model,
+            "condition": args.condition,
             "endpoint_metadata": endpoint_metadata(os.environ.get("AZURE_CHAT_ENDPOINT", "")),
         }, indent=2))
         return
@@ -511,6 +562,7 @@ def main() -> None:
         answer_model=args.answer_model,
         judge_model=args.judge_model,
         endpoint_metadata=endpoint_metadata(os.environ.get("AZURE_CHAT_ENDPOINT", "")),
+        condition=args.condition,
     )
     print(json.dumps(result, indent=2))
 
