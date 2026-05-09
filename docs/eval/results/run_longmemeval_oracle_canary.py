@@ -1245,6 +1245,234 @@ def prepare_retrieval_bridge_canary(
     }
 
 
+def _selected_rows_from_selection(dataset: list[dict[str, Any]], selection: dict[str, Any]) -> list[dict[str, Any]]:
+    by_id = {entry["question_id"]: entry for entry in dataset}
+    return [by_id[row["question_id"]] for row in selection["rows"]]
+
+
+def _source_session_ids(selected_rows: list[dict[str, Any]]) -> list[Any]:
+    return unique_ordered([
+        session_id
+        for row in selected_rows
+        for session_id in (row.get("haystack_session_ids") or [])
+    ])
+
+
+def _answer_session_ids(selected_rows: list[dict[str, Any]]) -> list[Any]:
+    return unique_ordered([
+        session_id
+        for row in selected_rows
+        for session_id in (row.get("answer_session_ids") or [])
+    ])
+
+
+def build_retrieval_bridge_ingest_manifest(
+    dataset: list[dict[str, Any]],
+    selection: dict[str, Any],
+    *,
+    dataset_sha256: str = EXPECTED_ORACLE_SHA256,
+) -> dict[str, Any]:
+    if selection.get("seed") != SECOND_SLICE_SELECTION_SEED:
+        raise ValueError("retrieval_bridge_requires_second_slice_seed")
+    proof = validate_selection(dataset, selection, dataset_sha256=dataset_sha256)
+    selected_rows = _selected_rows_from_selection(dataset, selection)
+    planned_by_ref: dict[str, dict[str, Any]] = {}
+    for row in selected_rows:
+        qid = row["question_id"]
+        sessions = row.get("haystack_sessions") or []
+        session_ids = row.get("haystack_session_ids") or []
+        dates = row.get("haystack_dates") or []
+        for session_index, session in enumerate(sessions):
+            session_id = session_ids[session_index] if session_index < len(session_ids) else f"session_{session_index + 1}"
+            session_date = dates[session_index] if session_index < len(dates) else None
+            for turn_index, turn in enumerate(session, start=1):
+                role = turn.get("role", "unknown")
+                source_ref = f"{session_id}:turn_{turn_index}:{role}"
+                item = planned_by_ref.setdefault(source_ref, {
+                    "source_ref": source_ref,
+                    "content": turn.get("content", ""),
+                    "metadata": {
+                        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+                        "source_dataset": "longmemeval_oracle_cleaned_pin",
+                        "session_id": session_id,
+                        "session_date": session_date,
+                        "turn_index": turn_index,
+                        "role": role,
+                        "has_answer": bool(turn.get("has_answer")),
+                        "question_ids": [],
+                    },
+                })
+                if qid not in item["metadata"]["question_ids"]:
+                    item["metadata"]["question_ids"].append(qid)
+    planned_memories = list(planned_by_ref.values())
+    return {
+        "mode": "retrieval_bridge_phase_a_ingest_manifest",
+        "dataset_sha256": dataset_sha256,
+        "hf_revision": EXPECTED_HF_REVISION,
+        "selection_sha256": RETRIEVAL_BRIDGE_SELECTION_SHA256,
+        "selection_proof": proof,
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "condition": RETRIEVAL_BRIDGE_CONDITION,
+        "selected_question_ids": [row["question_id"] for row in selected_rows],
+        "source_session_ids": _source_session_ids(selected_rows),
+        "answer_session_ids": _answer_session_ids(selected_rows),
+        "planned_memory_count": len(planned_memories),
+        "planned_memories": planned_memories,
+        "memory_ids_created": [],
+        "created_memory_ids": [],
+        "ingest_status": "planned_no_db_writes",
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+    }
+
+
+def run_retrieval_bridge_phase_a(
+    dataset: list[dict[str, Any]],
+    selection: dict[str, Any],
+    out_dir: Path,
+    *,
+    allow_db_writes: bool = False,
+    allow_runtime_retrieval: bool = False,
+    allow_cleanup_deletes: bool = False,
+    allow_answer_generation: bool = False,
+    allow_judge_calls: bool = False,
+    dataset_sha256: str = EXPECTED_ORACLE_SHA256,
+    ingest_fn: Callable[..., list[str]] | None = None,
+    retrieval_fn: Callable[..., dict[str, Any]] | None = None,
+    cleanup_fn: Callable[..., dict[str, Any]] | None = None,
+    chat_fn: Callable[..., str] | None = None,
+) -> dict[str, Any]:
+    del chat_fn  # Phase A must never call answer or judge models.
+    if allow_answer_generation or allow_judge_calls:
+        raise ValueError("retrieval_bridge_phase_a_disallows_answer_or_judge_calls")
+    if not (allow_db_writes and allow_runtime_retrieval and allow_cleanup_deletes):
+        raise ValueError("retrieval_bridge_phase_a_requires_explicit_side_effect_approval")
+    if ingest_fn is None or retrieval_fn is None or cleanup_fn is None:
+        raise ValueError("retrieval_bridge_phase_a_requires_injected_runtime_functions")
+
+    manifest = build_retrieval_bridge_ingest_manifest(dataset, selection, dataset_sha256=dataset_sha256)
+    selected_rows = _selected_rows_from_selection(dataset, selection)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    created_memory_ids = ingest_fn(manifest["planned_memories"], domain=RETRIEVAL_BRIDGE_DOMAIN)
+    manifest["memory_ids_created"] = list(created_memory_ids)
+    manifest["created_memory_ids"] = list(created_memory_ids)
+    manifest["ingest_status"] = "completed_with_injected_ingest_fn"
+    write_json(out_dir / "ingest_manifest.json", manifest)
+
+    retrieval_rows = []
+    coverage_rows = []
+    for row in selected_rows:
+        qid = row["question_id"]
+        try:
+            retrieved = retrieval_fn(row, domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=list(created_memory_ids))
+            coverage_class = retrieved.get("coverage_class")
+            retrieval_row = {
+                "question_id": qid,
+                "question_type": row.get("question_type", ""),
+                "question": row.get("question", ""),
+                "query_variants": retrieved.get("query_variants", [row.get("question", "")]),
+                "retrieved_memory_ids": retrieved.get("retrieved_memory_ids", []),
+                "scores": retrieved.get("scores", []),
+                "source_refs": retrieved.get("source_refs", []),
+                "evidence_snippets": retrieved.get("evidence_snippets", []),
+                "timestamp_source_metadata": retrieved.get("timestamp_source_metadata", []),
+                "fallback_error_flags": retrieved.get("fallback_error_flags", []),
+                "coverage_class": coverage_class,
+                "retrieval_status": retrieved.get("retrieval_status", "ok"),
+            }
+        except Exception as exc:  # pragma: no cover - exercised by future live failures
+            retrieval_row = {
+                "question_id": qid,
+                "question_type": row.get("question_type", ""),
+                "question": row.get("question", ""),
+                "query_variants": [row.get("question", "")],
+                "retrieved_memory_ids": [],
+                "scores": [],
+                "source_refs": [],
+                "evidence_snippets": [],
+                "timestamp_source_metadata": [],
+                "fallback_error_flags": [str(exc)],
+                "coverage_class": "unsupported",
+                "retrieval_status": "runtime_exception",
+            }
+        retrieval_rows.append(retrieval_row)
+        coverage_rows.append({
+            "question_id": qid,
+            "question_type": row.get("question_type", ""),
+            "coverage_class": retrieval_row["coverage_class"],
+            "gold_supporting_evidence_present": retrieval_row.get("source_refs", []),
+            "gold_supporting_evidence_missing": [],
+            "stale_conflicting_evidence_present": [],
+            "source_refs": retrieval_row.get("source_refs", []),
+            "classification_notes": "coverage supplied by injected retrieval function for Phase A scaffold",
+        })
+
+    write_jsonl(out_dir / "retrieval_results.jsonl", retrieval_rows)
+    coverage_audit = {
+        "mode": "retrieval_bridge_phase_a_coverage_audit",
+        "coverage_status": "evaluated_artifact_only",
+        "phase_a_gates": RETRIEVAL_BRIDGE_PHASE_A_GATES,
+        "coverage_classes": sorted(RETRIEVAL_COVERAGE_CLASSES),
+        "rows": coverage_rows,
+    }
+    write_json(out_dir / "retrieval_coverage_audit.json", coverage_audit)
+
+    phase_a_report = evaluate_retrieval_bridge_phase_a_gates(selected_rows, retrieval_rows)
+    phase_a_report.update({
+        "selection_proof": manifest["selection_proof"],
+        "condition": RETRIEVAL_BRIDGE_CONDITION,
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "selection_sha256": RETRIEVAL_BRIDGE_SELECTION_SHA256,
+        "input_files": {"retrieval_results_file": str(out_dir / "retrieval_results.jsonl")},
+        "guardrails": [
+            "runtime functions injected by caller",
+            "no answer generation",
+            "no judge/model calls",
+            "no full LongMemEval _s/_m run",
+        ],
+    })
+    write_json(out_dir / "longmemeval_retrieval_bridge_phase_a_gate_report.json", phase_a_report)
+
+    cleanup_result = cleanup_fn(domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=list(created_memory_ids))
+    cleanup_report = {
+        "mode": "retrieval_bridge_phase_a_cleanup",
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "created_memory_count": len(created_memory_ids),
+        "deleted_memory_count": cleanup_result.get("deleted_memory_count", 0),
+        "final_domain_count_verified": cleanup_result.get("final_domain_count_verified"),
+        "linked_rows_deleted": cleanup_result.get("linked_rows_deleted", {}),
+        "cleanup_status": "complete" if cleanup_result.get("final_domain_count_verified") == 0 else "verification_failed",
+    }
+    write_json(out_dir / "cleanup_report.json", cleanup_report)
+
+    run_metadata = {
+        "mode": "retrieval_bridge_phase_a_runtime_scaffold",
+        "condition": RETRIEVAL_BRIDGE_CONDITION,
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "dataset_sha256": dataset_sha256,
+        "selection_sha256": RETRIEVAL_BRIDGE_SELECTION_SHA256,
+        "overall_pass": phase_a_report["gates"]["overall"]["pass"],
+        "phase_b_recommendation": phase_a_report["phase_b_recommendation"],
+        "communication_boundary": "retrieval coverage evidence only; no answer/product benchmark claim",
+        "guardrails": [
+            "no answer model calls",
+            "no judge calls",
+            "no full LongMemEval _s/_m run",
+            "no direct /mcp/tools inspection",
+        ],
+    }
+    write_json(out_dir / "run_metadata.json", run_metadata)
+    return {
+        "mode": "retrieval_bridge_phase_a_runtime_scaffold",
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "row_count": len(selected_rows),
+        "overall_pass": phase_a_report["gates"]["overall"]["pass"],
+        "phase_b_recommendation": phase_a_report["phase_b_recommendation"],
+        "phase_a_report_file": str(out_dir / "longmemeval_retrieval_bridge_phase_a_gate_report.json"),
+    }
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare or run LongMemEval oracle canary artifacts.")
     parser.add_argument("--dataset", type=Path, default=DEFAULT_DATASET_PATH)
@@ -1262,17 +1490,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--gate-report-file", type=Path, help="Output JSON report path for --offline-gate-report; defaults under --out-dir.")
     parser.add_argument("--prepare-retrieval-bridge", action="store_true", help="Prepare retrieval-coupled bridge Phase A placeholder artifacts only; no runtime/model/judge calls.")
     parser.add_argument("--retrieval-bridge-phase-a-report", action="store_true", help="Evaluate retrieval bridge Phase A gates from existing retrieval JSONL artifacts only; no runtime/model/judge calls.")
+    parser.add_argument("--run-retrieval-bridge-phase-a", action="store_true", help="Run Phase A scaffold with explicit side-effect approvals; requires runtime function wiring before live use.")
     parser.add_argument("--retrieval-results-file", type=Path, help="Existing retrieval results JSONL for --retrieval-bridge-phase-a-report.")
     parser.add_argument("--phase-a-report-file", type=Path, help="Output JSON report path for --retrieval-bridge-phase-a-report; defaults under --out-dir.")
-    parser.add_argument("--allow-runtime-retrieval", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation/reporting.")
+    parser.add_argument("--allow-db-writes", action="store_true", help="Explicit approval flag for namespaced DB ingest writes in Phase A scaffold.")
+    parser.add_argument("--allow-runtime-retrieval", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation/reporting unless --run-retrieval-bridge-phase-a is used.")
+    parser.add_argument("--allow-cleanup-deletes", action="store_true", help="Explicit approval flag for namespaced cleanup deletes in Phase A scaffold.")
     parser.add_argument("--allow-judge-calls", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation/reporting.")
     args = parser.parse_args(argv)
     if args.offline_gate_report and args.allow_answer_generation:
         parser.error("--offline-gate-report cannot be combined with --allow-answer-generation")
     if args.retrieval_bridge_phase_a_report and args.allow_answer_generation:
         parser.error("--retrieval-bridge-phase-a-report cannot be combined with --allow-answer-generation")
-    if args.retrieval_bridge_phase_a_report and (args.allow_runtime_retrieval or args.allow_judge_calls):
-        parser.error("--retrieval-bridge-phase-a-report cannot be combined with runtime, answer, or judge launch flags")
+    if args.retrieval_bridge_phase_a_report and (args.allow_runtime_retrieval or args.allow_judge_calls or args.allow_db_writes or args.allow_cleanup_deletes):
+        parser.error("--retrieval-bridge-phase-a-report cannot be combined with runtime, answer, judge, DB, or cleanup launch flags")
+    if args.run_retrieval_bridge_phase_a and (args.allow_answer_generation or args.allow_judge_calls):
+        parser.error("--run-retrieval-bridge-phase-a cannot be combined with answer or judge calls")
+    if args.run_retrieval_bridge_phase_a and (args.offline_gate_report or args.retrieval_bridge_phase_a_report or args.prepare_retrieval_bridge):
+        parser.error("--run-retrieval-bridge-phase-a cannot be combined with prep/report modes")
     if args.offline_gate_report and args.retrieval_bridge_phase_a_report:
         parser.error("--offline-gate-report cannot be combined with --retrieval-bridge-phase-a-report")
     if args.offline_gate_report and (args.baseline_eval_file is None or args.treatment_eval_file is None):

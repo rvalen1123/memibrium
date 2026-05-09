@@ -829,6 +829,165 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertFalse(args.allow_answer_generation)
         self.assertFalse(args.allow_judge_calls)
 
+    def test_build_retrieval_bridge_ingest_items_preserves_source_refs_and_domain(self):
+        rows = self.sample_rows()
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+
+        manifest = longmem_canary.build_retrieval_bridge_ingest_manifest(
+            rows,
+            selection,
+            dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256,
+        )
+
+        self.assertEqual(manifest['mode'], 'retrieval_bridge_phase_a_ingest_manifest')
+        self.assertEqual(manifest['domain'], 'longmemeval-bridge-v1-20260508-second-slice')
+        self.assertEqual(manifest['selected_question_ids'], ['ku_abs', 'multi_1', 'pref_1', 'temp_1'])
+        self.assertEqual(manifest['source_session_ids'], ['sess_abs_1', 'sess_multi_1', 'sess_multi_2', 'sess_pref_1', 'sess_temp_1', 'sess_temp_2'])
+        self.assertEqual(manifest['planned_memory_count'], 7)
+        first = manifest['planned_memories'][0]
+        self.assertEqual(first['source_ref'], 'sess_abs_1:turn_1:user')
+        self.assertEqual(first['metadata']['question_ids'], ['ku_abs'])
+        self.assertEqual(first['metadata']['domain'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+        self.assertEqual(manifest['memory_ids_created'], [])
+        self.assertEqual(manifest['ingest_status'], 'planned_no_db_writes')
+
+    def test_run_retrieval_bridge_phase_a_with_injected_fakes_writes_artifacts_and_stops_before_answers(self):
+        rows = [
+            dict(self.sample_rows()[0], question_id='ku_1', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='ku_2', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='ku_3', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='ku_4', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='ku_5', question_type='knowledge-update'),
+            dict(self.sample_rows()[2], question_id='pref_1', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_2', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_3', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_4', question_type='single-session-preference'),
+            dict(self.sample_rows()[0], question_id='abs_1_abs', question_type='multi-session'),
+            dict(self.sample_rows()[0], question_id='abs_2_abs', question_type='knowledge-update'),
+            dict(self.sample_rows()[0], question_id='abs_3_abs', question_type='single-session-user'),
+            dict(self.sample_rows()[0], question_id='abs_4_abs', question_type='temporal-reasoning'),
+        ]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        calls = []
+
+        coverage_by_qid = {
+            'ku_1': 'gold_supported',
+            'ku_2': 'gold_supported_with_conflict',
+            'ku_3': 'partial_support',
+            'ku_4': 'stale_only',
+            'ku_5': 'unsupported',
+            'pref_1': 'gold_supported',
+            'pref_2': 'gold_supported_with_conflict',
+            'pref_3': 'gold_supported',
+            'pref_4': 'partial_support',
+            'abs_1_abs': 'unanswerable_supported',
+            'abs_2_abs': 'unanswerable_contaminated',
+            'abs_3_abs': 'unanswerable_supported',
+            'abs_4_abs': 'unanswerable_supported',
+        }
+
+        def fake_ingest(planned_memories, *, domain):
+            calls.append(('ingest', len(planned_memories), domain))
+            return [f'mem_{index}' for index, _ in enumerate(planned_memories, start=1)]
+
+        def fake_retrieve(row, *, domain, memory_ids):
+            calls.append(('retrieve', row['question_id'], domain, len(memory_ids)))
+            coverage_class = coverage_by_qid[row['question_id']]
+            if coverage_class == 'unsupported':
+                return {
+                    'retrieved_memory_ids': [],
+                    'source_refs': [],
+                    'evidence_snippets': [],
+                    'coverage_class': coverage_class,
+                }
+            return {
+                'retrieved_memory_ids': [memory_ids[0]],
+                'source_refs': [f"{row['question_id']}:source"],
+                'evidence_snippets': [f"evidence for {row['question_id']}"],
+                'coverage_class': coverage_class,
+            }
+
+        def fake_cleanup(*, domain, memory_ids):
+            calls.append(('cleanup', len(memory_ids), domain))
+            return {'deleted_memory_count': len(memory_ids), 'final_domain_count_verified': 0, 'linked_rows_deleted': {}}
+
+        def forbidden_chat(*args, **kwargs):
+            raise AssertionError('Phase A must not call answer or judge models')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            result = longmem_canary.run_retrieval_bridge_phase_a(
+                rows,
+                selection,
+                out_dir,
+                allow_db_writes=True,
+                allow_runtime_retrieval=True,
+                allow_cleanup_deletes=True,
+                ingest_fn=fake_ingest,
+                retrieval_fn=fake_retrieve,
+                cleanup_fn=fake_cleanup,
+                chat_fn=forbidden_chat,
+                dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256,
+            )
+            manifest = json.loads((out_dir / 'ingest_manifest.json').read_text())
+            retrieval_rows = [json.loads(line) for line in (out_dir / 'retrieval_results.jsonl').read_text().splitlines()]
+            coverage_audit = json.loads((out_dir / 'retrieval_coverage_audit.json').read_text())
+            report = json.loads((out_dir / 'longmemeval_retrieval_bridge_phase_a_gate_report.json').read_text())
+            cleanup = json.loads((out_dir / 'cleanup_report.json').read_text())
+            metadata = json.loads((out_dir / 'run_metadata.json').read_text())
+
+        self.assertEqual(result['mode'], 'retrieval_bridge_phase_a_runtime_scaffold')
+        self.assertTrue(result['overall_pass'])
+        self.assertEqual(result['phase_b_recommendation'], 'phase_a_passed_answer_generation_still_requires_explicit_approval')
+        self.assertEqual(manifest['ingest_status'], 'completed_with_injected_ingest_fn')
+        self.assertEqual(len(manifest['memory_ids_created']), manifest['planned_memory_count'])
+        self.assertEqual(len(retrieval_rows), len(rows))
+        self.assertTrue(all(row['retrieval_status'] == 'ok' for row in retrieval_rows))
+        self.assertEqual(coverage_audit['coverage_status'], 'evaluated_artifact_only')
+        self.assertEqual(coverage_audit['rows'][0]['coverage_class'], 'gold_supported')
+        self.assertTrue(report['gates']['overall']['pass'])
+        self.assertEqual(cleanup['cleanup_status'], 'complete')
+        self.assertEqual(cleanup['final_domain_count_verified'], 0)
+        self.assertEqual(metadata['guardrails'], [
+            'no answer model calls',
+            'no judge calls',
+            'no full LongMemEval _s/_m run',
+            'no direct /mcp/tools inspection',
+        ])
+        self.assertIn(('ingest', manifest['planned_memory_count'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN), calls)
+        self.assertEqual(sum(1 for call in calls if call[0] == 'retrieve'), len(rows))
+        self.assertIn(('cleanup', manifest['planned_memory_count'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN), calls)
+
+    def test_run_retrieval_bridge_phase_a_requires_explicit_side_effect_scope_before_writing(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            with self.assertRaisesRegex(ValueError, 'retrieval_bridge_phase_a_requires_explicit_side_effect_approval'):
+                longmem_canary.run_retrieval_bridge_phase_a(rows, selection, out_dir)
+            self.assertEqual(list(out_dir.iterdir()), [])
+
+    def test_parse_args_supports_retrieval_bridge_phase_a_runtime_scaffold_but_keeps_models_off(self):
+        args = longmem_canary.parse_args([
+            '--run-retrieval-bridge-phase-a',
+            '--allow-db-writes',
+            '--allow-runtime-retrieval',
+            '--allow-cleanup-deletes',
+            '--out-dir', 'phase-a-out',
+        ])
+
+        self.assertTrue(args.run_retrieval_bridge_phase_a)
+        self.assertTrue(args.allow_db_writes)
+        self.assertTrue(args.allow_runtime_retrieval)
+        self.assertTrue(args.allow_cleanup_deletes)
+        self.assertFalse(args.allow_answer_generation)
+        self.assertFalse(args.allow_judge_calls)
+        self.assertEqual(args.out_dir, Path('phase-a-out'))
+
 
 if __name__ == '__main__':
     unittest.main()
