@@ -54,6 +54,31 @@ RETRIEVAL_BRIDGE_PHASE_A_GATES = {
     "abstention_contamination": "no more than 1/4 abstention rows may be unanswerable_contaminated",
     "evidence_identity": "every answerable row preserves source refs sufficient for artifact-only review",
 }
+RETRIEVAL_COVERAGE_CLASSES = {
+    "gold_supported",
+    "gold_supported_with_conflict",
+    "partial_support",
+    "stale_only",
+    "adjacent_entity_only",
+    "unsupported",
+    "unanswerable_supported",
+    "unanswerable_contaminated",
+}
+PREFERENCE_COVERAGE_PASS_CLASSES = {"gold_supported", "gold_supported_with_conflict"}
+KNOWLEDGE_UPDATE_COVERAGE_PASS_CLASSES = {
+    "gold_supported",
+    "gold_supported_with_conflict",
+    "partial_support",
+}
+RETRIEVAL_ROW_REQUIRED_FIELDS = {
+    "question_id",
+    "question_type",
+    "coverage_class",
+    "retrieval_status",
+    "retrieved_memory_ids",
+    "source_refs",
+    "fallback_error_flags",
+}
 RUN_ID = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 ANSWER_SHAPE_TYPES = {"multi-session", "temporal-reasoning"}
 DEFAULT_CANDIDATE_CONDITION = "locked_answer_shape"
@@ -828,6 +853,235 @@ def unique_ordered(values: list[Any]) -> list[Any]:
     return ordered
 
 
+def _required_retrieval_fields_missing(row: dict[str, Any]) -> list[str]:
+    return sorted(field for field in RETRIEVAL_ROW_REQUIRED_FIELDS if field not in row)
+
+
+def validate_retrieval_rows_for_selection(
+    selected_rows: list[dict[str, Any]],
+    retrieval_rows: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    duplicates = duplicate_question_ids(retrieval_rows)
+    if duplicates:
+        raise ValueError(f"duplicate_retrieval_rows:{','.join(duplicates)}")
+    selected_ids = [row["question_id"] for row in selected_rows]
+    retrieval_by_id = {row.get("question_id"): row for row in retrieval_rows}
+    extra = sorted(str(qid) for qid in set(retrieval_by_id) - set(selected_ids) if qid is not None)
+    if extra:
+        raise ValueError(f"unknown_retrieval_rows:{','.join(extra)}")
+    for row in retrieval_rows:
+        qid = row.get("question_id", "<missing_question_id>")
+        missing_fields = _required_retrieval_fields_missing(row)
+        if missing_fields:
+            raise ValueError(f"missing_retrieval_fields:{qid}:{','.join(missing_fields)}")
+        coverage_class = row.get("coverage_class")
+        if coverage_class is None and row.get("retrieval_status") == "not_run_runtime_not_authorized":
+            continue
+        if coverage_class not in RETRIEVAL_COVERAGE_CLASSES:
+            raise ValueError(f"invalid_coverage_class:{qid}")
+        source = next((item for item in selected_rows if item["question_id"] == qid), None)
+        if source is not None and row.get("question_type") != source.get("question_type"):
+            raise ValueError(f"retrieval_question_type_mismatch:{qid}")
+    return retrieval_by_id
+
+
+def _count_by_coverage_class(retrieval_rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {coverage_class: 0 for coverage_class in sorted(RETRIEVAL_COVERAGE_CLASSES)}
+    for row in retrieval_rows:
+        coverage_class = row.get("coverage_class")
+        if coverage_class in counts:
+            counts[coverage_class] += 1
+    return counts
+
+
+def evaluate_retrieval_bridge_phase_a_gates(
+    selected_rows: list[dict[str, Any]],
+    retrieval_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    retrieval_by_id = validate_retrieval_rows_for_selection(selected_rows, retrieval_rows)
+    selected_ids = [row["question_id"] for row in selected_rows]
+    missing_question_ids = sorted(set(selected_ids) - set(retrieval_by_id))
+    present_rows = [retrieval_by_id[qid] for qid in selected_ids if qid in retrieval_by_id]
+
+    incomplete_coverage_question_ids = sorted(
+        row["question_id"]
+        for row in present_rows
+        if row.get("coverage_class") is None
+    )
+    missing_required_field_question_ids = sorted(
+        row.get("question_id", "<missing_question_id>")
+        for row in retrieval_rows
+        if _required_retrieval_fields_missing(row)
+    )
+    completeness_pass = (
+        len(present_rows) == len(selected_rows)
+        and not missing_question_ids
+        and not incomplete_coverage_question_ids
+        and not missing_required_field_question_ids
+    )
+
+    error_rows = []
+    for row in present_rows:
+        retrieval_status = str(row.get("retrieval_status", ""))
+        fallback_error_flags = row.get("fallback_error_flags") or []
+        if retrieval_status != "ok" or fallback_error_flags:
+            error_rows.append({
+                "question_id": row["question_id"],
+                "retrieval_status": retrieval_status,
+                "fallback_error_flags": fallback_error_flags,
+            })
+
+    preference_rows = [row for row in selected_rows if row.get("question_type") == "single-session-preference"]
+    preference_supported = [
+        qid for qid in [row["question_id"] for row in preference_rows]
+        if qid in retrieval_by_id and retrieval_by_id[qid].get("coverage_class") in PREFERENCE_COVERAGE_PASS_CLASSES
+    ]
+    knowledge_rows = [row for row in selected_rows if row.get("question_type") == "knowledge-update"]
+    knowledge_adequate = [
+        qid for qid in [row["question_id"] for row in knowledge_rows]
+        if qid in retrieval_by_id and retrieval_by_id[qid].get("coverage_class") in KNOWLEDGE_UPDATE_COVERAGE_PASS_CLASSES
+    ]
+    stale_only_question_ids = [
+        qid for qid in [row["question_id"] for row in knowledge_rows]
+        if qid in retrieval_by_id and retrieval_by_id[qid].get("coverage_class") == "stale_only"
+    ]
+
+    abstention_rows = [row for row in selected_rows if str(row.get("question_id", "")).endswith("_abs")]
+    unanswerable_contaminated = [
+        qid for qid in [row["question_id"] for row in abstention_rows]
+        if qid in retrieval_by_id and retrieval_by_id[qid].get("coverage_class") == "unanswerable_contaminated"
+    ]
+
+    answerable_rows = [row for row in selected_rows if not str(row.get("question_id", "")).endswith("_abs")]
+    evidence_identity_missing = sorted(
+        qid for qid in [row["question_id"] for row in answerable_rows]
+        if (
+            qid in retrieval_by_id
+            and retrieval_by_id[qid].get("coverage_class") != "unsupported"
+            and not retrieval_by_id[qid].get("source_refs")
+        )
+    )
+    retrieval_artifact_missing = sorted(
+        row["question_id"]
+        for row in present_rows
+        if not row.get("retrieved_memory_ids") and row.get("coverage_class") not in {"unsupported"}
+    )
+
+    gates = {
+        "coverage_audit_completeness": {
+            "pass": completeness_pass,
+            "expected_rows": len(selected_rows),
+            "observed_rows": len(present_rows),
+            "missing_question_ids": missing_question_ids,
+            "incomplete_coverage_question_ids": incomplete_coverage_question_ids,
+            "missing_required_field_question_ids": missing_required_field_question_ids,
+        },
+        "retrieval_operational_success": {
+            "pass": not error_rows,
+            "error_rows": error_rows,
+        },
+        "preference_coverage": {
+            "pass": len(preference_supported) >= 3,
+            "adequate_coverage": len(preference_supported),
+            "target": "3/4",
+            "supported_question_ids": preference_supported,
+            "total_preference_rows": len(preference_rows),
+        },
+        "knowledge_update_coverage": {
+            "pass": len(knowledge_adequate) >= 3,
+            "adequate_coverage": len(knowledge_adequate),
+            "target": "3/5",
+            "supported_or_partial_question_ids": knowledge_adequate,
+            "stale_only_question_ids": stale_only_question_ids,
+            "total_knowledge_update_rows": len(knowledge_rows),
+        },
+        "abstention_contamination": {
+            "pass": len(unanswerable_contaminated) <= 1,
+            "unanswerable_contaminated": len(unanswerable_contaminated),
+            "target": "<=1/4",
+            "contaminated_question_ids": unanswerable_contaminated,
+            "total_abstention_rows": len(abstention_rows),
+        },
+        "evidence_identity": {
+            "pass": not evidence_identity_missing and not retrieval_artifact_missing,
+            "missing_source_ref_question_ids": evidence_identity_missing,
+            "missing_retrieved_memory_id_question_ids": retrieval_artifact_missing,
+        },
+    }
+    gates["overall"] = {"pass": all(gate["pass"] for gate in gates.values())}
+
+    return {
+        "mode": "retrieval_bridge_phase_a_gate_evaluation_offline",
+        "gates": gates,
+        "coverage_counts": {
+            "total": len(present_rows),
+            "by_class": _count_by_coverage_class(present_rows),
+        },
+        "preference": {
+            "adequate_coverage": len(preference_supported),
+            "target": 3,
+            "total": len(preference_rows),
+        },
+        "knowledge_update": {
+            "adequate_coverage": len(knowledge_adequate),
+            "target": 3,
+            "total": len(knowledge_rows),
+            "stale_only": len(stale_only_question_ids),
+        },
+        "abstention": {
+            "unanswerable_contaminated": len(unanswerable_contaminated),
+            "target_max": 1,
+            "total": len(abstention_rows),
+        },
+        "stale_only_question_ids": stale_only_question_ids,
+        "preregistered_gates": RETRIEVAL_BRIDGE_PHASE_A_GATES,
+        "phase_b_recommendation": (
+            "phase_a_passed_answer_generation_still_requires_explicit_approval"
+            if gates["overall"]["pass"]
+            else "stop_before_answer_generation_phase_a_failed"
+        ),
+        "communication_boundary": "retrieval coverage evidence only; no answer/product benchmark claim",
+    }
+
+
+def write_retrieval_bridge_phase_a_report(
+    dataset: list[dict[str, Any]],
+    selection: dict[str, Any],
+    retrieval_results_file: Path,
+    report_file: Path,
+    *,
+    dataset_sha256: str = EXPECTED_ORACLE_SHA256,
+) -> dict[str, Any]:
+    if selection.get("seed") != SECOND_SLICE_SELECTION_SEED:
+        raise ValueError("retrieval_bridge_requires_second_slice_seed")
+    proof = validate_selection(dataset, selection, dataset_sha256=dataset_sha256)
+    by_id = {entry["question_id"]: entry for entry in dataset}
+    selected_rows = [by_id[row["question_id"]] for row in selection["rows"]]
+    retrieval_rows = load_jsonl(retrieval_results_file)
+    report = evaluate_retrieval_bridge_phase_a_gates(selected_rows, retrieval_rows)
+    report.update({
+        "selection_proof": proof,
+        "condition": RETRIEVAL_BRIDGE_CONDITION,
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "selection_sha256": RETRIEVAL_BRIDGE_SELECTION_SHA256,
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "input_files": {
+            "retrieval_results_file": str(retrieval_results_file),
+            "selection_file": str(selection.get("_selection_file", "")),
+        },
+        "guardrails": [
+            "offline existing retrieval artifacts only",
+            "no answer generation",
+            "no judging/model calls",
+            "no Memibrium recall/context calls",
+            "no DB/Docker/runtime mutation",
+            "no full LongMemEval _s/_m run",
+        ],
+    })
+    write_json(report_file, report)
+    return report
+
+
 def prepare_retrieval_bridge_canary(
     dataset: list[dict[str, Any]],
     selection: dict[str, Any],
@@ -922,16 +1176,7 @@ def prepare_retrieval_bridge_canary(
         "coverage_status": "not_evaluated_retrieval_not_run",
         "phase_a_stop_rule": "if coverage is missing, stop before answer generation",
         "phase_a_gates": RETRIEVAL_BRIDGE_PHASE_A_GATES,
-        "coverage_classes": [
-            "gold_supported",
-            "gold_supported_with_conflict",
-            "partial_support",
-            "stale_only",
-            "adjacent_entity_only",
-            "unsupported",
-            "unanswerable_supported",
-            "unanswerable_contaminated",
-        ],
+        "coverage_classes": sorted(RETRIEVAL_COVERAGE_CLASSES),
         "rows": coverage_rows,
     }
     cleanup_report = {
@@ -1016,13 +1261,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--treatment-eval-file", type=Path, help="Existing treatment eval_results JSONL for --offline-gate-report.")
     parser.add_argument("--gate-report-file", type=Path, help="Output JSON report path for --offline-gate-report; defaults under --out-dir.")
     parser.add_argument("--prepare-retrieval-bridge", action="store_true", help="Prepare retrieval-coupled bridge Phase A placeholder artifacts only; no runtime/model/judge calls.")
-    parser.add_argument("--allow-runtime-retrieval", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation.")
-    parser.add_argument("--allow-judge-calls", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation.")
+    parser.add_argument("--retrieval-bridge-phase-a-report", action="store_true", help="Evaluate retrieval bridge Phase A gates from existing retrieval JSONL artifacts only; no runtime/model/judge calls.")
+    parser.add_argument("--retrieval-results-file", type=Path, help="Existing retrieval results JSONL for --retrieval-bridge-phase-a-report.")
+    parser.add_argument("--phase-a-report-file", type=Path, help="Output JSON report path for --retrieval-bridge-phase-a-report; defaults under --out-dir.")
+    parser.add_argument("--allow-runtime-retrieval", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation/reporting.")
+    parser.add_argument("--allow-judge-calls", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation/reporting.")
     args = parser.parse_args(argv)
     if args.offline_gate_report and args.allow_answer_generation:
         parser.error("--offline-gate-report cannot be combined with --allow-answer-generation")
+    if args.retrieval_bridge_phase_a_report and args.allow_answer_generation:
+        parser.error("--retrieval-bridge-phase-a-report cannot be combined with --allow-answer-generation")
+    if args.retrieval_bridge_phase_a_report and (args.allow_runtime_retrieval or args.allow_judge_calls):
+        parser.error("--retrieval-bridge-phase-a-report cannot be combined with runtime, answer, or judge launch flags")
+    if args.offline_gate_report and args.retrieval_bridge_phase_a_report:
+        parser.error("--offline-gate-report cannot be combined with --retrieval-bridge-phase-a-report")
     if args.offline_gate_report and (args.baseline_eval_file is None or args.treatment_eval_file is None):
         parser.error("--offline-gate-report requires --baseline-eval-file and --treatment-eval-file")
+    if args.retrieval_bridge_phase_a_report and args.retrieval_results_file is None:
+        parser.error("--retrieval-bridge-phase-a-report requires --retrieval-results-file")
     return args
 
 
@@ -1048,6 +1304,23 @@ def main() -> None:
             "mode": result["mode"],
             "gate_report_file": str(report_file),
             "overall_pass": result["gates"]["overall"]["pass"],
+            "communication_boundary": result["communication_boundary"],
+        }, indent=2))
+        return
+    if args.retrieval_bridge_phase_a_report:
+        report_file = args.phase_a_report_file or (args.out_dir / "longmemeval_retrieval_bridge_phase_a_gate_report.json")
+        result = write_retrieval_bridge_phase_a_report(
+            dataset,
+            selection,
+            args.retrieval_results_file,
+            report_file,
+            dataset_sha256=dataset_sha256,
+        )
+        print(json.dumps({
+            "mode": result["mode"],
+            "phase_a_report_file": str(report_file),
+            "overall_pass": result["gates"]["overall"]["pass"],
+            "phase_b_recommendation": result["phase_b_recommendation"],
             "communication_boundary": result["communication_boundary"],
         }, indent=2))
         return

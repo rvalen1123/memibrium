@@ -678,6 +678,157 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertFalse(args.allow_judge_calls)
         self.assertEqual(args.out_dir, Path('bridge-out'))
 
+    def make_retrieval_rows(self, statuses):
+        return [
+            {
+                'question_id': question_id,
+                'question_type': question_type,
+                'coverage_class': coverage_class,
+                'retrieval_status': retrieval_status,
+                'retrieved_memory_ids': memory_ids,
+                'source_refs': source_refs,
+                'fallback_error_flags': error_flags,
+            }
+            for question_id, question_type, coverage_class, retrieval_status, memory_ids, source_refs, error_flags in statuses
+        ]
+
+    def test_retrieval_bridge_phase_a_evaluator_passes_complete_supported_coverage(self):
+        rows = [
+            dict(self.sample_rows()[0], question_id='ku_1', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='ku_2', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='ku_3', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='ku_4', question_type='knowledge-update'),
+            dict(self.sample_rows()[1], question_id='ku_5', question_type='knowledge-update'),
+            dict(self.sample_rows()[2], question_id='pref_1', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_2', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_3', question_type='single-session-preference'),
+            dict(self.sample_rows()[2], question_id='pref_4', question_type='single-session-preference'),
+            dict(self.sample_rows()[0], question_id='abs_1_abs', question_type='multi-session'),
+            dict(self.sample_rows()[0], question_id='abs_2_abs', question_type='knowledge-update'),
+            dict(self.sample_rows()[0], question_id='abs_3_abs', question_type='single-session-user'),
+            dict(self.sample_rows()[0], question_id='abs_4_abs', question_type='temporal-reasoning'),
+        ]
+        retrieval_rows = self.make_retrieval_rows([
+            ('ku_1', 'knowledge-update', 'gold_supported', 'ok', ['m1'], ['s1:t1'], []),
+            ('ku_2', 'knowledge-update', 'gold_supported_with_conflict', 'ok', ['m2'], ['s2:t1'], []),
+            ('ku_3', 'knowledge-update', 'partial_support', 'ok', ['m3'], ['s3:t1'], []),
+            ('ku_4', 'knowledge-update', 'stale_only', 'ok', ['m4'], ['s4:t1'], []),
+            ('ku_5', 'knowledge-update', 'unsupported', 'ok', [], [], []),
+            ('pref_1', 'single-session-preference', 'gold_supported', 'ok', ['m6'], ['s6:t1'], []),
+            ('pref_2', 'single-session-preference', 'gold_supported_with_conflict', 'ok', ['m7'], ['s7:t1'], []),
+            ('pref_3', 'single-session-preference', 'gold_supported', 'ok', ['m8'], ['s8:t1'], []),
+            ('pref_4', 'single-session-preference', 'partial_support', 'ok', ['m9'], ['s9:t1'], []),
+            ('abs_1_abs', 'multi-session', 'unanswerable_supported', 'ok', ['m10'], ['s10:t1'], []),
+            ('abs_2_abs', 'knowledge-update', 'unanswerable_contaminated', 'ok', ['m11'], ['s11:t1'], []),
+            ('abs_3_abs', 'single-session-user', 'unanswerable_supported', 'ok', ['m12'], ['s12:t1'], []),
+            ('abs_4_abs', 'temporal-reasoning', 'unanswerable_supported', 'ok', ['m13'], ['s13:t1'], []),
+        ])
+
+        report = longmem_canary.evaluate_retrieval_bridge_phase_a_gates(rows, retrieval_rows)
+
+        self.assertTrue(report['gates']['overall']['pass'])
+        self.assertEqual(report['coverage_counts']['total'], 13)
+        self.assertEqual(report['preference']['adequate_coverage'], 3)
+        self.assertEqual(report['knowledge_update']['adequate_coverage'], 3)
+        self.assertEqual(report['abstention']['unanswerable_contaminated'], 1)
+        self.assertEqual(report['stale_only_question_ids'], ['ku_4'])
+        self.assertEqual(report['phase_b_recommendation'], 'phase_a_passed_answer_generation_still_requires_explicit_approval')
+
+    def test_retrieval_bridge_phase_a_evaluator_fails_missing_rows_errors_and_identity(self):
+        rows = self.sample_rows()[:3]
+        retrieval_rows = self.make_retrieval_rows([
+            ('ku_abs', 'knowledge-update', 'gold_supported', 'ok', ['m1'], ['s1:t1'], []),
+            ('multi_1', 'multi-session', 'gold_supported', 'error_500', ['m2'], [], ['500']),
+        ])
+
+        report = longmem_canary.evaluate_retrieval_bridge_phase_a_gates(rows, retrieval_rows)
+
+        self.assertFalse(report['gates']['overall']['pass'])
+        self.assertFalse(report['gates']['coverage_audit_completeness']['pass'])
+        self.assertIn('pref_1', report['gates']['coverage_audit_completeness']['missing_question_ids'])
+        self.assertFalse(report['gates']['retrieval_operational_success']['pass'])
+        self.assertFalse(report['gates']['evidence_identity']['pass'])
+        self.assertEqual(report['phase_b_recommendation'], 'stop_before_answer_generation_phase_a_failed')
+
+        duplicate = retrieval_rows + [dict(retrieval_rows[0])]
+        with self.assertRaisesRegex(ValueError, 'duplicate_retrieval_rows:ku_abs'):
+            longmem_canary.evaluate_retrieval_bridge_phase_a_gates(rows, duplicate)
+
+        invalid = [dict(retrieval_rows[0], coverage_class='made_up_class')]
+        with self.assertRaisesRegex(ValueError, 'invalid_coverage_class:ku_abs'):
+            longmem_canary.evaluate_retrieval_bridge_phase_a_gates(rows[:1], invalid)
+
+    def test_retrieval_bridge_phase_a_evaluator_allows_not_run_placeholders_as_failed_gate(self):
+        rows = self.sample_rows()[:2]
+        retrieval_rows = [
+            {
+                'question_id': row['question_id'],
+                'question_type': row['question_type'],
+                'coverage_class': None,
+                'retrieval_status': 'not_run_runtime_not_authorized',
+                'retrieved_memory_ids': [],
+                'source_refs': [],
+                'fallback_error_flags': [],
+            }
+            for row in rows
+        ]
+
+        report = longmem_canary.evaluate_retrieval_bridge_phase_a_gates(rows, retrieval_rows)
+
+        self.assertFalse(report['gates']['overall']['pass'])
+        self.assertEqual(
+            report['gates']['coverage_audit_completeness']['incomplete_coverage_question_ids'],
+            ['ku_abs', 'multi_1'],
+        )
+        self.assertFalse(report['gates']['retrieval_operational_success']['pass'])
+        self.assertEqual(report['phase_b_recommendation'], 'stop_before_answer_generation_phase_a_failed')
+
+    def test_write_retrieval_bridge_phase_a_report_loads_jsonl_and_writes_offline_report(self):
+        rows = self.sample_rows()
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        retrieval_rows = self.make_retrieval_rows([
+            ('ku_abs', 'knowledge-update', 'gold_supported', 'ok', ['m1'], ['s1:t1'], []),
+            ('multi_1', 'multi-session', 'gold_supported', 'ok', ['m2'], ['s2:t1'], []),
+            ('pref_1', 'single-session-preference', 'gold_supported', 'ok', ['m3'], ['s3:t1'], []),
+            ('temp_1', 'temporal-reasoning', 'unsupported', 'ok', [], [], []),
+        ])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            retrieval_path = tmp_path / 'retrieval_results.jsonl'
+            report_path = tmp_path / 'phase_a_report.json'
+            longmem_canary.write_jsonl(retrieval_path, retrieval_rows)
+            report = longmem_canary.write_retrieval_bridge_phase_a_report(
+                rows,
+                selection,
+                retrieval_path,
+                report_path,
+                dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256,
+            )
+            written = json.loads(report_path.read_text())
+
+        self.assertEqual(report['mode'], 'retrieval_bridge_phase_a_gate_evaluation_offline')
+        self.assertEqual(written['mode'], 'retrieval_bridge_phase_a_gate_evaluation_offline')
+        self.assertEqual(written['selection_proof']['seed'], longmem_canary.SECOND_SLICE_SELECTION_SEED)
+        self.assertEqual(written['input_files']['retrieval_results_file'], str(retrieval_path))
+        self.assertEqual(written['communication_boundary'], 'retrieval coverage evidence only; no answer/product benchmark claim')
+        self.assertFalse(written['gates']['overall']['pass'])
+
+    def test_parse_args_supports_retrieval_bridge_phase_a_report_without_launch(self):
+        args = longmem_canary.parse_args([
+            '--retrieval-bridge-phase-a-report',
+            '--retrieval-results-file', 'retrieval.jsonl',
+            '--phase-a-report-file', 'phase_a.json',
+        ])
+
+        self.assertTrue(args.retrieval_bridge_phase_a_report)
+        self.assertEqual(args.retrieval_results_file, Path('retrieval.jsonl'))
+        self.assertEqual(args.phase_a_report_file, Path('phase_a.json'))
+        self.assertFalse(args.allow_runtime_retrieval)
+        self.assertFalse(args.allow_answer_generation)
+        self.assertFalse(args.allow_judge_calls)
+
 
 if __name__ == '__main__':
     unittest.main()
