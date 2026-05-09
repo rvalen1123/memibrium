@@ -43,6 +43,17 @@ SECOND_SLICE_GATES = {
     "category_collapse": "no non-watch category drops by more than one row",
     "communication_boundary": "oracle answer-side mechanism evidence only; no retrieval/product benchmark claim",
 }
+RETRIEVAL_BRIDGE_CONDITION = "longmemeval_bridge_v1_retrieval_plus_category_contract_v1"
+RETRIEVAL_BRIDGE_DOMAIN = "longmemeval-bridge-v1-20260508-second-slice"
+RETRIEVAL_BRIDGE_SELECTION_SHA256 = "9cd322852a4e947730f811e6913012270e3bac9cc569b3394ee49e5b1d80edbb"
+RETRIEVAL_BRIDGE_PHASE_A_GATES = {
+    "coverage_audit_completeness": "25/25 rows have a coverage class and preserved retrieval artifacts",
+    "retrieval_operational_success": "no uncaught 500s, serialization errors, or missing JSON fields",
+    "preference_coverage": "at least 3/4 single-session-preference rows are gold_supported or gold_supported_with_conflict",
+    "knowledge_update_coverage": "at least 3/5 knowledge-update rows are gold_supported, gold_supported_with_conflict, or partial_support; stale_only counted separately",
+    "abstention_contamination": "no more than 1/4 abstention rows may be unanswerable_contaminated",
+    "evidence_identity": "every answerable row preserves source refs sufficient for artifact-only review",
+}
 RUN_ID = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 ANSWER_SHAPE_TYPES = {"multi-session", "temporal-reasoning"}
 DEFAULT_CANDIDATE_CONDITION = "locked_answer_shape"
@@ -806,6 +817,189 @@ def prepare_oracle_canary(
     }
 
 
+def unique_ordered(values: list[Any]) -> list[Any]:
+    seen = set()
+    ordered = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        ordered.append(value)
+    return ordered
+
+
+def prepare_retrieval_bridge_canary(
+    dataset: list[dict[str, Any]],
+    selection: dict[str, Any],
+    out_dir: Path,
+    *,
+    allow_runtime_retrieval: bool = False,
+    allow_answer_generation: bool = False,
+    allow_judge_calls: bool = False,
+    dataset_sha256: str = EXPECTED_ORACLE_SHA256,
+    retrieval_fn: Callable[..., Any] | None = None,
+    chat_fn: Callable[..., str] | None = None,
+) -> dict[str, Any]:
+    del retrieval_fn, chat_fn  # preparation mode must not call external runtime/model surfaces
+    if allow_runtime_retrieval or allow_answer_generation or allow_judge_calls:
+        raise ValueError("retrieval_bridge_launch_not_authorized")
+    if selection.get("seed") != SECOND_SLICE_SELECTION_SEED:
+        raise ValueError("retrieval_bridge_requires_second_slice_seed")
+
+    proof = validate_selection(dataset, selection, dataset_sha256=dataset_sha256)
+    by_id = {entry["question_id"]: entry for entry in dataset}
+    selected_rows = [by_id[row["question_id"]] for row in selection["rows"]]
+    selected_question_ids = [row["question_id"] for row in selected_rows]
+    source_session_ids = unique_ordered([
+        session_id
+        for row in selected_rows
+        for session_id in (row.get("haystack_session_ids") or [])
+    ])
+    answer_session_ids = unique_ordered([
+        session_id
+        for row in selected_rows
+        for session_id in (row.get("answer_session_ids") or [])
+    ])
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ingest_manifest_path = out_dir / "ingest_manifest_placeholder.json"
+    retrieval_results_path = out_dir / "retrieval_results_placeholder.jsonl"
+    coverage_audit_path = out_dir / "retrieval_coverage_audit_placeholder.json"
+    baseline_answer_path = out_dir / "answer_baseline_predictions_blocked_placeholder.jsonl"
+    treatment_answer_path = out_dir / "answer_category_contract_v1_predictions_blocked_placeholder.jsonl"
+    metadata_path = out_dir / "longmemeval_retrieval_bridge_preparation_metadata.json"
+    cleanup_path = out_dir / "cleanup_report_placeholder.json"
+
+    retrieval_rows = []
+    coverage_rows = []
+    for row in selected_rows:
+        qid = row["question_id"]
+        qtype = row.get("question_type", "")
+        retrieval_rows.append({
+            "question_id": qid,
+            "question_type": qtype,
+            "question": row.get("question", ""),
+            "query_variants": [],
+            "retrieved_memory_ids": [],
+            "scores": [],
+            "source_refs": [],
+            "evidence_snippets": [],
+            "timestamp_source_metadata": [],
+            "fallback_error_flags": [],
+            "coverage_class": None,
+            "retrieval_status": "not_run_runtime_not_authorized",
+        })
+        coverage_rows.append({
+            "question_id": qid,
+            "question_type": qtype,
+            "coverage_class": None,
+            "gold_supporting_evidence_present": [],
+            "gold_supporting_evidence_missing": [],
+            "stale_conflicting_evidence_present": [],
+            "proceed_to_answer_score": False,
+            "stop_reason": "retrieval_not_run_runtime_not_authorized",
+        })
+
+    baseline_placeholders = [{"question_id": qid, "hypothesis": ""} for qid in selected_question_ids]
+    treatment_placeholders = [{"question_id": qid, "hypothesis": ""} for qid in selected_question_ids]
+    ingest_manifest = {
+        "mode": "retrieval_bridge_ingest_placeholder_no_db_writes",
+        "dataset_sha256": dataset_sha256,
+        "hf_revision": EXPECTED_HF_REVISION,
+        "selection_sha256": RETRIEVAL_BRIDGE_SELECTION_SHA256,
+        "selected_question_ids": selected_question_ids,
+        "source_session_ids": source_session_ids,
+        "answer_session_ids": answer_session_ids,
+        "memory_ids_created": [],
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "condition": RETRIEVAL_BRIDGE_CONDITION,
+        "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "redacted_runtime_metadata": {},
+        "ingest_status": "not_run_db_writes_not_authorized",
+    }
+    coverage_audit = {
+        "mode": "retrieval_bridge_phase_a_coverage_placeholder",
+        "coverage_status": "not_evaluated_retrieval_not_run",
+        "phase_a_stop_rule": "if coverage is missing, stop before answer generation",
+        "phase_a_gates": RETRIEVAL_BRIDGE_PHASE_A_GATES,
+        "coverage_classes": [
+            "gold_supported",
+            "gold_supported_with_conflict",
+            "partial_support",
+            "stale_only",
+            "adjacent_entity_only",
+            "unsupported",
+            "unanswerable_supported",
+            "unanswerable_contaminated",
+        ],
+        "rows": coverage_rows,
+    }
+    cleanup_report = {
+        "mode": "cleanup_placeholder_no_deletes",
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "created_memory_count": 0,
+        "deleted_memory_count": 0,
+        "final_domain_count_verified": None,
+        "cleanup_status": "not_applicable_no_ingest_run",
+    }
+    metadata = {
+        "mode": "retrieval_bridge_preparation_only_no_runtime_calls",
+        "phase": "phase_a_retrieval_coverage_preparation",
+        "condition": RETRIEVAL_BRIDGE_CONDITION,
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "selection_proof": proof,
+        "selection_sha256": RETRIEVAL_BRIDGE_SELECTION_SHA256,
+        "phase_a_gates": RETRIEVAL_BRIDGE_PHASE_A_GATES,
+        "artifact_files": {
+            "ingest_manifest": str(ingest_manifest_path),
+            "retrieval_results": str(retrieval_results_path),
+            "retrieval_coverage_audit": str(coverage_audit_path),
+            "answer_baseline_predictions": str(baseline_answer_path),
+            "answer_treatment_predictions": str(treatment_answer_path),
+            "cleanup_report": str(cleanup_path),
+        },
+        "answer_conditions": {
+            "baseline": {
+                "condition": "retrieval_context_baseline_prompt",
+                "retrieved_evidence_source": "shared_retrieval_results_after_phase_a",
+            },
+            "treatment": {
+                "condition": "category_contract_v1",
+                "retrieved_evidence_source": "shared_retrieval_results_after_phase_a",
+            },
+            "evidence_identity_requirement": "baseline and treatment must share identical retrieved evidence per question_id",
+        },
+        "communication_boundary": "retrieval bridge preparation only; no retrieval/product benchmark claim",
+        "guardrails": [
+            "no LongMemEval conversation ingestion",
+            "no Memibrium recall/context calls",
+            "no DB/Docker/runtime mutation",
+            "no answer model calls",
+            "no judge calls",
+            "no full LongMemEval _s/_m run",
+            "no direct /mcp/tools inspection",
+        ],
+    }
+
+    write_json(ingest_manifest_path, ingest_manifest)
+    write_jsonl(retrieval_results_path, retrieval_rows)
+    write_json(coverage_audit_path, coverage_audit)
+    write_jsonl(baseline_answer_path, baseline_placeholders)
+    write_jsonl(treatment_answer_path, treatment_placeholders)
+    write_json(cleanup_path, cleanup_report)
+    write_json(metadata_path, metadata)
+    return {
+        "mode": "retrieval_bridge_preparation_only_no_runtime_calls",
+        "condition": RETRIEVAL_BRIDGE_CONDITION,
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "row_count": proof["row_count"],
+        "metadata_file": str(metadata_path),
+        "retrieval_results_file": str(retrieval_results_path),
+        "coverage_audit_file": str(coverage_audit_path),
+    }
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare or run LongMemEval oracle canary artifacts.")
     parser.add_argument("--dataset", type=Path, default=DEFAULT_DATASET_PATH)
@@ -821,6 +1015,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--baseline-eval-file", type=Path, help="Existing baseline eval_results JSONL for --offline-gate-report.")
     parser.add_argument("--treatment-eval-file", type=Path, help="Existing treatment eval_results JSONL for --offline-gate-report.")
     parser.add_argument("--gate-report-file", type=Path, help="Output JSON report path for --offline-gate-report; defaults under --out-dir.")
+    parser.add_argument("--prepare-retrieval-bridge", action="store_true", help="Prepare retrieval-coupled bridge Phase A placeholder artifacts only; no runtime/model/judge calls.")
+    parser.add_argument("--allow-runtime-retrieval", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation.")
+    parser.add_argument("--allow-judge-calls", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation.")
     args = parser.parse_args(argv)
     if args.offline_gate_report and args.allow_answer_generation:
         parser.error("--offline-gate-report cannot be combined with --allow-answer-generation")
@@ -853,6 +1050,18 @@ def main() -> None:
             "overall_pass": result["gates"]["overall"]["pass"],
             "communication_boundary": result["communication_boundary"],
         }, indent=2))
+        return
+    if args.prepare_retrieval_bridge:
+        result = prepare_retrieval_bridge_canary(
+            dataset,
+            selection,
+            args.out_dir,
+            allow_runtime_retrieval=args.allow_runtime_retrieval,
+            allow_answer_generation=args.allow_answer_generation,
+            allow_judge_calls=args.allow_judge_calls,
+            dataset_sha256=dataset_sha256,
+        )
+        print(json.dumps(result, indent=2))
         return
     if args.preflight_only:
         chat_completions_call([{"role": "user", "content": "Reply with exactly OK."}], model=args.answer_model, max_tokens=5)

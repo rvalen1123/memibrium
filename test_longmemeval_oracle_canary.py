@@ -570,6 +570,114 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertIn('minimum ratio that still constitutes evidence', gates['moved_row_win_loss_rationale'])
         self.assertNotIn('1:1', json.dumps(gates))
 
+    def test_retrieval_bridge_phase_a_gate_definitions_match_preregistration(self):
+        gates = longmem_canary.RETRIEVAL_BRIDGE_PHASE_A_GATES
+
+        self.assertEqual(gates['coverage_audit_completeness'], '25/25 rows have a coverage class and preserved retrieval artifacts')
+        self.assertEqual(gates['retrieval_operational_success'], 'no uncaught 500s, serialization errors, or missing JSON fields')
+        self.assertEqual(gates['preference_coverage'], 'at least 3/4 single-session-preference rows are gold_supported or gold_supported_with_conflict')
+        self.assertEqual(gates['knowledge_update_coverage'], 'at least 3/5 knowledge-update rows are gold_supported, gold_supported_with_conflict, or partial_support; stale_only counted separately')
+        self.assertEqual(gates['abstention_contamination'], 'no more than 1/4 abstention rows may be unanswerable_contaminated')
+        self.assertEqual(gates['evidence_identity'], 'every answerable row preserves source refs sufficient for artifact-only review')
+        self.assertNotIn('answer generation', json.dumps(gates).lower())
+        self.assertNotIn('judge', json.dumps(gates).lower())
+
+    def test_prepare_retrieval_bridge_writes_phase_a_placeholders_without_runtime_or_model_calls(self):
+        rows = self.sample_rows()
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+
+        def forbidden_retrieval(*args, **kwargs):
+            raise AssertionError('retrieval bridge prep must not call Memibrium runtime')
+
+        def forbidden_chat(*args, **kwargs):
+            raise AssertionError('retrieval bridge prep must not call chat/model/judge')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            result = longmem_canary.prepare_retrieval_bridge_canary(
+                rows,
+                selection,
+                out_dir,
+                retrieval_fn=forbidden_retrieval,
+                chat_fn=forbidden_chat,
+            )
+            metadata = json.loads((out_dir / 'longmemeval_retrieval_bridge_preparation_metadata.json').read_text())
+            ingest_manifest = json.loads((out_dir / 'ingest_manifest_placeholder.json').read_text())
+            retrieval_rows = [
+                json.loads(line)
+                for line in (out_dir / 'retrieval_results_placeholder.jsonl').read_text().splitlines()
+            ]
+            coverage_audit = json.loads((out_dir / 'retrieval_coverage_audit_placeholder.json').read_text())
+            baseline_lines = (out_dir / 'answer_baseline_predictions_blocked_placeholder.jsonl').read_text().splitlines()
+            treatment_lines = (out_dir / 'answer_category_contract_v1_predictions_blocked_placeholder.jsonl').read_text().splitlines()
+
+        self.assertEqual(result['mode'], 'retrieval_bridge_preparation_only_no_runtime_calls')
+        self.assertEqual(result['condition'], 'longmemeval_bridge_v1_retrieval_plus_category_contract_v1')
+        self.assertEqual(result['domain'], 'longmemeval-bridge-v1-20260508-second-slice')
+        self.assertEqual(metadata['selection_proof']['seed'], longmem_canary.SECOND_SLICE_SELECTION_SEED)
+        self.assertEqual(metadata['phase'], 'phase_a_retrieval_coverage_preparation')
+        self.assertEqual(metadata['phase_a_gates'], longmem_canary.RETRIEVAL_BRIDGE_PHASE_A_GATES)
+        self.assertEqual(metadata['communication_boundary'], 'retrieval bridge preparation only; no retrieval/product benchmark claim')
+        self.assertIn('no LongMemEval conversation ingestion', metadata['guardrails'])
+        self.assertIn('no Memibrium recall/context calls', metadata['guardrails'])
+        self.assertIn('no DB/Docker/runtime mutation', metadata['guardrails'])
+        self.assertIn('no answer model calls', metadata['guardrails'])
+        self.assertIn('no judge calls', metadata['guardrails'])
+        self.assertEqual(metadata['answer_conditions']['baseline']['retrieved_evidence_source'], 'shared_retrieval_results_after_phase_a')
+        self.assertEqual(metadata['answer_conditions']['treatment']['condition'], 'category_contract_v1')
+        self.assertEqual(metadata['answer_conditions']['evidence_identity_requirement'], 'baseline and treatment must share identical retrieved evidence per question_id')
+        self.assertEqual(ingest_manifest['memory_ids_created'], [])
+        self.assertEqual(ingest_manifest['domain'], 'longmemeval-bridge-v1-20260508-second-slice')
+        self.assertEqual(ingest_manifest['selected_question_ids'], ['ku_abs', 'multi_1', 'pref_1', 'temp_1'])
+        self.assertEqual(ingest_manifest['source_session_ids'], ['sess_abs_1', 'sess_multi_1', 'sess_multi_2', 'sess_pref_1', 'sess_temp_1', 'sess_temp_2'])
+        self.assertEqual(retrieval_rows[0]['question_id'], 'ku_abs')
+        self.assertEqual(retrieval_rows[0]['retrieval_status'], 'not_run_runtime_not_authorized')
+        self.assertEqual(retrieval_rows[0]['retrieved_memory_ids'], [])
+        self.assertIsNone(retrieval_rows[0]['coverage_class'])
+        self.assertEqual(coverage_audit['coverage_status'], 'not_evaluated_retrieval_not_run')
+        self.assertEqual(coverage_audit['phase_a_stop_rule'], 'if coverage is missing, stop before answer generation')
+        self.assertEqual(len(coverage_audit['rows']), 4)
+        self.assertEqual(json.loads(baseline_lines[0]), {'question_id': 'ku_abs', 'hypothesis': ''})
+        self.assertEqual(json.loads(treatment_lines[0]), {'question_id': 'ku_abs', 'hypothesis': ''})
+
+    def test_prepare_retrieval_bridge_rejects_launch_side_effect_flags_before_writing(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        cases = [
+            {'allow_runtime_retrieval': True},
+            {'allow_answer_generation': True},
+            {'allow_judge_calls': True},
+        ]
+
+        for kwargs in cases:
+            with self.subTest(kwargs=kwargs):
+                with tempfile.TemporaryDirectory() as tmp:
+                    out_dir = Path(tmp)
+                    with self.assertRaisesRegex(ValueError, 'retrieval_bridge_launch_not_authorized'):
+                        longmem_canary.prepare_retrieval_bridge_canary(rows, selection, out_dir, **kwargs)
+                    self.assertEqual(list(out_dir.iterdir()), [])
+
+        wrong_seed = self.make_selection(rows, seed=longmem_canary.EXPECTED_SELECTION_SEED, prior_question_ids=[])
+        wrong_seed['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, 'retrieval_bridge_requires_second_slice_seed'):
+                longmem_canary.prepare_retrieval_bridge_canary(rows, wrong_seed, Path(tmp))
+
+    def test_parse_args_supports_retrieval_bridge_preparation_only(self):
+        args = longmem_canary.parse_args([
+            '--prepare-retrieval-bridge',
+            '--selection', 'docs/eval/results/longmemeval_oracle_canary_25_second_slice_selection_20260508.json',
+            '--out-dir', 'bridge-out',
+        ])
+
+        self.assertTrue(args.prepare_retrieval_bridge)
+        self.assertFalse(args.allow_answer_generation)
+        self.assertFalse(args.allow_runtime_retrieval)
+        self.assertFalse(args.allow_judge_calls)
+        self.assertEqual(args.out_dir, Path('bridge-out'))
+
 
 if __name__ == '__main__':
     unittest.main()
