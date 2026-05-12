@@ -1500,25 +1500,36 @@ def make_memibrium_cleanup_fn(
                   (SELECT COUNT(*) FROM self_model_observations WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)) AS self_model_observation_count
             """, domain)
             linked_rows_deleted: dict[str, int] = {}
-            memory_filter = "domain = $1"
-            statement_params: tuple[Any, ...] = (domain,)
             if memory_ids:
-                memory_filter = "domain = $1 AND id = ANY($2::text[])"
-                statement_params = (domain, list(memory_ids))
-            delete_statements = [
-                ("user_feedback", f"DELETE FROM user_feedback WHERE memory_id IN (SELECT id FROM memories WHERE {memory_filter})"),
-                ("memory_snapshots", f"DELETE FROM memory_snapshots WHERE memory_id IN (SELECT id FROM memories WHERE {memory_filter})"),
-                ("memory_edges", f"DELETE FROM memory_edges WHERE source_id IN (SELECT id FROM memories WHERE {memory_filter}) OR target_id IN (SELECT id FROM memories WHERE {memory_filter})"),
-                ("contradictions", f"DELETE FROM contradictions WHERE memory_a_id IN (SELECT id FROM memories WHERE {memory_filter}) OR memory_b_id IN (SELECT id FROM memories WHERE {memory_filter})"),
-                ("temporal_expressions", f"DELETE FROM temporal_expressions WHERE memory_id IN (SELECT id FROM memories WHERE {memory_filter})"),
-                ("context_graph_edges", f"DELETE FROM context_graph_edges WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE {memory_filter})"),
-                ("decision_traces", f"DELETE FROM decision_traces WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE {memory_filter})"),
-                ("self_model_observations", f"DELETE FROM self_model_observations WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE {memory_filter})"),
-            ]
+                statement_params: tuple[Any, ...] = (domain, list(memory_ids))
+                delete_statements = [
+                    ("user_feedback", "DELETE FROM user_feedback WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("memory_snapshots", "DELETE FROM memory_snapshots WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("memory_edges", "DELETE FROM memory_edges WHERE source_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[])) OR target_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("contradictions", "DELETE FROM contradictions WHERE memory_a_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[])) OR memory_b_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("temporal_expressions", "DELETE FROM temporal_expressions WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("context_graph_edges", "DELETE FROM context_graph_edges WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("decision_traces", "DELETE FROM decision_traces WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("self_model_observations", "DELETE FROM self_model_observations WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                ]
+                delete_memories_sql = "DELETE FROM memories WHERE domain = $1 AND id = ANY($2::text[])"
+            else:
+                statement_params = (domain,)
+                delete_statements = [
+                    ("user_feedback", "DELETE FROM user_feedback WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("memory_snapshots", "DELETE FROM memory_snapshots WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("memory_edges", "DELETE FROM memory_edges WHERE source_id IN (SELECT id FROM memories WHERE domain = $1) OR target_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("contradictions", "DELETE FROM contradictions WHERE memory_a_id IN (SELECT id FROM memories WHERE domain = $1) OR memory_b_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("temporal_expressions", "DELETE FROM temporal_expressions WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("context_graph_edges", "DELETE FROM context_graph_edges WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)"),
+                    ("decision_traces", "DELETE FROM decision_traces WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)"),
+                    ("self_model_observations", "DELETE FROM self_model_observations WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)"),
+                ]
+                delete_memories_sql = "DELETE FROM memories WHERE domain = $1"
             async with conn.transaction():
                 for table, sql in delete_statements:
                     linked_rows_deleted[table] = _parse_delete_count(await conn.execute(sql, *statement_params))
-                deleted_memory_count = _parse_delete_count(await conn.execute(f"DELETE FROM memories WHERE {memory_filter}", *statement_params))
+                deleted_memory_count = _parse_delete_count(await conn.execute(delete_memories_sql, *statement_params))
                 final_count = await conn.fetchval("SELECT COUNT(id) FROM memories WHERE domain = $1", domain)
             return {
                 "requested_memory_ids": list(memory_ids),
