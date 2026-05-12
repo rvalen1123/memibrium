@@ -1,0 +1,2223 @@
+{
+  "all_ok_status_200": true,
+  "include_telemetry": true,
+  "label": "post_serialization_fix_production_distribution",
+  "log_excerpt": "INFO:     172.21.0.1:34200 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34210 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34220 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34224 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34238 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34244 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34250 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34266 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34276 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34290 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34300 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34314 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34330 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34344 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34348 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34354 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34368 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34372 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34388 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34398 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34404 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34406 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34414 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34430 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34436 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34438 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34444 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34456 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34460 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34464 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34474 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34490 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34500 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34514 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34528 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34544 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34558 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34564 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34578 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34582 - \"POST /mcp/recall HTTP/1.1\" 200 OK\n",
+  "log_flags_since_start": {
+    "contains_decimal_not_json_serializable": false,
+    "contains_hybrid_retrieval_failed": false,
+    "contains_type_error": false,
+    "contains_type_vector_missing": false
+  },
+  "queries": [
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Caroline adoption agencies LGBTQ individuals",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 1
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Melanie charity race mental health self care",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 3
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "LGBTQ counseling workshop therapeutic methods",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 5
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "pottery workshop July Melanie",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 10
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "beach with kids once or twice a year",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 15
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "camping trip meteor shower family",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 1
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Grand Canyon accident children road trip",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 3
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "necklace Sweden grandmother love faith strength",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 5
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "pride parade school speech support group",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 10
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "adoption council meeting loving homes children",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 15
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "running de-stress clear her mind mental health",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 1
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Caroline picnic week before July 6 2023",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 3
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Nothing is Impossible book Melanie 2022",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 5
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "The Four Seasons Vivaldi classical music",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 10
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "safe and inviting place for people to grow",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 15
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "hybrid active ruvector smoke probe",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 1
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Who did Caroline contact about adoption agency policy",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 3
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What event helped Melanie manage anxiety and self care",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 5
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Which workshop discussed therapeutic methods for LGBTQ counseling",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 10
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "When did Melanie attend the pottery workshop in July",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 15
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "How often did the family go to the beach with the kids",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 1
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What happened on the camping trip during the meteor shower",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 3
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Which child was affected by the Grand Canyon road trip accident",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 5
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What did the Swedish grandmother necklace symbolize",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 10
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Who spoke at the pride parade school support event",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 15
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What did the adoption council discuss about loving homes",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 1
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "How did running help with stress and mental health",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 3
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Who had a picnic the week before July 6 2023",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 5
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What book was called Nothing is Impossible in 2022",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 10
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Which classical music piece was associated with The Four Seasons",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 15
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What place was described as safe and inviting for growth",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 1
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Which person preferred counseling over medication",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 3
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What meeting changed the adoption plan timeline",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 5
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Who organized the charity race for mental health",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 10
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What family activity happened once or twice a year",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 15
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Which memory involved love faith and strength",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 1
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What was the outcome of the LGBTQ adoption discussion",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 3
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Who needed support after the road trip accident",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 5
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "Which July event involved pottery and Melanie",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 10
+    },
+    {
+      "error_excerpt": null,
+      "ok": true,
+      "query": "What evidence supports an unanswerable adversarial question",
+      "status": 200,
+      "summary": {
+        "final_returned_count": 0,
+        "fusion_keys": [
+          "fused_count_before_cap",
+          "items_before_cap",
+          "streams_count"
+        ],
+        "has_results": true,
+        "has_telemetry": true,
+        "response_shape": "dict",
+        "result_count": 0,
+        "score_summary_types": {
+          "lexical": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "semantic": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          },
+          "temporal": {
+            "count": "int",
+            "key": "str",
+            "max": "NoneType",
+            "mean": "NoneType",
+            "min": "NoneType"
+          }
+        },
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "stream_counts": {
+          "lexical": 0,
+          "semantic": 0,
+          "temporal": 0
+        }
+      },
+      "top_k": 15
+    }
+  ],
+  "query_count": 40,
+  "started_at": "2026-05-02T12:31:21.687362+00:00",
+  "varied_top_k": [
+    1,
+    3,
+    5,
+    10,
+    15
+  ]
+}

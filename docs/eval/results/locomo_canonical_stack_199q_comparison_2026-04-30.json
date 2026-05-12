@@ -1,0 +1,466 @@
+{
+  "artifact_type": "locomo_canonical_stack_199q_comparison",
+  "current": {
+    "avg_query_ms": 4212.0,
+    "category_scores": {
+      "adversarial": {
+        "avg_latency_ms": null,
+        "count": 47,
+        "score": 24.47
+      },
+      "multi-hop": {
+        "avg_latency_ms": null,
+        "count": 13,
+        "score": 42.31
+      },
+      "single-hop": {
+        "avg_latency_ms": null,
+        "count": 32,
+        "score": 65.62
+      },
+      "temporal": {
+        "avg_latency_ms": null,
+        "count": 37,
+        "score": 82.43
+      },
+      "unanswerable": {
+        "avg_latency_ms": null,
+        "count": 70,
+        "score": 78.57
+      }
+    },
+    "condition": {
+      "append_context_expansion": false,
+      "cleaned": true,
+      "context_rerank": false,
+      "gated_append_context_expansion": false,
+      "no_expansion_arm_b": false,
+      "normalize_dates": true,
+      "query_expansion": true
+    },
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "full_5cat_overall": 62.06,
+    "label": "04-30 forced canonical-stack conv-26 199Q reproduction",
+    "overall_score": 62.06,
+    "protocol_4cat_overall": 73.68,
+    "total_questions": 199
+  },
+  "current_artifact": "docs/eval/results/locomo_conv26_canonical_stack_199q_2026-04-30.json",
+  "current_log": "docs/eval/results/locomo_conv26_canonical_stack_199q_2026-04-30.log",
+  "date": "2026-04-30",
+  "deltas": {
+    "avg_query_ms": -3814.0,
+    "fallback_count": 0,
+    "overall_score_pp": -6.03
+  },
+  "inference_stack_identity": {
+    "answer_model": "gpt-4.1-mini",
+    "azure_chat_deployment": "gpt-4.1-mini",
+    "azure_openai_deployment": "gpt-4.1-mini",
+    "azure_openai_endpoint": "<unset>",
+    "branch": "query-expansion",
+    "decoding_params": {
+      "max_tokens": "path-dependent in locomo_bench_v2.py",
+      "temperature": 0
+    },
+    "endpoint": "https://sector-7.services.ai.azure.com/models",
+    "judge_model": "gpt-4.1-mini",
+    "openai_base_url": "<unset>",
+    "query_expansion_model": "gpt-4.1-mini",
+    "run_commit": "d3925d52eb09962c89298161b11b3f1f0d960c33",
+    "temperature": 0
+  },
+  "locked_decision_rules": {
+    "failed": "outside \u00b15pp OR fallback >5/199",
+    "latency": "out of scope as a reproduction gate",
+    "partial": "score within \u00b15pp AND fallback \u22645/199",
+    "strong": "score within \u00b12pp of 68.09 AND fallback \u22642/199"
+  },
+  "notes": [
+    "Decision rules applied verbatim from locked pre-registration; latency recorded only as observation.",
+    "Initial launch without .env credential hydration failed preflight with Azure 401 before ingest; no benchmark data was produced. Formal run sourced .env for credentials while preserving locked endpoint/model overrides.",
+    "Run started with unrelated non-LOCOMO starting memories=19 after LOCOMO-domain count verified 0; benchmark domains remained locomo-specific.",
+    "Paired comparison normalizes reference category label `5` and current label `adversarial` to the same adversarial bucket."
+  ],
+  "paired_overlap": {
+    "by_category": {
+      "adversarial": {
+        "count": 47,
+        "current_avg": 24.47,
+        "delta_pp": -5.32,
+        "harmed": 6,
+        "partial_changed": 8,
+        "reference_avg": 29.79,
+        "rescued": 4,
+        "same_partial": 1,
+        "unchanged_correct": 5,
+        "unchanged_wrong": 23
+      },
+      "multi-hop": {
+        "count": 13,
+        "current_avg": 42.31,
+        "delta_pp": -7.69,
+        "harmed": 1,
+        "partial_changed": 1,
+        "reference_avg": 50.0,
+        "rescued": 1,
+        "same_partial": 1,
+        "unchanged_correct": 4,
+        "unchanged_wrong": 5
+      },
+      "single-hop": {
+        "count": 32,
+        "current_avg": 65.62,
+        "delta_pp": 1.56,
+        "harmed": 2,
+        "partial_changed": 4,
+        "reference_avg": 64.06,
+        "rescued": 4,
+        "same_partial": 13,
+        "unchanged_correct": 9,
+        "unchanged_wrong": 0
+      },
+      "temporal": {
+        "count": 37,
+        "current_avg": 82.43,
+        "delta_pp": -4.05,
+        "harmed": 5,
+        "partial_changed": 0,
+        "reference_avg": 86.49,
+        "rescued": 3,
+        "same_partial": 1,
+        "unchanged_correct": 26,
+        "unchanged_wrong": 2
+      },
+      "unanswerable": {
+        "count": 70,
+        "current_avg": 78.57,
+        "delta_pp": -10.71,
+        "harmed": 9,
+        "partial_changed": 5,
+        "reference_avg": 89.29,
+        "rescued": 2,
+        "same_partial": 3,
+        "unchanged_correct": 49,
+        "unchanged_wrong": 2
+      }
+    },
+    "classes": {
+      "harmed": 23,
+      "partial_changed": 18,
+      "rescued": 14,
+      "same_partial": 19,
+      "unchanged_correct": 93,
+      "unchanged_wrong": 32
+    },
+    "common_questions": 199,
+    "current_only": 0,
+    "examples": {
+      "harmed": [
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": -1.0,
+          "question": "How did Caroline feel about her family after the accident?",
+          "reference_score": 1.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": -1.0,
+          "question": "How did Caroline's children handle the accident?",
+          "reference_score": 1.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": -1.0,
+          "question": "What activity did Melanie used to do with her dad?",
+          "reference_score": 1.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": -1.0,
+          "question": "What does Caroline do to keep herself busy during her pottery break?",
+          "reference_score": 1.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.5,
+          "delta": -0.5,
+          "question": "What kind of place does Melanie want to create for people?",
+          "reference_score": 1.0
+        }
+      ],
+      "partial_changed": [
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": -0.5,
+          "question": "How did Caroline feel after the accident?",
+          "reference_score": 0.5
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": -0.5,
+          "question": "What are Melanie's plans for the summer with respect to adoption?",
+          "reference_score": 0.5
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": -0.5,
+          "question": "What did Caroline and her family see during their camping trip last year?",
+          "reference_score": 0.5
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": -0.5,
+          "question": "What did Caroline do after the road trip to relax?",
+          "reference_score": 0.5
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.5,
+          "delta": 0.5,
+          "question": "What does Caroline say running has been great for?",
+          "reference_score": 0.0
+        }
+      ],
+      "rescued": [
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 1.0,
+          "question": "How did Caroline feel while watching the meteor shower?",
+          "reference_score": 0.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 1.0,
+          "question": "How did Caroline's son handle the accident?",
+          "reference_score": 0.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 1.0,
+          "question": "What did Caroline and her family do while camping?",
+          "reference_score": 0.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 1.0,
+          "question": "What did Melanie find in her neighborhood during her walk?",
+          "reference_score": 0.0
+        },
+        {
+          "cat": "multi-hop",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 0.5,
+          "question": "What fields would Caroline be likely to pursue in her educaton?",
+          "reference_score": 0.5
+        }
+      ],
+      "same_partial": [
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.5,
+          "delta": 0.0,
+          "question": "What precautionary sign did Caroline see at the caf\u00e9?",
+          "reference_score": 0.5
+        },
+        {
+          "cat": "multi-hop",
+          "conv": "conv-26",
+          "current_score": 0.5,
+          "delta": 0.0,
+          "question": "What personality traits might Melanie say Caroline has?",
+          "reference_score": 0.5
+        },
+        {
+          "cat": "single-hop",
+          "conv": "conv-26",
+          "current_score": 0.5,
+          "delta": 0.0,
+          "question": "How many times has Melanie gone to the beach in 2023?",
+          "reference_score": 0.5
+        },
+        {
+          "cat": "single-hop",
+          "conv": "conv-26",
+          "current_score": 0.5,
+          "delta": 0.0,
+          "question": "What LGBTQ+ events has Caroline participated in?",
+          "reference_score": 0.5
+        },
+        {
+          "cat": "single-hop",
+          "conv": "conv-26",
+          "current_score": 0.5,
+          "delta": 0.0,
+          "question": "What activities does Melanie partake in?",
+          "reference_score": 0.5
+        }
+      ],
+      "unchanged_correct": [
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 0.0,
+          "question": "Did Caroline make the black and white bowl in the photo?",
+          "reference_score": 1.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 0.0,
+          "question": "Is Oscar Melanie's pet?",
+          "reference_score": 1.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 0.0,
+          "question": "What happened to Caroline's son on their road trip?",
+          "reference_score": 1.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 0.0,
+          "question": "What is Caroline's hand-painted bowl a reminder of?",
+          "reference_score": 1.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 1.0,
+          "delta": 0.0,
+          "question": "What type of individuals does the adoption agency Melanie is considering support?",
+          "reference_score": 1.0
+        }
+      ],
+      "unchanged_wrong": [
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": 0.0,
+          "question": "How often does Caroline go to the beach with her kids?",
+          "reference_score": 0.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": 0.0,
+          "question": "What are the new shoes that Caroline got used for?",
+          "reference_score": 0.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": 0.0,
+          "question": "What country is Melanie's grandma from?",
+          "reference_score": 0.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": 0.0,
+          "question": "What did Caroline realize after her charity race?",
+          "reference_score": 0.0
+        },
+        {
+          "cat": "adversarial",
+          "conv": "conv-26",
+          "current_score": 0.0,
+          "delta": 0.0,
+          "question": "What did Melanie make for a local church?",
+          "reference_score": 0.0
+        }
+      ]
+    },
+    "reference_only": 0
+  },
+  "pre_registration": "docs/eval/locomo_canonical_stack_reproduction_preregistration_2026-04-30.md",
+  "pre_run_hygiene": {
+    "branch": "query-expansion",
+    "container_toggles": "ENABLE_BACKGROUND_SCORING=false;ENABLE_CONTRADICTION_DETECTION=false;ENABLE_HIERARCHY_PROCESSING=false",
+    "head": "d3925d52eb09962c89298161b11b3f1f0d960c33",
+    "hygiene_status": "PASS",
+    "launch_time_utc": "2026-04-30T07:30:00Z",
+    "locomo_db_count": "0",
+    "origin_head": "d3925d52eb09962c89298161b11b3f1f0d960c33",
+    "repo_path": "/home/zaddy/src/Memibrium",
+    "tests": "test_locomo_query_expansion 51 OK; test_hybrid_retrieval_ruvector 6 OK; test_temporal_memory 10 OK",
+    "working_tree_short_status_count": "0"
+  },
+  "reference": {
+    "avg_query_ms": 8026.0,
+    "category_scores": {
+      "adversarial": {
+        "avg_latency_ms": null,
+        "count": 47,
+        "score": 29.79
+      },
+      "multi-hop": {
+        "avg_latency_ms": null,
+        "count": 13,
+        "score": 50.0
+      },
+      "single-hop": {
+        "avg_latency_ms": null,
+        "count": 32,
+        "score": 64.06
+      },
+      "temporal": {
+        "avg_latency_ms": null,
+        "count": 37,
+        "score": 86.49
+      },
+      "unanswerable": {
+        "avg_latency_ms": null,
+        "count": 70,
+        "score": 89.29
+      }
+    },
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "label": "04-24 conv-26 query-expansion canary",
+    "overall_score": 68.09,
+    "total_questions": 199
+  },
+  "reference_artifact": "docs/eval/results/locomo_conv26_query_expansion_2026-04-24.json",
+  "verdict": "failed reproduction",
+  "verdict_threshold_driver": "score outside \u00b15pp: 62.06% vs 68.09% (delta -6.03pp)"
+}

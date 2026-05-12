@@ -1,0 +1,253 @@
+{
+  "artifact_files": {
+    "hybrid_probe": "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_hybrid_probe_2026-05-01.json",
+    "post_snapshot": "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_post_snapshot_2026-05-01.json",
+    "pre_snapshot": "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_pre_snapshot_2026-05-01.json",
+    "report": "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_result_2026-05-01.md",
+    "smoke_hashes": "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_smoke_hashes_2026-05-01.json",
+    "telemetry_probe": "docs/eval/results/locomo_hybrid_active_telemetry_instrumentation_telemetry_probe_2026-05-01.json"
+  },
+  "branch": "query-expansion",
+  "head": "cb565591a27d394d45b285c24a48390ebe3988bd",
+  "hybrid_probe": {
+    "log_flags": {
+      "contains_hybrid_retrieval_failed": false,
+      "contains_telemetry_serialization": false,
+      "contains_type_vector_missing": false
+    },
+    "ok": true,
+    "response_json": [],
+    "status": 200
+  },
+  "post_snapshot": {
+    "captured_at": "2026-05-01T21:44:43.275317+00:00",
+    "container_inspect": "server_image=sha256:565195f02c3ee78f4e951e64a65bd18a2e56addca5a23d89ba9b87e456fdc4ae created=2026-05-01T21:44:07.781283486Z started=2026-05-01T21:44:09.174007932Z",
+    "db_probe": {
+      "locomo_contamination_count": 0,
+      "memories_embedding_type": "USER-DEFINED:ruvector",
+      "nonnull_embeddings": 20,
+      "ruvector_extension_version": "0.3.0",
+      "ruvector_type_count": 1,
+      "self_distance": "1.7872301e-07",
+      "vector_type_count": 0
+    },
+    "env_subset": {
+      "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+      "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+      "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+      "CHAT_MODEL": "gemma4:e4b",
+      "EMBEDDING_MODEL": "nomic-embed-text",
+      "USE_RUVECTOR": "true"
+    },
+    "health": {
+      "engine": "memibrium",
+      "status": "ok"
+    },
+    "log_flags": {
+      "contains_hybrid_retrieval_failed": false,
+      "contains_telemetry_serialization": false,
+      "contains_type_vector_missing": false
+    },
+    "source_feature_probe": "hardcoded_vector_cast_present=False\ndynamic_vtype_cast_present=True\nhybrid_telemetry_schema_present=True\nserver_include_telemetry_present=True"
+  },
+  "pre_snapshot": {
+    "captured_at": "2026-05-01T21:43:15.017658+00:00",
+    "container_inspect": "server_image=sha256:e61857cc17f69f5cc6c76971fabe02b6657156148847aaaf711939707b6f0356 created=2026-05-01T14:50:21.953131594Z started=2026-05-01T14:50:22.996971396Z",
+    "db_probe": {
+      "locomo_contamination_count": 0,
+      "memories_embedding_type": "USER-DEFINED:ruvector",
+      "nonnull_embeddings": 20,
+      "ruvector_extension_version": "0.3.0",
+      "ruvector_type_count": 1,
+      "self_distance": "1.7872301e-07",
+      "vector_type_count": 0
+    },
+    "env_subset": {
+      "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+      "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+      "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+      "CHAT_MODEL": "gemma4:e4b",
+      "EMBEDDING_MODEL": "nomic-embed-text",
+      "USE_RUVECTOR": "true"
+    },
+    "health": {
+      "engine": "memibrium",
+      "status": "ok"
+    },
+    "log_flags": {
+      "contains_hybrid_retrieval_failed": false,
+      "contains_telemetry_serialization": false,
+      "contains_type_vector_missing": false
+    },
+    "source_feature_probe": "hardcoded_vector_cast_present=False\ndynamic_vtype_cast_present=True\nhybrid_telemetry_schema_present=True\nserver_include_telemetry_present=True"
+  },
+  "repo": "/home/zaddy/src/Memibrium",
+  "schema": "memibrium.locomo.telemetry_instrumentation_mutation_window.v1",
+  "smoke_hash": {
+    "aggregate_match": true,
+    "all_per_query_match": true,
+    "per_query": [
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline adoption agencies LGBTQ individuals"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Melanie charity race mental health self care"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "LGBTQ counseling workshop therapeutic methods"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pottery workshop July Melanie"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "beach with kids once or twice a year"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "camping trip meteor shower family"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Grand Canyon accident children road trip"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "necklace Sweden grandmother love faith strength"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pride parade school speech support group"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "adoption council meeting loving homes children"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "running de-stress clear her mind mental health"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline picnic week before July 6 2023"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Nothing is Impossible book Melanie 2022"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "The Four Seasons Vivaldi classical music"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "safe and inviting place for people to grow"
+      },
+      {
+        "match": true,
+        "post_count": 0,
+        "post_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pre_count": 0,
+        "pre_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "hybrid active ruvector smoke probe"
+      }
+    ],
+    "post_aggregate_hash": "b15c7ab85bd3d9b2d9f33b4919aa1b6717bb39556d3d107cf14d938d65217625",
+    "pre_aggregate_hash": "b15c7ab85bd3d9b2d9f33b4919aa1b6717bb39556d3d107cf14d938d65217625"
+  },
+  "stop_go": "go_telemetry_observation",
+  "telemetry_probe": {
+    "final_items": [],
+    "final_returned_count": 0,
+    "fused_count_before_cap": 0,
+    "lexical_returned_count": 0,
+    "log_flags": {
+      "contains_hybrid_retrieval_failed": false,
+      "contains_telemetry_serialization": false,
+      "contains_type_vector_missing": false
+    },
+    "plain_response_ok": true,
+    "plain_response_shape": "list",
+    "plain_response_status": 200,
+    "requested_top_k": 3,
+    "result_ids_match_plain": true,
+    "semantic_returned_count": 0,
+    "server": {
+      "embedding_error": null,
+      "embedding_success": true,
+      "hybrid_path_attempted": true,
+      "hybrid_retriever_present": true,
+      "legacy_fallback_executed": false,
+      "response_result_count": 0
+    },
+    "telemetry_response_ok": true,
+    "telemetry_response_shape": "dict",
+    "telemetry_response_status": 200,
+    "temporal_executed": false,
+    "temporal_returned_count": 0
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "step": "5j_v2_exec_guarded_launch",
+  "timestamp_utc": "2026-05-02T19:49:24+00:00",
+  "command": [
+    "python3",
+    "benchmark_scripts/locomo_bench_v2.py",
+    "--max-convs",
+    "1",
+    "--query-expansion"
+  ],
+  "log_path": "/tmp/locomo_conv26_telemetry_off_reproducibility_v2_2026-05-02.log",
+  "guard_timeout_seconds": 180,
+  "env_assertions": {
+    "INCLUDE_RECALL_TELEMETRY_absent": true,
+    "LOCOMO_RETRIEVAL_TELEMETRY_absent": true,
+    "USE_QUERY_EXPANSION": "1",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini"
+  },
+  "observed": {
+    "conversations_to_process": 1,
+    "total_questions": 199,
+    "evaluated_questions": 199,
+    "first_conversation_line": "[1/1] Conv conv-26: Caroline & Melanie"
+  },
+  "guard_status": "passed_startup_guard",
+  "abort_reason": null,
+  "returncode": 0,
+  "completed_utc": "2026-05-02T19:59:58+00:00"
+}

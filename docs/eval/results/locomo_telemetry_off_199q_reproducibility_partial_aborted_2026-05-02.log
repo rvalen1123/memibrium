@@ -1,0 +1,14 @@
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+======================================================================
+  Starting memories: 20
+  Conversations to process: 10
+  Total questions: 1986 (1986 evaluated, skipping cats set())
+
+  [1/10] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 18.3s
+    ... 20/199 questions, running acc: 77.5%
+    ... 40/199 questions, running acc: 70.0%
+    ... 60/199 questions, running acc: 68.3%

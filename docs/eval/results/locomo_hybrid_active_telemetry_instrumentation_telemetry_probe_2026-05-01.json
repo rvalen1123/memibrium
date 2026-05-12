@@ -1,0 +1,116 @@
+{
+  "captured_at": "2026-05-01T21:45:23.522804+00:00",
+  "label": "post_mutation_telemetry_emission_probe",
+  "telemetry_probe": {
+    "log_after": {
+      "contains_hybrid_retrieval_failed": false,
+      "contains_telemetry_serialization": false,
+      "contains_type_vector_missing": false,
+      "returncode": 0,
+      "tail": "INFO:     127.0.0.1:56406 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:51530 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54854 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:44708 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54866 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54870 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54876 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54888 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54904 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54918 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54920 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:54926 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58214 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58228 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58242 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58244 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58250 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58266 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58280 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58286 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:35484 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:36666 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:36668 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:36672 - \"POST /mcp/recall HTTP/1.1\" 200 OK\n2026-05-01 21:44:10,277 [INFO] ChatClient: Azure Foundry (https://sector-7.services.ai.azure.com, model=gpt-4.1-mini)\nINFO:     Started server process [1]\nINFO:     Waiting for application startup.\n2026-05-01 21:44:10,321 [INFO] Vector extension: ruvector\n2026-05-01 21:44:10,328 [INFO] RuVector HNSW index with GNN re-ranking enabled\n2026-05-01 21:44:10,333 [INFO] Schema initialized: memories, snapshots, entities, feedback, contradictions, edges\n2026-05-01 21:44:10,333 [INFO] LEANN not installed \u2014 cold tier stays in pgvector/ruvector (pip install leann to enable)\n2026-05-01 21:44:10,333 [INFO] Advanced modules initialized: hybrid retrieval + memory hierarchy\n2026-05-01 21:44:10,333 [INFO] Memibrium started \u2014 hot: ruvector (GNN + SONA), cold: pgvector, fully sovereign\n2026-05-01 21:44:10,334 [INFO] ConsolidateAgent started (interval=30min)\nINFO:     Application startup complete.\nINFO:     Uvicorn running on http://0.0.0.0:9999 (Press CTRL+C to quit)\n2026-05-01 21:44:10,345 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}\n2026-05-01 21:44:45,189 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:45,450 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:45,670 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:46,063 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:46,254 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:46,454 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:46,610 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:46,817 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:46,992 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:47,231 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:47,452 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:47,648 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:47,850 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:48,059 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:48,265 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:44:48,473 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"\n2026-05-01 21:45:24,124 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\""
+    },
+    "plain_response": {
+      "json": [],
+      "ok": true,
+      "status": 200,
+      "text": "[]"
+    },
+    "telemetry_response": {
+      "json": {
+        "results": [],
+        "telemetry": {
+          "chronology_sort": {
+            "executed": false
+          },
+          "domain": "__hybrid_telemetry_probe_no_rows__",
+          "errors": {},
+          "fetch_k": 6,
+          "final": {
+            "cutoff_items": [],
+            "items": [],
+            "returned_count": 0
+          },
+          "fusion": {
+            "fused_count_before_cap": 0,
+            "items_before_cap": [],
+            "streams_count": 2
+          },
+          "multihop": {
+            "executed": false,
+            "expanded_count": null
+          },
+          "query": "hybrid telemetry ruvector smoke probe",
+          "requested_top_k": 3,
+          "rerank_requested": false,
+          "schema": "memibrium.hybrid_retrieval.telemetry.v1",
+          "server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "state_filter": null,
+          "streams": {
+            "lexical": {
+              "items": [],
+              "path": "ilike_fallback",
+              "requested_top_k": 6,
+              "returned_count": 0,
+              "score_summary": {
+                "count": 0,
+                "key": "bm25_score",
+                "max": null,
+                "mean": null,
+                "min": null
+              },
+              "tsquery": "hybrid | telemetry | ruvector | smoke | probe",
+              "tsvector_error": null,
+              "words": [
+                "hybrid",
+                "telemetry",
+                "ruvector",
+                "smoke",
+                "probe"
+              ]
+            },
+            "semantic": {
+              "items": [],
+              "requested_top_k": 6,
+              "returned_count": 0,
+              "score_summary": {
+                "count": 0,
+                "key": "cosine_score",
+                "max": null,
+                "mean": null,
+                "min": null
+              }
+            },
+            "temporal": {
+              "items": [],
+              "requested_top_k": 6,
+              "returned_count": 0,
+              "score_summary": {
+                "count": 0,
+                "key": "temporal_score",
+                "max": null,
+                "mean": null,
+                "min": null
+              }
+            }
+          },
+          "temporal": {
+            "executed": false,
+            "window_end": null,
+            "window_start": null
+          },
+          "use_rrf": true
+        }
+      },
+      "ok": true,
+      "status": 200,
+      "text": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"hybrid telemetry ruvector smoke probe\",\"requested_top_k\":3,\"fetch_k\":6,\"state_filter\":null,\"domain\":\"__hybrid_telemetry_probe_no_rows__\",\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":6,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":6,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"hybrid\",\"telemetry\",\"ruvector\",\"smoke\",\"probe\"],\"tsquery\":\"hybrid | telemetry | ruvector | smoke | probe\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":6,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}"
+    }
+  }
+}

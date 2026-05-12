@@ -1,0 +1,90 @@
+{
+  "artifact_date": "2026-05-02",
+  "description": "After initial Step 5h artifacts were generated, 10 non-preregistered, non-LOCOMO, read-only /mcp/recall sanity checks were issued manually to understand why the preregistered fixed queries all returned zero results. These calls were not used to tune or replace the preregistered 8 pairs and are excluded from the primary stop/go comparison.",
+  "deviation_class": "post_probe_unplanned_read_only_recall_sanity_checks",
+  "extra_calls": [
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "memory",
+        "top_k": 10
+      },
+      "query": "memory"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "test",
+        "top_k": 10
+      },
+      "query": "test"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "health",
+        "top_k": 10
+      },
+      "query": "health"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "rerank",
+        "top_k": 10
+      },
+      "query": "rerank"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "default",
+        "top_k": 10
+      },
+      "query": "default"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "project",
+        "top_k": 10
+      },
+      "query": "project"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "telemetry",
+        "top_k": 10
+      },
+      "query": "telemetry"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "Memibrium",
+        "top_k": 10
+      },
+      "query": "Memibrium"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "configuration",
+        "top_k": 10
+      },
+      "query": "configuration"
+    },
+    {
+      "observed_result_count": 0,
+      "payload": {
+        "query": "database",
+        "top_k": 10
+      },
+      "query": "database"
+    }
+  ],
+  "impact_assessment": "No DB writes, LOCOMO ingest/cleanup, Docker/env/source/schema/runtime mutation, or benchmark execution occurred. The calls were after the preregistered 16-call paired comparison and all returned zero results. Primary paired comparison label remains based only on the preregistered pairs, but evidence strength is caveated because the preregistered pairs all exercised empty-result/no-hit behavior.",
+  "schema": "memibrium.locomo.paired_telemetry_flag_probe_protocol_deviation.v1",
+  "total_extra_calls": 10
+}

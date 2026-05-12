@@ -1,0 +1,1635 @@
+{
+  "audits": [
+    {
+      "artifact": "docs/eval/results/locomo_context_packet_canary_treatment_merge_refgate_frozen_artifactctx_shaped_multihop_temporal_20260504T182630Z.json",
+      "coverage_by_category": {
+        "adversarial": {
+          "all_atoms_present": 3,
+          "all_atoms_present_with_conflicts": 1,
+          "partial_atoms_present": 1
+        },
+        "multi-hop": {
+          "all_atoms_present": 1,
+          "no_atoms_present": 3,
+          "partial_atoms_present": 1
+        },
+        "single-hop": {
+          "all_atoms_present": 1,
+          "no_atoms_present": 1,
+          "partial_atoms_present": 3
+        },
+        "temporal": {
+          "all_atoms_present": 1,
+          "no_atoms_present": 4
+        },
+        "unanswerable": {
+          "all_atoms_present": 2,
+          "no_atoms_present": 1,
+          "no_atoms_present_conflicting_context": 1,
+          "partial_atoms_present_with_conflicts": 1
+        }
+      },
+      "coverage_counts": {
+        "all_atoms_present": 8,
+        "all_atoms_present_with_conflicts": 1,
+        "no_atoms_present": 9,
+        "no_atoms_present_conflicting_context": 1,
+        "partial_atoms_present": 5,
+        "partial_atoms_present_with_conflicts": 1
+      },
+      "label": "multi_temporal",
+      "row_count": 25,
+      "rows": [
+        {
+          "atoms": [
+            "Transgender woman"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "Transgender woman",
+          "missing_atoms": [],
+          "n_memories": 11,
+          "one_based_index": 5,
+          "predicted": "Caroline is a transgender woman.",
+          "present_atoms": [
+            "Transgender woman"
+          ],
+          "question": "What is Caroline's identity?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Nothing is Impossible",
+            "Charlotte's Web"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+          "missing_atoms": [
+            "Nothing is Impossible"
+          ],
+          "n_memories": 10,
+          "one_based_index": 24,
+          "predicted": "Melanie has read \"Charlotte's Web\" as a favorite childhood book and a book Caroline recommended that inspires pursuing dreams.",
+          "present_atoms": [
+            "Charlotte's Web"
+          ],
+          "question": "What books has Melanie read?",
+          "score": 0.5
+        },
+        {
+          "atoms": [
+            "The Friday before 15 July 2023"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "The Friday before 15 July 2023",
+          "missing_atoms": [
+            "The Friday before 15 July 2023"
+          ],
+          "n_memories": 10,
+          "one_based_index": 30,
+          "predicted": "Melanie went to the pottery workshop last Friday before 15 July 2023.",
+          "present_atoms": [],
+          "question": "When did Melanie go to the pottery workshop?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Likely no",
+            "she does not refer to herself as part of it"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Likely no, she does not refer to herself as part of it",
+          "missing_atoms": [
+            "Likely no",
+            "she does not refer to herself as part of it"
+          ],
+          "n_memories": 10,
+          "one_based_index": 31,
+          "predicted": "Likely no; the context shows Melanie supports and encourages Caroline, who is transgender and part of the LGBTQ community, but there is no indication Melanie herself is a member.",
+          "present_atoms": [],
+          "question": "Would Melanie be considered a member of the LGBTQ community?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Pottery",
+            "painting",
+            "camping",
+            "museum",
+            "swimming",
+            "hiking"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+          "missing_atoms": [
+            "museum",
+            "swimming",
+            "hiking"
+          ],
+          "n_memories": 11,
+          "one_based_index": 39,
+          "predicted": "Melanie has done pottery workshops, painting nature-inspired art, camping trips, and attended charity races with her family.",
+          "present_atoms": [
+            "Pottery",
+            "painting",
+            "camping"
+          ],
+          "question": "What activities has Melanie done with her family?",
+          "score": 0.5
+        },
+        {
+          "atoms": [
+            "Joining activist group",
+            "going to pride parades",
+            "participating in an art show",
+            "mentoring program"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+          "missing_atoms": [
+            "Joining activist group",
+            "going to pride parades",
+            "participating in an art show"
+          ],
+          "n_memories": 10,
+          "one_based_index": 40,
+          "predicted": "Caroline participates in the LGBTQ community by volunteering, mentoring LGBTQ youth, organizing an LGBTQ art show, attending support groups and pride events, giving talks about her transgender journey, creating inclusive art that expresses her trans experience, and advocating for acceptance and understanding.",
+          "present_atoms": [
+            "mentoring program"
+          ],
+          "question": "In what ways is Caroline participating in the LGBTQ community?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "beach"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": 2,
+          "missing_atoms": [
+            "beach"
+          ],
+          "n_memories": 10,
+          "one_based_index": 41,
+          "predicted": "I don't know.",
+          "present_atoms": [],
+          "question": "How many times has Melanie gone to the beach in 2023?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "Yes",
+            "she is supportive"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "Yes, she is supportive",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 47,
+          "predicted": "Yes, Melanie would be considered an ally to the transgender community.",
+          "present_atoms": [
+            "Yes",
+            "she is supportive"
+          ],
+          "question": "Would Melanie be considered an ally to the transgender community?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Liberal"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Liberal",
+          "missing_atoms": [
+            "Liberal"
+          ],
+          "n_memories": 10,
+          "one_based_index": 51,
+          "predicted": "Caroline's political leaning would likely be progressive or left-leaning, as evidenced by her active involvement in LGBTQ+ support, advocacy, and art promoting understanding and acceptance of the transgender community.",
+          "present_atoms": [],
+          "question": "What would Caroline's political leaning likely be?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "The week before 23 August 2023"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "The week before 23 August 2023",
+          "missing_atoms": [
+            "The week before 23 August 2023"
+          ],
+          "n_memories": 10,
+          "one_based_index": 55,
+          "predicted": "Caroline drew a self-portrait last week before 23 August 2023.",
+          "present_atoms": [],
+          "question": "When did Caroline draw a self-portrait?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Since 2016"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Since 2016",
+          "missing_atoms": [
+            "Since 2016"
+          ],
+          "n_memories": 10,
+          "one_based_index": 69,
+          "predicted": "Seven years now",
+          "present_atoms": [],
+          "question": "How long has Melanie been practicing art?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Thoughtful",
+            "authentic",
+            "driven"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "Thoughtful, authentic, driven",
+          "missing_atoms": [
+            "driven"
+          ],
+          "n_memories": 10,
+          "one_based_index": 70,
+          "predicted": "Thoughtful, authentic, driven.",
+          "present_atoms": [
+            "Thoughtful",
+            "authentic"
+          ],
+          "question": "What personality traits might Melanie say Caroline has?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "September 2023"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "September 2023",
+          "missing_atoms": [
+            "September 2023"
+          ],
+          "n_memories": 10,
+          "one_based_index": 74,
+          "predicted": "Melanie got hurt last month before 13 October 2023.",
+          "present_atoms": [],
+          "question": "When did Melanie get hurt?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Likely no",
+            "since this one went badly"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Likely no; since this one went badly",
+          "missing_atoms": [
+            "Likely no",
+            "since this one went badly"
+          ],
+          "n_memories": 10,
+          "one_based_index": 78,
+          "predicted": "Likely no; Melanie described the recent roadtrip as \"insane\" with a scary accident involving her son, which made her really scared and grateful for family, indicating a traumatic experience.",
+          "present_atoms": [],
+          "question": "Would Melanie go on another roadtrip soon?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "The Friday before 22 October 2023"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "The Friday before 22 October 2023",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 80,
+          "predicted": "Caroline passed the adoption agency interviews last Friday before 22 October 2023.",
+          "present_atoms": [
+            "The Friday before 22 October 2023"
+          ],
+          "question": "When did Caroline pass the adoption interview?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "a safe",
+            "inviting place for people to grow"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "a safe and inviting place for people to grow",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 101,
+          "predicted": "Caroline wants to create a safe, inviting place for people to grow, especially supporting trans individuals' mental health.",
+          "present_atoms": [
+            "a safe",
+            "inviting place for people to grow"
+          ],
+          "question": "What kind of place does Caroline want to create for people?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "sunset",
+            "palm tree"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [
+            "flowers",
+            "nature-inspired"
+          ],
+          "coverage_class": "no_atoms_present_conflicting_context",
+          "ground_truth": "a sunset with a palm tree",
+          "missing_atoms": [
+            "sunset",
+            "palm tree"
+          ],
+          "n_memories": 10,
+          "one_based_index": 113,
+          "predicted": "Mel and her kids painted a nature-inspired painting featuring lovely flowers in their latest project in July 2023.",
+          "present_atoms": [],
+          "question": "What did Mel and her kids paint in their latest project in July 2023?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "Melanie's daughter"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Melanie's daughter",
+          "missing_atoms": [
+            "Melanie's daughter"
+          ],
+          "n_memories": 10,
+          "one_based_index": 121,
+          "predicted": "Melanie recently celebrated her daughter's birthday.",
+          "present_atoms": [],
+          "question": "Whose birthday did Melanie celebrate recently?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "catch the eye",
+            "make people smile"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [
+            "express emotions",
+            "self-expression",
+            "relax"
+          ],
+          "coverage_class": "partial_atoms_present_with_conflicts",
+          "ground_truth": "She wanted to catch the eye and make people smile.",
+          "missing_atoms": [
+            "catch the eye"
+          ],
+          "n_memories": 10,
+          "one_based_index": 123,
+          "predicted": "Melanie used colors and patterns in her pottery project to express emotions, creativity, and self-expression.",
+          "present_atoms": [
+            "make people smile"
+          ],
+          "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+          "score": 0.5
+        },
+        {
+          "atoms": [
+            "a stained glass window"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "a stained glass window",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 128,
+          "predicted": "Caroline made a stained glass window for a local church.",
+          "present_atoms": [
+            "a stained glass window"
+          ],
+          "question": "What did Caroline make for a local church?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "nature",
+            "roasted marshmallows",
+            "hike"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+          "missing_atoms": [
+            "hike"
+          ],
+          "n_memories": 10,
+          "one_based_index": 163,
+          "predicted": "They roasted marshmallows and shared stories around the campfire.",
+          "present_atoms": [
+            "nature",
+            "roasted marshmallows"
+          ],
+          "question": "What did Caroline and her family do while camping?",
+          "score": 0.5
+        },
+        {
+          "atoms": [
+            "many people wanting to create loving homes for children in need"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "many people wanting to create loving homes for children in need",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 172,
+          "predicted": "Melanie saw many people wanting to create loving homes for children in need at the council meeting for adoption.",
+          "present_atoms": [
+            "many people wanting to create loving homes for children in need"
+          ],
+          "question": "What did Melanie see at the council meeting for adoption?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "a rainbow sidewalk"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "a rainbow sidewalk",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 183,
+          "predicted": "Melanie found a cool rainbow sidewalk for Pride Month in her neighborhood during her walk.",
+          "present_atoms": [
+            "a rainbow sidewalk"
+          ],
+          "question": "What did Melanie find in her neighborhood during her walk?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "clarinet",
+            "violin"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [
+            "acoustic guitar",
+            "guitar"
+          ],
+          "coverage_class": "all_atoms_present_with_conflicts",
+          "ground_truth": "clarinet and violin",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 185,
+          "predicted": "Caroline plays acoustic guitar.",
+          "present_atoms": [
+            "clarinet",
+            "violin"
+          ],
+          "question": "What type of instrument does Caroline play?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "They were scared but resilient"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "They were scared but resilient",
+          "missing_atoms": [],
+          "n_memories": 11,
+          "one_based_index": 195,
+          "predicted": "Caroline's children were scared but were reassured and handled the situation with resilience.",
+          "present_atoms": [
+            "They were scared but resilient"
+          ],
+          "question": "How did Caroline's children handle the accident?",
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "artifact": "docs/eval/results/locomo_context_packet_canary_treatment_merge_refgate_frozen_artifactctx_shaped_singlehop_20260505T094418Z.json",
+      "coverage_by_category": {
+        "adversarial": {
+          "all_atoms_present": 3,
+          "all_atoms_present_with_conflicts": 1,
+          "partial_atoms_present": 1
+        },
+        "multi-hop": {
+          "all_atoms_present": 1,
+          "no_atoms_present": 3,
+          "partial_atoms_present": 1
+        },
+        "single-hop": {
+          "all_atoms_present": 1,
+          "no_atoms_present": 1,
+          "partial_atoms_present": 3
+        },
+        "temporal": {
+          "all_atoms_present": 1,
+          "no_atoms_present": 4
+        },
+        "unanswerable": {
+          "all_atoms_present": 2,
+          "no_atoms_present": 1,
+          "no_atoms_present_conflicting_context": 1,
+          "partial_atoms_present_with_conflicts": 1
+        }
+      },
+      "coverage_counts": {
+        "all_atoms_present": 8,
+        "all_atoms_present_with_conflicts": 1,
+        "no_atoms_present": 9,
+        "no_atoms_present_conflicting_context": 1,
+        "partial_atoms_present": 5,
+        "partial_atoms_present_with_conflicts": 1
+      },
+      "label": "singlehop",
+      "row_count": 25,
+      "rows": [
+        {
+          "atoms": [
+            "Transgender woman"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "Transgender woman",
+          "missing_atoms": [],
+          "n_memories": 11,
+          "one_based_index": 5,
+          "predicted": "Caroline is transgender.",
+          "present_atoms": [
+            "Transgender woman"
+          ],
+          "question": "What is Caroline's identity?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Nothing is Impossible",
+            "Charlotte's Web"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+          "missing_atoms": [
+            "Nothing is Impossible"
+          ],
+          "n_memories": 10,
+          "one_based_index": 24,
+          "predicted": "Melanie has read \"Charlotte's Web\" as a favorite book from her childhood.",
+          "present_atoms": [
+            "Charlotte's Web"
+          ],
+          "question": "What books has Melanie read?",
+          "score": 0.5
+        },
+        {
+          "atoms": [
+            "The Friday before 15 July 2023"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "The Friday before 15 July 2023",
+          "missing_atoms": [
+            "The Friday before 15 July 2023"
+          ],
+          "n_memories": 10,
+          "one_based_index": 30,
+          "predicted": "Melanie took her kids to a pottery workshop on Friday, 14 July 2023.",
+          "present_atoms": [],
+          "question": "When did Melanie go to the pottery workshop?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Likely no",
+            "she does not refer to herself as part of it"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Likely no, she does not refer to herself as part of it",
+          "missing_atoms": [
+            "Likely no",
+            "she does not refer to herself as part of it"
+          ],
+          "n_memories": 10,
+          "one_based_index": 31,
+          "predicted": "I don't know.",
+          "present_atoms": [],
+          "question": "Would Melanie be considered a member of the LGBTQ community?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "Pottery",
+            "painting",
+            "camping",
+            "museum",
+            "swimming",
+            "hiking"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+          "missing_atoms": [
+            "museum",
+            "swimming",
+            "hiking"
+          ],
+          "n_memories": 11,
+          "one_based_index": 39,
+          "predicted": "Melanie has done the following activities with her family: camping at the beach, going camping next month, attending a pottery workshop where they made pots, and painting nature-inspired artwork together.",
+          "present_atoms": [
+            "Pottery",
+            "painting",
+            "camping"
+          ],
+          "question": "What activities has Melanie done with her family?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Joining activist group",
+            "going to pride parades",
+            "participating in an art show",
+            "mentoring program"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+          "missing_atoms": [
+            "Joining activist group",
+            "going to pride parades",
+            "participating in an art show"
+          ],
+          "n_memories": 10,
+          "one_based_index": 40,
+          "predicted": "Caroline participates in the LGBTQ community by attending LGBTQ support groups, mentoring LGBTQ youth including a transgender teen, organizing and showing her paintings in an LGBTQ art show, speaking at school events about her transgender journey to encourage involvement, attending pride parades, creating art that expresses her trans experience and promotes acceptance, and choosing an adoption agency that supports LGBTQ+ individuals.",
+          "present_atoms": [
+            "mentoring program"
+          ],
+          "question": "In what ways is Caroline participating in the LGBTQ community?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "beach"
+          ],
+          "cat": "single-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": 2,
+          "missing_atoms": [
+            "beach"
+          ],
+          "n_memories": 10,
+          "one_based_index": 41,
+          "predicted": "I don't know.",
+          "present_atoms": [],
+          "question": "How many times has Melanie gone to the beach in 2023?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "Yes",
+            "she is supportive"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "Yes, she is supportive",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 47,
+          "predicted": "Yes, Melanie would be considered an ally to the transgender community.",
+          "present_atoms": [
+            "Yes",
+            "she is supportive"
+          ],
+          "question": "Would Melanie be considered an ally to the transgender community?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Liberal"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Liberal",
+          "missing_atoms": [
+            "Liberal"
+          ],
+          "n_memories": 10,
+          "one_based_index": 51,
+          "predicted": "I don't know.",
+          "present_atoms": [],
+          "question": "What would Caroline's political leaning likely be?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "The week before 23 August 2023"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "The week before 23 August 2023",
+          "missing_atoms": [
+            "The week before 23 August 2023"
+          ],
+          "n_memories": 10,
+          "one_based_index": 55,
+          "predicted": "Caroline drew a self-portrait in the week before 23 August 2023.",
+          "present_atoms": [],
+          "question": "When did Caroline draw a self-portrait?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Since 2016"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Since 2016",
+          "missing_atoms": [
+            "Since 2016"
+          ],
+          "n_memories": 10,
+          "one_based_index": 69,
+          "predicted": "Melanie has been practicing art for seven years.",
+          "present_atoms": [],
+          "question": "How long has Melanie been practicing art?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Thoughtful",
+            "authentic",
+            "driven"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "Thoughtful, authentic, driven",
+          "missing_atoms": [
+            "driven"
+          ],
+          "n_memories": 10,
+          "one_based_index": 70,
+          "predicted": "Melanie might say Caroline is courageous, inspiring, caring, passionate, strong, authentic, supportive, and determined.",
+          "present_atoms": [
+            "Thoughtful",
+            "authentic"
+          ],
+          "question": "What personality traits might Melanie say Caroline has?",
+          "score": 0.5
+        },
+        {
+          "atoms": [
+            "September 2023"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "September 2023",
+          "missing_atoms": [
+            "September 2023"
+          ],
+          "n_memories": 10,
+          "one_based_index": 74,
+          "predicted": "Melanie got hurt in September 2023 (last month before October 13, 2023).",
+          "present_atoms": [],
+          "question": "When did Melanie get hurt?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "Likely no",
+            "since this one went badly"
+          ],
+          "cat": "multi-hop",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Likely no; since this one went badly",
+          "missing_atoms": [
+            "Likely no",
+            "since this one went badly"
+          ],
+          "n_memories": 10,
+          "one_based_index": 78,
+          "predicted": "I don't know.",
+          "present_atoms": [],
+          "question": "Would Melanie go on another roadtrip soon?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "The Friday before 22 October 2023"
+          ],
+          "cat": "temporal",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "The Friday before 22 October 2023",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 80,
+          "predicted": "Caroline passed the adoption agency interviews on Friday before 22 October 2023.",
+          "present_atoms": [
+            "The Friday before 22 October 2023"
+          ],
+          "question": "When did Caroline pass the adoption interview?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "a safe",
+            "inviting place for people to grow"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "a safe and inviting place for people to grow",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 101,
+          "predicted": "Caroline wants to create a safe, inviting place for people to grow, especially supporting trans individuals' mental health.",
+          "present_atoms": [
+            "a safe",
+            "inviting place for people to grow"
+          ],
+          "question": "What kind of place does Caroline want to create for people?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "sunset",
+            "palm tree"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [
+            "flowers",
+            "nature-inspired"
+          ],
+          "coverage_class": "no_atoms_present_conflicting_context",
+          "ground_truth": "a sunset with a palm tree",
+          "missing_atoms": [
+            "sunset",
+            "palm tree"
+          ],
+          "n_memories": 10,
+          "one_based_index": 113,
+          "predicted": "Mel and her kids painted a nature-inspired painting featuring lovely flowers in their latest project in July 2023.",
+          "present_atoms": [],
+          "question": "What did Mel and her kids paint in their latest project in July 2023?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "Melanie's daughter"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [],
+          "coverage_class": "no_atoms_present",
+          "ground_truth": "Melanie's daughter",
+          "missing_atoms": [
+            "Melanie's daughter"
+          ],
+          "n_memories": 10,
+          "one_based_index": 121,
+          "predicted": "Melanie recently celebrated her daughter's birthday.",
+          "present_atoms": [],
+          "question": "Whose birthday did Melanie celebrate recently?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "catch the eye",
+            "make people smile"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [
+            "express emotions",
+            "self-expression",
+            "relax"
+          ],
+          "coverage_class": "partial_atoms_present_with_conflicts",
+          "ground_truth": "She wanted to catch the eye and make people smile.",
+          "missing_atoms": [
+            "catch the eye"
+          ],
+          "n_memories": 10,
+          "one_based_index": 123,
+          "predicted": "Melanie used colors and patterns in her pottery project to express emotions, creativity, and to relax after a long day.",
+          "present_atoms": [
+            "make people smile"
+          ],
+          "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+          "score": 0.5
+        },
+        {
+          "atoms": [
+            "a stained glass window"
+          ],
+          "cat": "unanswerable",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "a stained glass window",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 128,
+          "predicted": "Caroline made a stained glass window for a local church.",
+          "present_atoms": [
+            "a stained glass window"
+          ],
+          "question": "What did Caroline make for a local church?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "nature",
+            "roasted marshmallows",
+            "hike"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [],
+          "coverage_class": "partial_atoms_present",
+          "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+          "missing_atoms": [
+            "hike"
+          ],
+          "n_memories": 10,
+          "one_based_index": 163,
+          "predicted": "They roasted marshmallows and shared stories around the campfire.",
+          "present_atoms": [
+            "nature",
+            "roasted marshmallows"
+          ],
+          "question": "What did Caroline and her family do while camping?",
+          "score": 0.5
+        },
+        {
+          "atoms": [
+            "many people wanting to create loving homes for children in need"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "many people wanting to create loving homes for children in need",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 172,
+          "predicted": "Melanie saw many people wanting to create loving homes for children in need at the council meeting for adoption.",
+          "present_atoms": [
+            "many people wanting to create loving homes for children in need"
+          ],
+          "question": "What did Melanie see at the council meeting for adoption?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "a rainbow sidewalk"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "a rainbow sidewalk",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 183,
+          "predicted": "Melanie did not mention finding anything in her neighborhood during her walk; it was Caroline who found a cool rainbow sidewalk for Pride Month during her walk.",
+          "present_atoms": [
+            "a rainbow sidewalk"
+          ],
+          "question": "What did Melanie find in her neighborhood during her walk?",
+          "score": 1.0
+        },
+        {
+          "atoms": [
+            "clarinet",
+            "violin"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [
+            "acoustic guitar",
+            "guitar"
+          ],
+          "coverage_class": "all_atoms_present_with_conflicts",
+          "ground_truth": "clarinet and violin",
+          "missing_atoms": [],
+          "n_memories": 10,
+          "one_based_index": 185,
+          "predicted": "Caroline plays acoustic guitar.",
+          "present_atoms": [
+            "clarinet",
+            "violin"
+          ],
+          "question": "What type of instrument does Caroline play?",
+          "score": 0.0
+        },
+        {
+          "atoms": [
+            "They were scared but resilient"
+          ],
+          "cat": "adversarial",
+          "conflict_terms_present": [],
+          "coverage_class": "all_atoms_present",
+          "ground_truth": "They were scared but resilient",
+          "missing_atoms": [],
+          "n_memories": 11,
+          "one_based_index": 195,
+          "predicted": "Caroline's children were scared but were reassured and handled the situation with resilience.",
+          "present_atoms": [
+            "They were scared but resilient"
+          ],
+          "question": "How did Caroline's children handle the accident?",
+          "score": 1.0
+        }
+      ]
+    }
+  ],
+  "best_rows": [
+    {
+      "atoms": [
+        "Transgender woman"
+      ],
+      "cat": "single-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "all_atoms_present",
+      "ground_truth": "Transgender woman",
+      "missing_atoms": [],
+      "n_memories": 11,
+      "one_based_index": 5,
+      "predicted": "Caroline is a transgender woman.",
+      "present_atoms": [
+        "Transgender woman"
+      ],
+      "question": "What is Caroline's identity?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Nothing is Impossible",
+        "Charlotte's Web"
+      ],
+      "cat": "single-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "partial_atoms_present",
+      "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "missing_atoms": [
+        "Nothing is Impossible"
+      ],
+      "n_memories": 10,
+      "one_based_index": 24,
+      "predicted": "Melanie has read \"Charlotte's Web\" as a favorite childhood book and a book Caroline recommended that inspires pursuing dreams.",
+      "present_atoms": [
+        "Charlotte's Web"
+      ],
+      "question": "What books has Melanie read?",
+      "score": 0.5,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "The Friday before 15 July 2023"
+      ],
+      "cat": "temporal",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": "The Friday before 15 July 2023",
+      "missing_atoms": [
+        "The Friday before 15 July 2023"
+      ],
+      "n_memories": 10,
+      "one_based_index": 30,
+      "predicted": "Melanie went to the pottery workshop last Friday before 15 July 2023.",
+      "present_atoms": [],
+      "question": "When did Melanie go to the pottery workshop?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Likely no",
+        "she does not refer to herself as part of it"
+      ],
+      "cat": "multi-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": "Likely no, she does not refer to herself as part of it",
+      "missing_atoms": [
+        "Likely no",
+        "she does not refer to herself as part of it"
+      ],
+      "n_memories": 10,
+      "one_based_index": 31,
+      "predicted": "Likely no; the context shows Melanie supports and encourages Caroline, who is transgender and part of the LGBTQ community, but there is no indication Melanie herself is a member.",
+      "present_atoms": [],
+      "question": "Would Melanie be considered a member of the LGBTQ community?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Pottery",
+        "painting",
+        "camping",
+        "museum",
+        "swimming",
+        "hiking"
+      ],
+      "cat": "single-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "partial_atoms_present",
+      "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+      "missing_atoms": [
+        "museum",
+        "swimming",
+        "hiking"
+      ],
+      "n_memories": 11,
+      "one_based_index": 39,
+      "predicted": "Melanie has done the following activities with her family: camping at the beach, going camping next month, attending a pottery workshop where they made pots, and painting nature-inspired artwork together.",
+      "present_atoms": [
+        "Pottery",
+        "painting",
+        "camping"
+      ],
+      "question": "What activities has Melanie done with her family?",
+      "score": 1.0,
+      "source_label": "singlehop"
+    },
+    {
+      "atoms": [
+        "Joining activist group",
+        "going to pride parades",
+        "participating in an art show",
+        "mentoring program"
+      ],
+      "cat": "single-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "partial_atoms_present",
+      "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "missing_atoms": [
+        "Joining activist group",
+        "going to pride parades",
+        "participating in an art show"
+      ],
+      "n_memories": 10,
+      "one_based_index": 40,
+      "predicted": "Caroline participates in the LGBTQ community by volunteering, mentoring LGBTQ youth, organizing an LGBTQ art show, attending support groups and pride events, giving talks about her transgender journey, creating inclusive art that expresses her trans experience, and advocating for acceptance and understanding.",
+      "present_atoms": [
+        "mentoring program"
+      ],
+      "question": "In what ways is Caroline participating in the LGBTQ community?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "beach"
+      ],
+      "cat": "single-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": 2,
+      "missing_atoms": [
+        "beach"
+      ],
+      "n_memories": 10,
+      "one_based_index": 41,
+      "predicted": "I don't know.",
+      "present_atoms": [],
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "score": 0.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Yes",
+        "she is supportive"
+      ],
+      "cat": "multi-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "all_atoms_present",
+      "ground_truth": "Yes, she is supportive",
+      "missing_atoms": [],
+      "n_memories": 10,
+      "one_based_index": 47,
+      "predicted": "Yes, Melanie would be considered an ally to the transgender community.",
+      "present_atoms": [
+        "Yes",
+        "she is supportive"
+      ],
+      "question": "Would Melanie be considered an ally to the transgender community?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Liberal"
+      ],
+      "cat": "multi-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": "Liberal",
+      "missing_atoms": [
+        "Liberal"
+      ],
+      "n_memories": 10,
+      "one_based_index": 51,
+      "predicted": "Caroline's political leaning would likely be progressive or left-leaning, as evidenced by her active involvement in LGBTQ+ support, advocacy, and art promoting understanding and acceptance of the transgender community.",
+      "present_atoms": [],
+      "question": "What would Caroline's political leaning likely be?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "The week before 23 August 2023"
+      ],
+      "cat": "temporal",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": "The week before 23 August 2023",
+      "missing_atoms": [
+        "The week before 23 August 2023"
+      ],
+      "n_memories": 10,
+      "one_based_index": 55,
+      "predicted": "Caroline drew a self-portrait last week before 23 August 2023.",
+      "present_atoms": [],
+      "question": "When did Caroline draw a self-portrait?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Since 2016"
+      ],
+      "cat": "temporal",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": "Since 2016",
+      "missing_atoms": [
+        "Since 2016"
+      ],
+      "n_memories": 10,
+      "one_based_index": 69,
+      "predicted": "Seven years now",
+      "present_atoms": [],
+      "question": "How long has Melanie been practicing art?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Thoughtful",
+        "authentic",
+        "driven"
+      ],
+      "cat": "multi-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "partial_atoms_present",
+      "ground_truth": "Thoughtful, authentic, driven",
+      "missing_atoms": [
+        "driven"
+      ],
+      "n_memories": 10,
+      "one_based_index": 70,
+      "predicted": "Thoughtful, authentic, driven.",
+      "present_atoms": [
+        "Thoughtful",
+        "authentic"
+      ],
+      "question": "What personality traits might Melanie say Caroline has?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "September 2023"
+      ],
+      "cat": "temporal",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": "September 2023",
+      "missing_atoms": [
+        "September 2023"
+      ],
+      "n_memories": 10,
+      "one_based_index": 74,
+      "predicted": "Melanie got hurt last month before 13 October 2023.",
+      "present_atoms": [],
+      "question": "When did Melanie get hurt?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Likely no",
+        "since this one went badly"
+      ],
+      "cat": "multi-hop",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": "Likely no; since this one went badly",
+      "missing_atoms": [
+        "Likely no",
+        "since this one went badly"
+      ],
+      "n_memories": 10,
+      "one_based_index": 78,
+      "predicted": "Likely no; Melanie described the recent roadtrip as \"insane\" with a scary accident involving her son, which made her really scared and grateful for family, indicating a traumatic experience.",
+      "present_atoms": [],
+      "question": "Would Melanie go on another roadtrip soon?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "The Friday before 22 October 2023"
+      ],
+      "cat": "temporal",
+      "conflict_terms_present": [],
+      "coverage_class": "all_atoms_present",
+      "ground_truth": "The Friday before 22 October 2023",
+      "missing_atoms": [],
+      "n_memories": 10,
+      "one_based_index": 80,
+      "predicted": "Caroline passed the adoption agency interviews last Friday before 22 October 2023.",
+      "present_atoms": [
+        "The Friday before 22 October 2023"
+      ],
+      "question": "When did Caroline pass the adoption interview?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "a safe",
+        "inviting place for people to grow"
+      ],
+      "cat": "unanswerable",
+      "conflict_terms_present": [],
+      "coverage_class": "all_atoms_present",
+      "ground_truth": "a safe and inviting place for people to grow",
+      "missing_atoms": [],
+      "n_memories": 10,
+      "one_based_index": 101,
+      "predicted": "Caroline wants to create a safe, inviting place for people to grow, especially supporting trans individuals' mental health.",
+      "present_atoms": [
+        "a safe",
+        "inviting place for people to grow"
+      ],
+      "question": "What kind of place does Caroline want to create for people?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "sunset",
+        "palm tree"
+      ],
+      "cat": "unanswerable",
+      "conflict_terms_present": [
+        "flowers",
+        "nature-inspired"
+      ],
+      "coverage_class": "no_atoms_present_conflicting_context",
+      "ground_truth": "a sunset with a palm tree",
+      "missing_atoms": [
+        "sunset",
+        "palm tree"
+      ],
+      "n_memories": 10,
+      "one_based_index": 113,
+      "predicted": "Mel and her kids painted a nature-inspired painting featuring lovely flowers in their latest project in July 2023.",
+      "present_atoms": [],
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "score": 0.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "Melanie's daughter"
+      ],
+      "cat": "unanswerable",
+      "conflict_terms_present": [],
+      "coverage_class": "no_atoms_present",
+      "ground_truth": "Melanie's daughter",
+      "missing_atoms": [
+        "Melanie's daughter"
+      ],
+      "n_memories": 10,
+      "one_based_index": 121,
+      "predicted": "Melanie recently celebrated her daughter's birthday.",
+      "present_atoms": [],
+      "question": "Whose birthday did Melanie celebrate recently?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "catch the eye",
+        "make people smile"
+      ],
+      "cat": "unanswerable",
+      "conflict_terms_present": [
+        "express emotions",
+        "self-expression",
+        "relax"
+      ],
+      "coverage_class": "partial_atoms_present_with_conflicts",
+      "ground_truth": "She wanted to catch the eye and make people smile.",
+      "missing_atoms": [
+        "catch the eye"
+      ],
+      "n_memories": 10,
+      "one_based_index": 123,
+      "predicted": "Melanie used colors and patterns in her pottery project to express emotions, creativity, and self-expression.",
+      "present_atoms": [
+        "make people smile"
+      ],
+      "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+      "score": 0.5,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "a stained glass window"
+      ],
+      "cat": "unanswerable",
+      "conflict_terms_present": [],
+      "coverage_class": "all_atoms_present",
+      "ground_truth": "a stained glass window",
+      "missing_atoms": [],
+      "n_memories": 10,
+      "one_based_index": 128,
+      "predicted": "Caroline made a stained glass window for a local church.",
+      "present_atoms": [
+        "a stained glass window"
+      ],
+      "question": "What did Caroline make for a local church?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "nature",
+        "roasted marshmallows",
+        "hike"
+      ],
+      "cat": "adversarial",
+      "conflict_terms_present": [],
+      "coverage_class": "partial_atoms_present",
+      "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+      "missing_atoms": [
+        "hike"
+      ],
+      "n_memories": 10,
+      "one_based_index": 163,
+      "predicted": "They roasted marshmallows and shared stories around the campfire.",
+      "present_atoms": [
+        "nature",
+        "roasted marshmallows"
+      ],
+      "question": "What did Caroline and her family do while camping?",
+      "score": 0.5,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "cat": "adversarial",
+      "conflict_terms_present": [],
+      "coverage_class": "all_atoms_present",
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "missing_atoms": [],
+      "n_memories": 10,
+      "one_based_index": 172,
+      "predicted": "Melanie saw many people wanting to create loving homes for children in need at the council meeting for adoption.",
+      "present_atoms": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "a rainbow sidewalk"
+      ],
+      "cat": "adversarial",
+      "conflict_terms_present": [],
+      "coverage_class": "all_atoms_present",
+      "ground_truth": "a rainbow sidewalk",
+      "missing_atoms": [],
+      "n_memories": 10,
+      "one_based_index": 183,
+      "predicted": "Melanie found a cool rainbow sidewalk for Pride Month in her neighborhood during her walk.",
+      "present_atoms": [
+        "a rainbow sidewalk"
+      ],
+      "question": "What did Melanie find in her neighborhood during her walk?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "clarinet",
+        "violin"
+      ],
+      "cat": "adversarial",
+      "conflict_terms_present": [
+        "acoustic guitar",
+        "guitar"
+      ],
+      "coverage_class": "all_atoms_present_with_conflicts",
+      "ground_truth": "clarinet and violin",
+      "missing_atoms": [],
+      "n_memories": 10,
+      "one_based_index": 185,
+      "predicted": "Caroline plays acoustic guitar.",
+      "present_atoms": [
+        "clarinet",
+        "violin"
+      ],
+      "question": "What type of instrument does Caroline play?",
+      "score": 0.0,
+      "source_label": "multi_temporal"
+    },
+    {
+      "atoms": [
+        "They were scared but resilient"
+      ],
+      "cat": "adversarial",
+      "conflict_terms_present": [],
+      "coverage_class": "all_atoms_present",
+      "ground_truth": "They were scared but resilient",
+      "missing_atoms": [],
+      "n_memories": 11,
+      "one_based_index": 195,
+      "predicted": "Caroline's children were scared but were reassured and handled the situation with resilience.",
+      "present_atoms": [
+        "They were scared but resilient"
+      ],
+      "question": "How did Caroline's children handle the accident?",
+      "score": 1.0,
+      "source_label": "multi_temporal"
+    }
+  ],
+  "schema": "memibrium.locomo.gold_object_coverage_audit.v1",
+  "scope": "artifact_only_pinned_25row_canary_no_runtime_mutation"
+}

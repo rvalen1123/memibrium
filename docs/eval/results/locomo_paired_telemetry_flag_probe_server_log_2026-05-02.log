@@ -1,0 +1,26 @@
+INFO:     127.0.0.1:46612 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46482 - "GET /health HTTP/1.1" 200 OK
+2026-05-02 16:43:16,174 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     172.21.0.1:52432 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     172.21.0.1:52442 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 16:43:16,874 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     172.21.0.1:52454 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     172.21.0.1:42132 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 16:43:17,614 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     172.21.0.1:42144 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     172.21.0.1:42154 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 16:43:18,314 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     172.21.0.1:42162 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     172.21.0.1:42174 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 16:43:19,133 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     172.21.0.1:42182 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     172.21.0.1:42198 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 16:43:19,819 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     172.21.0.1:42202 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     172.21.0.1:42206 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 16:43:20,510 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     172.21.0.1:42212 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     172.21.0.1:42214 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 16:43:21,156 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     172.21.0.1:42228 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     172.21.0.1:42244 - "POST /mcp/recall HTTP/1.1" 200 OK

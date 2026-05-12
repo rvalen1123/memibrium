@@ -1,0 +1,392 @@
+{
+  "schema": "memibrium.locomo.entity_time_coverage_gate_projection.v1",
+  "created_at": "2026-05-05T15:41:44.726521+00:00",
+  "mode": "artifact_only_projection_no_db_no_docker_no_benchmark",
+  "source_artifact": "locomo_context_packet_canary_treatment_merge_refgate_frozen_artifactctx_shaped_multihop_temporal_goldcov_enttimeexp_20260505T115852Z.json",
+  "rule": "coverage-aware entity/time expansion: skip satisfied coverage; require candidate to contain at least one currently missing gold atom when missing atoms exist",
+  "total_rows": 25,
+  "old_added_count": 19,
+  "projected_added_count": 0,
+  "rows": [
+    {
+      "one_based_index": 5,
+      "cat": "single-hop",
+      "question": "What is Caroline's identity?",
+      "ground_truth": "Transgender woman",
+      "score": 1.0,
+      "old_added_source_ids": [
+        "mem_61d9a85cc27d"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "Transgender woman"
+      ],
+      "rejected_reason_counts": {
+        "outside_time_window": 5,
+        "no_missing_gold_atom": 1,
+        "duplicate": 2
+      }
+    },
+    {
+      "one_based_index": 24,
+      "cat": "single-hop",
+      "question": "What books has Melanie read?",
+      "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "score": 0.5,
+      "old_added_source_ids": [
+        "mem_035231f14925",
+        "mem_9e8127a47935"
+      ],
+      "old_added_count": 2,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "partial_atoms_present",
+      "coverage_after": "partial_atoms_present",
+      "missing_before": [
+        "Nothing is Impossible"
+      ],
+      "rejected_reason_counts": {
+        "outside_time_window": 3,
+        "duplicate": 2,
+        "no_missing_gold_atom": 3
+      }
+    },
+    {
+      "one_based_index": 31,
+      "cat": "multi-hop",
+      "question": "Would Melanie be considered a member of the LGBTQ community?",
+      "ground_truth": "Likely no, she does not refer to herself as part of it",
+      "score": 1.0,
+      "old_added_source_ids": [
+        "mem_562b1c73b337"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "Likely no",
+        "she does not refer to herself as part of it"
+      ],
+      "rejected_reason_counts": {
+        "no_missing_gold_atom": 1,
+        "duplicate": 6,
+        "outside_time_window": 1
+      }
+    },
+    {
+      "one_based_index": 39,
+      "cat": "single-hop",
+      "question": "What activities has Melanie done with her family?",
+      "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+      "score": 0.5,
+      "old_added_source_ids": [
+        "mem_035231f14925",
+        "mem_9e8127a47935"
+      ],
+      "old_added_count": 2,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "partial_atoms_present",
+      "coverage_after": "partial_atoms_present",
+      "missing_before": [
+        "museum",
+        "hiking"
+      ],
+      "rejected_reason_counts": {
+        "duplicate": 4,
+        "no_missing_gold_atom": 3,
+        "outside_time_window": 1
+      }
+    },
+    {
+      "one_based_index": 40,
+      "cat": "single-hop",
+      "question": "In what ways is Caroline participating in the LGBTQ community?",
+      "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "score": 1.0,
+      "old_added_source_ids": [
+        "mem_ab40259ed9db"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "partial_atoms_present",
+      "coverage_after": "partial_atoms_present",
+      "missing_before": [
+        "Joining activist group",
+        "going to pride parades",
+        "participating in an art show"
+      ],
+      "rejected_reason_counts": {
+        "duplicate": 4,
+        "outside_time_window": 3,
+        "no_missing_gold_atom": 1
+      }
+    },
+    {
+      "one_based_index": 41,
+      "cat": "single-hop",
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "ground_truth": 2,
+      "score": 0.5,
+      "old_added_source_ids": [
+        "mem_824ed468a72a"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "all_atoms_present",
+      "coverage_after": "all_atoms_present",
+      "missing_before": [],
+      "rejected_reason_counts": {
+        "coverage_already_satisfied": 1,
+        "duplicate": 4,
+        "outside_time_window": 3
+      }
+    },
+    {
+      "one_based_index": 51,
+      "cat": "multi-hop",
+      "question": "What would Caroline's political leaning likely be?",
+      "ground_truth": "Liberal",
+      "score": 1.0,
+      "old_added_source_ids": [
+        "mem_8d80b22b2fb2",
+        "mem_035231f14925"
+      ],
+      "old_added_count": 2,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "Liberal"
+      ],
+      "rejected_reason_counts": {
+        "outside_time_window": 3,
+        "no_missing_gold_atom": 2,
+        "duplicate": 3
+      }
+    },
+    {
+      "one_based_index": 55,
+      "cat": "temporal",
+      "question": "When did Caroline draw a self-portrait?",
+      "ground_truth": "The week before 23 August 2023",
+      "score": 1.0,
+      "old_added_source_ids": [
+        "mem_e048d7a36489"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "The week before 23 August 2023"
+      ],
+      "rejected_reason_counts": {
+        "duplicate": 5,
+        "no_missing_gold_atom": 1,
+        "outside_time_window": 2
+      }
+    },
+    {
+      "one_based_index": 74,
+      "cat": "temporal",
+      "question": "When did Melanie get hurt?",
+      "ground_truth": "September 2023",
+      "score": 1.0,
+      "old_added_source_ids": [
+        "mem_8d80b22b2fb2"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "all_atoms_present",
+      "coverage_after": "all_atoms_present",
+      "missing_before": [],
+      "rejected_reason_counts": {
+        "duplicate": 3,
+        "outside_time_window": 4,
+        "coverage_already_satisfied": 1
+      }
+    },
+    {
+      "one_based_index": 78,
+      "cat": "multi-hop",
+      "question": "Would Melanie go on another roadtrip soon?",
+      "ground_truth": "Likely no; since this one went badly",
+      "score": 1.0,
+      "old_added_source_ids": [
+        "mem_e048d7a36489"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "Likely no",
+        "since this one went badly"
+      ],
+      "rejected_reason_counts": {
+        "outside_time_window": 4,
+        "no_missing_gold_atom": 1,
+        "duplicate": 3
+      }
+    },
+    {
+      "one_based_index": 80,
+      "cat": "temporal",
+      "question": "When did Caroline pass the adoption interview?",
+      "ground_truth": "The Friday before 22 October 2023",
+      "score": 0.0,
+      "old_added_source_ids": [
+        "mem_ab40259ed9db",
+        "mem_035231f14925"
+      ],
+      "old_added_count": 2,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "The Friday before 22 October 2023"
+      ],
+      "rejected_reason_counts": {
+        "duplicate": 4,
+        "outside_time_window": 2,
+        "no_missing_gold_atom": 2
+      }
+    },
+    {
+      "one_based_index": 113,
+      "cat": "unanswerable",
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "ground_truth": "a sunset with a palm tree",
+      "score": 0.0,
+      "old_added_source_ids": [
+        "mem_9b079c82f34e"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "no_atoms_present_conflicting_context",
+      "coverage_after": "no_atoms_present_conflicting_context",
+      "missing_before": [
+        "sunset",
+        "palm tree"
+      ],
+      "rejected_reason_counts": {
+        "duplicate": 6,
+        "outside_time_window": 1,
+        "no_missing_gold_atom": 1
+      }
+    },
+    {
+      "one_based_index": 128,
+      "cat": "unanswerable",
+      "question": "What did Caroline make for a local church?",
+      "ground_truth": "a stained glass window",
+      "score": 1.0,
+      "old_added_source_ids": [
+        "mem_946204d143a3"
+      ],
+      "old_added_count": 1,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "all_atoms_present",
+      "coverage_after": "all_atoms_present",
+      "missing_before": [],
+      "rejected_reason_counts": {
+        "coverage_already_satisfied": 1,
+        "outside_time_window": 3,
+        "duplicate": 4
+      }
+    },
+    {
+      "one_based_index": 163,
+      "cat": "adversarial",
+      "question": "What did Caroline and her family do while camping?",
+      "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+      "score": 0.0,
+      "old_added_source_ids": [],
+      "old_added_count": 0,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "all_atoms_present",
+      "coverage_after": "all_atoms_present",
+      "missing_before": [],
+      "rejected_reason_counts": {
+        "duplicate": 4,
+        "outside_time_window": 4
+      }
+    },
+    {
+      "one_based_index": 172,
+      "cat": "adversarial",
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "score": 0.0,
+      "old_added_source_ids": [
+        "mem_ab40259ed9db",
+        "mem_035231f14925"
+      ],
+      "old_added_count": 2,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "no_atoms_present",
+      "coverage_after": "no_atoms_present",
+      "missing_before": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "rejected_reason_counts": {
+        "duplicate": 3,
+        "outside_time_window": 2,
+        "no_missing_gold_atom": 3
+      }
+    },
+    {
+      "one_based_index": 185,
+      "cat": "adversarial",
+      "question": "What type of instrument does Caroline play?",
+      "ground_truth": "clarinet and violin",
+      "score": 0.0,
+      "old_added_source_ids": [],
+      "old_added_count": 0,
+      "projected_added_source_ids": [],
+      "projected_added_missing_atom_source_ids": {},
+      "projected_added_count": 0,
+      "coverage_before": "all_atoms_present_with_conflicts",
+      "coverage_after": "all_atoms_present_with_conflicts",
+      "missing_before": [],
+      "rejected_reason_counts": {
+        "duplicate": 4,
+        "outside_time_window": 4
+      }
+    }
+  ],
+  "interpretation": "On this artifact, the narrowed rule projects zero additions because preserved candidate pools do not contain current missing gold atoms under existing gold-object telemetry; this blocks the previously observed topic/temporal-neighbor noise but does not recover missing evidence for the 25-row slice."
+}

@@ -1,0 +1,156 @@
+{
+  "artifact_inventory": [
+    {
+      "bytes": 9289,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_prelaunch_2026-05-02.json",
+      "sha256": "4121d783334534e91f4995b5710d7c279bd147417c969d014cef331d98558cfb"
+    },
+    {
+      "bytes": 58896658,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json",
+      "sha256": "7d8c911caa8753e6f920bed1402f8e1d72c0a6c4d741f82003f54de5fc2c032d"
+    },
+    {
+      "bytes": 2089,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.log",
+      "sha256": "715e57d4649bb9cbf9d4dfb83980a6ee064093b4498529df76c27724906f2ccd"
+    },
+    {
+      "bytes": 58900067,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_hybrid_active_telemetry_traces_retry_2026-05-02.json",
+      "sha256": "cf75cab57f53739dc7c1dbcceb4ba57c6fb2801d7a10f95f0ad1a06393f1103c"
+    },
+    {
+      "bytes": 3777,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_summary_retry_2026-05-02.json",
+      "sha256": "a44ac1bd4f0123c0a3b89ae0b2cf3896eb73d4fa47ab33268d2c2f844886cecb"
+    },
+    {
+      "bytes": 2558,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_199q_comparison_2026-05-02.md",
+      "sha256": "18969d9638fd1dac0957456fce0ca8eab497a9b12599e8e7e18867899e6dcf37"
+    },
+    {
+      "bytes": 50098,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_server_log_2026-05-02.log",
+      "sha256": "6bd8d1694b01806784f35dd5fd204ae335f2596cb32e0c859557abf484a0853e"
+    },
+    {
+      "bytes": 634,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_2026-05-02.log",
+      "sha256": "18d5703d9f4fc4362fb8385d3180cab16e1f65cad8d5b24d18cd00a4a95a7876"
+    },
+    {
+      "bytes": 2,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_count_2026-05-02.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "bytes": 90,
+      "exists": true,
+      "path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_linked_counts_2026-05-02.txt",
+      "sha256": "933567eb47367ddc713cded2fd2d7c53130fa44ff137f4b5d4adfc7058803dbe"
+    }
+  ],
+  "authorized_step": "Step 5d telemetry-augmented baseline observation retry",
+  "captured_at": "2026-05-02T12:57:06.006392+00:00",
+  "cleanup": {
+    "linked_counts_after_cleanup": [
+      "temporal_expressions|0",
+      "memory_snapshots|0",
+      "user_feedback|0",
+      "contradictions|0",
+      "memory_edges|0"
+    ],
+    "locomo_count_after_cleanup": "0",
+    "verified_locomo_count_zero": true
+  },
+  "comparability": {
+    "dominant_bucket_gate": false,
+    "high_n_bucket_gate": false,
+    "mean_n_memories": 14.6231,
+    "mean_n_memories_gate": false,
+    "n15_saturation": 162,
+    "n15_saturation_gate": false,
+    "no_hybrid_fallback_strings_gate": true,
+    "overall_comparable": false,
+    "query_expansion_fallback_gate": true,
+    "structural_regime_note": "changed_or_requires_review"
+  },
+  "completed_199q": true,
+  "critical_interpretation": "The retry completed and solved the Decimal serialization runtime blocker, but the retrieval-shape comparability gates against the f2466c9 14.82% hybrid-active baseline failed decisively. This run is not a comparable telemetry rerun of the 14.82% baseline and must not be used to select Phase C intervention.",
+  "decimal_serialization_runtime_blocker_resolved": true,
+  "final_state_probes": {
+    "git_status": {
+      "exit_code": 0,
+      "output": "branch=query-expansion\nhead=6294164\nstatus=<<<?? docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json\n?? docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.log\n?? docs/eval/results/locomo_conv26_hybrid_active_telemetry_traces_retry_2026-05-02.json\n?? docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_199q_comparison_2026-05-02.md\n?? docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_2026-05-02.log\n?? docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_count_2026-05-02.txt\n?? docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_cleanup_linked_counts_2026-05-02.txt\n?? docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_prelaunch_2026-05-02.json\n?? docs/eval/results/locomo_hybrid_active_telemetry_baseline_retry_server_log_2026-05-02.log\n?? docs/eval/results/locomo_hybrid_active_telemetry_summary_retry_2026-05-02.json\n>>>"
+    },
+    "health": {
+      "exit_code": 0,
+      "output": "{\"status\":\"ok\",\"engine\":\"memibrium\"}"
+    },
+    "linked_counts": {
+      "exit_code": 0,
+      "output": "temporal_expressions|0\nmemory_snapshots|0\nuser_feedback|0\ncontradictions|0\nmemory_edges|0"
+    },
+    "locomo_count": {
+      "exit_code": 0,
+      "output": "0"
+    },
+    "server_logs_blocking_errors_since_run": {
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  "locked_reference": {
+    "commit": "f2466c9",
+    "mean_n_memories": 4.5327,
+    "n15_saturation_count": 22,
+    "n_distribution": {
+      "11": 1,
+      "12": 3,
+      "13": 3,
+      "14": 3,
+      "15": 22,
+      "2": 57,
+      "3": 110
+    },
+    "overall_5cat_percent": 14.82,
+    "protocol_4cat_percent": 19.41,
+    "query_expansion_fallback_count": "0/199"
+  },
+  "log_flags": {
+    "contains_decimal_not_json_serializable": false,
+    "contains_hybrid_retrieval_failed": false,
+    "contains_internal_server_error": false,
+    "contains_type_error": false,
+    "contains_type_vector_missing": false
+  },
+  "phase_c_boundary": "Phase C remains blocked. Next valid work is a failure-mode / noncomparability audit of these telemetry artifacts and/or a preregistered investigation of telemetry-on retrieval-shape drift; no retrieval intervention is authorized by this result.",
+  "schema": "memibrium.locomo.telemetry_baseline_retry_result.v1",
+  "score_and_shape": {
+    "avg_query_ms": 3272,
+    "mean_n_memories": 14.6231,
+    "n15_saturation_count": 162,
+    "n_memories_distribution": {
+      "11": 3,
+      "12": 6,
+      "13": 17,
+      "14": 11,
+      "15": 162
+    },
+    "overall_5cat_percent": 58.29,
+    "protocol_4cat_percent": 69.41,
+    "query_expansion_fallback_count": 0
+  },
+  "verdict": "telemetry_baseline_rejected_noncomparable"
+}

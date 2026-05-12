@@ -1,0 +1,73 @@
+=== BOUNDARY WORKTREE STATE ===
+## HEAD (no branch)
+bfeb90fc0465fdc24203d216c97cd1bc7226c0a4
+bfeb90fc0465fdc24203d216c97cd1bc7226c0a4
+bfeb90f (HEAD, tag: baseline-2026-04-26) eval: add query expansion benchmark results and methodology record
+=== PRE-RUN LOCOMO COUNT ===
+0
+=== RESOLVED ENV FOR THIS RUN ===
+AZURE_CHAT_ENDPOINT=https://sector-7.services.ai.azure.com/models
+AZURE_OPENAI_ENDPOINT=<unset>
+OPENAI_BASE_URL=<unset>
+AZURE_CHAT_DEPLOYMENT=gpt-4.1-mini
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
+CHAT_MODEL=gpt-4.1-mini
+ANSWER_MODEL=gpt-4.1-mini
+JUDGE_MODEL=gpt-4.1-mini
+USE_QUERY_EXPANSION=1
+=================================
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+  [DATE NORMALIZATION ENABLED]
+======================================================================
+  Starting memories: 19
+  Conversations to process: 1
+  Total questions: 199 (199 evaluated, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 0.3s
+    ... 20/199 questions, running acc: 87.5%
+    ... 40/199 questions, running acc: 72.5%
+    ... 60/199 questions, running acc: 71.7%
+    ... 80/199 questions, running acc: 73.1%
+    ... 100/199 questions, running acc: 75.0%
+    ... 120/199 questions, running acc: 77.1%
+    ... 140/199 questions, running acc: 75.4%
+    ... 160/199 questions, running acc: 71.2%
+    ... 180/199 questions, running acc: 66.7%
+    Conv accuracy: 61.8% (199 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 61.8%
+  Query expansion fallback: 0/199 (0.00%)
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-5              22.3%      47       4161ms
+  cat-multi-hop      34.6%      13       3592ms
+  cat-single-hop     70.3%      32       3910ms
+  cat-temporal       87.8%      37       3845ms
+  cat-unanswerable    75.7%      70       4741ms
+
+  Ingest: 0.3s avg per conversation
+  Query:  4229ms avg per question
+  Total:  842s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  MemMachine                  84.9%
+  Zep                         80.3%
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  >>> MEMIBRIUM               61.8% <<<
+  LangMem                     58.1%
+
+  Detailed results saved to /tmp/locomo_results_normalized.json

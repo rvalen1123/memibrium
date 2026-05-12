@@ -1,0 +1,36 @@
+{
+  "abort_reason": null,
+  "command": [
+    "python3",
+    "benchmark_scripts/locomo_bench_v2.py",
+    "--max-convs",
+    "1",
+    "--query-expansion"
+  ],
+  "completed_at": "2026-05-03T04:44:07Z",
+  "env_assertions": {
+    "ANSWER_MODEL": "gpt-4.1-mini",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "CHAT_MODEL": "gpt-4.1-mini",
+    "INCLUDE_RECALL_TELEMETRY_absent": true,
+    "JUDGE_MODEL": "gpt-4.1-mini",
+    "LOCOMO_RETRIEVAL_TELEMETRY_absent": true,
+    "USE_QUERY_EXPANSION": "1"
+  },
+  "guard_status": "passed_startup_guard",
+  "guard_timeout_seconds": 180,
+  "log_path": "/tmp/locomo_step5p_full_repro_2026-05-03.log",
+  "observed": {
+    "conversations_to_process": 1,
+    "evaluated_questions": 199,
+    "first_conversation_line": "[1/1] Conv conv-26: Caroline & Melanie",
+    "skipping_cats_text": "set()",
+    "total_questions": 199
+  },
+  "returncode": 0,
+  "run_id": "20260503T043344Z",
+  "schema": "memibrium.locomo.step5p.guarded_launch.v1",
+  "started_at": "2026-05-03T04:33:45Z"
+}

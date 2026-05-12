@@ -1,0 +1,397 @@
+{
+  "schema": "memibrium.locomo.cross_conversation_answer_side_gate.v1",
+  "created_at": "2026-05-08T00:00:00Z",
+  "purpose": "Predeclared cross-conversation 25-row gate for locked LOCOMO answer-side diagnostics; diagnostic only, not 199Q/cumulative.",
+  "selection_seed": "memibrium-locomo-answer-side-crossconv-gate-2026-05-08-v1",
+  "conversation_selection": {
+    "eligible_pool": "all LOCOMO conversations in /tmp/locomo/data/locomo10.json except conv-26, requiring at least 2 rows per normalized category",
+    "method": "rank eligible conversations by sha256(seed + \":conv:\" + sample_id); select first two conversations; split n as 13 and 12 before scoring",
+    "ranked_eligible_conversations": [
+      {
+        "sample_id": "conv-44",
+        "qa_count": 158,
+        "category_counts": {
+          "temporal": 24,
+          "single-hop": 30,
+          "multi-hop": 7,
+          "unanswerable": 62,
+          "adversarial": 35
+        },
+        "selection_hash": "10c13a35ca15d6ee2e681dac2d8e1483dade640d222b7f53b52ee47cc54dd8d6",
+        "eligible": true
+      },
+      {
+        "sample_id": "conv-41",
+        "qa_count": 193,
+        "category_counts": {
+          "temporal": 27,
+          "single-hop": 31,
+          "multi-hop": 8,
+          "unanswerable": 86,
+          "adversarial": 41
+        },
+        "selection_hash": "3847f65e832124fff7dccea29809a25dc584b0a3e5c6f8f95559866a547c978b",
+        "eligible": true
+      },
+      {
+        "sample_id": "conv-43",
+        "qa_count": 242,
+        "category_counts": {
+          "single-hop": 31,
+          "multi-hop": 14,
+          "temporal": 26,
+          "unanswerable": 107,
+          "adversarial": 64
+        },
+        "selection_hash": "4ac1787802cd26582add02b7928311d2e6e459ef37411bf97be20fefdbf6a509",
+        "eligible": true
+      },
+      {
+        "sample_id": "conv-42",
+        "qa_count": 260,
+        "category_counts": {
+          "multi-hop": 11,
+          "single-hop": 37,
+          "temporal": 40,
+          "unanswerable": 111,
+          "adversarial": 61
+        },
+        "selection_hash": "8e4785f760f51af97c50ed4cac0d2bb59deb65065bf3a6c5db400ae98bc49722",
+        "eligible": true
+      },
+      {
+        "sample_id": "conv-50",
+        "qa_count": 204,
+        "category_counts": {
+          "temporal": 32,
+          "single-hop": 32,
+          "multi-hop": 7,
+          "unanswerable": 87,
+          "adversarial": 46
+        },
+        "selection_hash": "b9efc347451ca0248bcca4b41b070d3d305b1619fbcc2220b33bcc517828aee3",
+        "eligible": true
+      },
+      {
+        "sample_id": "conv-48",
+        "qa_count": 239,
+        "category_counts": {
+          "temporal": 42,
+          "single-hop": 21,
+          "multi-hop": 10,
+          "unanswerable": 118,
+          "adversarial": 48
+        },
+        "selection_hash": "ba5ae7e62ce7d3c6c000d8180af00c4e7a841db40fe8d3856caa01881b8c2026",
+        "eligible": true
+      },
+      {
+        "sample_id": "conv-49",
+        "qa_count": 196,
+        "category_counts": {
+          "single-hop": 37,
+          "temporal": 33,
+          "multi-hop": 13,
+          "unanswerable": 73,
+          "adversarial": 40
+        },
+        "selection_hash": "df283cd38d18a79ccb9cd0c8a41cdf75fe5c561eb9c630c725f52c84d0e24e87",
+        "eligible": true
+      },
+      {
+        "sample_id": "conv-47",
+        "qa_count": 190,
+        "category_counts": {
+          "multi-hop": 13,
+          "temporal": 34,
+          "single-hop": 20,
+          "unanswerable": 83,
+          "adversarial": 40
+        },
+        "selection_hash": "e7fe205fa69c6cfe848a876cf4c51bc5535ffb66705bccdd3f51e19622bcf17b",
+        "eligible": true
+      }
+    ],
+    "selected_sample_ids": [
+      "conv-44",
+      "conv-41"
+    ],
+    "n_by_conversation": {
+      "conv-44": 13,
+      "conv-41": 12
+    }
+  },
+  "row_selection": {
+    "method": "Within each selected conversation/category, rank rows by sha256(seed + \":row:\" + sample_id + \":\" + one_based_index + \":\" + question); take predeclared category quotas.",
+    "category_quotas_by_conversation": {
+      "conv-44": {
+        "single-hop": 3,
+        "temporal": 2,
+        "multi-hop": 3,
+        "unanswerable": 3,
+        "adversarial": 2
+      },
+      "conv-41": {
+        "single-hop": 2,
+        "temporal": 3,
+        "multi-hop": 2,
+        "unanswerable": 2,
+        "adversarial": 3
+      }
+    },
+    "overall_category_counts": {
+      "single-hop": 5,
+      "temporal": 5,
+      "multi-hop": 5,
+      "unanswerable": 5,
+      "adversarial": 5
+    }
+  },
+  "under_listing_watchpoint": {
+    "definition": "A row-53-class under-listing failure is a list-type question where the gold answer contains at least two enumerated entities and the treatment answer returns a strict subset of those gold entities that were present in the baseline answer or otherwise directly supported by the frozen context, with no compensating correction that makes the list complete.",
+    "operational_screen": "Flag questions containing list/count/plural enumeration cues or gold answers with comma/and-separated entities; compare baseline vs treatment predictions manually with gold/context support after the run.",
+    "rollback_watchpoint": "More than 2 such failures on this 25-row gate blocks 199Q promotion. For 199Q preregistration, list-completion regression budget remains <=2 row-53-class failures and <= -1pp aggregate list-completion impact."
+  },
+  "thresholds": {
+    "cross_conversation_gate": "Proceed toward 199Q only if multi-hop treatment delta is >= +6pp absolute and row-53-class under-listing failures are <=2. If multi-hop comes in below +6pp, do not relax the threshold post hoc.",
+    "199q_candidate_thresholds": "Before any quote run, keep locked candidate fixed and predeclare +6pp absolute multi-hop threshold, <=2 row-53-class under-listing failures / about <=-1pp list-completion regression budget, and no adversarial/conflict claim unless separately tested."
+  },
+  "locked_candidate": {
+    "shape_directive_categories": [
+      "multi-hop",
+      "temporal"
+    ],
+    "multimodal_metadata_projection_categories": [
+      "single-hop",
+      "unanswerable"
+    ],
+    "subject_guard": false
+  },
+  "selected_rows": [
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 4,
+      "label": "conv-44-row-004-single-hop",
+      "cat": "single-hop",
+      "question": "What kind of places have Andrew and his girlfriend checked out around the city?",
+      "question_sha256": "3679d81b57251443edfcba71c25b6476275df26b99ef94d32bb69f4c177f0852",
+      "selection_sha256": "0939d71fdcb9c9d1cea4650a828eedb071ad97c9b45b0d1facd0372031ec92c3"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 29,
+      "label": "conv-44-row-029-single-hop",
+      "cat": "single-hop",
+      "question": "What is something that Audrey often dresses up her dogs with?",
+      "question_sha256": "f789e6c16d6ecb2d627f58b65d62f0278d2cb0732de3614ac8b1b6d5218babef",
+      "selection_sha256": "0a63db1a8fd044e70051cb0592a53dffa90baeac5af4bcab7f5033e784186468"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 16,
+      "label": "conv-44-row-016-single-hop",
+      "cat": "single-hop",
+      "question": "What is a shared frustration regarding dog ownership for Audrey and Andrew?",
+      "question_sha256": "11ef548a8efe624238d75958554767d2443f5d4459b75e900fe04c4fec1ea7d0",
+      "selection_sha256": "1108d3ed2c03d48c4a0b4ea0d1a09ca34c03e9f7e5fb0c5336972b701bef4ed8"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 59,
+      "label": "conv-44-row-059-temporal",
+      "cat": "temporal",
+      "question": "What did Audrey eat for dinner on October 24, 2023?",
+      "question_sha256": "06b9c8370a051490333d8fb8225df4e0dca34e0a5feebb42f734a3966077e394",
+      "selection_sha256": "037c1e3fb365f173086acbbaa9e9c62827e318c8a8e34fd7aed5281786224354"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 9,
+      "label": "conv-44-row-009-temporal",
+      "cat": "temporal",
+      "question": "Did Andrew have a pet dog during March 2023?",
+      "question_sha256": "ffbc139efe2e234c03412f0c3ed1461213c8ad982716a699a620b73a383d9c81",
+      "selection_sha256": "191c012313d5a8a5ef54e24c3463d398af62e708f8330bb7dfac7cba001154bc"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 21,
+      "label": "conv-44-row-021-multi-hop",
+      "cat": "multi-hop",
+      "question": "Which meat does Audrey prefer eating more than others?",
+      "question_sha256": "323f7f96513f16bd3c8c443c389239a7cbd1c398680446468602ad32cc74d4bb",
+      "selection_sha256": "01ca9a474eaadef2096f8c64db681ca10e75704833849450e1c9f888be14b124"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 45,
+      "label": "conv-44-row-045-multi-hop",
+      "cat": "multi-hop",
+      "question": "Which national park could Audrey and Andrew be referring to in their conversations?",
+      "question_sha256": "cb8d82ed2b6cbbf8ec1bc1c5418225bc27194fd6b7a66d3c4de636254173ac6f",
+      "selection_sha256": "7202ea68e27fa3d9926b82934915d21f752d83bcd1265001f6a782854bee0aab"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 44,
+      "label": "conv-44-row-044-multi-hop",
+      "cat": "multi-hop",
+      "question": "Which US state do Audrey and Andrew potentially live in?",
+      "question_sha256": "e238b0c07772101fcb1ae19f32d59f3c490ae9476db1ce20ed7d6ba642b9a4cd",
+      "selection_sha256": "90e1442d0ec6264f3eee7094b0d28d4029689e9d0a64a3f5c4b14d0d4bbfdc1b"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 65,
+      "label": "conv-44-row-065-unanswerable",
+      "cat": "unanswerable",
+      "question": "What kind of flowers does Audrey have a tattoo of?",
+      "question_sha256": "344f8c5588bd15b08d3737c9a43360385d71006da153674aa9026c58d537fdfe",
+      "selection_sha256": "001307d16dd624f3f72fbed399d10e9807a29c4305f2bf73367fefe98ee854b6"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 90,
+      "label": "conv-44-row-090-unanswerable",
+      "cat": "unanswerable",
+      "question": "What is essential to keep the dogs looking good according to Audrey?",
+      "question_sha256": "0289e20718fa7116d9839ff53b942a892914dc0b5b8e7afd633bc50a891b23ac",
+      "selection_sha256": "099760f124480cad6d670e818bb6ee6886c919dbb6f8eee3a4b6a37cacc62b34"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 118,
+      "label": "conv-44-row-118-unanswerable",
+      "cat": "unanswerable",
+      "question": "What did Audrey do in November 2023 to better take care of her dogs?",
+      "question_sha256": "cf132ffd9474d8a3558e16c52fa8d7ccc36e6bb9d5d4d157883606a7bbb026e0",
+      "selection_sha256": "11ee8d7229d5b5e2c7dbf8534175f75fd3f5814d1cd7deb4f655aea06f003e31"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 126,
+      "label": "conv-44-row-126-adversarial",
+      "cat": "adversarial",
+      "question": "What type of dog was Audrey looking to adopt based on her living space?",
+      "question_sha256": "69e77933511acfb93b2c36d90299e1eab2dd71f0d06d42a00d2906630caeffc0",
+      "selection_sha256": "02a852216989b2f44d86d979a50ff7a846f36c993d11ba074d4b297e26336849"
+    },
+    {
+      "sample_id": "conv-44",
+      "one_based_index": 132,
+      "label": "conv-44-row-132-adversarial",
+      "cat": "adversarial",
+      "question": "What indoor activities does Andrew plan on trying after the rock climbing class?",
+      "question_sha256": "28cbf72f8784c2b7082f6d699a33764f9c49fcd8b9899456bad6f262028aceff",
+      "selection_sha256": "0812ef8fa5d868a3b796721306329c9ac820acbd3f86f4662b6014e3f2d832ef"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 7,
+      "label": "conv-41-row-007-single-hop",
+      "cat": "single-hop",
+      "question": "Where has Maria made friends?",
+      "question_sha256": "1cb0e4bf11aa6c1f754d919a9cfb2081fdaf20a9690f9df21cb39ecf6a3231d5",
+      "selection_sha256": "018633eae0377de4bd1fbaee6cd710976c78b23dd134ca6f72767ef213bac06c"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 31,
+      "label": "conv-41-row-031-single-hop",
+      "cat": "single-hop",
+      "question": "What shelters does Maria volunteer at?",
+      "question_sha256": "4d0741237b4a585447accd42f3980d9c0042d00f3facec8602a1faef603ee2d4",
+      "selection_sha256": "0663ec3349d0ee76a5eb482f3cebce1d20356e3b0b23095da1ce14fb2bfb8923"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 62,
+      "label": "conv-41-row-062-temporal",
+      "cat": "temporal",
+      "question": "When did Maria adopt Shadow?",
+      "question_sha256": "336a9762cc98ab11cc9bb42c902797aafd31706634a841528bf4b8e2f959c5bf",
+      "selection_sha256": "016d02cd29864f695b032857c4b4b2a03937a0ed8af4f8fff5614436639feb04"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 23,
+      "label": "conv-41-row-023-temporal",
+      "cat": "temporal",
+      "question": "When did John go to a convention with colleagues?",
+      "question_sha256": "295f65598638807072d0812cc508586895186bbccf3767de31e4cbcf671cacf4",
+      "selection_sha256": "03746cd7cd0053dd4ba78b3f6bea7413e72b75aa654959d1debe100d85b6c6d8"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 35,
+      "label": "conv-41-row-035-temporal",
+      "cat": "temporal",
+      "question": "When did Maria join a gym?",
+      "question_sha256": "95c2875891cdd98fa1094ea368658b8153d07950f6c974347a7e6c7e56f09559",
+      "selection_sha256": "0dc9ccb6977cf5fea0bf977da938aca79cc95a9fbaff6cc16006d6eaf6e7331c"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 15,
+      "label": "conv-41-row-015-multi-hop",
+      "cat": "multi-hop",
+      "question": "Would John be considered a patriotic person?",
+      "question_sha256": "2c5e3423dd25fd8c0f68eeba4b2a646e7a8a5243b8eed6da9150fcac412345ce",
+      "selection_sha256": "0714a02f3ad79068924dc3387432f2cce3008f05ccbe16a1612b85721fb1ed79"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 40,
+      "label": "conv-41-row-040-multi-hop",
+      "cat": "multi-hop",
+      "question": "Around which US holiday did Maria get into a car accident?",
+      "question_sha256": "783c43208a4a5235b6ee640aa86aaaa3fa61e7c2df1f81d3fd95fe91cc4edc9c",
+      "selection_sha256": "3ddad2e691d020eb169d0e6ba22da39d0a62e8f625d26fd173e32529e557bf5f"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 66,
+      "label": "conv-41-row-066-unanswerable",
+      "cat": "unanswerable",
+      "question": "What is John's main focus in local politics?",
+      "question_sha256": "7850198e7c8a9b3f15279693a0dc63b45231bf33ec3cf38bb33c47fc5a6075a6",
+      "selection_sha256": "02a467b1e05894982427832026e28f66699b5bff1a6d0f606a87d5699562167c"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 112,
+      "label": "conv-41-row-112-unanswerable",
+      "cat": "unanswerable",
+      "question": "What yoga activity has Maria been trying to improve her strength and endurance?",
+      "question_sha256": "7a22fa45a7b7e529f2a93759992641fb70c56839f66b888abaab5b486cf4883a",
+      "selection_sha256": "02b1d810916827984f18453487c0b1ebc2ec3d21beb8f110dc6db5f11de2d5ac"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 158,
+      "label": "conv-41-row-158-adversarial",
+      "cat": "adversarial",
+      "question": "What is the name of Maria's one-year-old child?",
+      "question_sha256": "c2722e778db68517c991b48d8ad35a586e1897fecd96f26e4773774d9d5c0c37",
+      "selection_sha256": "031f2334c825d3bf2e1eadc57cb3e58a41ca7188b093f5e92fa2dd2476eba6db"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 168,
+      "label": "conv-41-row-168-adversarial",
+      "cat": "adversarial",
+      "question": "What kind of food did Maria have on her dinner spread with her father?",
+      "question_sha256": "60d5f5c933b10fdb4a6d21273148e147c1aa1d0112a27ec8981338a844fdef98",
+      "selection_sha256": "034277f07b96c8437632479fd71f04ca65f22c254cc5b88a7c2e5df63f5634ef"
+    },
+    {
+      "sample_id": "conv-41",
+      "one_based_index": 154,
+      "label": "conv-41-row-154-adversarial",
+      "cat": "adversarial",
+      "question": "What did Maria donate to a luxury store in December 2023?",
+      "question_sha256": "81423b2aa8ddf014cecc748fef07f38e90611f976cd23b145083063f905f2361",
+      "selection_sha256": "094cc67eaefc1e8c630b9cfceca6d71bef472ad140c52e509fa15cdf1972c857"
+    }
+  ]
+}

@@ -1,0 +1,340 @@
+2026-05-02 19:51:15,720 [INFO] ChatClient: Azure Foundry (https://sector-7.services.ai.azure.com, model=gpt-4.1-mini)
+INFO:     Started server process [29949]
+INFO:     Waiting for application startup.
+2026-05-02 19:51:15,775 [INFO] Vector extension: ruvector
+2026-05-02 19:51:15,787 [INFO] RuVector HNSW index with GNN re-ranking enabled
+2026-05-02 19:51:15,798 [INFO] Schema initialized: memories, snapshots, entities, feedback, contradictions, edges
+2026-05-02 19:51:15,799 [INFO] LEANN not installed — cold tier stays in pgvector/ruvector (pip install leann to enable)
+2026-05-02 19:51:15,799 [INFO] Advanced modules initialized: hybrid retrieval + memory hierarchy
+2026-05-02 19:51:15,799 [INFO] Memibrium started — hot: ruvector (GNN + SONA), cold: pgvector, fully sovereign
+2026-05-02 19:51:15,799 [INFO] ConsolidateAgent started (interval=30min)
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:10080 (Press CTRL+C to quit)
+2026-05-02 19:51:15,819 [INFO] Consolidation complete: {'decayed': 0, 'shed': 0, 'crystallized': 0, 'total': 0, 'contradictions_resolved': 0}
+INFO:     127.0.0.1:42972 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42988 - "GET /health HTTP/1.1" 200 OK
+2026-05-02 19:51:17,847 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:17,880 [INFO] Ingested mem_2fc44f75b6ce → observation (type=episodic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:18,077 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:18,090 [INFO] Ingested mem_d53c4f2abbc4 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:18,341 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:18,350 [INFO] Ingested mem_bc6dbc2f35fa → observation (type=episodic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:18,781 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:18,789 [INFO] Ingested mem_1ca1f43ab68d → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:18,922 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:18,928 [INFO] Ingested mem_0d5e30813ef9 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:19,173 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:19,200 [INFO] Hierarchy processed mem_d53c4f2abbc4: 2 entities, 1 temporal
+2026-05-02 19:51:19,367 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:19,373 [INFO] Ingested mem_d4a4714a73a9 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:19,600 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:19,609 [INFO] Ingested mem_7b496eabb433 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:20,011 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,035 [INFO] Hierarchy processed mem_bc6dbc2f35fa: 3 entities, 1 temporal
+2026-05-02 19:51:20,040 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,048 [INFO] Ingested mem_65c82405abcb → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:20,173 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,190 [INFO] Hierarchy processed mem_2fc44f75b6ce: 2 entities, 2 temporal
+2026-05-02 19:51:20,221 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,229 [INFO] Ingested mem_6119335e1643 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:20,274 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,290 [INFO] Hierarchy processed mem_1ca1f43ab68d: 2 entities, 1 temporal
+2026-05-02 19:51:20,371 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,377 [INFO] Ingested mem_12ab73833f9b → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:20,536 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,543 [INFO] Ingested mem_0d59579fa89d → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:20,718 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,722 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,723 [INFO] Ingested mem_17184d979d04 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:20,742 [INFO] Hierarchy processed mem_0d5e30813ef9: 2 entities, 1 temporal
+2026-05-02 19:51:20,878 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,880 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:20,897 [INFO] Ingested mem_4f06e6eaede0 → observation (type=episodic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:21,009 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:21,030 [INFO] Hierarchy processed mem_d4a4714a73a9: 3 entities, 1 temporal
+2026-05-02 19:51:21,066 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:21,080 [INFO] Hierarchy processed mem_7b496eabb433: 2 entities, 1 temporal
+2026-05-02 19:51:21,279 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:21,285 [INFO] Ingested mem_f711517d250f → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:21,483 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:21,490 [INFO] Ingested mem_2fad107394c1 → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:21,514 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:21,655 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:21,661 [INFO] Ingested mem_b360ab050160 → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:21,693 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:21,707 [INFO] Hierarchy processed mem_65c82405abcb: 2 entities, 1 temporal
+2026-05-02 19:51:21,953 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:21,966 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,036 [INFO] Batch scored 4 memories via batched LLM
+2026-05-02 19:51:22,103 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,110 [INFO] Ingested mem_a3606f8e274f → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:22,228 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,236 [INFO] Ingested mem_3e02001689ac → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:22,369 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,375 [INFO] Ingested mem_70918d1614e1 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:22,394 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,407 [INFO] Hierarchy processed mem_12ab73833f9b: 2 entities, 1 temporal
+2026-05-02 19:51:22,467 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,511 [INFO] Hierarchy processed mem_6119335e1643: 4 entities, 1 temporal
+2026-05-02 19:51:22,591 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,599 [INFO] Ingested mem_1b5c3ff9e27c → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:22,687 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,748 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,753 [INFO] Ingested mem_cdf13371b87c → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:22,939 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:22,945 [INFO] Ingested mem_e55abfdef52f → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:23,107 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:23,141 [INFO] Hierarchy processed mem_0d59579fa89d: 4 entities, 2 temporal
+2026-05-02 19:51:23,314 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:23,321 [INFO] Ingested mem_3ff574a20d2e → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:23,450 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:23,457 [INFO] Ingested mem_5dcac56fd6ec → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:23,577 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:23,601 [INFO] Hierarchy processed mem_17184d979d04: 3 entities, 2 temporal
+2026-05-02 19:51:23,635 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:23,642 [INFO] Ingested mem_21ad02504937 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:23,760 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:23,771 [INFO] Ingested mem_02c1f0ab235c → observation (type=episodic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:23,935 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:23,940 [INFO] Contradiction detected: mem_cdf13371b87c vs mem_65c82405abcb — In Memory A, Caroline says she hasn't done pottery yet, but in Memory B, Melanie shows Caroline a pottery project and Caroline praises it, indicating Caroline has seen or engaged with pottery before.
+2026-05-02 19:51:23,942 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:23,947 [INFO] Ingested mem_733ea0950964 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:24,081 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:24,085 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:24,102 [INFO] Hierarchy processed mem_4f06e6eaede0: 2 entities, 3 temporal
+2026-05-02 19:51:24,354 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:24,361 [INFO] Ingested mem_9f600502d331 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:24,417 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:24,470 [INFO] Hierarchy processed mem_f711517d250f: 6 entities, 1 temporal
+2026-05-02 19:51:24,555 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:24,561 [INFO] Ingested mem_a0d822e7c300 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:24,710 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:24,716 [INFO] Ingested mem_e8354370a40e → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:24,803 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:24,826 [INFO] Hierarchy processed mem_2fad107394c1: 3 entities, 1 temporal
+2026-05-02 19:51:24,884 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:24,889 [INFO] Ingested mem_49c5ed7239a7 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:25,014 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,017 [INFO] Contradiction detected: mem_cdf13371b87c vs mem_65c82405abcb — In Memory A, Caroline says she hasn't done pottery yet, while in Memory B, Melanie shows Caroline a pottery project and Caroline praises it, indicating Caroline has seen pottery before.
+2026-05-02 19:51:25,082 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,089 [INFO] Ingested mem_18793a04def6 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:25,210 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,216 [INFO] Ingested mem_4386f057c3e2 → observation (type=episodic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:25,234 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,255 [INFO] Hierarchy processed mem_b360ab050160: 3 entities, 1 temporal
+2026-05-02 19:51:25,339 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,345 [INFO] Ingested mem_e1a9529834ca → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:25,422 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,438 [INFO] Hierarchy processed mem_a3606f8e274f: 2 entities, 2 temporal
+2026-05-02 19:51:25,551 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,557 [INFO] Ingested mem_73cfa823efbc → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:25,725 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,747 [INFO] Hierarchy processed mem_3e02001689ac: 3 entities, 1 temporal
+2026-05-02 19:51:25,943 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:25,949 [INFO] Ingested mem_f5aeb9fb170b → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:26,099 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:26,105 [INFO] Ingested mem_6f40f61f210b → observation (type=episodic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:26,146 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:26,306 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:26,312 [INFO] Ingested mem_f3e603cc36ae → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:26,595 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:26,603 [INFO] Ingested mem_e9828d6cfde1 → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:26,685 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:26,699 [INFO] Hierarchy processed mem_1b5c3ff9e27c: 2 entities, 1 temporal
+2026-05-02 19:51:26,746 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:26,768 [INFO] Hierarchy processed mem_70918d1614e1: 3 entities, 1 temporal
+2026-05-02 19:51:26,794 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:26,799 [INFO] Ingested mem_f22f4b78e5c0 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:26,923 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:26,929 [INFO] Ingested mem_cf443e173340 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:27,015 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:27,029 [INFO] Hierarchy processed mem_cdf13371b87c: 2 entities, 1 temporal
+2026-05-02 19:51:27,067 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:27,074 [WARNING] Backpressure: 21 background tasks, waiting...
+2026-05-02 19:51:27,529 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:27,545 [INFO] Hierarchy processed mem_3ff574a20d2e: 2 entities, 2 temporal
+2026-05-02 19:51:27,660 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:27,683 [INFO] Hierarchy processed mem_e55abfdef52f: 3 entities, 1 temporal
+2026-05-02 19:51:27,982 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:28,014 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:28,028 [INFO] Hierarchy processed mem_5dcac56fd6ec: 2 entities, 1 temporal
+2026-05-02 19:51:28,386 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:28,390 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:28,402 [INFO] Hierarchy processed mem_21ad02504937: 2 entities, 1 temporal
+2026-05-02 19:51:28,447 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:28,461 [INFO] Hierarchy processed mem_02c1f0ab235c: 2 entities, 2 temporal
+2026-05-02 19:51:28,728 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:28,742 [INFO] Batch scored 12 memories via batched LLM
+2026-05-02 19:51:28,894 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:28,909 [INFO] Hierarchy processed mem_733ea0950964: 2 entities, 1 temporal
+2026-05-02 19:51:29,632 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:29,650 [INFO] Hierarchy processed mem_9f600502d331: 2 entities, 2 temporal
+2026-05-02 19:51:29,863 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:29,883 [INFO] Hierarchy processed mem_a0d822e7c300: 2 entities, 1 temporal
+2026-05-02 19:51:30,416 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:30,431 [INFO] Hierarchy processed mem_e8354370a40e: 2 entities, 1 temporal
+2026-05-02 19:51:30,970 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:30,986 [INFO] Hierarchy processed mem_49c5ed7239a7: 2 entities, 1 temporal
+2026-05-02 19:51:31,009 [INFO] Ingested mem_2a58ca1963a0 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:31,140 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:31,146 [INFO] Ingested mem_efa954865b1c → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:31,272 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:31,278 [INFO] Ingested mem_00f25b2dded1 → observation (type=episodic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:31,287 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:31,310 [INFO] Hierarchy processed mem_18793a04def6: 3 entities, 2 temporal
+2026-05-02 19:51:31,488 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:31,494 [INFO] Ingested mem_3f37c84ee2b7 → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:31,668 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:31,674 [INFO] Ingested mem_5f0d70c137a0 → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:31,703 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:31,728 [INFO] Hierarchy processed mem_4386f057c3e2: 3 entities, 3 temporal
+2026-05-02 19:51:31,821 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:31,827 [INFO] Ingested mem_b89927b3c725 → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:31,859 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:31,873 [INFO] Hierarchy processed mem_e1a9529834ca: 2 entities, 1 temporal
+2026-05-02 19:51:32,036 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:32,042 [INFO] Ingested mem_d541ef2b1b0a → observation (type=semantic) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:32,234 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+2026-05-02 19:51:32,240 [INFO] Ingested mem_e77cca6be1dc → observation (type=procedural) [batch queued]
+INFO:     127.0.0.1:42994 - "POST /mcp/retain HTTP/1.1" 200 OK
+2026-05-02 19:51:32,529 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:32,553 [INFO] Hierarchy processed mem_73cfa823efbc: 3 entities, 2 temporal
+2026-05-02 19:51:32,642 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:32,664 [INFO] Hierarchy processed mem_f5aeb9fb170b: 3 entities, 1 temporal
+2026-05-02 19:51:32,973 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:32,998 [INFO] Hierarchy processed mem_6f40f61f210b: 3 entities, 3 temporal
+2026-05-02 19:51:33,550 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:33,554 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:33,568 [INFO] Hierarchy processed mem_e9828d6cfde1: 2 entities, 2 temporal
+2026-05-02 19:51:33,574 [INFO] Hierarchy processed mem_f3e603cc36ae: 3 entities, 1 temporal
+2026-05-02 19:51:33,973 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:33,990 [INFO] Hierarchy processed mem_f22f4b78e5c0: 2 entities, 2 temporal
+2026-05-02 19:51:35,174 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:35,189 [INFO] Hierarchy processed mem_efa954865b1c: 2 entities, 1 temporal
+2026-05-02 19:51:35,789 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:35,811 [INFO] Hierarchy processed mem_cf443e173340: 3 entities, 1 temporal
+2026-05-02 19:51:35,910 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:35,940 [INFO] Hierarchy processed mem_2a58ca1963a0: 4 entities, 1 temporal
+2026-05-02 19:51:35,630 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42990 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:35,830 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42990 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:35,984 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42990 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:36,139 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:36,152 [INFO] Hierarchy processed mem_00f25b2dded1: 2 entities, 1 temporal
+2026-05-02 19:51:36,173 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42990 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:36,271 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:36,285 [INFO] Hierarchy processed mem_3f37c84ee2b7: 2 entities, 1 temporal
+2026-05-02 19:51:36,553 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:36,575 [INFO] Hierarchy processed mem_5f0d70c137a0: 3 entities, 1 temporal
+2026-05-02 19:51:37,281 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:37,303 [INFO] Hierarchy processed mem_b89927b3c725: 3 entities, 1 temporal
+2026-05-02 19:51:37,348 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:37,363 [INFO] Hierarchy processed mem_d541ef2b1b0a: 2 entities, 1 temporal
+2026-05-02 19:51:37,648 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42992 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:37,671 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:37,688 [INFO] Hierarchy processed mem_e77cca6be1dc: 2 entities, 1 temporal
+2026-05-02 19:51:37,862 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42992 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:38,057 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42992 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:38,258 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42992 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:39,202 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42998 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:39,393 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42998 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:39,543 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42998 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:39,753 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42998 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:41,224 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44594 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:41,376 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44594 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:41,521 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44594 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:42,044 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44594 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:43,299 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44606 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:43,482 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44606 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:43,705 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44606 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:43,939 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44606 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:45,439 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44614 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:45,636 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44614 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:45,783 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44614 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:45,964 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44614 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:46,506 [INFO] HTTP Request: POST https://sector-7.services.ai.azure.com/models/chat/completions "HTTP/1.1 200 OK"
+2026-05-02 19:51:47,058 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44626 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:47,292 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44626 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:47,349 [INFO] Batch scored 26 memories via batched LLM
+2026-05-02 19:51:47,438 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44626 - "POST /mcp/recall HTTP/1.1" 200 OK
+2026-05-02 19:51:47,620 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44626 - "POST /mcp/recall HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-05-02 19:51:47,805 [INFO] Memibrium stopped
+INFO:     Application shutdown complete.
+INFO:     Finished server process [29949]

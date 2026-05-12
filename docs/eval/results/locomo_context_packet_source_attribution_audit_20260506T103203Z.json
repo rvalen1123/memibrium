@@ -1,0 +1,1971 @@
+{
+  "schema": "memibrium.locomo.context_packet_source_attribution_audit.v1",
+  "created_at": "2026-05-06T10:41:28.463900+00:00",
+  "scope": "25-row conv-26 source-attribution canary audit; not a 199Q benchmark claim",
+  "run_id": "20260506T103203Z",
+  "inputs": {
+    "treatment": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_context_packet_canary_treatment_merge_refgate_frozen_shaped_multihop_temporal_goldcov_20260506T103203Z.json",
+    "baseline": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_context_packet_canary_baseline_20260506T103203Z.json",
+    "summary": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_context_packet_canary_summary_merge_refgate_frozen_shaped_multihop_temporal_goldcov_20260506T103203Z.json",
+    "raw_locomo": "/tmp/locomo/data/locomo10.json"
+  },
+  "canary_metrics": {
+    "baseline_overall_score": 52.0,
+    "treatment_overall_score": 68.0,
+    "score_delta_pp": 16.0,
+    "category_scores": {
+      "cat-single-hop": 70.0,
+      "cat-temporal": 100.0,
+      "cat-multi-hop": 100.0,
+      "cat-unanswerable": 70.0,
+      "cat-adversarial": 0.0
+    },
+    "gold_evidence_ref_hit_rate": {
+      "baseline": 0.8261,
+      "treatment": 0.8696
+    },
+    "final_hygiene": {
+      "memories": 0,
+      "temporal_expressions": 0,
+      "memory_snapshots": 0,
+      "user_feedback": 0,
+      "contradictions": 0,
+      "memory_edges": 0,
+      "context_graph_edges": 0,
+      "decision_traces": 0,
+      "self_model_observations": 0,
+      "ok": true
+    }
+  },
+  "summary_counts": {
+    "rows": 25,
+    "source_attr_present": 25,
+    "source_any_gold_ref": 11,
+    "source_all_gold_refs": 9,
+    "pool_any_gold_ref": 11,
+    "pool_all_gold_refs": 9,
+    "final_any_gold_ref": 20,
+    "final_all_gold_refs": 19,
+    "packet_added_rows": 3,
+    "missing_atom_rows": 16,
+    "class_passed_in_canary": 15,
+    "nonfull_rows": 10,
+    "class_gold_ref_present_but_atom_missing_or_multimodal_metadata": 3,
+    "class_answer_synthesis_shape_or_subject_error": 2,
+    "class_answer_conflict_selection": 2,
+    "class_baseline_has_ref_context_packet_query_missed_ref": 1,
+    "class_retrieval_absence_all_paths": 2
+  },
+  "focus_rows": [
+    {
+      "row": 24,
+      "cat": "single-hop",
+      "question": "What books has Melanie read?",
+      "gold": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "predicted": "Melanie has read \"Charlotte's Web\" and a book Caroline recommended to her last year that inspires pursuing dreams.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D7:8",
+        "D6:10"
+      ],
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "Nothing is Impossible"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            2
+          ]
+        },
+        {
+          "ref": "D6:10",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D7:8": 1,
+        "D6:10": null
+      },
+      "classification": "gold_ref_present_but_atom_missing_or_multimodal_metadata"
+    },
+    {
+      "row": 41,
+      "cat": "single-hop",
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "gold": 2,
+      "predicted": "Melanie has gone to the beach once or twice in 2023.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D10:8",
+        "D6:16"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 8,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            6
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            6
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            10
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D10:8": 6,
+        "D6:16": null
+      },
+      "classification": "answer_synthesis_shape_or_subject_error"
+    },
+    {
+      "row": 80,
+      "cat": "temporal",
+      "question": "When did Caroline pass the adoption interview?",
+      "gold": "The Friday before 22 October 2023",
+      "predicted": "Caroline passed the adoption agency interviews last Friday before 22 October, 2023.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D19:1"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 6,
+      "source_total_searched": 6,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 6,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D19:1",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D19:1": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 113,
+      "cat": "unanswerable",
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "gold": "a sunset with a palm tree",
+      "predicted": "Mel and her kids painted a nature-inspired painting featuring lovely flowers in their latest project in July 2023.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D8:6"
+      ],
+      "coverage_class": "no_atoms_present_conflicting_context",
+      "missing_atoms": [
+        "sunset",
+        "palm tree"
+      ],
+      "conflicts": [
+        "flowers",
+        "nature-inspired"
+      ],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 13,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:6": 2
+      },
+      "classification": "gold_ref_present_but_atom_missing_or_multimodal_metadata"
+    },
+    {
+      "row": 163,
+      "cat": "adversarial",
+      "question": "What did Caroline and her family do while camping?",
+      "gold": "explored nature, roasted marshmallows, and went on a hike",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D4:8"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D4:8",
+          "ranks": [
+            9
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D4:8": null
+      },
+      "classification": "answer_synthesis_shape_or_subject_error"
+    },
+    {
+      "row": 172,
+      "cat": "adversarial",
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "gold": "many people wanting to create loving homes for children in need",
+      "predicted": "Melanie did not attend the council meeting for adoption; Caroline did and found it inspiring and emotional.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D8:9"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D8:9",
+          "ranks": [
+            9
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:9": null
+      },
+      "classification": "baseline_has_ref_context_packet_query_missed_ref"
+    },
+    {
+      "row": 185,
+      "cat": "adversarial",
+      "question": "What type of instrument does Caroline play?",
+      "gold": "clarinet and violin",
+      "predicted": "Caroline plays acoustic guitar.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D15:26"
+      ],
+      "coverage_class": "all_atoms_present_with_conflicts",
+      "missing_atoms": [],
+      "conflicts": [
+        "acoustic guitar",
+        "guitar"
+      ],
+      "source_attr_present": true,
+      "source_evidence_count": 7,
+      "source_total_searched": 7,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 7,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D15:26": 2
+      },
+      "classification": "answer_conflict_selection"
+    }
+  ],
+  "nonfull_rows": [
+    {
+      "row": 24,
+      "cat": "single-hop",
+      "question": "What books has Melanie read?",
+      "gold": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "predicted": "Melanie has read \"Charlotte's Web\" and a book Caroline recommended to her last year that inspires pursuing dreams.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D7:8",
+        "D6:10"
+      ],
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "Nothing is Impossible"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            2
+          ]
+        },
+        {
+          "ref": "D6:10",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D7:8": 1,
+        "D6:10": null
+      },
+      "classification": "gold_ref_present_but_atom_missing_or_multimodal_metadata"
+    },
+    {
+      "row": 39,
+      "cat": "single-hop",
+      "question": "What activities has Melanie done with her family?",
+      "gold": "Pottery, painting, camping, museum, swimming, hiking",
+      "predicted": "Melanie has gone camping at the beach, camping in the mountains, hiking in the mountains and forests, roasting marshmallows around a campfire, playing games, eating good food, going on a road trip including visiting the Grand Canyon, and swimming with her kids.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D8:4",
+        "D8:6",
+        "D9:1",
+        "D6:4",
+        "D1:18",
+        "D3:14"
+      ],
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "museum"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 11,
+      "packet_added": 1,
+      "source_ref_hits": [
+        {
+          "ref": "D1:18",
+          "ranks": [
+            5
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D1:18",
+          "ranks": [
+            5
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D1:18",
+          "ranks": [
+            11
+          ]
+        },
+        {
+          "ref": "D3:14",
+          "ranks": [
+            5
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:4": null,
+        "D8:6": null,
+        "D9:1": null,
+        "D6:4": null,
+        "D1:18": 5,
+        "D3:14": null
+      },
+      "classification": "gold_ref_present_but_atom_missing_or_multimodal_metadata"
+    },
+    {
+      "row": 41,
+      "cat": "single-hop",
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "gold": 2,
+      "predicted": "Melanie has gone to the beach once or twice in 2023.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D10:8",
+        "D6:16"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 8,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            6
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            6
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            10
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D10:8": 6,
+        "D6:16": null
+      },
+      "classification": "answer_synthesis_shape_or_subject_error"
+    },
+    {
+      "row": 113,
+      "cat": "unanswerable",
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "gold": "a sunset with a palm tree",
+      "predicted": "Mel and her kids painted a nature-inspired painting featuring lovely flowers in their latest project in July 2023.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D8:6"
+      ],
+      "coverage_class": "no_atoms_present_conflicting_context",
+      "missing_atoms": [
+        "sunset",
+        "palm tree"
+      ],
+      "conflicts": [
+        "flowers",
+        "nature-inspired"
+      ],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 13,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:6": 2
+      },
+      "classification": "gold_ref_present_but_atom_missing_or_multimodal_metadata"
+    },
+    {
+      "row": 123,
+      "cat": "unanswerable",
+      "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+      "gold": "She wanted to catch the eye and make people smile.",
+      "predicted": "Melanie chose the colors and patterns in her pottery project to catch the eye, make people smile, and to express her feelings and creativity, with each stroke carrying a part of her.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D12:6"
+      ],
+      "coverage_class": "all_atoms_present_with_conflicts",
+      "missing_atoms": [],
+      "conflicts": [
+        "express emotions",
+        "self-expression",
+        "relax"
+      ],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 8,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D12:6",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D12:6",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D12:6",
+          "ranks": [
+            10
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D12:6": 1
+      },
+      "classification": "answer_conflict_selection"
+    },
+    {
+      "row": 163,
+      "cat": "adversarial",
+      "question": "What did Caroline and her family do while camping?",
+      "gold": "explored nature, roasted marshmallows, and went on a hike",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D4:8"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D4:8",
+          "ranks": [
+            9
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D4:8": null
+      },
+      "classification": "answer_synthesis_shape_or_subject_error"
+    },
+    {
+      "row": 172,
+      "cat": "adversarial",
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "gold": "many people wanting to create loving homes for children in need",
+      "predicted": "Melanie did not attend the council meeting for adoption; Caroline did and found it inspiring and emotional.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D8:9"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D8:9",
+          "ranks": [
+            9
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:9": null
+      },
+      "classification": "baseline_has_ref_context_packet_query_missed_ref"
+    },
+    {
+      "row": 183,
+      "cat": "adversarial",
+      "question": "What did Melanie find in her neighborhood during her walk?",
+      "gold": "a rainbow sidewalk",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D14:23"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "a rainbow sidewalk"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [],
+      "source_ref_ranks": {
+        "D14:23": null
+      },
+      "classification": "retrieval_absence_all_paths"
+    },
+    {
+      "row": 185,
+      "cat": "adversarial",
+      "question": "What type of instrument does Caroline play?",
+      "gold": "clarinet and violin",
+      "predicted": "Caroline plays acoustic guitar.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D15:26"
+      ],
+      "coverage_class": "all_atoms_present_with_conflicts",
+      "missing_atoms": [],
+      "conflicts": [
+        "acoustic guitar",
+        "guitar"
+      ],
+      "source_attr_present": true,
+      "source_evidence_count": 7,
+      "source_total_searched": 7,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 7,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D15:26": 2
+      },
+      "classification": "answer_conflict_selection"
+    },
+    {
+      "row": 195,
+      "cat": "adversarial",
+      "question": "How did Caroline's children handle the accident?",
+      "gold": "They were scared but resilient",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D18:7"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "They were scared but resilient"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [],
+      "source_ref_ranks": {
+        "D18:7": null
+      },
+      "classification": "retrieval_absence_all_paths"
+    }
+  ],
+  "rows": [
+    {
+      "row": 5,
+      "cat": "single-hop",
+      "question": "What is Caroline's identity?",
+      "gold": "Transgender woman",
+      "predicted": "Caroline is a transgender woman.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D1:5"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Transgender woman"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 8,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 11,
+      "packet_added": 1,
+      "source_ref_hits": [
+        {
+          "ref": "D1:5",
+          "ranks": [
+            7
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D1:5",
+          "ranks": [
+            7
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D1:5",
+          "ranks": [
+            11
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D1:5": 7
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 24,
+      "cat": "single-hop",
+      "question": "What books has Melanie read?",
+      "gold": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "predicted": "Melanie has read \"Charlotte's Web\" and a book Caroline recommended to her last year that inspires pursuing dreams.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D7:8",
+        "D6:10"
+      ],
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "Nothing is Impossible"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D7:8",
+          "ranks": [
+            2
+          ]
+        },
+        {
+          "ref": "D6:10",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D7:8": 1,
+        "D6:10": null
+      },
+      "classification": "gold_ref_present_but_atom_missing_or_multimodal_metadata"
+    },
+    {
+      "row": 30,
+      "cat": "temporal",
+      "question": "When did Melanie go to the pottery workshop?",
+      "gold": "The Friday before 15 July 2023",
+      "predicted": "Melanie went to the pottery workshop last Friday before 15 July 2023.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D8:2"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "The Friday before 15 July 2023"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 7,
+      "source_total_searched": 7,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 7,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D8:2",
+          "ranks": [
+            8
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:2": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 31,
+      "cat": "multi-hop",
+      "question": "Would Melanie be considered a member of the LGBTQ community?",
+      "gold": "Likely no, she does not refer to herself as part of it",
+      "predicted": "Likely no; the context shows Melanie supports and encourages Caroline, who is transgender and active in the LGBTQ community, but there is no indication Melanie herself is a member.",
+      "score": 1.0,
+      "evidence_refs": [],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Likely no",
+        "she does not refer to herself as part of it"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [],
+      "source_ref_ranks": {},
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 39,
+      "cat": "single-hop",
+      "question": "What activities has Melanie done with her family?",
+      "gold": "Pottery, painting, camping, museum, swimming, hiking",
+      "predicted": "Melanie has gone camping at the beach, camping in the mountains, hiking in the mountains and forests, roasting marshmallows around a campfire, playing games, eating good food, going on a road trip including visiting the Grand Canyon, and swimming with her kids.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D8:4",
+        "D8:6",
+        "D9:1",
+        "D6:4",
+        "D1:18",
+        "D3:14"
+      ],
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "museum"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 11,
+      "packet_added": 1,
+      "source_ref_hits": [
+        {
+          "ref": "D1:18",
+          "ranks": [
+            5
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D1:18",
+          "ranks": [
+            5
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D1:18",
+          "ranks": [
+            11
+          ]
+        },
+        {
+          "ref": "D3:14",
+          "ranks": [
+            5
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:4": null,
+        "D8:6": null,
+        "D9:1": null,
+        "D6:4": null,
+        "D1:18": 5,
+        "D3:14": null
+      },
+      "classification": "gold_ref_present_but_atom_missing_or_multimodal_metadata"
+    },
+    {
+      "row": 40,
+      "cat": "single-hop",
+      "question": "In what ways is Caroline participating in the LGBTQ community?",
+      "gold": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "predicted": "Caroline participates in the LGBTQ community by giving talks about her transgender journey, joining and being active in LGBTQ activist groups, mentoring LGBTQ youth, volunteering at an LGBTQ+ youth center, attending pride parades and conferences, organizing an LGBTQ art show, and using her art to express her trans experience and promote acceptance.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D10:3",
+        "D5:1",
+        "D9:12",
+        "D9:2"
+      ],
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "Joining activist group",
+        "going to pride parades",
+        "participating in an art show"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 11,
+      "packet_added": 1,
+      "source_ref_hits": [
+        {
+          "ref": "D9:12",
+          "ranks": [
+            1
+          ]
+        },
+        {
+          "ref": "D9:2",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D9:12",
+          "ranks": [
+            1
+          ]
+        },
+        {
+          "ref": "D9:2",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D10:3",
+          "ranks": [
+            4
+          ]
+        },
+        {
+          "ref": "D5:1",
+          "ranks": [
+            1
+          ]
+        },
+        {
+          "ref": "D9:12",
+          "ranks": [
+            11
+          ]
+        },
+        {
+          "ref": "D9:2",
+          "ranks": [
+            7
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D10:3": null,
+        "D5:1": null,
+        "D9:12": 1,
+        "D9:2": 2
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 41,
+      "cat": "single-hop",
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "gold": 2,
+      "predicted": "Melanie has gone to the beach once or twice in 2023.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D10:8",
+        "D6:16"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 8,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            6
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            6
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D10:8",
+          "ranks": [
+            10
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D10:8": 6,
+        "D6:16": null
+      },
+      "classification": "answer_synthesis_shape_or_subject_error"
+    },
+    {
+      "row": 47,
+      "cat": "multi-hop",
+      "question": "Would Melanie be considered an ally to the transgender community?",
+      "gold": "Yes, she is supportive",
+      "predicted": "Yes, Melanie would be considered an ally to the transgender community.",
+      "score": 1.0,
+      "evidence_refs": [],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 8,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [],
+      "source_ref_ranks": {},
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 51,
+      "cat": "multi-hop",
+      "question": "What would Caroline's political leaning likely be?",
+      "gold": "Liberal",
+      "predicted": "Caroline's political leaning is likely progressive or left-leaning, as indicated by her active participation in LGBTQ+ pride events, advocacy for trans rights, and involvement in mental health support and community activism.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D12:1"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Liberal"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [],
+      "source_ref_ranks": {
+        "D12:1": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 55,
+      "cat": "temporal",
+      "question": "When did Caroline draw a self-portrait?",
+      "gold": "The week before 23 August 2023",
+      "predicted": "Caroline drew a self-portrait last week before 3:31 pm on 23 August, 2023.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D13:11"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "The week before 23 August 2023"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D13:11",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D13:11": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 69,
+      "cat": "temporal",
+      "question": "How long has Melanie been practicing art?",
+      "gold": "Since 2016",
+      "predicted": "Seven years now",
+      "score": 1.0,
+      "evidence_refs": [
+        "D16:8"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Since 2016"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 7,
+      "source_total_searched": 7,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 7,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D16:8",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D16:8": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 70,
+      "cat": "multi-hop",
+      "question": "What personality traits might Melanie say Caroline has?",
+      "gold": "Thoughtful, authentic, driven",
+      "predicted": "Thoughtful, authentic, driven.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D16:18",
+        "D13:16",
+        "D7:4"
+      ],
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "driven"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 8,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D16:18",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D16:18": null,
+        "D13:16": null,
+        "D7:4": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 74,
+      "cat": "temporal",
+      "question": "When did Melanie get hurt?",
+      "gold": "September 2023",
+      "predicted": "Last month (relative to 13 October 2023).",
+      "score": 1.0,
+      "evidence_refs": [
+        "D17:8"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D17:8",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D17:8": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 78,
+      "cat": "multi-hop",
+      "question": "Would Melanie go on another roadtrip soon?",
+      "gold": "Likely no; since this one went badly",
+      "predicted": "Likely no; Melanie described the recent roadtrip as \"insane\" with a scary accident involving her son, and said \"our trip got off to a bad start\" and it was a \"real scary experience.\"",
+      "score": 1.0,
+      "evidence_refs": [
+        "D18:3",
+        "D18:1"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Likely no",
+        "since this one went badly"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 6,
+      "source_total_searched": 6,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 6,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D18:3",
+          "ranks": [
+            1
+          ]
+        },
+        {
+          "ref": "D18:1",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D18:3": null,
+        "D18:1": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 80,
+      "cat": "temporal",
+      "question": "When did Caroline pass the adoption interview?",
+      "gold": "The Friday before 22 October 2023",
+      "predicted": "Caroline passed the adoption agency interviews last Friday before 22 October, 2023.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D19:1"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 6,
+      "source_total_searched": 6,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 6,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D19:1",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D19:1": null
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 101,
+      "cat": "unanswerable",
+      "question": "What kind of place does Caroline want to create for people?",
+      "gold": "a safe and inviting place for people to grow",
+      "predicted": "Caroline wants to create a safe, inviting place for people to grow, especially supporting trans people with counseling and mental health.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D4:15"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 11,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D4:15",
+          "ranks": [
+            7
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D4:15",
+          "ranks": [
+            7
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D4:15",
+          "ranks": [
+            4
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D4:15": 7
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 113,
+      "cat": "unanswerable",
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "gold": "a sunset with a palm tree",
+      "predicted": "Mel and her kids painted a nature-inspired painting featuring lovely flowers in their latest project in July 2023.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D8:6"
+      ],
+      "coverage_class": "no_atoms_present_conflicting_context",
+      "missing_atoms": [
+        "sunset",
+        "palm tree"
+      ],
+      "conflicts": [
+        "flowers",
+        "nature-inspired"
+      ],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 13,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D8:6",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:6": 2
+      },
+      "classification": "gold_ref_present_but_atom_missing_or_multimodal_metadata"
+    },
+    {
+      "row": 121,
+      "cat": "unanswerable",
+      "question": "Whose birthday did Melanie celebrate recently?",
+      "gold": "Melanie's daughter",
+      "predicted": "Melanie celebrated her daughter's birthday recently.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D11:1"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Melanie's daughter"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 6,
+      "source_total_searched": 6,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 6,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D11:1",
+          "ranks": [
+            3
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D11:1",
+          "ranks": [
+            3
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D11:1",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D11:1": 3
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 123,
+      "cat": "unanswerable",
+      "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+      "gold": "She wanted to catch the eye and make people smile.",
+      "predicted": "Melanie chose the colors and patterns in her pottery project to catch the eye, make people smile, and to express her feelings and creativity, with each stroke carrying a part of her.",
+      "score": 0.5,
+      "evidence_refs": [
+        "D12:6"
+      ],
+      "coverage_class": "all_atoms_present_with_conflicts",
+      "missing_atoms": [],
+      "conflicts": [
+        "express emotions",
+        "self-expression",
+        "relax"
+      ],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 8,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D12:6",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D12:6",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D12:6",
+          "ranks": [
+            10
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D12:6": 1
+      },
+      "classification": "answer_conflict_selection"
+    },
+    {
+      "row": 128,
+      "cat": "unanswerable",
+      "question": "What did Caroline make for a local church?",
+      "gold": "a stained glass window",
+      "predicted": "Caroline made a stained glass window for a local church.",
+      "score": 1.0,
+      "evidence_refs": [
+        "D14:17"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D14:17",
+          "ranks": [
+            3
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D14:17",
+          "ranks": [
+            3
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D14:17",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D14:17": 3
+      },
+      "classification": "passed_in_canary"
+    },
+    {
+      "row": 163,
+      "cat": "adversarial",
+      "question": "What did Caroline and her family do while camping?",
+      "gold": "explored nature, roasted marshmallows, and went on a hike",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D4:8"
+      ],
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D4:8",
+          "ranks": [
+            9
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D4:8": null
+      },
+      "classification": "answer_synthesis_shape_or_subject_error"
+    },
+    {
+      "row": 172,
+      "cat": "adversarial",
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "gold": "many people wanting to create loving homes for children in need",
+      "predicted": "Melanie did not attend the council meeting for adoption; Caroline did and found it inspiring and emotional.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D8:9"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [
+        {
+          "ref": "D8:9",
+          "ranks": [
+            9
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D8:9": null
+      },
+      "classification": "baseline_has_ref_context_packet_query_missed_ref"
+    },
+    {
+      "row": 183,
+      "cat": "adversarial",
+      "question": "What did Melanie find in her neighborhood during her walk?",
+      "gold": "a rainbow sidewalk",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D14:23"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "a rainbow sidewalk"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 10,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [],
+      "source_ref_ranks": {
+        "D14:23": null
+      },
+      "classification": "retrieval_absence_all_paths"
+    },
+    {
+      "row": 185,
+      "cat": "adversarial",
+      "question": "What type of instrument does Caroline play?",
+      "gold": "clarinet and violin",
+      "predicted": "Caroline plays acoustic guitar.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D15:26"
+      ],
+      "coverage_class": "all_atoms_present_with_conflicts",
+      "missing_atoms": [],
+      "conflicts": [
+        "acoustic guitar",
+        "guitar"
+      ],
+      "source_attr_present": true,
+      "source_evidence_count": 7,
+      "source_total_searched": 7,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 7,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "pool_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            2
+          ]
+        }
+      ],
+      "final_ref_hits": [
+        {
+          "ref": "D15:26",
+          "ranks": [
+            1
+          ]
+        }
+      ],
+      "source_ref_ranks": {
+        "D15:26": 2
+      },
+      "classification": "answer_conflict_selection"
+    },
+    {
+      "row": 195,
+      "cat": "adversarial",
+      "question": "How did Caroline's children handle the accident?",
+      "gold": "They were scared but resilient",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "evidence_refs": [
+        "D18:7"
+      ],
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "They were scared but resilient"
+      ],
+      "conflicts": [],
+      "source_attr_present": true,
+      "source_evidence_count": 8,
+      "source_total_searched": 9,
+      "source_recall_tier": "hot+cold+graph",
+      "pool_count": 8,
+      "final_count": 10,
+      "packet_added": 0,
+      "source_ref_hits": [],
+      "pool_ref_hits": [],
+      "final_ref_hits": [],
+      "source_ref_ranks": {
+        "D18:7": null
+      },
+      "classification": "retrieval_absence_all_paths"
+    }
+  ],
+  "conclusions": [
+    "Source attribution emitted for all 25 rows and preserved candidate-pool/source evidence linkage.",
+    "Context-packet source recall overlapped any gold evidence ref on 11/25 rows and all gold refs on 9/25; final context overlapped any gold ref on 20/25 and all refs on 19/25.",
+    "Most remaining non-full rows are not solved by entity/time post-filtering: either answer synthesis/conflict selection fails despite final gold refs, or the source context-packet query misses a ref already present in baseline final context.",
+    "Rows 183 and 195 remain true retrieval absence cases in this canary: no source/pool/final gold ref hits."
+  ]
+}

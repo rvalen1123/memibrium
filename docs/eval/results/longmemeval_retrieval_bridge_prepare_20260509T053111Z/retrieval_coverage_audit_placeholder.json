@@ -1,0 +1,275 @@
+{
+  "mode": "retrieval_bridge_phase_a_coverage_placeholder",
+  "coverage_status": "not_evaluated_retrieval_not_run",
+  "phase_a_stop_rule": "if coverage is missing, stop before answer generation",
+  "phase_a_gates": {
+    "coverage_audit_completeness": "25/25 rows have a coverage class and preserved retrieval artifacts",
+    "retrieval_operational_success": "no uncaught 500s, serialization errors, or missing JSON fields",
+    "preference_coverage": "at least 3/4 single-session-preference rows are gold_supported or gold_supported_with_conflict",
+    "knowledge_update_coverage": "at least 3/5 knowledge-update rows are gold_supported, gold_supported_with_conflict, or partial_support; stale_only counted separately",
+    "abstention_contamination": "no more than 1/4 abstention rows may be unanswerable_contaminated",
+    "evidence_identity": "every answerable row preserves source refs sufficient for artifact-only review"
+  },
+  "coverage_classes": [
+    "gold_supported",
+    "gold_supported_with_conflict",
+    "partial_support",
+    "stale_only",
+    "adjacent_entity_only",
+    "unsupported",
+    "unanswerable_supported",
+    "unanswerable_contaminated"
+  ],
+  "rows": [
+    {
+      "question_id": "031748ae_abs",
+      "question_type": "knowledge-update",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "07741c44",
+      "question_type": "knowledge-update",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "b6019101",
+      "question_type": "knowledge-update",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "f685340e",
+      "question_type": "knowledge-update",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "6456829e_abs",
+      "question_type": "multi-session",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "4adc0475",
+      "question_type": "multi-session",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "55241a1f",
+      "question_type": "multi-session",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "d851d5ba",
+      "question_type": "multi-session",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "cc539528",
+      "question_type": "single-session-assistant",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "28bcfaac",
+      "question_type": "single-session-assistant",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "51b23612",
+      "question_type": "single-session-assistant",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "e3fc4d6e",
+      "question_type": "single-session-assistant",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "1da05512",
+      "question_type": "single-session-preference",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "1c0ddc50",
+      "question_type": "single-session-preference",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "32260d93",
+      "question_type": "single-session-preference",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "06f04340",
+      "question_type": "single-session-preference",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "bc8a6e93_abs",
+      "question_type": "single-session-user",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "8a137a7f",
+      "question_type": "single-session-user",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "a06e4cfe",
+      "question_type": "single-session-user",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "58bf7951",
+      "question_type": "single-session-user",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "gpt4_70e84552_abs",
+      "question_type": "temporal-reasoning",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "gpt4_61e13b3c",
+      "question_type": "temporal-reasoning",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "gpt4_2487a7cb",
+      "question_type": "temporal-reasoning",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "gpt4_78cf46a3",
+      "question_type": "temporal-reasoning",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    },
+    {
+      "question_id": "a2f3aa27",
+      "question_type": "knowledge-update",
+      "coverage_class": null,
+      "gold_supporting_evidence_present": [],
+      "gold_supporting_evidence_missing": [],
+      "stale_conflicting_evidence_present": [],
+      "proceed_to_answer_score": false,
+      "stop_reason": "retrieval_not_run_runtime_not_authorized"
+    }
+  ]
+}

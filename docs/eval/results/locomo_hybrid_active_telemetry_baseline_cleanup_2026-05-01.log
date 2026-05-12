@@ -1,0 +1,20 @@
+BEGIN
+SELECT 49
+SELECT 28
+DELETE 66
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 435
+DELETE 49
+UPDATE 28
+SELECT 5
+DELETE 0
+DELETE 5
+COMMIT
+ remaining_locomo 
+------------------
+                0
+(1 row)
+
+cleared locomo-* domains

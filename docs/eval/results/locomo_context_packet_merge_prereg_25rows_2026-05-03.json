@@ -1,0 +1,253 @@
+{
+  "schema": "memibrium.locomo.context_packet_merge.prereg.fixed_rows.v1",
+  "selection_mode": "deterministic_hash_stratified_read_only; no benchmark/no recall/no DB mutation; sha256(conv-26:index:question), first 5 per category",
+  "source_dataset": "/tmp/locomo/data/locomo10.json",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "sample_id": "conv-26",
+  "target_rows": 25,
+  "category_target_each": 5,
+  "selected_rows": [
+    {
+      "one_based_index": 5,
+      "cat": "single-hop",
+      "question": "What is Caroline's identity?",
+      "question_sha256": "557073e870d0eab54bd19b0b8eae378ddeee639da133935d995abb398a709edd",
+      "selection_sha256": "17e42b02be902e5baf46cf02c772660296f7f351dade8aa8e7b9392cd3ee8980",
+      "label": "hash_stratified_single_hop_1",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 24,
+      "cat": "single-hop",
+      "question": "What books has Melanie read?",
+      "question_sha256": "6b641b2d7bff65940667035737d4c6ffe80a9571e6f21625962dee3d1f3ff2ed",
+      "selection_sha256": "2d144679752a546253c5b4b36bc56beddd27b526d11501aaa6fbe6e2ec066479",
+      "label": "hash_stratified_single_hop_2",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 30,
+      "cat": "temporal",
+      "question": "When did Melanie go to the pottery workshop?",
+      "question_sha256": "e9a990d069a7a766c56e51db5358b111e1c89573367674e97c5aa8190eeb9f8b",
+      "selection_sha256": "2d101a982abe176ace107fcaf5c892bff8b91f981dfb45c6a4568d20f1989590",
+      "label": "hash_stratified_temporal_1",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 31,
+      "cat": "multi-hop",
+      "question": "Would Melanie be considered a member of the LGBTQ community?",
+      "question_sha256": "6c5efcd9efa6777c3a3990d270313185298c19fd1b5e02de710a841f5294449b",
+      "selection_sha256": "91aab9a6efd992f52178633c9ef3ee0842e674925c947cfac3cb8afef0fcca2e",
+      "label": "hash_stratified_multi_hop_1",
+      "evidence_ref_count": 0
+    },
+    {
+      "one_based_index": 39,
+      "cat": "single-hop",
+      "question": "What activities has Melanie done with her family?",
+      "question_sha256": "2a3564492522411a962db7af457c3ac0140789f546db184579a27f98aedaaf46",
+      "selection_sha256": "2cd9732e902efb2e6ed090e7a511298840d29454f4be262c90a62a17452e9623",
+      "label": "hash_stratified_single_hop_3",
+      "evidence_ref_count": 6
+    },
+    {
+      "one_based_index": 40,
+      "cat": "single-hop",
+      "question": "In what ways is Caroline participating in the LGBTQ community?",
+      "question_sha256": "6509d2de730064cf5faceb628ce91981fac9f65dddd72ba38ab88155e391eaa7",
+      "selection_sha256": "252e85d3071c38cadcb5a2ab32c689b6b82cfa431f3c9604262a8b6ae8bee99e",
+      "label": "hash_stratified_single_hop_4",
+      "evidence_ref_count": 4
+    },
+    {
+      "one_based_index": 41,
+      "cat": "single-hop",
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "question_sha256": "9997c8eb396b91fee17c62787be16a3385a717722394d7aa6b8ec1a976319c8a",
+      "selection_sha256": "19e86a89b6f6f69686fe075efef27487132ff5661a416e364e50acacad2d4b15",
+      "label": "hash_stratified_single_hop_5",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 47,
+      "cat": "multi-hop",
+      "question": "Would Melanie be considered an ally to the transgender community?",
+      "question_sha256": "83884e02763814448090abbe8222f547e96eabd6bb02b5c57f931e6d2f567500",
+      "selection_sha256": "57a2a17e1a5e2e014dc14439cb81ef7baaf8bd5295601573f31b100bedaa14a4",
+      "label": "hash_stratified_multi_hop_2",
+      "evidence_ref_count": 0
+    },
+    {
+      "one_based_index": 51,
+      "cat": "multi-hop",
+      "question": "What would Caroline's political leaning likely be?",
+      "question_sha256": "840997a674c073d816c1af15e084e46351a96173cc5cb773b8a366a00caa2de7",
+      "selection_sha256": "79ecf456fdd0585f88b7de64bad2b29c60ccfd75b02dd20a8de9f588bdc80d49",
+      "label": "hash_stratified_multi_hop_3",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 55,
+      "cat": "temporal",
+      "question": "When did Caroline draw a self-portrait?",
+      "question_sha256": "5bca5d9a8b0f0eb9de4bd727f23ed35356c43ef42a1c22efd7fa170b5ea2e06c",
+      "selection_sha256": "35b3dd03fb9eff9da43d6dddd5c0f7e560a13647f90b11449f411035fe2fbc8c",
+      "label": "hash_stratified_temporal_2",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 69,
+      "cat": "temporal",
+      "question": "How long has Melanie been practicing art?",
+      "question_sha256": "eecb342854595209128381c4f9fc011251be546dd38fe0ceec1cc238783458b6",
+      "selection_sha256": "05e0cfbf4aed3b90901126c6c053fddd201aaec5cd8f4b4ee083a4ef8e21ae6f",
+      "label": "hash_stratified_temporal_3",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 70,
+      "cat": "multi-hop",
+      "question": "What personality traits might Melanie say Caroline has?",
+      "question_sha256": "e15696858b9179d2193f0526f143603a0c08053ff3c30f37db1255d06046b3e4",
+      "selection_sha256": "1ef02f72e8bc3939c8e1b4661e481b8c8bcbf089038e1424ce2214d9e2f954f5",
+      "label": "hash_stratified_multi_hop_4",
+      "evidence_ref_count": 3
+    },
+    {
+      "one_based_index": 74,
+      "cat": "temporal",
+      "question": "When did Melanie get hurt?",
+      "question_sha256": "904fa98aab852b996ad30096c7d1ffb13eca4cfd55e2e814b2b15f36086e38dc",
+      "selection_sha256": "0e88d28d832497f64d67c8324f261056408c16faf6e9716e10e343feea9e4327",
+      "label": "hash_stratified_temporal_4",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 78,
+      "cat": "multi-hop",
+      "question": "Would Melanie go on another roadtrip soon?",
+      "question_sha256": "c197640b25acabc9a636b4cd8161243a894a133fe067a348f75ca47b04e37582",
+      "selection_sha256": "2f6620dd323e76327bf3bc8b7cdb901f44e1bc5b346ad7e53d83aad521d3a288",
+      "label": "hash_stratified_multi_hop_5",
+      "evidence_ref_count": 2
+    },
+    {
+      "one_based_index": 80,
+      "cat": "temporal",
+      "question": "When did Caroline pass the adoption interview?",
+      "question_sha256": "74759d2e6480934f75db8bcd8a80f2e1f09301774190dbd635c47ad1385f73f5",
+      "selection_sha256": "273ac5d70ba1456bf683a1849c85a113ed5514751a1c661dfde0ea0ea803268e",
+      "label": "hash_stratified_temporal_5",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 101,
+      "cat": "unanswerable",
+      "question": "What kind of place does Caroline want to create for people?",
+      "question_sha256": "1a1302e556b8a1917190e3b98d12aa00c71afd36b2462825eb19923d3bbecea3",
+      "selection_sha256": "04b8f5d77c1e70349697acf401f7f686e804197b95b42694a626a720f09e4942",
+      "label": "hash_stratified_unanswerable_1",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 113,
+      "cat": "unanswerable",
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "question_sha256": "612e72cae7f061a79cb85b05261a203f849967d70fb9b3b8befaa6cf18df3fa0",
+      "selection_sha256": "0dcb1c8a9f7c7a5a336f9b1f693f71ec8adbe055f4c0f1ccf6cefa0e9d5e82ca",
+      "label": "hash_stratified_unanswerable_2",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 121,
+      "cat": "unanswerable",
+      "question": "Whose birthday did Melanie celebrate recently?",
+      "question_sha256": "6b859adb5068410cec9762fcebf734288340c38f8ec44fcff68d29a64991514e",
+      "selection_sha256": "049ea9f0807ecb9f37fa9ac5f9c0efdb4912df3ea23ef83f5cbaa96dd16dce75",
+      "label": "hash_stratified_unanswerable_3",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 123,
+      "cat": "unanswerable",
+      "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+      "question_sha256": "c89540a5d39822f592d64b590a01c51fc81615a1d1f219a089c770539289aec0",
+      "selection_sha256": "003a5ce0690335d20b4eaac611b3afb9867e702f2a8280f10d51b24be2b8d2bf",
+      "label": "hash_stratified_unanswerable_4",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 128,
+      "cat": "unanswerable",
+      "question": "What did Caroline make for a local church?",
+      "question_sha256": "73e019bb0df5fe9bb516db0d2ef90844d7ce9e05c34c7f8b1b6a5147641dc44d",
+      "selection_sha256": "03d2488c8cda4ac225534d877fd18c5d47b9cf58dbb2dfc4157d923b2ab6b53c",
+      "label": "hash_stratified_unanswerable_5",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 163,
+      "cat": "adversarial",
+      "question": "What did Caroline and her family do while camping?",
+      "question_sha256": "383329e10985638a134115a496651ab26829301e226b0e85d4e64c269d43ef3f",
+      "selection_sha256": "020d3a451a7f3fa775766281ce832b7f4c120fbbe5124ba4cecc2d99b4a2b883",
+      "label": "hash_stratified_adversarial_1",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 172,
+      "cat": "adversarial",
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "question_sha256": "ed906d0c48657c00daaa46932950473ffbbb28dfc84a7932fea9dbf84b914c11",
+      "selection_sha256": "101f39eaf56fda330dd3d773e881e198e31568fc883bbc672b706b18a4a1165f",
+      "label": "hash_stratified_adversarial_2",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 183,
+      "cat": "adversarial",
+      "question": "What did Melanie find in her neighborhood during her walk?",
+      "question_sha256": "137befe7c690b5f083e4566520fd6400988a556aa10cc85c127b8e6ce1e8445b",
+      "selection_sha256": "01a3a13411773ddcb36121f51ccf97d47ccd1ad793761b8a8a84e23108f88148",
+      "label": "hash_stratified_adversarial_3",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 185,
+      "cat": "adversarial",
+      "question": "What type of instrument does Caroline play?",
+      "question_sha256": "9d82d9374f634007d1b025584f2bea98b623396e192778a3c49c26e9c495d7bb",
+      "selection_sha256": "0a4a0ee5ef4ff291f2104c29e795978eb725941b4db1c6165581b1b33e8426bd",
+      "label": "hash_stratified_adversarial_4",
+      "evidence_ref_count": 1
+    },
+    {
+      "one_based_index": 195,
+      "cat": "adversarial",
+      "question": "How did Caroline's children handle the accident?",
+      "question_sha256": "72f48a5d6a260935adda2e1a14c31aabecc725fc58f1c640f48e65571a12b5fe",
+      "selection_sha256": "09b6121157491dbfa29189f5751f00ae8d4d568627dd8db80e9276ddf9a6088b",
+      "label": "hash_stratified_adversarial_5",
+      "evidence_ref_count": 1
+    }
+  ],
+  "category_counts": {
+    "unanswerable": 5,
+    "adversarial": 5,
+    "temporal": 5,
+    "single-hop": 5,
+    "multi-hop": 5
+  },
+  "stop_gates": [
+    "exact row identity preserved",
+    "condition metadata correct",
+    "baseline-prefix preservation rate == 1.0",
+    "treatment gold-hit rate >= baseline gold-hit rate",
+    "prompt context changed for treatment rows",
+    "answer-change diagnostics present for every row",
+    "final LOCOMO cleanup ok",
+    "no full 199Q run"
+  ]
+}

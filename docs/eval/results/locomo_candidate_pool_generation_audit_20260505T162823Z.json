@@ -1,0 +1,1599 @@
+{
+  "schema": "memibrium.locomo.candidate_pool_generation_audit.v1",
+  "run_id": "20260505T162823Z",
+  "source_artifact": "docs/eval/results/locomo_context_packet_canary_treatment_merge_refgate_frozen_artifactctx_shaped_multihop_temporal_goldcov_enttimeexp_20260505T115852Z.json",
+  "raw_data_path": "/tmp/locomo/data/locomo10.json",
+  "scope": "artifact-only/read-only; no live recall, no DB/Docker mutation, no full/cumulative LOCOMO run",
+  "focus_rows": [
+    5,
+    24,
+    31,
+    39,
+    40,
+    41,
+    51,
+    55,
+    74,
+    78,
+    80,
+    113,
+    128,
+    163,
+    172,
+    185
+  ],
+  "row_count": 16,
+  "raw_evidence_rows": 15,
+  "coverage_missing_rows": 11,
+  "rows_with_missing_atom_literal_in_candidate_pool": 0,
+  "rows_with_missing_atom_literal_in_final_context": 0,
+  "rows_with_gold_evidence_ref_in_candidate_pool": 7,
+  "rows_with_gold_evidence_ref_in_final_context": 13,
+  "absence_mode_counts": {
+    "gold_evidence_turn_not_in_candidate_pool": 5,
+    "evidence_in_pool_but_literal_missing_atom_absent_or_coverage_granularity_mismatch": 5,
+    "no_gold_evidence_refs_in_dataset_inference_or_negative_answer": 1,
+    "coverage_satisfied_not_candidate_pool_problem": 4,
+    "answer_conflict_selection_not_pool_absence": 1
+  },
+  "lexicographic_session_mapping": {
+    "numeric_to_lex_ingest_session": {
+      "1": 1,
+      "10": 2,
+      "11": 3,
+      "12": 4,
+      "13": 5,
+      "14": 6,
+      "15": 7,
+      "16": 8,
+      "17": 9,
+      "18": 10,
+      "19": 11,
+      "2": 12,
+      "3": 13,
+      "4": 14,
+      "5": 15,
+      "6": 16,
+      "7": 17,
+      "8": 18,
+      "9": 19
+    },
+    "lex_ingest_to_numeric_session": {
+      "1": 1,
+      "2": 10,
+      "3": 11,
+      "4": 12,
+      "5": 13,
+      "6": 14,
+      "7": 15,
+      "8": 16,
+      "9": 17,
+      "10": 18,
+      "11": 19,
+      "12": 2,
+      "13": 3,
+      "14": 4,
+      "15": 5,
+      "16": 6,
+      "17": 7,
+      "18": 8,
+      "19": 9
+    }
+  },
+  "interpretation": [
+    "For rows with missing gold atoms, preserved packet candidate pools generally do not contain literal missing atoms under current telemetry.",
+    "Several failures are not candidate-pool absence: row 163 has all gold atoms in context but answers the wrong subject; row 185 has gold atoms plus guitar conflict and is answer/benchmark ambiguity.",
+    "Some gold evidence exists in raw conv-26 dialogue but is absent from the preserved candidate pool, indicating upstream context_packet candidate generation/recall/query selection rather than the post-filter expansion gate.",
+    "Rows with inference-style gold answers and no explicit evidence cannot be recovered by literal candidate-pool matching alone."
+  ],
+  "rows": [
+    {
+      "one_based_index": 5,
+      "category": "single-hop",
+      "question": "What is Caroline's identity?",
+      "ground_truth": "Transgender woman",
+      "score": 1.0,
+      "n_memories": 11,
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Transgender woman"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D1:5",
+          "speaker": "Caroline",
+          "text": "The transgender stories were so inspiring! I was so happy and thankful for all the support.",
+          "numeric_session": 1,
+          "lex_ingest_session": 1,
+          "turn_ordinal": 4,
+          "session_date_time": "1:56 pm on 8 May, 2023",
+          "image_query": "transgender pride flag mural",
+          "blip_caption": "a photo of a dog walking past a wall with a painting of a woman"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 11,
+      "pool_missing_atom_hits": {
+        "Transgender woman": []
+      },
+      "final_missing_atom_hits": {
+        "Transgender woman": []
+      },
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D1:5",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        }
+      ],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_61d9a85cc27d"
+      ],
+      "absence_mode": "gold_evidence_turn_not_in_candidate_pool"
+    },
+    {
+      "one_based_index": 24,
+      "category": "single-hop",
+      "question": "What books has Melanie read?",
+      "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "score": 0.5,
+      "n_memories": 13,
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "Nothing is Impossible"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D7:8",
+          "speaker": "Melanie",
+          "text": "Caroline, so glad you got the support! Your experience really brought you to where you need to be. You're gonna make a huge difference! This book I read last year reminds me to always pursue my dreams, just like you are doing!🌟",
+          "numeric_session": 7,
+          "lex_ingest_session": 17,
+          "turn_ordinal": 7,
+          "session_date_time": "4:33 pm on 12 July, 2023",
+          "image_query": "painted canvas follow your dreams",
+          "blip_caption": "a photography of a book cover with a gold coin on it"
+        },
+        {
+          "evidence_id": "D6:10",
+          "speaker": "Melanie",
+          "text": "I loved reading \"Charlotte's Web\" as a kid. It was so cool seeing how friendship and compassion can make a difference.",
+          "numeric_session": 6,
+          "lex_ingest_session": 16,
+          "turn_ordinal": 9,
+          "session_date_time": "8:18 pm on 6 July, 2023",
+          "image_query": "charlotte's web book",
+          "blip_caption": "a photo of a book cover with a picture of a girl and a cat"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 13,
+      "pool_missing_atom_hits": {
+        "Nothing is Impossible": []
+      },
+      "final_missing_atom_hits": {
+        "Nothing is Impossible": []
+      },
+      "pool_evidence_ref_hits": [
+        {
+          "memory_id": "mem_296dcae6a0ac",
+          "refs": {
+            "session_index": 17,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D7:8"
+          ],
+          "text_preview": "[4:33 pm on 12 July, 2023] Caroline: Hey Mel, great to chat with you again! So much has happened since we last spoke - I went to an LGBTQ conference two days ago and it was really special. I got the chance to meet and connect with people who've gone through si"
+        }
+      ],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_b3ca8766e7b8",
+          "refs": {
+            "session_index": 16,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D6:10"
+          ],
+          "text_preview": "[8:18 pm on 6 July, 2023] Caroline: Hey Mel! Long time no talk. Lots has been going on since then! | Melanie: Hey Caroline! Missed you. Anything new? Spill the beans! | Caroline: Since our last chat, I've been looking into counseling or mental health work more"
+        },
+        {
+          "memory_id": "mem_296dcae6a0ac",
+          "refs": {
+            "session_index": 17,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D7:8"
+          ],
+          "text_preview": "[4:33 pm on 12 July, 2023] Caroline: Hey Mel, great to chat with you again! So much has happened since we last spoke - I went to an LGBTQ conference two days ago and it was really special. I got the chance to meet and connect with people who've gone through si"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D7:8",
+          "pool_contains_raw_turn_text": true,
+          "final_contains_raw_turn_text": true
+        },
+        {
+          "evidence_id": "D6:10",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 2,
+      "entity_time_added_source_ids": [
+        "mem_9e8127a47935",
+        "mem_035231f14925"
+      ],
+      "absence_mode": "evidence_in_pool_but_literal_missing_atom_absent_or_coverage_granularity_mismatch"
+    },
+    {
+      "one_based_index": 31,
+      "category": "multi-hop",
+      "question": "Would Melanie be considered a member of the LGBTQ community?",
+      "ground_truth": "Likely no, she does not refer to herself as part of it",
+      "score": 1.0,
+      "n_memories": 11,
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Likely no",
+        "she does not refer to herself as part of it"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [],
+      "pool_count": 8,
+      "final_context_count": 11,
+      "pool_missing_atom_hits": {
+        "Likely no": [],
+        "she does not refer to herself as part of it": []
+      },
+      "final_missing_atom_hits": {
+        "Likely no": [],
+        "she does not refer to herself as part of it": []
+      },
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [],
+      "evidence_text_literal_presence": [],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_562b1c73b337"
+      ],
+      "absence_mode": "no_gold_evidence_refs_in_dataset_inference_or_negative_answer"
+    },
+    {
+      "one_based_index": 39,
+      "category": "single-hop",
+      "question": "What activities has Melanie done with her family?",
+      "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+      "score": 0.5,
+      "n_memories": 12,
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "museum",
+        "hiking"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D8:4",
+          "speaker": "Melanie",
+          "text": "The kids loved it! They were so excited to get their hands dirty and make something with clay. It was special to watch their creativity and imagination come to life, they made this!",
+          "numeric_session": 8,
+          "lex_ingest_session": 18,
+          "turn_ordinal": 3,
+          "session_date_time": "1:51 pm on 15 July, 2023",
+          "image_query": "kids pottery finished pieces",
+          "blip_caption": "a photo of a cup with a dog face on it"
+        },
+        {
+          "evidence_id": "D8:6",
+          "speaker": "Melanie",
+          "text": "We love painting together lately, especially nature-inspired ones. Here's our latest work from last weekend.",
+          "numeric_session": 8,
+          "lex_ingest_session": 18,
+          "turn_ordinal": 5,
+          "session_date_time": "1:51 pm on 15 July, 2023",
+          "image_query": "painting vibrant flowers sunset sky",
+          "blip_caption": "a photo of a painting of a sunset with a palm tree"
+        },
+        {
+          "evidence_id": "D9:1",
+          "speaker": "Melanie",
+          "text": "Hey Caroline, hope all's good! I had a quiet weekend after we went camping with my fam two weekends ago. It was great to unplug and hang with the kids. What've you been up to? Anything fun over the weekend?",
+          "numeric_session": 9,
+          "lex_ingest_session": 19,
+          "turn_ordinal": 0,
+          "session_date_time": "2:31 pm on 17 July, 2023",
+          "image_query": null,
+          "blip_caption": null
+        },
+        {
+          "evidence_id": "D6:4",
+          "speaker": "Melanie",
+          "text": "That's awesome, Caroline! Congrats on following your dreams. Yesterday I took the kids to the museum - it was so cool spending time with them and seeing their eyes light up!",
+          "numeric_session": 6,
+          "lex_ingest_session": 16,
+          "turn_ordinal": 3,
+          "session_date_time": "8:18 pm on 6 July, 2023",
+          "image_query": "kids laughing dinosaur exhibit museum",
+          "blip_caption": "a photography of two children playing in a water play area"
+        },
+        {
+          "evidence_id": "D1:18",
+          "speaker": "Melanie",
+          "text": "Yep, Caroline. Taking care of ourselves is vital. I'm off to go swimming with the kids. Talk to you soon!",
+          "numeric_session": 1,
+          "lex_ingest_session": 1,
+          "turn_ordinal": 17,
+          "session_date_time": "1:56 pm on 8 May, 2023",
+          "image_query": null,
+          "blip_caption": null
+        },
+        {
+          "evidence_id": "D3:14",
+          "speaker": "Melanie",
+          "text": "I'm lucky to have my husband and kids; they keep me motivated.",
+          "numeric_session": 3,
+          "lex_ingest_session": 13,
+          "turn_ordinal": 13,
+          "session_date_time": "7:55 pm on 9 June, 2023",
+          "image_query": "husband kids hiking nature",
+          "blip_caption": "a photo of a man and a little girl standing in front of a waterfall"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 12,
+      "pool_missing_atom_hits": {
+        "museum": [],
+        "hiking": []
+      },
+      "final_missing_atom_hits": {
+        "museum": [],
+        "hiking": []
+      },
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_b2bcc554545a",
+          "refs": {
+            "session_index": 1,
+            "turn_start": 10,
+            "turn_end": 17,
+            "chunk_index": 1
+          },
+          "evidence_ids": [
+            "D1:18"
+          ],
+          "text_preview": "[1:56 pm on 8 May, 2023] Caroline: I'm keen on counseling or working in mental health - I'd love to support those with similar issues. | Melanie: You'd be a great counselor! Your empathy and understanding will really help the people you work with. By the way, "
+        },
+        {
+          "memory_id": "mem_534331a9ff8b",
+          "refs": {
+            "session_index": 9,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D9:1"
+          ],
+          "text_preview": "[10:31 am on 13 October, 2023] Caroline: Hey Mel, what's up? Long time no see! I just contacted my mentor for adoption advice. I'm ready to be a mom and share my love and family. It's a great feeling. Anything new with you? Anything exciting going on? | Melani"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D8:4",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        },
+        {
+          "evidence_id": "D8:6",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        },
+        {
+          "evidence_id": "D9:1",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        },
+        {
+          "evidence_id": "D6:4",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        },
+        {
+          "evidence_id": "D1:18",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        },
+        {
+          "evidence_id": "D3:14",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        }
+      ],
+      "entity_time_added_count": 2,
+      "entity_time_added_source_ids": [
+        "mem_9e8127a47935",
+        "mem_035231f14925"
+      ],
+      "absence_mode": "gold_evidence_turn_not_in_candidate_pool"
+    },
+    {
+      "one_based_index": 40,
+      "category": "single-hop",
+      "question": "In what ways is Caroline participating in the LGBTQ community?",
+      "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "score": 1.0,
+      "n_memories": 11,
+      "coverage_class": "partial_atoms_present",
+      "missing_atoms": [
+        "Joining activist group",
+        "going to pride parades",
+        "participating in an art show"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D10:3",
+          "speaker": "Caroline",
+          "text": "Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activist group last Tues. I'm meeting so many cool people who are as passionate as I am about rights and community support. I'm giving my voice and making a real difference, plus it's fulfilling in so many ways. It's just great, you know?",
+          "numeric_session": 10,
+          "lex_ingest_session": 2,
+          "turn_ordinal": 2,
+          "session_date_time": "8:56 pm on 20 July, 2023",
+          "image_query": null,
+          "blip_caption": null
+        },
+        {
+          "evidence_id": "D5:1",
+          "speaker": "Caroline",
+          "text": "Since we last spoke, some big things have happened. Last week I went to an LGBTQ+ pride parade. Everyone was so happy and it made me feel like I belonged. It showed me how much our community has grown, it was amazing!",
+          "numeric_session": 5,
+          "lex_ingest_session": 15,
+          "turn_ordinal": 0,
+          "session_date_time": "1:36 pm on 3 July, 2023",
+          "image_query": null,
+          "blip_caption": null
+        },
+        {
+          "evidence_id": "D9:12",
+          "speaker": "Caroline",
+          "text": "Yay! Next month I'm having an LGBTQ art show with my paintings - can't wait!",
+          "numeric_session": 9,
+          "lex_ingest_session": 19,
+          "turn_ordinal": 11,
+          "session_date_time": "2:31 pm on 17 July, 2023",
+          "image_query": null,
+          "blip_caption": null
+        },
+        {
+          "evidence_id": "D9:2",
+          "speaker": "Caroline",
+          "text": "Hey Melanie! That sounds great! Last weekend I joined a mentorship program for LGBTQ youth - it's really rewarding to help the community.",
+          "numeric_session": 9,
+          "lex_ingest_session": 19,
+          "turn_ordinal": 1,
+          "session_date_time": "2:31 pm on 17 July, 2023",
+          "image_query": null,
+          "blip_caption": null
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 11,
+      "pool_missing_atom_hits": {
+        "Joining activist group": [],
+        "going to pride parades": [],
+        "participating in an art show": []
+      },
+      "final_missing_atom_hits": {
+        "Joining activist group": [],
+        "going to pride parades": [],
+        "participating in an art show": []
+      },
+      "pool_evidence_ref_hits": [
+        {
+          "memory_id": "mem_b5447432436b",
+          "refs": {
+            "session_index": 19,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D9:2"
+          ],
+          "text_preview": "[2:31 pm on 17 July, 2023] Melanie: Hey Caroline, hope all's good! I had a quiet weekend after we went camping with my fam two weekends ago. It was great to unplug and hang with the kids. What've you been up to? Anything fun over the weekend? | Caroline: Hey M"
+        },
+        {
+          "memory_id": "mem_035231f14925",
+          "refs": {
+            "session_index": 2,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D10:3"
+          ],
+          "text_preview": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activi"
+        }
+      ],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_035231f14925",
+          "refs": {
+            "session_index": 2,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D10:3"
+          ],
+          "text_preview": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activi"
+        },
+        {
+          "memory_id": "mem_77415ba32809",
+          "refs": {
+            "session_index": 15,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D5:1"
+          ],
+          "text_preview": "[1:36 pm on 3 July, 2023] Caroline: Since we last spoke, some big things have happened. Last week I went to an LGBTQ+ pride parade. Everyone was so happy and it made me feel like I belonged. It showed me how much our community has grown, it was amazing! | Mela"
+        },
+        {
+          "memory_id": "mem_b5447432436b",
+          "refs": {
+            "session_index": 19,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D9:2"
+          ],
+          "text_preview": "[2:31 pm on 17 July, 2023] Melanie: Hey Caroline, hope all's good! I had a quiet weekend after we went camping with my fam two weekends ago. It was great to unplug and hang with the kids. What've you been up to? Anything fun over the weekend? | Caroline: Hey M"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D10:3",
+          "pool_contains_raw_turn_text": true,
+          "final_contains_raw_turn_text": true
+        },
+        {
+          "evidence_id": "D5:1",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        },
+        {
+          "evidence_id": "D9:12",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        },
+        {
+          "evidence_id": "D9:2",
+          "pool_contains_raw_turn_text": true,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_ab40259ed9db"
+      ],
+      "absence_mode": "evidence_in_pool_but_literal_missing_atom_absent_or_coverage_granularity_mismatch"
+    },
+    {
+      "one_based_index": 41,
+      "category": "single-hop",
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "ground_truth": 2,
+      "score": 0.5,
+      "n_memories": 12,
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D10:8",
+          "speaker": "Melanie",
+          "text": "Wow, fantastic, Caroline! Bet the atmosphere was incredible. Oh yeah, we went to the beach recently. It was awesome! The kids had such a blast.",
+          "numeric_session": 10,
+          "lex_ingest_session": 2,
+          "turn_ordinal": 7,
+          "session_date_time": "8:56 pm on 20 July, 2023",
+          "image_query": "beach family playing frisbee sandy shore",
+          "blip_caption": "a photo of three children playing on the beach with a kite"
+        },
+        {
+          "evidence_id": "D6:16",
+          "speaker": "Melanie",
+          "text": "Glad you have support, Caroline! Unconditional love is so important. Here's a pic of my family camping at the beach. We love it, it brings us closer!",
+          "numeric_session": 6,
+          "lex_ingest_session": 16,
+          "turn_ordinal": 15,
+          "session_date_time": "8:18 pm on 6 July, 2023",
+          "image_query": "family campfire",
+          "blip_caption": "a photo of a family sitting around a campfire on the beach"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 12,
+      "pool_missing_atom_hits": {},
+      "final_missing_atom_hits": {},
+      "pool_evidence_ref_hits": [
+        {
+          "memory_id": "mem_035231f14925",
+          "refs": {
+            "session_index": 2,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D10:8"
+          ],
+          "text_preview": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activi"
+        }
+      ],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_035231f14925",
+          "refs": {
+            "session_index": 2,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D10:8"
+          ],
+          "text_preview": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last time? | Caroline: Hey Mel! A lot's happened since we last chatted - I just joined a new LGBTQ activi"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D10:8",
+          "pool_contains_raw_turn_text": true,
+          "final_contains_raw_turn_text": true
+        },
+        {
+          "evidence_id": "D6:16",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        }
+      ],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_824ed468a72a"
+      ],
+      "absence_mode": "coverage_satisfied_not_candidate_pool_problem"
+    },
+    {
+      "one_based_index": 51,
+      "category": "multi-hop",
+      "question": "What would Caroline's political leaning likely be?",
+      "ground_truth": "Liberal",
+      "score": 1.0,
+      "n_memories": 12,
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Liberal"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D12:1",
+          "speaker": "Caroline",
+          "text": "Hey Mel! How're ya doin'? Recently, I had a not-so-great experience on a hike. I ran into a group of religious conservatives who said something that really upset me. It made me think how much work we still have to do for LGBTQ rights. It's been so helpful to have people around me who accept and support me, so I know I'll be ok!",
+          "numeric_session": 12,
+          "lex_ingest_session": 4,
+          "turn_ordinal": 0,
+          "session_date_time": "1:50 pm on 17 August, 2023",
+          "image_query": null,
+          "blip_caption": null
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 12,
+      "pool_missing_atom_hits": {
+        "Liberal": []
+      },
+      "final_missing_atom_hits": {
+        "Liberal": []
+      },
+      "pool_evidence_ref_hits": [
+        {
+          "memory_id": "mem_19640b9b1892",
+          "refs": {
+            "session_index": 12,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D12:1"
+          ],
+          "text_preview": "[1:14 pm on 25 May, 2023] Melanie: Hey Caroline, since we last chatted, I've had a lot of things happening to me. I ran a charity race for mental health last Saturday – it was really rewarding. Really made me think about taking care of our minds. | Caroline: T"
+        }
+      ],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_19640b9b1892",
+          "refs": {
+            "session_index": 12,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D12:1"
+          ],
+          "text_preview": "[1:14 pm on 25 May, 2023] Melanie: Hey Caroline, since we last chatted, I've had a lot of things happening to me. I ran a charity race for mental health last Saturday – it was really rewarding. Really made me think about taking care of our minds. | Caroline: T"
+        },
+        {
+          "memory_id": "mem_557962927309",
+          "refs": {
+            "session_index": 4,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D12:1"
+          ],
+          "text_preview": "[1:50 pm on 17 August, 2023] Caroline: Hey Mel! How're ya doin'? Recently, I had a not-so-great experience on a hike. I ran into a group of religious conservatives who said something that really upset me. It made me think how much work we still have to do for "
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D12:1",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 2,
+      "entity_time_added_source_ids": [
+        "mem_8d80b22b2fb2",
+        "mem_035231f14925"
+      ],
+      "absence_mode": "evidence_in_pool_but_literal_missing_atom_absent_or_coverage_granularity_mismatch"
+    },
+    {
+      "one_based_index": 55,
+      "category": "temporal",
+      "question": "When did Caroline draw a self-portrait?",
+      "ground_truth": "The week before 23 August 2023",
+      "score": 1.0,
+      "n_memories": 11,
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "The week before 23 August 2023"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D13:11",
+          "speaker": "Caroline",
+          "text": "Painting's great for expressing myself. I love creating art! Here's a recent self-portrait I made last week.",
+          "numeric_session": 13,
+          "lex_ingest_session": 5,
+          "turn_ordinal": 10,
+          "session_date_time": "3:31 pm on 23 August, 2023",
+          "image_query": "self-portrait painting vibrant colors",
+          "blip_caption": "a photo of a painting of a woman with a blue face"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 11,
+      "pool_missing_atom_hits": {
+        "The week before 23 August 2023": []
+      },
+      "final_missing_atom_hits": {
+        "The week before 23 August 2023": []
+      },
+      "pool_evidence_ref_hits": [
+        {
+          "memory_id": "mem_4db6cd6ba9d7",
+          "refs": {
+            "session_index": 5,
+            "turn_start": 10,
+            "turn_end": 17,
+            "chunk_index": 1
+          },
+          "evidence_ids": [
+            "D13:11"
+          ],
+          "text_preview": "[3:31 pm on 23 August, 2023] Caroline: Painting's great for expressing myself. I love creating art! Here's a recent self-portrait I made last week. | Melanie: Caroline, that's great! The blue's really powerful, huh? How'd you feel while painting it? | Caroline"
+        }
+      ],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_4db6cd6ba9d7",
+          "refs": {
+            "session_index": 5,
+            "turn_start": 10,
+            "turn_end": 17,
+            "chunk_index": 1
+          },
+          "evidence_ids": [
+            "D13:11"
+          ],
+          "text_preview": "[3:31 pm on 23 August, 2023] Caroline: Painting's great for expressing myself. I love creating art! Here's a recent self-portrait I made last week. | Melanie: Caroline, that's great! The blue's really powerful, huh? How'd you feel while painting it? | Caroline"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D13:11",
+          "pool_contains_raw_turn_text": true,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_e048d7a36489"
+      ],
+      "absence_mode": "evidence_in_pool_but_literal_missing_atom_absent_or_coverage_granularity_mismatch"
+    },
+    {
+      "one_based_index": 74,
+      "category": "temporal",
+      "question": "When did Melanie get hurt?",
+      "ground_truth": "September 2023",
+      "score": 1.0,
+      "n_memories": 11,
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D17:8",
+          "speaker": "Melanie",
+          "text": "Thanks for the tip, Caroline. Doing research and readying myself emotionally makes sense. I'll do that. BTW, recently I had a setback. Last month I got hurt and had to take a break from pottery, which I use for self-expression and peace.",
+          "numeric_session": 17,
+          "lex_ingest_session": 9,
+          "turn_ordinal": 7,
+          "session_date_time": "10:31 am on 13 October, 2023",
+          "image_query": null,
+          "blip_caption": null
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 11,
+      "pool_missing_atom_hits": {},
+      "final_missing_atom_hits": {},
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_534331a9ff8b",
+          "refs": {
+            "session_index": 9,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D17:8"
+          ],
+          "text_preview": "[10:31 am on 13 October, 2023] Caroline: Hey Mel, what's up? Long time no see! I just contacted my mentor for adoption advice. I'm ready to be a mom and share my love and family. It's a great feeling. Anything new with you? Anything exciting going on? | Melani"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D17:8",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_8d80b22b2fb2"
+      ],
+      "absence_mode": "coverage_satisfied_not_candidate_pool_problem"
+    },
+    {
+      "one_based_index": 78,
+      "category": "multi-hop",
+      "question": "Would Melanie go on another roadtrip soon?",
+      "ground_truth": "Likely no; since this one went badly",
+      "score": 1.0,
+      "n_memories": 11,
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "Likely no",
+        "since this one went badly"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D18:3",
+          "speaker": "Melanie",
+          "text": "Yeah, our trip got off to a bad start. I was really scared when we got into the accident. Thankfully, my son's ok and that was a reminder that life is precious and to cherish our family.",
+          "numeric_session": 18,
+          "lex_ingest_session": 10,
+          "turn_ordinal": 2,
+          "session_date_time": "6:55 pm on 20 October, 2023",
+          "image_query": null,
+          "blip_caption": null
+        },
+        {
+          "evidence_id": "D18:1",
+          "speaker": "Melanie",
+          "text": "Hey Caroline, that roadtrip this past weekend was insane! We were all freaked when my son got into an accident. We were so lucky he was okay. It was a real scary experience. Thankfully it's over now. What's been up since we last talked?",
+          "numeric_session": 18,
+          "lex_ingest_session": 10,
+          "turn_ordinal": 0,
+          "session_date_time": "6:55 pm on 20 October, 2023",
+          "image_query": "car accident damaged car airbags deployed roadtrip",
+          "blip_caption": "a photo of a car dashboard with a white cloth and a steering wheel"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 11,
+      "pool_missing_atom_hits": {
+        "Likely no": [],
+        "since this one went badly": []
+      },
+      "final_missing_atom_hits": {
+        "Likely no": [],
+        "since this one went badly": []
+      },
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_5ac221ccf966",
+          "refs": {
+            "session_index": 10,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D18:3",
+            "D18:1"
+          ],
+          "text_preview": "[6:55 pm on 20 October, 2023] Melanie: Hey Caroline, that roadtrip this past weekend was insane! We were all freaked when my son got into an accident. We were so lucky he was okay. It was a real scary experience. Thankfully it's over now. What's been up since "
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D18:3",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        },
+        {
+          "evidence_id": "D18:1",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_e048d7a36489"
+      ],
+      "absence_mode": "gold_evidence_turn_not_in_candidate_pool"
+    },
+    {
+      "one_based_index": 80,
+      "category": "temporal",
+      "question": "When did Caroline pass the adoption interview?",
+      "ground_truth": "The Friday before 22 October 2023",
+      "score": 0.0,
+      "n_memories": 12,
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "The Friday before 22 October 2023"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D19:1",
+          "speaker": "Caroline",
+          "text": "Woohoo Melanie! I passed the adoption agency interviews last Friday! I'm so excited and thankful. This is a big move towards my goal of having a family.",
+          "numeric_session": 19,
+          "lex_ingest_session": 11,
+          "turn_ordinal": 0,
+          "session_date_time": "9:55 am on 22 October, 2023",
+          "image_query": null,
+          "blip_caption": null
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 12,
+      "pool_missing_atom_hits": {
+        "The Friday before 22 October 2023": []
+      },
+      "final_missing_atom_hits": {
+        "The Friday before 22 October 2023": []
+      },
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D19:1",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": false
+        }
+      ],
+      "entity_time_added_count": 2,
+      "entity_time_added_source_ids": [
+        "mem_035231f14925",
+        "mem_ab40259ed9db"
+      ],
+      "absence_mode": "gold_evidence_turn_not_in_candidate_pool"
+    },
+    {
+      "one_based_index": 113,
+      "category": "unanswerable",
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "ground_truth": "a sunset with a palm tree",
+      "score": 0.0,
+      "n_memories": 11,
+      "coverage_class": "no_atoms_present_conflicting_context",
+      "missing_atoms": [
+        "sunset",
+        "palm tree"
+      ],
+      "conflict_terms_present": [
+        "flowers",
+        "nature-inspired"
+      ],
+      "raw_evidence": [
+        {
+          "evidence_id": "D8:6",
+          "speaker": "Melanie",
+          "text": "We love painting together lately, especially nature-inspired ones. Here's our latest work from last weekend.",
+          "numeric_session": 8,
+          "lex_ingest_session": 18,
+          "turn_ordinal": 5,
+          "session_date_time": "1:51 pm on 15 July, 2023",
+          "image_query": "painting vibrant flowers sunset sky",
+          "blip_caption": "a photo of a painting of a sunset with a palm tree"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 11,
+      "pool_missing_atom_hits": {
+        "sunset": [],
+        "palm tree": []
+      },
+      "final_missing_atom_hits": {
+        "sunset": [],
+        "palm tree": []
+      },
+      "pool_evidence_ref_hits": [
+        {
+          "memory_id": "mem_ff07504cff91",
+          "refs": {
+            "session_index": 18,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D8:6"
+          ],
+          "text_preview": "[1:51 pm on 15 July, 2023] Caroline: Hey Mel, what's up? Been a busy week since we talked. | Melanie: Hey Caroline, it's been super busy here. So much since we talked! Last Fri I finally took my kids to a pottery workshop. We all made our own pots, it was fun "
+        }
+      ],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_ff07504cff91",
+          "refs": {
+            "session_index": 18,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D8:6"
+          ],
+          "text_preview": "[1:51 pm on 15 July, 2023] Caroline: Hey Mel, what's up? Been a busy week since we talked. | Melanie: Hey Caroline, it's been super busy here. So much since we talked! Last Fri I finally took my kids to a pottery workshop. We all made our own pots, it was fun "
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D8:6",
+          "pool_contains_raw_turn_text": true,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_9b079c82f34e"
+      ],
+      "absence_mode": "evidence_in_pool_but_literal_missing_atom_absent_or_coverage_granularity_mismatch"
+    },
+    {
+      "one_based_index": 128,
+      "category": "unanswerable",
+      "question": "What did Caroline make for a local church?",
+      "ground_truth": "a stained glass window",
+      "score": 1.0,
+      "n_memories": 11,
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D14:17",
+          "speaker": "Caroline",
+          "text": "Thanks, Mel! I made this stained glass window to remind myself and others that within us all is the key to discovering our true potential and living our best life.",
+          "numeric_session": 14,
+          "lex_ingest_session": 6,
+          "turn_ordinal": 16,
+          "session_date_time": "1:33 pm on 25 August, 2023",
+          "image_query": "stained glass window letter",
+          "blip_caption": "a photo of three stained glass windows in a church with a clock"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 11,
+      "pool_missing_atom_hits": {},
+      "final_missing_atom_hits": {},
+      "pool_evidence_ref_hits": [
+        {
+          "memory_id": "mem_4a39aa388590",
+          "refs": {
+            "session_index": 14,
+            "turn_start": 10,
+            "turn_end": 17,
+            "chunk_index": 1
+          },
+          "evidence_ids": [
+            "D14:17"
+          ],
+          "text_preview": "[10:37 am on 27 June, 2023] Caroline: Lately, I've been looking into counseling and mental health as a career. I want to help people who have gone through the same things as me. | Melanie: Sounds great! What kind of counseling and mental health services do you"
+        }
+      ],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_4a39aa388590",
+          "refs": {
+            "session_index": 14,
+            "turn_start": 10,
+            "turn_end": 17,
+            "chunk_index": 1
+          },
+          "evidence_ids": [
+            "D14:17"
+          ],
+          "text_preview": "[10:37 am on 27 June, 2023] Caroline: Lately, I've been looking into counseling and mental health as a career. I want to help people who have gone through the same things as me. | Melanie: Sounds great! What kind of counseling and mental health services do you"
+        },
+        {
+          "memory_id": "mem_bf7b00a67be2",
+          "refs": {
+            "session_index": 6,
+            "turn_start": 10,
+            "turn_end": 19,
+            "chunk_index": 1
+          },
+          "evidence_ids": [
+            "D14:17"
+          ],
+          "text_preview": "[1:33 pm on 25 August, 2023] Caroline: Wow, Mel, you're amazing! Volunteering and making a difference- it's so heartwarming. You're an inspiration to us all! | Melanie: Thanks, Caroline! I really appreciate your help and motivation. What made you decide to tra"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D14:17",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 1,
+      "entity_time_added_source_ids": [
+        "mem_946204d143a3"
+      ],
+      "absence_mode": "coverage_satisfied_not_candidate_pool_problem"
+    },
+    {
+      "one_based_index": 163,
+      "category": "adversarial",
+      "question": "What did Caroline and her family do while camping?",
+      "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+      "score": 0.0,
+      "n_memories": 10,
+      "coverage_class": "all_atoms_present",
+      "missing_atoms": [],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D4:8",
+          "speaker": "Melanie",
+          "text": "It was an awesome time, Caroline! We explored nature, roasted marshmallows around the campfire and even went on a hike. The view from the top was amazing! The 2 younger kids love nature. It was so special having these moments together as a family - I'll never forget it!",
+          "numeric_session": 4,
+          "lex_ingest_session": 14,
+          "turn_ordinal": 7,
+          "session_date_time": "10:37 am on 27 June, 2023",
+          "image_query": null,
+          "blip_caption": null
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 10,
+      "pool_missing_atom_hits": {},
+      "final_missing_atom_hits": {},
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_dc57a1450ff3",
+          "refs": {
+            "session_index": 14,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D4:8"
+          ],
+          "text_preview": "[10:37 am on 27 June, 2023] Caroline: Hey Melanie! Long time no talk! A lot's been going on in my life! Take a look at this. | Melanie: Hey, Caroline! Nice to hear from you! Love the necklace, any special meaning to it? | Caroline: Thanks, Melanie! This neckla"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D4:8",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 0,
+      "entity_time_added_source_ids": [],
+      "absence_mode": "coverage_satisfied_not_candidate_pool_problem"
+    },
+    {
+      "one_based_index": 172,
+      "category": "adversarial",
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "score": 0.0,
+      "n_memories": 12,
+      "coverage_class": "no_atoms_present",
+      "missing_atoms": [
+        "many people wanting to create loving homes for children in need"
+      ],
+      "conflict_terms_present": [],
+      "raw_evidence": [
+        {
+          "evidence_id": "D8:9",
+          "speaker": "Caroline",
+          "text": "That photo is stunning! So glad you bonded over our love of nature. Last Friday I went to a council meeting for adoption. It was inspiring and emotional - so many people wanted to create loving homes for children in need. It made me even more determined to adopt.",
+          "numeric_session": 8,
+          "lex_ingest_session": 18,
+          "turn_ordinal": 8,
+          "session_date_time": "1:51 pm on 15 July, 2023",
+          "image_query": null,
+          "blip_caption": null
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 12,
+      "pool_missing_atom_hits": {
+        "many people wanting to create loving homes for children in need": []
+      },
+      "final_missing_atom_hits": {
+        "many people wanting to create loving homes for children in need": []
+      },
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_ff07504cff91",
+          "refs": {
+            "session_index": 18,
+            "turn_start": 0,
+            "turn_end": 9,
+            "chunk_index": 0
+          },
+          "evidence_ids": [
+            "D8:9"
+          ],
+          "text_preview": "[1:51 pm on 15 July, 2023] Caroline: Hey Mel, what's up? Been a busy week since we talked. | Melanie: Hey Caroline, it's been super busy here. So much since we talked! Last Fri I finally took my kids to a pottery workshop. We all made our own pots, it was fun "
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D8:9",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 2,
+      "entity_time_added_source_ids": [
+        "mem_035231f14925",
+        "mem_ab40259ed9db"
+      ],
+      "absence_mode": "gold_evidence_turn_not_in_candidate_pool"
+    },
+    {
+      "one_based_index": 185,
+      "category": "adversarial",
+      "question": "What type of instrument does Caroline play?",
+      "ground_truth": "clarinet and violin",
+      "score": 0.0,
+      "n_memories": 10,
+      "coverage_class": "all_atoms_present_with_conflicts",
+      "missing_atoms": [],
+      "conflict_terms_present": [
+        "acoustic guitar",
+        "guitar"
+      ],
+      "raw_evidence": [
+        {
+          "evidence_id": "D15:26",
+          "speaker": "Melanie",
+          "text": "Yeah, I play clarinet! Started when I was young and it's been great. Expression of myself and a way to relax.",
+          "numeric_session": 15,
+          "lex_ingest_session": 7,
+          "turn_ordinal": 25,
+          "session_date_time": "3:19 pm on 28 August, 2023",
+          "image_query": null,
+          "blip_caption": "a photo of a sheet music with notes and a pencil"
+        }
+      ],
+      "pool_count": 8,
+      "final_context_count": 10,
+      "pool_missing_atom_hits": {},
+      "final_missing_atom_hits": {},
+      "pool_evidence_ref_hits": [],
+      "final_evidence_ref_hits": [
+        {
+          "memory_id": "mem_7fd2a76db271",
+          "refs": {
+            "session_index": 7,
+            "turn_start": 20,
+            "turn_end": 27,
+            "chunk_index": 2
+          },
+          "evidence_ids": [
+            "D15:26"
+          ],
+          "text_preview": "[3:19 pm on 28 August, 2023] Caroline: I started playing acoustic guitar about five years ago; it's been a great way to express myself and escape into my emotions. | Melanie: Music's amazing, isn't it? Any songs that have deep meaning for you? | Caroline: Yeah"
+        }
+      ],
+      "evidence_text_literal_presence": [
+        {
+          "evidence_id": "D15:26",
+          "pool_contains_raw_turn_text": false,
+          "final_contains_raw_turn_text": true
+        }
+      ],
+      "entity_time_added_count": 0,
+      "entity_time_added_source_ids": [],
+      "absence_mode": "answer_conflict_selection_not_pool_absence"
+    }
+  ],
+  "candidate_generation_artifact_notes": {
+    "per_query_recall_preserved_in_artifact": false,
+    "context_packet_projection_is_count_only": true,
+    "notes": [
+      {
+        "one_based_index": 5,
+        "query_type": "entity_lookup",
+        "expanded_queries": [
+          "What is Caroline's identity?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 6,
+        "packet_episodic_ref_gated_count": 6,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 24,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "What books has Melanie read?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 7,
+        "packet_episodic_ref_gated_count": 6,
+        "packet_episodic_artifact_added_count": 1,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 31,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "Would Melanie be considered a member of the LGBTQ community?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 2,
+        "packet_episodic_ref_gated_count": 2,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 39,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "What activities has Melanie done with her family?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 4,
+        "packet_episodic_ref_gated_count": 4,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 40,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "In what ways is Caroline participating in the LGBTQ community?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 4,
+        "packet_episodic_ref_gated_count": 4,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 41,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "How many times has Melanie gone to the beach in 2023?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 5,
+        "packet_episodic_ref_gated_count": 4,
+        "packet_episodic_artifact_added_count": 1,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 51,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "What would Caroline's political leaning likely be?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 5,
+        "packet_episodic_ref_gated_count": 5,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 55,
+        "query_type": "temporal_question",
+        "expanded_queries": [
+          "When did Caroline draw a self-portrait?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 3,
+        "packet_episodic_ref_gated_count": 3,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 74,
+        "query_type": "temporal_question",
+        "expanded_queries": [
+          "When did Melanie get hurt?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 5,
+        "packet_episodic_ref_gated_count": 5,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 78,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "Would Melanie go on another roadtrip soon?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 5,
+        "packet_episodic_ref_gated_count": 5,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 80,
+        "query_type": "temporal_question",
+        "expanded_queries": [
+          "When did Caroline pass the adoption interview?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 4,
+        "packet_episodic_ref_gated_count": 4,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 113,
+        "query_type": "entity_lookup",
+        "expanded_queries": [
+          "What did Mel and her kids paint in their latest project in July 2023?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 2,
+        "packet_episodic_ref_gated_count": 2,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 128,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "What did Caroline make for a local church?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 4,
+        "packet_episodic_ref_gated_count": 4,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 163,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "What did Caroline and her family do while camping?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 4,
+        "packet_episodic_ref_gated_count": 4,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 172,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "What did Melanie see at the council meeting for adoption?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 5,
+        "packet_episodic_ref_gated_count": 5,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      },
+      {
+        "one_based_index": 185,
+        "query_type": "general_recall",
+        "expanded_queries": [
+          "What type of instrument does Caroline play?"
+        ],
+        "per_query_recall_preserved": false,
+        "packet_episodic_candidate_count": 4,
+        "packet_episodic_ref_gated_count": 4,
+        "packet_episodic_artifact_added_count": 0,
+        "context_packet_merge_from_artifact": true,
+        "context_packet_merge_append_top_k": 0
+      }
+    ],
+    "interpretation": "The artifact preserves the packet candidate pool but not per-query recall/result provenance. It can prove pool absence/presence but cannot yet distinguish query wording failure vs vector recall ranking vs context_packet cap/ref-gate without a new read-only telemetry field."
+  }
+}

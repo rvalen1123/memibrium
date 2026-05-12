@@ -1,0 +1,10 @@
+{
+  "decision_labels": [
+    "full_repro_execution_complete_valid",
+    "5j_v2_exec_bimodality_does_not_reproduce",
+    "score_drifts_significantly",
+    "no_go_phase_c_still_blocked"
+  ],
+  "run_id": "20260503T043344Z",
+  "schema": "memibrium.locomo.step5p.labels.v1"
+}

@@ -1,0 +1,39 @@
+cleanup_started=2026-05-02T07:56:17-05:00
+pre_cleanup_counts:
+temporal_expressions|66
+memory_snapshots|0
+user_feedback|0
+memories|49
+contradictions|0
+memory_edges|435
+running_cleanup_script:
+BEGIN
+SELECT 49
+SELECT 28
+DELETE 66
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 435
+DELETE 49
+UPDATE 28
+SELECT 8
+DELETE 10
+DELETE 8
+COMMIT
+ remaining_locomo 
+------------------
+                0
+(1 row)
+
+cleared locomo-* domains
+post_cleanup_counts:
+temporal_expressions|0
+memory_snapshots|0
+user_feedback|0
+memories|0
+contradictions|0
+memory_edges|0
+health_after_cleanup:
+{"status":"ok","engine":"memibrium"}
+cleanup_finished=2026-05-02T07:56:18-05:00

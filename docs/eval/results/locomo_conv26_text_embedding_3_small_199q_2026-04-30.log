@@ -1,0 +1,55 @@
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+  [DATE NORMALIZATION ENABLED]
+======================================================================
+  Starting memories: 19
+  Conversations to process: 1
+  Total questions: 199 (199 evaluated, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 96.0s
+    ... 20/199 questions, running acc: 77.5%
+    ... 40/199 questions, running acc: 68.8%
+    ... 60/199 questions, running acc: 70.8%
+    ... 80/199 questions, running acc: 70.0%
+    ... 100/199 questions, running acc: 72.5%
+    ... 120/199 questions, running acc: 74.2%
+    ... 140/199 questions, running acc: 75.7%
+    ... 160/199 questions, running acc: 73.1%
+    ... 180/199 questions, running acc: 68.1%
+    Conv accuracy: 66.1% (199 questions)
+
+======================================================================
+  RESULTS
+======================================================================
+
+  Overall accuracy (J-Score): 66.1%
+  Query expansion fallback: 0/199 (0.00%)
+
+  Category           Score   Count  Avg Latency
+  --------------- -------- ------- ------------
+  cat-5              35.1%      47       3675ms
+  cat-multi-hop      46.2%      13       3473ms
+  cat-single-hop     71.9%      32       3374ms
+  cat-temporal       75.7%      37       3452ms
+  cat-unanswerable    82.9%      70       3440ms
+
+  Ingest: 96.0s avg per conversation
+  Query:  3489ms avg per question
+  Total:  790s
+
+======================================================================
+  COMPARISON (LOCOMO J-Score)
+======================================================================
+  Remembra                    94.2%
+  Mem0 (new algo)             91.6%
+  MemMachine                  84.9%
+  Zep                         80.3%
+  Memobase                    75.8%
+  Mem0 (original)             66.9%
+  >>> MEMIBRIUM               66.1% <<<
+  LangMem                     58.1%
+
+  Detailed results saved to /tmp/locomo_results_normalized.json

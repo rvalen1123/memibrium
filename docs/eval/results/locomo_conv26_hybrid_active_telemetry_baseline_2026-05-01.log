@@ -1,0 +1,32 @@
+  Running preflight checks...
+  Preflight OK: recall + LLM reachable
+======================================================================
+  LOCOMO Benchmark — Memibrium CT Memory
+======================================================================
+  Starting memories: 20
+  Conversations to process: 1
+  Total questions: 199 (199 evaluated, skipping cats set())
+
+  [1/1] Conv conv-26: Caroline & Melanie
+    Ingested 419 turns in 18.1s
+    ... 20/199 questions, running acc: 75.0%
+    ... 40/199 questions, running acc: 63.7%
+    ... 60/199 questions, running acc: 65.0%
+    ... 80/199 questions, running acc: 65.0%
+    ... 100/199 questions, running acc: 70.0%
+    ... 120/199 questions, running acc: 72.1%
+Traceback (most recent call last):
+  File "/home/zaddy/src/Memibrium/benchmark_scripts/locomo_bench_v2.py", line 1324, in <module>
+    run_benchmark(
+  File "/home/zaddy/src/Memibrium/benchmark_scripts/locomo_bench_v2.py", line 1152, in run_benchmark
+    predicted, n_mems, recall_telemetry = answer_question(
+                                          ^^^^^^^^^^^^^^^^
+  File "/home/zaddy/src/Memibrium/benchmark_scripts/locomo_bench_v2.py", line 730, in answer_question
+    recalled = recall_for_query(query, candidate_recall_top_k)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zaddy/src/Memibrium/benchmark_scripts/locomo_bench_v2.py", line 689, in recall_for_query
+    recall_result = mcp_post("recall", payload)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zaddy/src/Memibrium/benchmark_scripts/locomo_bench_v2.py", line 154, in mcp_post
+    raise RuntimeError(
+RuntimeError: MCP recall failed after 3 attempts: non-200 response; status=500; response=Internal Server Error

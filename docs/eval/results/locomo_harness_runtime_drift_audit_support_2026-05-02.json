@@ -1,0 +1,595 @@
+{
+  "artifact_inventory_interesting": [
+    {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.log",
+      "size": 2089,
+      "sha256": "715e57d4649bb9cbf9d4dfb83980a6ee064093b4498529df76c27724906f2ccd"
+    },
+    {
+      "path": "docs/eval/results/locomo_corrected_slice_results_query_expansion_raw_2026-05-02.json",
+      "size": 72200,
+      "sha256": "317dc38bb7cbe8529c3f1d10fbbefe459d6b790c539f8395cf72729dd828f9e9",
+      "parseable": true,
+      "keys": [
+        "overall_score",
+        "full_5cat_overall",
+        "protocol_4cat_overall",
+        "category_scores",
+        "total_questions",
+        "avg_query_ms",
+        "condition",
+        "expand_query_fallback_count",
+        "expand_query_fallback_rate",
+        "details"
+      ],
+      "details_len": 199,
+      "convs": [
+        "conv-26"
+      ],
+      "n_memories_mean": 11.9296,
+      "n_memories_dist": {
+        "4": 51,
+        "12": 6,
+        "13": 10,
+        "14": 12,
+        "15": 120
+      },
+      "overall_score": 55.28,
+      "full_5cat_overall": 55.28,
+      "protocol_4cat_overall": 70.07,
+      "total_questions": 199,
+      "expand_query_fallback_count": 0,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      }
+    },
+    {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json",
+      "size": 58896658,
+      "sha256": "7d8c911caa8753e6f920bed1402f8e1d72c0a6c4d741f82003f54de5fc2c032d",
+      "parseable": true,
+      "keys": [
+        "overall_score",
+        "full_5cat_overall",
+        "protocol_4cat_overall",
+        "category_scores",
+        "total_questions",
+        "avg_query_ms",
+        "condition",
+        "expand_query_fallback_count",
+        "expand_query_fallback_rate",
+        "details"
+      ],
+      "details_len": 199,
+      "convs": [
+        "conv-26"
+      ],
+      "n_memories_mean": 14.6231,
+      "n_memories_dist": {
+        "11": 3,
+        "12": 6,
+        "13": 17,
+        "14": 11,
+        "15": 162
+      },
+      "overall_score": 58.29,
+      "full_5cat_overall": 58.29,
+      "protocol_4cat_overall": 69.41,
+      "total_questions": 199,
+      "expand_query_fallback_count": 0,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      }
+    },
+    {
+      "path": "docs/eval/results/locomo_normalized_2026-04-24.json",
+      "size": 742446,
+      "sha256": "2fbf29193b19b820c2367bc182a0f254fee902bd5a11745231a3e1bf286d9da2",
+      "parseable": true,
+      "keys": [
+        "overall_score",
+        "category_scores",
+        "total_questions",
+        "avg_query_ms",
+        "details"
+      ],
+      "details_len": 1986,
+      "convs": [
+        "conv-26",
+        "conv-30",
+        "conv-41",
+        "conv-42",
+        "conv-43",
+        "conv-44",
+        "conv-47",
+        "conv-48",
+        "conv-49",
+        "conv-50"
+      ],
+      "n_memories_mean": 9.1803,
+      "n_memories_dist": {
+        "0": 7,
+        "2": 12,
+        "3": 29,
+        "4": 6,
+        "5": 6,
+        "6": 31,
+        "7": 97,
+        "8": 206,
+        "9": 366,
+        "10": 1226
+      },
+      "overall_score": 63.62,
+      "total_questions": 1986
+    },
+    {
+      "path": "docs/eval/results/locomo_corrected_slice_result_validation_2026-05-02.json",
+      "size": 3709,
+      "sha256": "d32d43a14b5a0a36cb4dcf31e0219fdaafe0c5cb595c479acc18706aed752e1c",
+      "parseable": true,
+      "keys": [
+        "step",
+        "timestamp_utc",
+        "result_path",
+        "result_exists",
+        "log_path",
+        "guard_path",
+        "result_sha256",
+        "parseable",
+        "detail_rows",
+        "unique_convs",
+        "all_rows_conv26",
+        "non_conv26_rows",
+        "total_questions",
+        "overall_score",
+        "full_5cat_overall",
+        "protocol_4cat_overall",
+        "category_scores",
+        "condition",
+        "expand_query_fallback_count",
+        "expand_query_fallback_rate"
+      ],
+      "overall_score": 55.28,
+      "full_5cat_overall": 55.28,
+      "protocol_4cat_overall": 70.07,
+      "total_questions": 199,
+      "expand_query_fallback_count": 0,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "decision_label": "telemetry_off_third_regime_observed",
+      "gate_status": "valid"
+    },
+    {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_substrate_baseline_2026-05-01.json",
+      "size": 64389,
+      "sha256": "d44b9288a633bfdb04061f44bb5d37b8240342e5550e2df5f1c2bc2f38187637",
+      "parseable": true,
+      "keys": [
+        "overall_score",
+        "full_5cat_overall",
+        "protocol_4cat_overall",
+        "category_scores",
+        "total_questions",
+        "avg_query_ms",
+        "condition",
+        "expand_query_fallback_count",
+        "expand_query_fallback_rate",
+        "details"
+      ],
+      "details_len": 199,
+      "convs": [
+        "conv-26"
+      ],
+      "n_memories_mean": 4.5327,
+      "n_memories_dist": {
+        "2": 57,
+        "3": 110,
+        "11": 1,
+        "12": 3,
+        "13": 3,
+        "14": 3,
+        "15": 22
+      },
+      "overall_score": 14.82,
+      "full_5cat_overall": 14.82,
+      "protocol_4cat_overall": 19.41,
+      "total_questions": 199,
+      "expand_query_fallback_count": 0,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      }
+    },
+    {
+      "path": "docs/eval/locomo_results_normalized.json",
+      "size": 742446,
+      "sha256": "2fbf29193b19b820c2367bc182a0f254fee902bd5a11745231a3e1bf286d9da2",
+      "parseable": true,
+      "keys": [
+        "overall_score",
+        "category_scores",
+        "total_questions",
+        "avg_query_ms",
+        "details"
+      ],
+      "details_len": 1986,
+      "convs": [
+        "conv-26",
+        "conv-30",
+        "conv-41",
+        "conv-42",
+        "conv-43",
+        "conv-44",
+        "conv-47",
+        "conv-48",
+        "conv-49",
+        "conv-50"
+      ],
+      "n_memories_mean": 9.1803,
+      "n_memories_dist": {
+        "0": 7,
+        "2": 12,
+        "3": 29,
+        "4": 6,
+        "5": 6,
+        "6": 31,
+        "7": 97,
+        "8": 206,
+        "9": 366,
+        "10": 1226
+      },
+      "overall_score": 63.62,
+      "total_questions": 1986
+    }
+  ],
+  "artifact_inventory_count": 143,
+  "git": {
+    "f2466c9..91fede6_stat": " benchmark_scripts/locomo_bench_v2.py | 131 ++++++++++++++++++++++---\n hybrid_retrieval.py                  | 182 ++++++++++++++++++++++++++++++++---\n server.py                            |  62 +++++++++++-\n 3 files changed, 341 insertions(+), 34 deletions(-)\n",
+    "f2466c9..91fede6_name_status": "M\tbenchmark_scripts/locomo_bench_v2.py\nM\thybrid_retrieval.py\nM\tserver.py\n",
+    "f2466c9..91fede6_locomo_bench_hunks": "diff --git a/benchmark_scripts/locomo_bench_v2.py b/benchmark_scripts/locomo_bench_v2.py\nindex 6f7ce86..5459a13 100644\n--- a/benchmark_scripts/locomo_bench_v2.py\n+++ b/benchmark_scripts/locomo_bench_v2.py\n@@ -8,5 +8,5 @@ Flow per conversation:\n \"\"\"\n \n-import json, time, sys, os, statistics, re\n+import hashlib, json, time, sys, os, statistics, re\n import httpx\n from collections import Counter, defaultdict\n@@ -76,4 +76,6 @@ USE_GATED_APPEND_CONTEXT_EXPANSION = _env_flag(\"USE_GATED_APPEND_CONTEXT_EXPANSI\n # product retrieval mode.\n USE_LEGACY_CONTEXT_ASSEMBLY = _env_flag(\"USE_LEGACY_CONTEXT_ASSEMBLY\", default=False)\n+# Observation-only telemetry for preregistered LOCOMO diagnostic runs.\n+INCLUDE_RECALL_TELEMETRY = _env_flag(\"INCLUDE_RECALL_TELEMETRY\", default=False)\n RECALL_TOP_K = 10\n RERANK_RECALL_TOP_K = 20\n@@ -506,4 +508,48 @@ def _memory_dedupe_key(memory):\n \n \n+def _memory_refs(memory):\n+    refs = memory.get(\"refs\") if isinstance(memory, dict) else {}\n+    refs = refs or {}\n+    if isinstance(refs, str):\n+        try:\n+            refs = json.loads(refs)\n+        except Exception:\n+            refs = {}\n+    return refs if isinstance(refs, dict) else {}\n+\n+\n+def _memory_telemetry_projection(memory, rank=None):\n+    content = str(memory.get(\"content\") or \"\") if isinstance(memory, dict) else str(memory)\n+    return {\n+        \"rank\": rank,\n+        \"id\": memory.get(\"id\") if isinstance(memory, dict) else None,\n+        \"dedupe_key\": _memory_dedupe_key(memory),\n+        \"refs\": _memory_refs(memory),\n+        \"created_at\": memory.get(\"created_at\") if isinstance(memory, dict) else None,\n+        \"content_sha256\": hashlib.sha256(content.encode(\"utf-8\")).hexdigest(),\n+        \"snippet\": content[:160],\n+    }\n+\n+\n+def _ref_matches(gold_ref, memory_ref):\n+    if not isinstance(gold_ref, dict) or not isinstance(memory_ref, dict):\n+        return False\n+    comparable = [key for key in gold_ref.keys() if key in memory_ref]\n+    return bool(comparable) and all(memory_ref.get(key) == gold_ref.get(key) for key in comparable)\n+\n+\n+def _count_ref_coverage(evidence_refs, memories):\n+    if not evidence_refs:\n+        return None\n+    refs = [_memory_refs(memory) for memory in memories]\n+    return sum(1 for gold_ref in evidence_refs if any(_ref_matches(gold_ref, ref) for ref in refs))\n+\n+\n+def _extract_recall_payload(recall_result):\n+    if isinstance(recall_result, list):\n+        return recall_result, None\n+    return recall_result.get(\"results\", recall_result.get(\"memories\", [])), recall_result.get(\"telemetry\")\n+\n+\n def rerank_memories_for_question(question, memories, top_k=ANSWER_CONTEXT_TOP_K, preserve_prefix_k=RERANK_PRESERVE_PREFIX_K):\n     \"\"\"Lightweight precision recovery with an original-order safety prefix.\n@@ -621,18 +667,46 @@ def append_memories_for_question(\n \n \n-def answer_question(question, domain):\n+def answer_question(question, domain, return_telemetry=False, evidence_refs=None):\n     \"\"\"Recall from Memibrium and generate answer.\"\"\"\n     validate_retrieval_modes()\n     memories = []\n     queries = expand_query(question) if USE_QUERY_EXPANSION else [question]\n+    recall_telemetry = {\n+        \"schema\": \"memibrium.locomo_answer_question.telemetry.v1\",\n+        \"question\": question,\n+        \"domain\": domain,\n+        \"expanded_queries\": list(queries),\n+        \"per_query_recall\": [],\n+        \"counts\": {},\n+        \"final_context\": [],\n+        \"gold_evidence_ref_coverage\": None,\n+    }\n+\n+    def recall_for_query(query, top_k):\n+        payload = {\"query\": query, \"top_k\": top_k, \"domain\": domain}\n+        if INCLUDE_RECALL_TELEMETRY:\n+            payload[\"include_telemetry\"] = True\n+        recall_result = mcp_post(\"recall\", payload)\n+        recalled, telemetry = _extract_recall_payload(recall_result)\n+        recall_telemetry[\"per_query_recall\"].append({\n+            \"query\": query,\n+            \"requested_top_k\": top_k,\n+            \"result_count\": len(recalled),\n+            \"result_ids\": [memory.get(\"id\") for memory in recalled if isinstance(memory, dict)],\n+            \"result_refs\": [_memory_refs(memory) for memory in recalled],\n+            \"result_content_hashes\": [\n+                hashlib.sha256(str(memory.get(\"content\") if isinstance(memory, dict) else memory or \"\").encode(\"utf-8\")).hexdigest()\n+                for memory in recalled\n+            ],\n+            \"server_telemetry\": telemetry,\n+        })\n+        return recalled\n \n     if USE_LEGACY_CONTEXT_ASSEMBLY:\n         seen = {}\n+        candidate_memories_for_telemetry = []\n         for query in queries:\n-            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": RECALL_TOP_K, \"domain\": domain})\n-            if isinstance(recall_result, list):\n-                recalled = recall_result\n-            else:\n-                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))\n+            recalled = recall_for_query(query, RECALL_TOP_K)\n+            candidate_memories_for_telemetry.extend(recalled)\n             for memory in recalled:\n                 memory_id = memory.get(\"id\") or f\"no-id::{memory.get('content', '')}::{len(seen)}\"\n@@ -642,4 +716,6 @@ def answer_question(question, domain):\n                 break\n         memories = list(seen.values())[:ANSWER_CONTEXT_TOP_K]\n+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories_for_telemetry)\n+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(seen)\n     else:\n         base_seen = {}\n@@ -652,9 +728,5 @@ def answer_question(question, domain):\n         candidate_memories = []\n         for query in queries:\n-            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": candidate_recall_top_k, \"domain\": domain})\n-            if isinstance(recall_result, list):\n-                recalled = recall_result\n-            else:\n-                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))\n+            recalled = recall_for_query(query, candidate_recall_top_k)\n             candidate_memories.extend(recalled)\n             for memory in recalled[:recall_top_k]:\n@@ -672,4 +744,7 @@ def answer_question(question, domain):\n                 candidate_keys.add(key)\n                 candidates.append(memory)\n+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories)\n+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(base_candidates)\n+        recall_telemetry[\"counts\"][\"candidate_count_after_dedupe\"] = len(candidates)\n         if USE_CONTEXT_RERANK:\n             memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)\n@@ -689,4 +764,15 @@ def answer_question(question, domain):\n             memories = candidates[:ANSWER_CONTEXT_TOP_K]\n \n+    recall_telemetry[\"counts\"][\"final_answer_context_count\"] = len(memories)\n+    recall_telemetry[\"final_context\"] = [\n+        _memory_telemetry_projection(memory, rank=idx)\n+        for idx, memory in enumerate(memories, start=1)\n+    ]\n+    if evidence_refs is not None:\n+        recall_telemetry[\"gold_evidence_ref_coverage\"] = {\n+            \"gold_ref_count\": len(evidence_refs),\n+            \"final_context_refs_matched\": _count_ref_coverage(evidence_refs, memories),\n+        }\n+\n     if not memories:\n         context = \"No relevant memories found.\"\n@@ -728,7 +814,8 @@ def answer_question(question, domain):\n     ])\n \n+    if return_telemetry:\n+        return answer, len(memories), recall_telemetry\n     return answer, len(memories)\n \n-\n def judge_answer(question, predicted, ground_truth):\n     \"\"\"LLM judge: score predicted vs ground truth. Returns 0, 0.5, or 1.\"\"\"\n@@ -1062,5 +1149,14 @@ def run_benchmark(\n \n             t0 = time.monotonic()\n-            predicted, n_mems = answer_question(question, domain)\n+            if INCLUDE_RECALL_TELEMETRY:\n+                predicted, n_mems, recall_telemetry = answer_question(\n+                    question,\n+                    domain,\n+                    return_telemetry=True,\n+                    evidence_refs=qa.get(\"evidence\") or qa.get(\"evidence_refs\"),\n+                )\n+            else:\n+                predicted, n_mems = answer_question(question, domain)\n+                recall_telemetry = None\n             query_time = time.monotonic() - t0\n             query_times.append(query_time)\n@@ -1072,10 +1168,13 @@ def run_benchmark(\n             conv_scores.append(score)\n \n-            results_log.append({\n+            row = {\n                 \"conv\": sample_id, \"cat\": cat, \"question\": question,\n                 \"ground_truth\": ground_truth, \"predicted\": predicted,\n                 \"score\": score, \"query_time_ms\": int(query_time * 1000),\n                 \"n_memories\": n_mems\n-            })\n+            }\n+            if INCLUDE_RECALL_TELEMETRY:\n+                row[\"recall_telemetry\"] = recall_telemetry\n+            results_log.append(row)\n \n             if (qi + 1) % 20 == 0:\n",
+    "91fede6..662514a_stat": "",
+    "91fede6..662514a_name_status": "",
+    "91fede6..662514a_locomo_bench_hunks": "",
+    "f2466c9..662514a_stat": " benchmark_scripts/locomo_bench_v2.py | 131 ++++++++++++++++++++++---\n hybrid_retrieval.py                  | 182 ++++++++++++++++++++++++++++++++---\n server.py                            |  62 +++++++++++-\n 3 files changed, 341 insertions(+), 34 deletions(-)\n",
+    "f2466c9..662514a_name_status": "M\tbenchmark_scripts/locomo_bench_v2.py\nM\thybrid_retrieval.py\nM\tserver.py\n",
+    "f2466c9..662514a_locomo_bench_hunks": "diff --git a/benchmark_scripts/locomo_bench_v2.py b/benchmark_scripts/locomo_bench_v2.py\nindex 6f7ce86..5459a13 100644\n--- a/benchmark_scripts/locomo_bench_v2.py\n+++ b/benchmark_scripts/locomo_bench_v2.py\n@@ -8,5 +8,5 @@ Flow per conversation:\n \"\"\"\n \n-import json, time, sys, os, statistics, re\n+import hashlib, json, time, sys, os, statistics, re\n import httpx\n from collections import Counter, defaultdict\n@@ -76,4 +76,6 @@ USE_GATED_APPEND_CONTEXT_EXPANSION = _env_flag(\"USE_GATED_APPEND_CONTEXT_EXPANSI\n # product retrieval mode.\n USE_LEGACY_CONTEXT_ASSEMBLY = _env_flag(\"USE_LEGACY_CONTEXT_ASSEMBLY\", default=False)\n+# Observation-only telemetry for preregistered LOCOMO diagnostic runs.\n+INCLUDE_RECALL_TELEMETRY = _env_flag(\"INCLUDE_RECALL_TELEMETRY\", default=False)\n RECALL_TOP_K = 10\n RERANK_RECALL_TOP_K = 20\n@@ -506,4 +508,48 @@ def _memory_dedupe_key(memory):\n \n \n+def _memory_refs(memory):\n+    refs = memory.get(\"refs\") if isinstance(memory, dict) else {}\n+    refs = refs or {}\n+    if isinstance(refs, str):\n+        try:\n+            refs = json.loads(refs)\n+        except Exception:\n+            refs = {}\n+    return refs if isinstance(refs, dict) else {}\n+\n+\n+def _memory_telemetry_projection(memory, rank=None):\n+    content = str(memory.get(\"content\") or \"\") if isinstance(memory, dict) else str(memory)\n+    return {\n+        \"rank\": rank,\n+        \"id\": memory.get(\"id\") if isinstance(memory, dict) else None,\n+        \"dedupe_key\": _memory_dedupe_key(memory),\n+        \"refs\": _memory_refs(memory),\n+        \"created_at\": memory.get(\"created_at\") if isinstance(memory, dict) else None,\n+        \"content_sha256\": hashlib.sha256(content.encode(\"utf-8\")).hexdigest(),\n+        \"snippet\": content[:160],\n+    }\n+\n+\n+def _ref_matches(gold_ref, memory_ref):\n+    if not isinstance(gold_ref, dict) or not isinstance(memory_ref, dict):\n+        return False\n+    comparable = [key for key in gold_ref.keys() if key in memory_ref]\n+    return bool(comparable) and all(memory_ref.get(key) == gold_ref.get(key) for key in comparable)\n+\n+\n+def _count_ref_coverage(evidence_refs, memories):\n+    if not evidence_refs:\n+        return None\n+    refs = [_memory_refs(memory) for memory in memories]\n+    return sum(1 for gold_ref in evidence_refs if any(_ref_matches(gold_ref, ref) for ref in refs))\n+\n+\n+def _extract_recall_payload(recall_result):\n+    if isinstance(recall_result, list):\n+        return recall_result, None\n+    return recall_result.get(\"results\", recall_result.get(\"memories\", [])), recall_result.get(\"telemetry\")\n+\n+\n def rerank_memories_for_question(question, memories, top_k=ANSWER_CONTEXT_TOP_K, preserve_prefix_k=RERANK_PRESERVE_PREFIX_K):\n     \"\"\"Lightweight precision recovery with an original-order safety prefix.\n@@ -621,18 +667,46 @@ def append_memories_for_question(\n \n \n-def answer_question(question, domain):\n+def answer_question(question, domain, return_telemetry=False, evidence_refs=None):\n     \"\"\"Recall from Memibrium and generate answer.\"\"\"\n     validate_retrieval_modes()\n     memories = []\n     queries = expand_query(question) if USE_QUERY_EXPANSION else [question]\n+    recall_telemetry = {\n+        \"schema\": \"memibrium.locomo_answer_question.telemetry.v1\",\n+        \"question\": question,\n+        \"domain\": domain,\n+        \"expanded_queries\": list(queries),\n+        \"per_query_recall\": [],\n+        \"counts\": {},\n+        \"final_context\": [],\n+        \"gold_evidence_ref_coverage\": None,\n+    }\n+\n+    def recall_for_query(query, top_k):\n+        payload = {\"query\": query, \"top_k\": top_k, \"domain\": domain}\n+        if INCLUDE_RECALL_TELEMETRY:\n+            payload[\"include_telemetry\"] = True\n+        recall_result = mcp_post(\"recall\", payload)\n+        recalled, telemetry = _extract_recall_payload(recall_result)\n+        recall_telemetry[\"per_query_recall\"].append({\n+            \"query\": query,\n+            \"requested_top_k\": top_k,\n+            \"result_count\": len(recalled),\n+            \"result_ids\": [memory.get(\"id\") for memory in recalled if isinstance(memory, dict)],\n+            \"result_refs\": [_memory_refs(memory) for memory in recalled],\n+            \"result_content_hashes\": [\n+                hashlib.sha256(str(memory.get(\"content\") if isinstance(memory, dict) else memory or \"\").encode(\"utf-8\")).hexdigest()\n+                for memory in recalled\n+            ],\n+            \"server_telemetry\": telemetry,\n+        })\n+        return recalled\n \n     if USE_LEGACY_CONTEXT_ASSEMBLY:\n         seen = {}\n+        candidate_memories_for_telemetry = []\n         for query in queries:\n-            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": RECALL_TOP_K, \"domain\": domain})\n-            if isinstance(recall_result, list):\n-                recalled = recall_result\n-            else:\n-                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))\n+            recalled = recall_for_query(query, RECALL_TOP_K)\n+            candidate_memories_for_telemetry.extend(recalled)\n             for memory in recalled:\n                 memory_id = memory.get(\"id\") or f\"no-id::{memory.get('content', '')}::{len(seen)}\"\n@@ -642,4 +716,6 @@ def answer_question(question, domain):\n                 break\n         memories = list(seen.values())[:ANSWER_CONTEXT_TOP_K]\n+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories_for_telemetry)\n+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(seen)\n     else:\n         base_seen = {}\n@@ -652,9 +728,5 @@ def answer_question(question, domain):\n         candidate_memories = []\n         for query in queries:\n-            recall_result = mcp_post(\"recall\", {\"query\": query, \"top_k\": candidate_recall_top_k, \"domain\": domain})\n-            if isinstance(recall_result, list):\n-                recalled = recall_result\n-            else:\n-                recalled = recall_result.get(\"results\", recall_result.get(\"memories\", []))\n+            recalled = recall_for_query(query, candidate_recall_top_k)\n             candidate_memories.extend(recalled)\n             for memory in recalled[:recall_top_k]:\n@@ -672,4 +744,7 @@ def answer_question(question, domain):\n                 candidate_keys.add(key)\n                 candidates.append(memory)\n+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories)\n+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(base_candidates)\n+        recall_telemetry[\"counts\"][\"candidate_count_after_dedupe\"] = len(candidates)\n         if USE_CONTEXT_RERANK:\n             memories = rerank_memories_for_question(question, candidates, top_k=ANSWER_CONTEXT_TOP_K)\n@@ -689,4 +764,15 @@ def answer_question(question, domain):\n             memories = candidates[:ANSWER_CONTEXT_TOP_K]\n \n+    recall_telemetry[\"counts\"][\"final_answer_context_count\"] = len(memories)\n+    recall_telemetry[\"final_context\"] = [\n+        _memory_telemetry_projection(memory, rank=idx)\n+        for idx, memory in enumerate(memories, start=1)\n+    ]\n+    if evidence_refs is not None:\n+        recall_telemetry[\"gold_evidence_ref_coverage\"] = {\n+            \"gold_ref_count\": len(evidence_refs),\n+            \"final_context_refs_matched\": _count_ref_coverage(evidence_refs, memories),\n+        }\n+\n     if not memories:\n         context = \"No relevant memories found.\"\n@@ -728,7 +814,8 @@ def answer_question(question, domain):\n     ])\n \n+    if return_telemetry:\n+        return answer, len(memories), recall_telemetry\n     return answer, len(memories)\n \n-\n def judge_answer(question, predicted, ground_truth):\n     \"\"\"LLM judge: score predicted vs ground truth. Returns 0, 0.5, or 1.\"\"\"\n@@ -1062,5 +1149,14 @@ def run_benchmark(\n \n             t0 = time.monotonic()\n-            predicted, n_mems = answer_question(question, domain)\n+            if INCLUDE_RECALL_TELEMETRY:\n+                predicted, n_mems, recall_telemetry = answer_question(\n+                    question,\n+                    domain,\n+                    return_telemetry=True,\n+                    evidence_refs=qa.get(\"evidence\") or qa.get(\"evidence_refs\"),\n+                )\n+            else:\n+                predicted, n_mems = answer_question(question, domain)\n+                recall_telemetry = None\n             query_time = time.monotonic() - t0\n             query_times.append(query_time)\n@@ -1072,10 +1168,13 @@ def run_benchmark(\n             conv_scores.append(score)\n \n-            results_log.append({\n+            row = {\n                 \"conv\": sample_id, \"cat\": cat, \"question\": question,\n                 \"ground_truth\": ground_truth, \"predicted\": predicted,\n                 \"score\": score, \"query_time_ms\": int(query_time * 1000),\n                 \"n_memories\": n_mems\n-            })\n+            }\n+            if INCLUDE_RECALL_TELEMETRY:\n+                row[\"recall_telemetry\"] = recall_telemetry\n+            results_log.append(row)\n \n             if (qi + 1) % 20 == 0:\n"
+  },
+  "source_fingerprints": {
+    "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+    "server.py": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a",
+    "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+    "docker-compose.ruvector.yml": "ee92594165499975fa0afce19f361f68c859a0ede790fd188a5030db4a3bf631"
+  },
+  "health": "{\"status\":\"ok\",\"engine\":\"memibrium\"}",
+  "hygiene": "memories|0\ntemporal_expressions|0\nmemory_snapshots|0\nuser_feedback|0\ncontradictions|0\nmemory_edges|0",
+  "regime_summary": {
+    "A_low_f2466c9": {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_substrate_baseline_2026-05-01.json",
+      "sha256": "d44b9288a633bfdb04061f44bb5d37b8240342e5550e2df5f1c2bc2f38187637",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 14.82,
+      "protocol_4cat_overall": 19.41,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 4.5327,
+      "n_dist": {
+        "2": 57,
+        "3": 110,
+        "11": 1,
+        "12": 3,
+        "13": 3,
+        "14": 3,
+        "15": 22
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 2.617,
+        "multi-hop": 7.2308,
+        "single-hop": 6.2188,
+        "temporal": 8.1351,
+        "unanswerable": 2.6429
+      },
+      "cat_score_mean": {
+        "adversarial": 0.0,
+        "multi-hop": 30.77,
+        "single-hop": 26.56,
+        "temporal": 39.19,
+        "unanswerable": 3.57
+      }
+    },
+    "B_high_91fede6": {
+      "path": "docs/eval/results/locomo_conv26_hybrid_active_telemetry_baseline_retry_2026-05-02.json",
+      "sha256": "7d8c911caa8753e6f920bed1402f8e1d72c0a6c4d741f82003f54de5fc2c032d",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 58.29,
+      "protocol_4cat_overall": 69.41,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 14.6231,
+      "n_dist": {
+        "11": 3,
+        "12": 6,
+        "13": 17,
+        "14": 11,
+        "15": 162
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 14.6809,
+        "multi-hop": 14.5385,
+        "single-hop": 14.6875,
+        "temporal": 14.4054,
+        "unanswerable": 14.6857
+      },
+      "cat_score_mean": {
+        "adversarial": 22.34,
+        "multi-hop": 42.31,
+        "single-hop": 64.06,
+        "temporal": 68.92,
+        "unanswerable": 77.14
+      }
+    },
+    "C_third_662514a": {
+      "path": "docs/eval/results/locomo_corrected_slice_results_query_expansion_raw_2026-05-02.json",
+      "sha256": "317dc38bb7cbe8529c3f1d10fbbefe459d6b790c539f8395cf72729dd828f9e9",
+      "rows": 199,
+      "unique_convs": [
+        "conv-26"
+      ],
+      "overall_score": 55.28,
+      "protocol_4cat_overall": 70.07,
+      "condition": {
+        "cleaned": false,
+        "normalize_dates": false,
+        "query_expansion": true,
+        "context_rerank": false,
+        "append_context_expansion": false,
+        "gated_append_context_expansion": false,
+        "no_expansion_arm_b": false,
+        "legacy_context_assembly": false
+      },
+      "fallback": 0,
+      "n_mean": 11.9296,
+      "n_dist": {
+        "4": 51,
+        "12": 6,
+        "13": 10,
+        "14": 12,
+        "15": 120
+      },
+      "cat_counts": {
+        "adversarial": 47,
+        "multi-hop": 13,
+        "single-hop": 32,
+        "temporal": 37,
+        "unanswerable": 70
+      },
+      "cat_n_mean": {
+        "adversarial": 4,
+        "multi-hop": 14.7692,
+        "single-hop": 14.75,
+        "temporal": 14.5405,
+        "unanswerable": 14.0571
+      },
+      "cat_score_mean": {
+        "adversarial": 7.45,
+        "multi-hop": 38.46,
+        "single-hop": 68.75,
+        "temporal": 75.68,
+        "unanswerable": 73.57
+      }
+    }
+  },
+  "per_question_overlap": {
+    "common_question_count": 199,
+    "same_order_all_three": true,
+    "n_C_equals_A": 19,
+    "n_C_equals_B": 117,
+    "n_C_between_A_B_inclusive": 179,
+    "n_A_to_C_delta_dist": {
+      "-1": 5,
+      "0": 19,
+      "1": 33,
+      "2": 23,
+      "3": 2,
+      "4": 1,
+      "9": 3,
+      "10": 9,
+      "11": 9,
+      "12": 63,
+      "13": 32
+    },
+    "n_B_to_C_delta_dist": {
+      "-3": 3,
+      "-2": 5,
+      "-1": 10,
+      "0": 117,
+      "1": 7,
+      "2": 6,
+      "9": 6,
+      "10": 3,
+      "11": 42
+    },
+    "score_pattern_counts": {
+      "ABC": 38,
+      "abc": 54,
+      "aBC": 82,
+      "Abc": 1,
+      "aBc": 17,
+      "abC": 7
+    },
+    "by_cat": {
+      "adversarial": {
+        "count": 47,
+        "mean_n_A": 2.617,
+        "mean_n_B": 14.6809,
+        "mean_n_C": 4,
+        "score_A_pct": 0.0,
+        "score_B_pct": 22.34,
+        "score_C_pct": 7.45,
+        "C_eq_A": 0,
+        "C_eq_B": 0,
+        "C_between": 47
+      },
+      "multi-hop": {
+        "count": 13,
+        "mean_n_A": 7.2308,
+        "mean_n_B": 14.5385,
+        "mean_n_C": 14.7692,
+        "score_A_pct": 30.77,
+        "score_B_pct": 42.31,
+        "score_C_pct": 38.46,
+        "C_eq_A": 4,
+        "C_eq_B": 12,
+        "C_between": 13
+      },
+      "single-hop": {
+        "count": 32,
+        "mean_n_A": 6.2188,
+        "mean_n_B": 14.6875,
+        "mean_n_C": 14.75,
+        "score_A_pct": 26.56,
+        "score_B_pct": 64.06,
+        "score_C_pct": 68.75,
+        "C_eq_A": 5,
+        "C_eq_B": 26,
+        "C_between": 27
+      },
+      "temporal": {
+        "count": 37,
+        "mean_n_A": 8.1351,
+        "mean_n_B": 14.4054,
+        "mean_n_C": 14.5405,
+        "score_A_pct": 39.19,
+        "score_B_pct": 68.92,
+        "score_C_pct": 75.68,
+        "C_eq_A": 10,
+        "C_eq_B": 25,
+        "C_between": 29
+      },
+      "unanswerable": {
+        "count": 70,
+        "mean_n_A": 2.6429,
+        "mean_n_B": 14.6857,
+        "mean_n_C": 14.0571,
+        "score_A_pct": 3.57,
+        "score_B_pct": 77.14,
+        "score_C_pct": 73.57,
+        "C_eq_A": 0,
+        "C_eq_B": 54,
+        "C_between": 63
+      }
+    }
+  },
+  "telemetry_stats_B": {
+    "rows_with_recall_telemetry": 199,
+    "top_level_keys": {
+      "schema": 199,
+      "question": 199,
+      "domain": 199,
+      "expanded_queries": 199,
+      "per_query_recall": 199,
+      "counts": 199,
+      "final_context": 199,
+      "gold_evidence_ref_coverage": 199
+    },
+    "expanded_query_count_dist": {
+      "4": 199
+    },
+    "pre_candidate_dist_sample": {},
+    "final_context_dist_sample": {
+      "11": 3,
+      "12": 6,
+      "13": 17,
+      "14": 11,
+      "15": 162
+    }
+  },
+  "git_focused": {
+    "commits": "81d1597 docs: preregister LOCOMO hybrid failure-mode audit\n6c0e38f docs: record LOCOMO hybrid failure-mode audit\nd35bee4 docs: preregister LOCOMO telemetry baseline\nab4bf5d docs: preregister LOCOMO telemetry instrumentation window\ncb56559 feat: add opt-in LOCOMO recall telemetry\n328da53 docs: record LOCOMO telemetry instrumentation window\n876eb04 docs: record LOCOMO telemetry baseline block\nfee3a46 docs: preregister LOCOMO telemetry serialization fix window\n5cb6f0b fix: serialize Decimal values in recall telemetry\n6294164 docs: record LOCOMO telemetry serialization fix window\n91fede6 docs: record LOCOMO telemetry baseline retry\nfaaa661 docs: preregister LOCOMO telemetry noncomparability audit\n29f4209 docs: record LOCOMO telemetry noncomparability audit\n544a003 docs: preregister LOCOMO paired telemetry flag probe\na4102c2 docs: record LOCOMO paired telemetry flag probe\n4663bcd docs: preregister LOCOMO telemetry-off reproducibility\n2f9c9df docs: record blocked LOCOMO telemetry-off reproducibility attempt\nc9a7623 docs: preregister LOCOMO corrected slice reproducibility\n662514a docs: record LOCOMO corrected slice reproducibility run\n",
+    "benchmark_scripts/locomo_bench_v2.py_numstat_f2466c9_662514a": "115\t16\tbenchmark_scripts/locomo_bench_v2.py\n",
+    "benchmark_scripts/locomo_bench_v2.py_focused_diff_lines": "@@ -10 +10 @@ Flow per conversation:\n@@ -77,0 +78,2 @@ USE_LEGACY_CONTEXT_ASSEMBLY = _env_flag(\"USE_LEGACY_CONTEXT_ASSEMBLY\", default=F\n+INCLUDE_RECALL_TELEMETRY = _env_flag(\"INCLUDE_RECALL_TELEMETRY\", default=False)\n@@ -507,0 +510,44 @@ def _memory_dedupe_key(memory):\n+def _memory_refs(memory):\n+    if isinstance(refs, str):\n+    return refs if isinstance(refs, dict) else {}\n+def _memory_telemetry_projection(memory, rank=None):\n+    return {\n+def _ref_matches(gold_ref, memory_ref):\n+    if not isinstance(gold_ref, dict) or not isinstance(memory_ref, dict):\n+        return False\n+    return bool(comparable) and all(memory_ref.get(key) == gold_ref.get(key) for key in comparable)\n+def _count_ref_coverage(evidence_refs, memories):\n+    if not evidence_refs:\n+        return None\n+    return sum(1 for gold_ref in evidence_refs if any(_ref_matches(gold_ref, ref) for ref in refs))\n+def _extract_recall_payload(recall_result):\n+    if isinstance(recall_result, list):\n+        return recall_result, None\n+    return recall_result.get(\"results\", recall_result.get(\"memories\", [])), recall_result.get(\"telemetry\")\n@@ -623 +669 @@ def append_memories_for_question(\n-def answer_question(question, domain):\n+def answer_question(question, domain, return_telemetry=False, evidence_refs=None):\n@@ -627,0 +674,30 @@ def answer_question(question, domain):\n+    recall_telemetry = {\n+        payload = {\"query\": query, \"top_k\": top_k, \"domain\": domain}\n+        if INCLUDE_RECALL_TELEMETRY:\n+        recall_result = mcp_post(\"recall\", payload)\n+        recalled, telemetry = _extract_recall_payload(recall_result)\n+        recall_telemetry[\"per_query_recall\"].append({\n+        return recalled\n@@ -630,0 +707 @@ def answer_question(question, domain):\n@@ -632,5 +709,2 @@ def answer_question(question, domain):\n@@ -643,0 +718,2 @@ def answer_question(question, domain):\n+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories_for_telemetry)\n+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(seen)\n@@ -654,5 +730 @@ def answer_question(question, domain):\n@@ -673,0 +746,3 @@ def answer_question(question, domain):\n+        recall_telemetry[\"counts\"][\"candidate_memories_before_dedupe\"] = len(candidate_memories)\n+        recall_telemetry[\"counts\"][\"base_candidate_count_after_dedupe\"] = len(base_candidates)\n+        recall_telemetry[\"counts\"][\"candidate_count_after_dedupe\"] = len(candidates)\n@@ -690,0 +766,11 @@ def answer_question(question, domain):\n+    recall_telemetry[\"counts\"][\"final_answer_context_count\"] = len(memories)\n+    recall_telemetry[\"final_context\"] = [\n+        for idx, memory in enumerate(memories, start=1)\n+    if evidence_refs is not None:\n+        recall_telemetry[\"gold_evidence_ref_coverage\"] = {\n@@ -729,0 +816,2 @@ def answer_question(question, domain):\n+    if return_telemetry:\n+        return answer, len(memories), recall_telemetry\n@@ -732 +819,0 @@ def answer_question(question, domain):\n@@ -1064 +1151,10 @@ def run_benchmark(\n@@ -1074 +1170 @@ def run_benchmark(\n@@ -1079 +1175,4 @@ def run_benchmark(",
+    "server.py_numstat_f2466c9_662514a": "59\t3\tserver.py\n",
+    "server.py_focused_diff_lines": "@@ -43,0 +44 @@ from concurrent.futures import ThreadPoolExecutor\n@@ -50 +51 @@ import uuid\n@@ -66 +67 @@ def _serialize_result(obj):\n@@ -68,0 +70,4 @@ def _serialize_result(obj):\n+    if isinstance(obj, date):\n+        return obj.isoformat()\n+    if isinstance(obj, Decimal):\n+        return float(obj)\n@@ -1877,0 +1883 @@ async def handle_recall(request: Request) -> JSONResponse:\n+    include_telemetry = bool(body.get(\"include_telemetry\", False))\n@@ -1880,0 +1887,2 @@ async def handle_recall(request: Request) -> JSONResponse:\n@@ -1883,0 +1892,2 @@ async def handle_recall(request: Request) -> JSONResponse:\n@@ -1885,0 +1896 @@ async def handle_recall(request: Request) -> JSONResponse:\n@@ -1886,0 +1898 @@ async def handle_recall(request: Request) -> JSONResponse:\n@@ -1889 +1901 @@ async def handle_recall(request: Request) -> JSONResponse:\n@@ -1894,0 +1907 @@ async def handle_recall(request: Request) -> JSONResponse:\n@@ -1895,0 +1909,12 @@ async def handle_recall(request: Request) -> JSONResponse:\n@@ -1901,0 +1927,15 @@ async def handle_recall(request: Request) -> JSONResponse:\n@@ -1906,0 +1947,16 @@ async def handle_recall(request: Request) -> JSONResponse:\n+        if include_telemetry:\n+    if include_telemetry:\n+        return JSONResponse(_serialize_result({\"results\": result, \"telemetry\": response_telemetry}))",
+    "hybrid_retrieval.py_numstat_f2466c9_662514a": "167\t15\thybrid_retrieval.py\n",
+    "hybrid_retrieval.py_focused_diff_lines": "@@ -7,0 +8 @@ import asyncio\n@@ -380,0 +382,84 @@ class HybridRetriever:\n+        if isinstance(refs, str):\n+        for key in (\"cosine_score\", \"bm25_score\", \"temporal_score\", \"rrf_score\", \"combined_score\"):\n+        return item\n+        if not scores:\n+        return {\n+        payload = {\n+        if path is not None:\n+        return payload\n+        return {\n+        if telemetry is None:\n+        telemetry[\"final\"] = {\n@@ -383 +468,2 @@ class HybridRetriever:\n@@ -385,0 +472,2 @@ class HybridRetriever:\n@@ -411 +499,4 @@ class HybridRetriever:\n@@ -415 +506,2 @@ class HybridRetriever:\n@@ -417,0 +510,2 @@ class HybridRetriever:\n@@ -421,0 +516,2 @@ class HybridRetriever:\n+        if telemetry is not None:\n@@ -422,0 +519,2 @@ class HybridRetriever:\n@@ -428,0 +527,2 @@ class HybridRetriever:\n@@ -449,3 +549,11 @@ class HybridRetriever:\n@@ -480 +588,9 @@ class HybridRetriever:\n@@ -484 +600,2 @@ class HybridRetriever:\n@@ -486,0 +604,2 @@ class HybridRetriever:\n@@ -512 +631,4 @@ class HybridRetriever:\n@@ -562 +684,2 @@ class HybridRetriever:\n@@ -584,0 +708,4 @@ class HybridRetriever:\n+        telemetry = self._new_telemetry(query, top_k, fetch_k, state_filter, domain, use_rrf, rerank) if include_telemetry else None\n+        if telemetry is not None and temporal_window is not None:\n@@ -587,2 +714,2 @@ class HybridRetriever:\n@@ -593 +720,5 @@ class HybridRetriever:\n@@ -612 +743,6 @@ class HybridRetriever:\n@@ -625,0 +762,6 @@ class HybridRetriever:\n+        if telemetry is not None:\n@@ -635,0 +778,2 @@ class HybridRetriever:\n@@ -647,0 +792,2 @@ class HybridRetriever:\n@@ -652,0 +799,2 @@ class HybridRetriever:\n@@ -654 +802,5 @@ class HybridRetriever:\n-        return final[:top_k]\n+        final_results = final[:top_k]\n+        if telemetry is not None:\n+        return final_results"
+  },
+  "current_container_env_subset": {
+    "USE_RUVECTOR": "true",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "INCLUDE_RECALL_TELEMETRY": null,
+    "LOCOMO_RETRIEVAL_TELEMETRY": null,
+    "USE_QUERY_EXPANSION": null,
+    "USE_LEGACY_CONTEXT_ASSEMBLY": null,
+    "USE_CONTEXT_RERANK": null,
+    "USE_APPEND_CONTEXT_EXPANSION": null,
+    "USE_GATED_APPEND_CONTEXT_EXPANSION": null
+  }
+}

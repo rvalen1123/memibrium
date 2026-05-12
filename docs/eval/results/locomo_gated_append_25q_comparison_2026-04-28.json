@@ -1,0 +1,550 @@
+{
+  "generated_at": "2026-04-29T21:39:17",
+  "target_artifact": "docs/eval/results/locomo_conv26_gated_append_25q_2026-04-28.json",
+  "same_model_baseline_artifact": "docs/eval/results/locomo_conv26_query_expansion_25q_2026-04-28.json",
+  "target": {
+    "details": 25,
+    "overall_score": 82.0,
+    "full_5cat_overall": 82.0,
+    "protocol_4cat_overall": 82.0,
+    "avg_query_ms": 4048,
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "condition": {
+      "cleaned": true,
+      "normalize_dates": true,
+      "query_expansion": true,
+      "context_rerank": false,
+      "append_context_expansion": true,
+      "gated_append_context_expansion": true
+    },
+    "category_scores": {
+      "cat-temporal": 100.0,
+      "cat-multi-hop": 50.0,
+      "cat-single-hop": 70.0
+    }
+  },
+  "same_model_baseline": {
+    "details": 25,
+    "overall_score": 80.0,
+    "full_5cat_overall": 80.0,
+    "protocol_4cat_overall": 80.0,
+    "avg_query_ms": 3301,
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "condition": {
+      "cleaned": true,
+      "normalize_dates": true,
+      "query_expansion": true,
+      "context_rerank": false,
+      "append_context_expansion": false,
+      "gated_append_context_expansion": false
+    },
+    "category_scores": {
+      "cat-temporal": 100.0,
+      "cat-multi-hop": 50.0,
+      "cat-single-hop": 65.0
+    }
+  },
+  "comparisons": {
+    "query_expansion_25q_same_model": {
+      "artifact": "docs/eval/results/locomo_conv26_query_expansion_25q_2026-04-28.json",
+      "common_questions": 25,
+      "baseline_avg_score_pct_on_common": 80.0,
+      "gated_avg_score_pct_on_common": 82.0,
+      "delta_pp_on_common": 2.0,
+      "baseline_avg_query_ms_on_common": 3300.3,
+      "gated_avg_query_ms_on_common": 4047.6,
+      "latency_delta_ms_on_common": 747.2,
+      "buckets": {
+        "unchanged_correct": 17,
+        "same_partial": 5,
+        "rescued": 1,
+        "unchanged_wrong": 2
+      },
+      "categories": {
+        "temporal": {
+          "n": 12,
+          "baseline_avg": 100.0,
+          "gated_avg": 100.0,
+          "delta_pp": 0.0,
+          "rescued": 0,
+          "harmed": 0,
+          "partial_changed": 0,
+          "same_partial": 0,
+          "unchanged_correct": 12,
+          "unchanged_wrong": 0
+        },
+        "multi-hop": {
+          "n": 3,
+          "baseline_avg": 50.0,
+          "gated_avg": 50.0,
+          "delta_pp": 0.0,
+          "rescued": 0,
+          "harmed": 0,
+          "partial_changed": 0,
+          "same_partial": 1,
+          "unchanged_correct": 1,
+          "unchanged_wrong": 1
+        },
+        "single-hop": {
+          "n": 10,
+          "baseline_avg": 65.0,
+          "gated_avg": 70.0,
+          "delta_pp": 5.0,
+          "rescued": 1,
+          "harmed": 0,
+          "partial_changed": 0,
+          "same_partial": 4,
+          "unchanged_correct": 4,
+          "unchanged_wrong": 1
+        }
+      },
+      "notable_changes": [
+        {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "What did Caroline research?",
+          "baseline_score": 0.5,
+          "gated_score": 1.0,
+          "delta": 0.5,
+          "bucket": "rescued",
+          "baseline_predicted": "Caroline researched adoption agencies and counseling or mental health work.",
+          "gated_predicted": "Caroline researched adoption agencies.",
+          "ground_truth": "Adoption agencies",
+          "baseline_n_memories": 15,
+          "gated_n_memories": 20,
+          "baseline_query_time_ms": 2386,
+          "gated_query_time_ms": 3065
+        }
+      ]
+    },
+    "query_expansion_full": {
+      "artifact": "docs/eval/results/locomo_conv26_query_expansion_2026-04-24.json",
+      "common_questions": 25,
+      "baseline_avg_score_pct_on_common": 76.0,
+      "gated_avg_score_pct_on_common": 82.0,
+      "delta_pp_on_common": 6.0,
+      "baseline_avg_query_ms_on_common": 7777.4,
+      "gated_avg_query_ms_on_common": 4047.6,
+      "latency_delta_ms_on_common": -3729.9,
+      "buckets": {
+        "unchanged_correct": 15,
+        "same_partial": 5,
+        "rescued": 3,
+        "partial_changed": 1,
+        "unchanged_wrong": 1
+      },
+      "categories": {
+        "temporal": {
+          "n": 12,
+          "baseline_avg": 87.5,
+          "gated_avg": 100.0,
+          "delta_pp": 12.5,
+          "rescued": 2,
+          "harmed": 0,
+          "unchanged_correct": 10,
+          "unchanged_wrong": 0,
+          "partial_changed": 0,
+          "same_partial": 0
+        },
+        "multi-hop": {
+          "n": 3,
+          "baseline_avg": 50.0,
+          "gated_avg": 50.0,
+          "delta_pp": 0.0,
+          "rescued": 0,
+          "harmed": 0,
+          "unchanged_correct": 1,
+          "unchanged_wrong": 1,
+          "partial_changed": 0,
+          "same_partial": 1
+        },
+        "single-hop": {
+          "n": 10,
+          "baseline_avg": 70.0,
+          "gated_avg": 70.0,
+          "delta_pp": 0.0,
+          "rescued": 1,
+          "harmed": 0,
+          "unchanged_correct": 4,
+          "unchanged_wrong": 0,
+          "partial_changed": 1,
+          "same_partial": 4
+        }
+      },
+      "notable_changes": [
+        {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "What did Caroline research?",
+          "baseline_score": 0.5,
+          "gated_score": 1.0,
+          "delta": 0.5,
+          "bucket": "rescued",
+          "baseline_predicted": "Caroline researched counseling, mental health careers, and adoption agencies.",
+          "gated_predicted": "Caroline researched adoption agencies.",
+          "ground_truth": "Adoption agencies",
+          "baseline_n_memories": 11,
+          "gated_n_memories": 20,
+          "baseline_query_time_ms": 6095,
+          "gated_query_time_ms": 3065
+        },
+        {
+          "conv": "conv-26",
+          "cat": "temporal",
+          "question": "When is Melanie planning on going camping?",
+          "baseline_score": 0.5,
+          "gated_score": 1.0,
+          "delta": 0.5,
+          "bucket": "rescued",
+          "baseline_predicted": "Melanie was planning a family outing or special trip with Caroline for summer 2023.",
+          "gated_predicted": "Melanie is planning on going camping in June 2023.",
+          "ground_truth": "June 2023",
+          "baseline_n_memories": 8,
+          "gated_n_memories": 20,
+          "baseline_query_time_ms": 17364,
+          "gated_query_time_ms": 3497
+        },
+        {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "What is Caroline's relationship status?",
+          "baseline_score": 0.5,
+          "gated_score": 0.0,
+          "delta": -0.5,
+          "bucket": "partial_changed",
+          "baseline_predicted": "Caroline had a tough breakup before June 2023; no current relationship status is mentioned.",
+          "gated_predicted": "I don't know.",
+          "ground_truth": "Single",
+          "baseline_n_memories": 14,
+          "gated_n_memories": 20,
+          "baseline_query_time_ms": 6927,
+          "gated_query_time_ms": 3719
+        },
+        {
+          "conv": "conv-26",
+          "cat": "temporal",
+          "question": "When did Caroline have a picnic?",
+          "baseline_score": 0.0,
+          "gated_score": 1.0,
+          "delta": 1.0,
+          "bucket": "rescued",
+          "baseline_predicted": "I don't know.",
+          "gated_predicted": "Caroline had a picnic the week of 29 June 2023.",
+          "ground_truth": "The week before 6 July 2023",
+          "baseline_n_memories": 12,
+          "gated_n_memories": 20,
+          "baseline_query_time_ms": 5969,
+          "gated_query_time_ms": 4047
+        }
+      ],
+      "historical_comparison": true
+    },
+    "append_full": {
+      "artifact": "docs/eval/results/locomo_conv26_query_expansion_appended_2026-04-26.json",
+      "common_questions": 25,
+      "baseline_avg_score_pct_on_common": 70.0,
+      "gated_avg_score_pct_on_common": 82.0,
+      "delta_pp_on_common": 12.0,
+      "baseline_avg_query_ms_on_common": 2965.4,
+      "gated_avg_query_ms_on_common": 4047.6,
+      "latency_delta_ms_on_common": 1082.2,
+      "buckets": {
+        "unchanged_correct": 14,
+        "same_partial": 5,
+        "rescued": 4,
+        "unchanged_wrong": 2
+      },
+      "categories": {
+        "temporal": {
+          "n": 12,
+          "baseline_avg": 91.67,
+          "gated_avg": 100.0,
+          "delta_pp": 8.33,
+          "rescued": 1,
+          "harmed": 0,
+          "unchanged_correct": 11,
+          "unchanged_wrong": 0,
+          "partial_changed": 0,
+          "same_partial": 0
+        },
+        "multi-hop": {
+          "n": 3,
+          "baseline_avg": 16.67,
+          "gated_avg": 50.0,
+          "delta_pp": 33.33,
+          "rescued": 1,
+          "harmed": 0,
+          "unchanged_correct": 0,
+          "unchanged_wrong": 1,
+          "partial_changed": 0,
+          "same_partial": 1
+        },
+        "single-hop": {
+          "n": 10,
+          "baseline_avg": 60.0,
+          "gated_avg": 70.0,
+          "delta_pp": 10.0,
+          "rescued": 2,
+          "harmed": 0,
+          "unchanged_correct": 3,
+          "unchanged_wrong": 1,
+          "partial_changed": 0,
+          "same_partial": 4
+        }
+      },
+      "notable_changes": [
+        {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "What did Caroline research?",
+          "baseline_score": 0.5,
+          "gated_score": 1.0,
+          "delta": 0.5,
+          "bucket": "rescued",
+          "baseline_predicted": "Caroline researched counseling and mental health careers, adoption agencies, and career options related to supporting the LGBTQ+ community.",
+          "gated_predicted": "Caroline researched adoption agencies.",
+          "ground_truth": "Adoption agencies",
+          "baseline_n_memories": 20,
+          "gated_n_memories": 20,
+          "baseline_query_time_ms": 3046,
+          "gated_query_time_ms": 3065
+        },
+        {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "Where has Melanie camped?",
+          "baseline_score": 0.5,
+          "gated_score": 1.0,
+          "delta": 0.5,
+          "bucket": "rescued",
+          "baseline_predicted": "Melanie has camped in the mountains, forests, and the Grand Canyon area.",
+          "gated_predicted": "Melanie has camped in the mountains, the forest, and at the beach.",
+          "ground_truth": "beach, mountains, forest",
+          "baseline_n_memories": 20,
+          "gated_n_memories": 17,
+          "baseline_query_time_ms": 2739,
+          "gated_query_time_ms": 4893
+        },
+        {
+          "conv": "conv-26",
+          "cat": "temporal",
+          "question": "When did Caroline have a picnic?",
+          "baseline_score": 0.0,
+          "gated_score": 1.0,
+          "delta": 1.0,
+          "bucket": "rescued",
+          "baseline_predicted": "I don't know.",
+          "gated_predicted": "Caroline had a picnic the week of 29 June 2023.",
+          "ground_truth": "The week before 6 July 2023",
+          "baseline_n_memories": 20,
+          "gated_n_memories": 20,
+          "baseline_query_time_ms": 2399,
+          "gated_query_time_ms": 4047
+        },
+        {
+          "conv": "conv-26",
+          "cat": "multi-hop",
+          "question": "Would Caroline likely have Dr. Seuss books on her bookshelf?",
+          "baseline_score": 0.0,
+          "gated_score": 1.0,
+          "delta": 1.0,
+          "bucket": "rescued",
+          "baseline_predicted": "I don't know.",
+          "gated_predicted": "Yes, Caroline likely has Dr. Seuss books on her bookshelf as she mentioned having lots of kids' books including classics.",
+          "ground_truth": "Yes, since she collects classic children's books",
+          "baseline_n_memories": 20,
+          "gated_n_memories": 18,
+          "baseline_query_time_ms": 4158,
+          "gated_query_time_ms": 3774
+        }
+      ],
+      "historical_comparison": true
+    },
+    "prefix_rerank_full": {
+      "artifact": "docs/eval/results/locomo_conv26_query_expansion_prefix_rerank_2026-04-26.json",
+      "common_questions": 25,
+      "baseline_avg_score_pct_on_common": 76.0,
+      "gated_avg_score_pct_on_common": 82.0,
+      "delta_pp_on_common": 6.0,
+      "baseline_avg_query_ms_on_common": 2818.3,
+      "gated_avg_query_ms_on_common": 4047.6,
+      "latency_delta_ms_on_common": 1229.2,
+      "buckets": {
+        "unchanged_correct": 17,
+        "same_partial": 4,
+        "unchanged_wrong": 2,
+        "rescued": 1,
+        "partial_changed": 1
+      },
+      "categories": {
+        "temporal": {
+          "n": 12,
+          "baseline_avg": 100.0,
+          "gated_avg": 100.0,
+          "delta_pp": 0.0,
+          "rescued": 0,
+          "harmed": 0,
+          "unchanged_correct": 12,
+          "unchanged_wrong": 0,
+          "partial_changed": 0,
+          "same_partial": 0
+        },
+        "multi-hop": {
+          "n": 3,
+          "baseline_avg": 16.67,
+          "gated_avg": 50.0,
+          "delta_pp": 33.33,
+          "rescued": 1,
+          "harmed": 0,
+          "unchanged_correct": 0,
+          "unchanged_wrong": 1,
+          "partial_changed": 0,
+          "same_partial": 1
+        },
+        "single-hop": {
+          "n": 10,
+          "baseline_avg": 65.0,
+          "gated_avg": 70.0,
+          "delta_pp": 5.0,
+          "rescued": 0,
+          "harmed": 0,
+          "unchanged_correct": 5,
+          "unchanged_wrong": 1,
+          "partial_changed": 1,
+          "same_partial": 3
+        }
+      },
+      "notable_changes": [
+        {
+          "conv": "conv-26",
+          "cat": "multi-hop",
+          "question": "Would Caroline likely have Dr. Seuss books on her bookshelf?",
+          "baseline_score": 0.0,
+          "gated_score": 1.0,
+          "delta": 1.0,
+          "bucket": "rescued",
+          "baseline_predicted": "I don't know.",
+          "gated_predicted": "Yes, Caroline likely has Dr. Seuss books on her bookshelf as she mentioned having lots of kids' books including classics.",
+          "ground_truth": "Yes, since she collects classic children's books",
+          "baseline_n_memories": 15,
+          "gated_n_memories": 18,
+          "baseline_query_time_ms": 2052,
+          "gated_query_time_ms": 3774
+        },
+        {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "What books has Melanie read?",
+          "baseline_score": 0.0,
+          "gated_score": 0.5,
+          "delta": 0.5,
+          "bucket": "partial_changed",
+          "baseline_predicted": "Melanie has read \"Becoming Nicole\" by Amy Ellis Nutt and a book recommended by Caroline in 2022 that inspires pursuing dreams.",
+          "gated_predicted": "Melanie has read \"Charlotte's Web\" as a favorite childhood book.",
+          "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+          "baseline_n_memories": 15,
+          "gated_n_memories": 19,
+          "baseline_query_time_ms": 2402,
+          "gated_query_time_ms": 4453
+        }
+      ],
+      "historical_comparison": true
+    },
+    "rerank_full": {
+      "artifact": "docs/eval/results/locomo_conv26_query_expansion_reranked_2026-04-26.json",
+      "common_questions": 25,
+      "baseline_avg_score_pct_on_common": 76.0,
+      "gated_avg_score_pct_on_common": 82.0,
+      "delta_pp_on_common": 6.0,
+      "baseline_avg_query_ms_on_common": 3833.7,
+      "gated_avg_query_ms_on_common": 4047.6,
+      "latency_delta_ms_on_common": 213.9,
+      "buckets": {
+        "unchanged_correct": 16,
+        "same_partial": 5,
+        "unchanged_wrong": 2,
+        "rescued": 2
+      },
+      "categories": {
+        "temporal": {
+          "n": 12,
+          "baseline_avg": 100.0,
+          "gated_avg": 100.0,
+          "delta_pp": 0.0,
+          "rescued": 0,
+          "harmed": 0,
+          "unchanged_correct": 12,
+          "unchanged_wrong": 0,
+          "partial_changed": 0,
+          "same_partial": 0
+        },
+        "multi-hop": {
+          "n": 3,
+          "baseline_avg": 16.67,
+          "gated_avg": 50.0,
+          "delta_pp": 33.33,
+          "rescued": 1,
+          "harmed": 0,
+          "unchanged_correct": 0,
+          "unchanged_wrong": 1,
+          "partial_changed": 0,
+          "same_partial": 1
+        },
+        "single-hop": {
+          "n": 10,
+          "baseline_avg": 65.0,
+          "gated_avg": 70.0,
+          "delta_pp": 5.0,
+          "rescued": 1,
+          "harmed": 0,
+          "unchanged_correct": 4,
+          "unchanged_wrong": 1,
+          "partial_changed": 0,
+          "same_partial": 4
+        }
+      },
+      "notable_changes": [
+        {
+          "conv": "conv-26",
+          "cat": "single-hop",
+          "question": "Where has Melanie camped?",
+          "baseline_score": 0.5,
+          "gated_score": 1.0,
+          "delta": 0.5,
+          "bucket": "rescued",
+          "baseline_predicted": "Melanie has camped in the forest, mountains, and with her family in nature.",
+          "gated_predicted": "Melanie has camped in the mountains, the forest, and at the beach.",
+          "ground_truth": "beach, mountains, forest",
+          "baseline_n_memories": 15,
+          "gated_n_memories": 17,
+          "baseline_query_time_ms": 3489,
+          "gated_query_time_ms": 4893
+        },
+        {
+          "conv": "conv-26",
+          "cat": "multi-hop",
+          "question": "Would Caroline likely have Dr. Seuss books on her bookshelf?",
+          "baseline_score": 0.0,
+          "gated_score": 1.0,
+          "delta": 1.0,
+          "bucket": "rescued",
+          "baseline_predicted": "I don't know.",
+          "gated_predicted": "Yes, Caroline likely has Dr. Seuss books on her bookshelf as she mentioned having lots of kids' books including classics.",
+          "ground_truth": "Yes, since she collects classic children's books",
+          "baseline_n_memories": 15,
+          "gated_n_memories": 18,
+          "baseline_query_time_ms": 10406,
+          "gated_query_time_ms": 3774
+        }
+      ],
+      "historical_comparison": true
+    }
+  },
+  "interpretation": [
+    "The same-model/same-slice query-expansion-only 25Q baseline now exists and is the primary comparison.",
+    "On the first 25 conv-26 questions, gated append is +2.0 pp over same-model query expansion (82.0% vs 80.0%) with no fully-correct answers harmed, but one partial answer regressed to wrong.",
+    "This remains canary-level evidence; run a larger same-model slice or full conv-26 before promoting gated append."
+  ]
+}

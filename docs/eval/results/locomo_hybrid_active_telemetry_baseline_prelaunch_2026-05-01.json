@@ -1,0 +1,94 @@
+{
+  "captured_at": "2026-05-02T01:11:32.770736+00:00",
+  "container_hashes": {
+    "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff  /app/benchmark_scripts/locomo_bench_v2.py",
+    "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07  /app/hybrid_retrieval.py",
+    "server.py": "d0532ea7a4748031aaf4759bba46deb5d563381da109eb2cb1c953ba4e747a2c  /app/server.py"
+  },
+  "container_inspect": {
+    "cmd": [
+      "docker",
+      "inspect",
+      "memibrium-server",
+      "--format",
+      "server_image={{.Image}} created={{.Created}} started={{.State.StartedAt}}"
+    ],
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "server_image=sha256:565195f02c3ee78f4e951e64a65bd18a2e56addca5a23d89ba9b87e456fdc4ae created=2026-05-01T21:44:07.781283486Z started=2026-05-01T21:44:09.174007932Z"
+  },
+  "db_probe": {
+    "locomo_contamination_count": 0,
+    "memories_embedding_type": "USER-DEFINED:ruvector",
+    "nonnull_embeddings": 20,
+    "ruvector_type_count": 1,
+    "self_distance": "1.7872301e-07",
+    "vector_type_count": 0
+  },
+  "docker_ps": {
+    "cmd": "docker ps --format '{{.Names}}|{{.Status}}|{{.Image}}' | grep -E 'memibrium|ruvector|ollama'",
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "memibrium-server|Up 3 hours (healthy)|memibrium-memibrium\nmemibrium-ollama|Up 37 hours|ollama/ollama:latest\nmemibrium-ruvector-db|Up 37 hours (healthy)|ruvnet/ruvector-postgres:latest"
+  },
+  "env_redacted": {
+    "AZURE_API_VERSION": "2024-06-01",
+    "AZURE_CHAT_API_KEY": "[REDACTED]",
+    "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_CHAT_ENDPOINT": "https://sector-7.services.ai.azure.com",
+    "AZURE_EMBEDDING_API_KEY": "[REDACTED]",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "AZURE_EMBEDDING_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "AZURE_OPENAI_API_KEY": "[REDACTED]",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
+    "AZURE_OPENAI_ENDPOINT": "https://sector-7.openai.azure.com/",
+    "CHAT_MODEL": "gemma4:e4b",
+    "EMBEDDING_BASE_URL": "http://ollama:11434/v1",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "OPENAI_API_KEY": "[REDACTED]",
+    "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+    "RUVECTOR_GNN": "true",
+    "SLM_MODEL": "phi3:mini",
+    "USE_RUVECTOR": "true"
+  },
+  "git": {
+    "branch": "query-expansion",
+    "head": "328da535f39c254d79f1fc17e3afd4402277203b",
+    "status_short": ""
+  },
+  "health": {
+    "json": {
+      "engine": "memibrium",
+      "status": "ok"
+    },
+    "status": 200
+  },
+  "host_hashes": {
+    "benchmark_scripts/locomo_bench_v2.py": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff",
+    "hybrid_retrieval.py": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07",
+    "server.py": "d0532ea7a4748031aaf4759bba46deb5d563381da109eb2cb1c953ba4e747a2c"
+  },
+  "instrumentation_result_contains_go": true,
+  "instrumentation_result_exists": true,
+  "log_flags": {
+    "contains_grok": false,
+    "contains_hybrid_retrieval_failed": false,
+    "contains_large_embedding": false,
+    "contains_type_vector_missing": false
+  },
+  "schema": "memibrium.locomo.telemetry_baseline_prelaunch.v1",
+  "source_probe": {
+    "cmd": [
+      "docker",
+      "exec",
+      "-i",
+      "memibrium-server",
+      "python3",
+      "-c",
+      "from pathlib import Path\nfor path in ['/app/server.py','/app/hybrid_retrieval.py','/app/benchmark_scripts/locomo_bench_v2.py']:\n    print(path, Path(path).read_text().__len__())\ntext=Path('/app/hybrid_retrieval.py').read_text()\nbench=Path('/app/benchmark_scripts/locomo_bench_v2.py').read_text()\nserver=Path('/app/server.py').read_text()\nprint('hardcoded_vector_cast_present=' + str('$1::vector' in text))\nprint('dynamic_vtype_cast_present=' + str('$1::{self.vtype}' in text))\nprint('hybrid_telemetry_schema_present=' + str('memibrium.hybrid_retrieval.telemetry.v1' in text))\nprint('server_include_telemetry_present=' + str('include_telemetry' in server))\nprint('bench_include_recall_telemetry_present=' + str('INCLUDE_RECALL_TELEMETRY' in bench))"
+    ],
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "/app/server.py 114290\n/app/hybrid_retrieval.py 34349\n/app/benchmark_scripts/locomo_bench_v2.py 57728\nhardcoded_vector_cast_present=False\ndynamic_vtype_cast_present=True\nhybrid_telemetry_schema_present=True\nserver_include_telemetry_present=True\nbench_include_recall_telemetry_present=True"
+  }
+}

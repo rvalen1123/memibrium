@@ -1,0 +1,8 @@
+{
+  "mode": "cleanup_placeholder_no_deletes",
+  "domain": "longmemeval-bridge-v1-20260508-second-slice",
+  "created_memory_count": 0,
+  "deleted_memory_count": 0,
+  "final_domain_count_verified": null,
+  "cleanup_status": "not_applicable_no_ingest_run"
+}

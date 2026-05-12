@@ -1,0 +1,640 @@
+{
+  "summaries": {
+    "query_expansion": {
+      "file": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_query_expansion_2026-04-24.json",
+      "n": 199,
+      "full_5cat": 68.09,
+      "protocol_4cat": 79.93,
+      "avg_query_ms": 8026,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "condition": null,
+      "cats": {
+        "5": {
+          "score": 29.79,
+          "n": 47,
+          "lat_ms": 7385
+        },
+        "multi-hop": {
+          "score": 50.0,
+          "n": 13,
+          "lat_ms": 7680
+        },
+        "single-hop": {
+          "score": 64.06,
+          "n": 32,
+          "lat_ms": 8211
+        },
+        "temporal": {
+          "score": 86.49,
+          "n": 37,
+          "lat_ms": 9164
+        },
+        "unanswerable": {
+          "score": 89.29,
+          "n": 70,
+          "lat_ms": 7834
+        }
+      }
+    },
+    "pure_lexical_rerank": {
+      "file": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_query_expansion_reranked_2026-04-26.json",
+      "n": 199,
+      "full_5cat": 59.3,
+      "protocol_4cat": 70.39,
+      "avg_query_ms": 3979,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "condition": {
+        "cleaned": true,
+        "normalize_dates": true,
+        "query_expansion": true,
+        "context_rerank": true
+      },
+      "cats": {
+        "5": {
+          "score": 23.4,
+          "n": 47,
+          "lat_ms": 4684
+        },
+        "multi-hop": {
+          "score": 34.62,
+          "n": 13,
+          "lat_ms": 3874
+        },
+        "single-hop": {
+          "score": 64.06,
+          "n": 32,
+          "lat_ms": 3775
+        },
+        "temporal": {
+          "score": 87.84,
+          "n": 37,
+          "lat_ms": 4244
+        },
+        "unanswerable": {
+          "score": 70.71,
+          "n": 70,
+          "lat_ms": 3478
+        }
+      }
+    },
+    "prefix_rerank": {
+      "file": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_conv26_query_expansion_prefix_rerank_2026-04-26.json",
+      "n": 199,
+      "full_5cat": 60.55,
+      "protocol_4cat": 72.37,
+      "avg_query_ms": 3810,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "condition": {
+        "cleaned": true,
+        "normalize_dates": true,
+        "query_expansion": true,
+        "context_rerank": true
+      },
+      "cats": {
+        "5": {
+          "score": 22.34,
+          "n": 47,
+          "lat_ms": 2700
+        },
+        "multi-hop": {
+          "score": 38.46,
+          "n": 13,
+          "lat_ms": 5023
+        },
+        "single-hop": {
+          "score": 64.06,
+          "n": 32,
+          "lat_ms": 2999
+        },
+        "temporal": {
+          "score": 86.49,
+          "n": 37,
+          "lat_ms": 7073
+        },
+        "unanswerable": {
+          "score": 75.0,
+          "n": 70,
+          "lat_ms": 2975
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "query_expansion_to_prefix": {
+      "from": "query_expansion",
+      "to": "prefix_rerank",
+      "common": 199,
+      "counts": {
+        "unchanged_correct": 93,
+        "harmed": 23,
+        "partial_changed": 17,
+        "unchanged_wrong": 35,
+        "rescued": 11,
+        "same_partial": 20
+      },
+      "cat_delta_pp": {
+        "5": -7.45,
+        "multi-hop": -11.54,
+        "single-hop": 0.0,
+        "temporal": 0.0,
+        "unanswerable": -14.29
+      },
+      "avg_latency_ms": {
+        "query_expansion": 8026,
+        "prefix_rerank": 3810
+      },
+      "idk_rates": {
+        "query_expansion": 13.57,
+        "prefix_rerank": 23.12
+      },
+      "examples": {
+        "rescued": [
+          {
+            "cat": "5",
+            "question": "What did Melanie find in her neighborhood during her walk?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "a rainbow sidewalk",
+            "pred_before": "Melanie did not mention finding anything in her neighborhood during a walk; it was Caroline who found a rainbow sidewalk for Pride Month during her walk.",
+            "pred_after": "Melanie found a cool rainbow sidewalk for Pride Month in her neighborhood during her walk."
+          },
+          {
+            "cat": "5",
+            "question": "What does Caroline say running has been great for?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "Her mental health",
+            "pred_before": "Caroline does not mention running; Melanie says running has been great for her headspace and mental health.",
+            "pred_after": "Caroline says running can really boost your mood."
+          },
+          {
+            "cat": "5",
+            "question": "Who is Caroline a fan of in terms of modern music?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "Ed Sheeran",
+            "pred_before": "Caroline is a fan of Sara Bareilles, specifically her song \"Brave.\"",
+            "pred_after": "Caroline is a fan of Ed Sheeran's \"Perfect\" in terms of modern music."
+          },
+          {
+            "cat": "single-hop",
+            "question": "What are Melanie's pets' names?",
+            "before": 0.5,
+            "after": 1.0,
+            "gt": "Oliver, Luna, Bailey",
+            "pred_before": "Melanie's pets' names are Luna and Oliver.",
+            "pred_after": "Melanie's pets' names are Luna, Oliver, and Bailey."
+          },
+          {
+            "cat": "single-hop",
+            "question": "What did Caroline research?",
+            "before": 0.5,
+            "after": 1.0,
+            "gt": "Adoption agencies",
+            "pred_before": "Caroline researched counseling, mental health careers, and adoption agencies.",
+            "pred_after": "Caroline researched adoption agencies."
+          }
+        ],
+        "harmed": [
+          {
+            "cat": "5",
+            "question": "How did Caroline feel about her family after the accident?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "They are important and mean the world to her",
+            "pred_before": "Caroline felt that family is everything and emphasized how important loved ones are, appreciating their strength and support after the accident.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "How did Caroline's children handle the accident?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "They were scared but resilient",
+            "pred_before": "Caroline's children were scared but were reassured and told their brother would be okay; they are described as tough kids.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "What does Caroline do to keep herself busy during her pottery break?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "Read a book and paint.",
+            "pred_before": "During her pottery break, Caroline keeps busy by painting and reading a book recommended by Melanie.",
+            "pred_after": "Caroline keeps herself busy during her pottery break by learning the piano."
+          },
+          {
+            "cat": "5",
+            "question": "Which classical musicians does Caroline enjoy listening to?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "Bach and Mozart",
+            "pred_before": "Caroline enjoys listening to classical musicians Bach and Mozart.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "multi-hop",
+            "question": "Would Caroline likely have Dr. Seuss books on her bookshelf?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "Yes, since she collects classic children's books",
+            "pred_before": "Yes, Caroline likely has Dr. Seuss books on her bookshelf as she mentioned having lots of kids' books including classics.",
+            "pred_after": "I don't know."
+          }
+        ],
+        "partial_changed": [
+          {
+            "cat": "5",
+            "question": "How did Caroline feel after the accident?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "Grateful and thankful for her family",
+            "pred_before": "Caroline felt sorry and concerned for Melanie and her family after the accident, recognizing it must have been traumatizing.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "What are Melanie's plans for the summer with respect to adoption?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "researching adoption agencies",
+            "pred_before": "Melanie is considering adoption and is starting to do research and prepare emotionally, but no specific summer plans related to adoption are mentioned.",
+            "pred_after": "Melanie does not have any stated plans related to adoption for the summer."
+          },
+          {
+            "cat": "5",
+            "question": "What did Caroline and her family see during their camping trip last year?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "Perseid meteor shower",
+            "pred_before": "Caroline did not mention a camping trip last year; Melanie recalled seeing the Perseid meteor shower during their 2022 camping trip.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "What did Caroline do after the road trip to relax?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "Went on a nature walk or hike",
+            "pred_before": "Caroline went hiking the week of 18 August 2023 and painted a sunset inspired by the beach visit to relax.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "What precautionary sign did Caroline see at the caf\u00e9?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "A sign stating that someone is not being able to leave",
+            "pred_before": "Caroline saw a serious precautionary sign at the caf\u00e9 the weekend of 09 September 2023, but no specific details about the sign were given.",
+            "pred_after": "Caroline saw a serious precautionary sign at the caf\u00e9 during the weekend of 09 September 2023."
+          }
+        ]
+      }
+    },
+    "pure_lexical_to_prefix": {
+      "from": "pure_lexical_rerank",
+      "to": "prefix_rerank",
+      "common": 199,
+      "counts": {
+        "unchanged_correct": 91,
+        "unchanged_wrong": 50,
+        "partial_changed": 15,
+        "rescued": 13,
+        "harmed": 10,
+        "same_partial": 20
+      },
+      "cat_delta_pp": {
+        "5": -1.06,
+        "multi-hop": 3.85,
+        "single-hop": 0.0,
+        "temporal": -1.35,
+        "unanswerable": 4.29
+      },
+      "avg_latency_ms": {
+        "pure_lexical_rerank": 3979,
+        "prefix_rerank": 3810
+      },
+      "idk_rates": {
+        "pure_lexical_rerank": 19.1,
+        "prefix_rerank": 23.12
+      },
+      "examples": {
+        "rescued": [
+          {
+            "cat": "5",
+            "question": "What did Melanie find in her neighborhood during her walk?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "a rainbow sidewalk",
+            "pred_before": "Melanie did not find anything in her neighborhood during her walk; it was Caroline who found a cool rainbow sidewalk for Pride Month during her walk.",
+            "pred_after": "Melanie found a cool rainbow sidewalk for Pride Month in her neighborhood during her walk."
+          },
+          {
+            "cat": "5",
+            "question": "What does Caroline say running has been great for?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "Her mental health",
+            "pred_before": "Caroline does not mention running; Melanie says running has been great for her headspace and mental health.",
+            "pred_after": "Caroline says running can really boost your mood."
+          },
+          {
+            "cat": "5",
+            "question": "What kind of place does Melanie want to create for people?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "a safe and inviting place for people to grow",
+            "pred_before": "I don't know.",
+            "pred_after": "Melanie wants to create a safe, inviting place for people to grow."
+          },
+          {
+            "cat": "5",
+            "question": "Who is Caroline a fan of in terms of modern music?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "Ed Sheeran",
+            "pred_before": "Caroline is a fan of Sara Bareilles, specifically her song \"Brave.\"",
+            "pred_after": "Caroline is a fan of Ed Sheeran's \"Perfect\" in terms of modern music."
+          },
+          {
+            "cat": "single-hop",
+            "question": "What items has Melanie bought?",
+            "before": 0.5,
+            "after": 1.0,
+            "gt": "Figurines, shoes",
+            "pred_before": "Melanie bought figurines on 21 October 2023 that remind her of family love.",
+            "pred_after": "Melanie bought figurines on 21 October 2023 and new running shoes (purple color)."
+          }
+        ],
+        "harmed": [
+          {
+            "cat": "5",
+            "question": "What is Melanie excited about in her adoption process?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "creating a family for kids who need one",
+            "pred_before": "Melanie is excited about creating a family for kids who need one and is up for the challenge of being a single parent.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "Which classical musicians does Caroline enjoy listening to?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "Bach and Mozart",
+            "pred_before": "Caroline enjoys listening to classical musicians Bach and Mozart.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "single-hop",
+            "question": "How many times has Melanie gone to the beach in 2023?",
+            "before": 1.0,
+            "after": 0.5,
+            "gt": 2,
+            "pred_before": "Melanie has gone to the beach at least twice in 2023.",
+            "pred_after": "Melanie went to the beach once in 2023."
+          },
+          {
+            "cat": "single-hop",
+            "question": "What musical artists/bands has Melanie seen?",
+            "before": 1.0,
+            "after": 0.5,
+            "gt": "Summer Sounds, Matt Patterson",
+            "pred_before": "Melanie has seen the band \"Summer Sounds\" and the artist Matt Patterson in concert.",
+            "pred_after": "Melanie has seen the band \"Summer Sounds.\""
+          },
+          {
+            "cat": "single-hop",
+            "question": "When did Melanie go on a hike after the roadtrip?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "19 October 2023",
+            "pred_before": "Melanie went on a hike after the road trip on 19 October 2023.",
+            "pred_after": "Melanie went on a hike during the camping trip the week of 20 June 2023."
+          }
+        ],
+        "partial_changed": [
+          {
+            "cat": "5",
+            "question": "What did Caroline and her family do while camping?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "explored nature, roasted marshmallows, and went on a hike",
+            "pred_before": "Caroline and her family roasted marshmallows, told stories around the campfire, enjoyed each other's company, explored nature, went on hikes, and watched the Perseid meteor shower.",
+            "pred_after": "Caroline did not mention camping activities for her family; however, Melanie's family enjoyed roasting marshmallows around the campfire, telling stories, hiking, and exploring nature during their camping trips."
+          },
+          {
+            "cat": "5",
+            "question": "What did Caroline do after the road trip to relax?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "Went on a nature walk or hike",
+            "pred_before": "Caroline went on a camping trip with her family to relax after the road trip.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "What inspired Caroline's sculpture for the art show?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "visiting an LGBTQ center and wanting to capture unity and strength",
+            "pred_before": "Caroline's sculpture for the art show was inspired by her own journey as a transgender woman and the idea of accepting growth and change.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "What precautionary sign did Caroline see at the caf\u00e9?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "A sign stating that someone is not being able to leave",
+            "pred_before": "The sign at the caf\u00e9 was serious and a precaution, but no specific details about the sign were given.",
+            "pred_after": "Caroline saw a serious precautionary sign at the caf\u00e9 during the weekend of 09 September 2023."
+          },
+          {
+            "cat": "5",
+            "question": "What was Caroline's reaction to her children enjoying the Grand Canyon?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "She was happy and thankful",
+            "pred_before": "Caroline responded positively, noting the kids looked cute and expressing that they likely bring lots of joy.",
+            "pred_after": "I don't know."
+          }
+        ]
+      }
+    },
+    "query_expansion_to_pure_lexical": {
+      "from": "query_expansion",
+      "to": "pure_lexical_rerank",
+      "common": 199,
+      "counts": {
+        "unchanged_correct": 91,
+        "harmed": 25,
+        "partial_changed": 13,
+        "unchanged_wrong": 36,
+        "same_partial": 24,
+        "rescued": 10
+      },
+      "cat_delta_pp": {
+        "5": -6.38,
+        "multi-hop": -15.38,
+        "single-hop": 0.0,
+        "temporal": 1.35,
+        "unanswerable": -18.57
+      },
+      "avg_latency_ms": {
+        "query_expansion": 8026,
+        "pure_lexical_rerank": 3979
+      },
+      "idk_rates": {
+        "query_expansion": 13.57,
+        "pure_lexical_rerank": 19.1
+      },
+      "examples": {
+        "rescued": [
+          {
+            "cat": "5",
+            "question": "What is Melanie excited about in her adoption process?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "creating a family for kids who need one",
+            "pred_before": "I don't know.",
+            "pred_after": "Melanie is excited about creating a family for kids who need one and is up for the challenge of being a single parent."
+          },
+          {
+            "cat": "single-hop",
+            "question": "How many times has Melanie gone to the beach in 2023?",
+            "before": 0.5,
+            "after": 1.0,
+            "gt": 2,
+            "pred_before": "Melanie went to the beach once in 2023.",
+            "pred_after": "Melanie has gone to the beach at least twice in 2023."
+          },
+          {
+            "cat": "single-hop",
+            "question": "What are Melanie's pets' names?",
+            "before": 0.5,
+            "after": 1.0,
+            "gt": "Oliver, Luna, Bailey",
+            "pred_before": "Melanie's pets' names are Luna and Oliver.",
+            "pred_after": "Melanie's pets' names are Luna, Oliver, and Bailey."
+          },
+          {
+            "cat": "single-hop",
+            "question": "What did Caroline research?",
+            "before": 0.5,
+            "after": 1.0,
+            "gt": "Adoption agencies",
+            "pred_before": "Caroline researched counseling, mental health careers, and adoption agencies.",
+            "pred_after": "Caroline researched adoption agencies."
+          },
+          {
+            "cat": "single-hop",
+            "question": "When did Melanie go on a hike after the roadtrip?",
+            "before": 0.0,
+            "after": 1.0,
+            "gt": "19 October 2023",
+            "pred_before": "Melanie went on a hike during the family camping trip the week of 20 June 2023, before the road trip mentioned in October.",
+            "pred_after": "Melanie went on a hike after the road trip on 19 October 2023."
+          }
+        ],
+        "harmed": [
+          {
+            "cat": "5",
+            "question": "How did Caroline feel about her family after the accident?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "They are important and mean the world to her",
+            "pred_before": "Caroline felt that family is everything and emphasized how important loved ones are, appreciating their strength and support after the accident.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "How did Caroline's children handle the accident?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "They were scared but resilient",
+            "pred_before": "Caroline's children were scared but were reassured and told their brother would be okay; they are described as tough kids.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "What does Caroline do to keep herself busy during her pottery break?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "Read a book and paint.",
+            "pred_before": "During her pottery break, Caroline keeps busy by painting and reading a book recommended by Melanie.",
+            "pred_after": "Caroline keeps herself busy during her pottery break by learning to play the piano."
+          },
+          {
+            "cat": "5",
+            "question": "What kind of place does Melanie want to create for people?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "a safe and inviting place for people to grow",
+            "pred_before": "Melanie wants to create a safe space for people to grow.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "multi-hop",
+            "question": "Would Caroline likely have Dr. Seuss books on her bookshelf?",
+            "before": 1.0,
+            "after": 0.0,
+            "gt": "Yes, since she collects classic children's books",
+            "pred_before": "Yes, Caroline likely has Dr. Seuss books on her bookshelf as she mentioned having lots of kids' books including classics.",
+            "pred_after": "I don't know."
+          }
+        ],
+        "partial_changed": [
+          {
+            "cat": "5",
+            "question": "How did Caroline feel after the accident?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "Grateful and thankful for her family",
+            "pred_before": "Caroline felt sorry and concerned for Melanie and her family after the accident, recognizing it must have been traumatizing.",
+            "pred_after": "Caroline felt sorry and empathetic about the accident, recognizing it must have been traumatizing for Melanie's family."
+          },
+          {
+            "cat": "5",
+            "question": "What are Melanie's plans for the summer with respect to adoption?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "researching adoption agencies",
+            "pred_before": "Melanie is considering adoption and is starting to do research and prepare emotionally, but no specific summer plans related to adoption are mentioned.",
+            "pred_after": "Melanie does not have any plans related to adoption for the summer mentioned in the context."
+          },
+          {
+            "cat": "5",
+            "question": "What did Caroline and her family do while camping?",
+            "before": 0.0,
+            "after": 0.5,
+            "gt": "explored nature, roasted marshmallows, and went on a hike",
+            "pred_before": "I don't know.",
+            "pred_after": "Caroline and her family roasted marshmallows, told stories around the campfire, enjoyed each other's company, explored nature, went on hikes, and watched the Perseid meteor shower."
+          },
+          {
+            "cat": "5",
+            "question": "What did Caroline and her family see during their camping trip last year?",
+            "before": 0.5,
+            "after": 0.0,
+            "gt": "Perseid meteor shower",
+            "pred_before": "Caroline did not mention a camping trip last year; Melanie recalled seeing the Perseid meteor shower during their 2022 camping trip.",
+            "pred_after": "I don't know."
+          },
+          {
+            "cat": "5",
+            "question": "What inspired Caroline's sculpture for the art show?",
+            "before": 0.0,
+            "after": 0.5,
+            "gt": "visiting an LGBTQ center and wanting to capture unity and strength",
+            "pred_before": "I don't know.",
+            "pred_after": "Caroline's sculpture for the art show was inspired by her own journey as a transgender woman and the idea of accepting growth and change."
+          }
+        ]
+      }
+    }
+  }
+}

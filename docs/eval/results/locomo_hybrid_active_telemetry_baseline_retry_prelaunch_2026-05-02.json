@@ -1,0 +1,102 @@
+{
+  "all_prelaunch_gates_pass": true,
+  "benchmark_launch_env_effective_nonsecret": {
+    "cmd": "set -a\n. ./.env\nset +a\nexport AZURE_CHAT_ENDPOINT=\"https://sector-7.services.ai.azure.com/models\"\nexport AZURE_CHAT_DEPLOYMENT=\"gpt-4.1-mini\"\nexport ANSWER_MODEL=\"gpt-4.1-mini\"\nexport JUDGE_MODEL=\"gpt-4.1-mini\"\nexport CHAT_MODEL=\"gpt-4.1-mini\"\nexport AZURE_EMBEDDING_ENDPOINT=\"https://sector-7.openai.azure.com/\"\nexport AZURE_EMBEDDING_DEPLOYMENT=\"text-embedding-3-small\"\nexport INCLUDE_RECALL_TELEMETRY=1\nexport USE_QUERY_EXPANSION=1\npython3 - <<'PY'\nimport os\nfor k in ['AZURE_CHAT_ENDPOINT','AZURE_CHAT_DEPLOYMENT','ANSWER_MODEL','JUDGE_MODEL','CHAT_MODEL','AZURE_EMBEDDING_ENDPOINT','AZURE_EMBEDDING_DEPLOYMENT','INCLUDE_RECALL_TELEMETRY','USE_QUERY_EXPANSION','USE_CONTEXT_RERANK','USE_APPEND_CONTEXT_EXPANSION','USE_GATED_APPEND_CONTEXT_EXPANSION','USE_LEGACY_CONTEXT_ASSEMBLY']:\n    print(f'{k}={os.environ.get(k, \"\") }')\nPY",
+    "exit_code": 0,
+    "output": "AZURE_CHAT_ENDPOINT=https://sector-7.services.ai.azure.com/models\nAZURE_CHAT_DEPLOYMENT=gpt-4.1-mini\nANSWER_MODEL=gpt-4.1-mini\nJUDGE_MODEL=gpt-4.1-mini\nCHAT_MODEL=gpt-4.1-mini\nAZURE_EMBEDDING_ENDPOINT=https://sector-7.openai.azure.com/\nAZURE_EMBEDDING_DEPLOYMENT=text-embedding-3-small\nINCLUDE_RECALL_TELEMETRY=1\nUSE_QUERY_EXPANSION=1\nUSE_CONTEXT_RERANK=\nUSE_APPEND_CONTEXT_EXPANSION=\nUSE_GATED_APPEND_CONTEXT_EXPANSION=\nUSE_LEGACY_CONTEXT_ASSEMBLY="
+  },
+  "container_env_redacted": {
+    "cmd": "docker exec memibrium-server env | sort | grep -E '^(USE_RUVECTOR|AZURE_|OPENAI_|EMBEDDING_|CHAT_MODEL|RUVECTOR_|SLM_MODEL)=' | sed -E 's/(KEY|TOKEN|PASSWORD|SECRET)=.*/\\1=[REDACTED]/; s/(API_KEY=).*/\\1[REDACTED]/'",
+    "exit_code": 0,
+    "output": "CHAT_MODEL=gemma4:e4b\nSLM_MODEL=phi3:mini\nUSE_RUVECTOR=true"
+  },
+  "date_utc": "2026-05-02T12:40:30.859660+00:00",
+  "date_utc_refreshed": "2026-05-02T12:41:26.167573+00:00",
+  "db_probe": {
+    "cmd": "docker exec memibrium-ruvector-db psql -U memory -d memory -tA -F '|' -c \"SELECT 'locomo_count', count(id) FROM memories WHERE domain LIKE 'locomo-%' UNION ALL SELECT 'ruvector_type_count', count(*) FROM pg_type WHERE typname='ruvector' UNION ALL SELECT 'vector_type_count', count(*) FROM pg_type WHERE typname='vector' UNION ALL SELECT 'embedding_type', count(*) FROM information_schema.columns WHERE table_name='memories' AND column_name='embedding' AND udt_name='ruvector';\"",
+    "exit_code": 0,
+    "output": "locomo_count|0\nruvector_type_count|1\nvector_type_count|0\nembedding_type|1"
+  },
+  "docker_ps": {
+    "cmd": "docker ps --format '{{.Names}}|{{.Status}}|{{.Image}}' | grep -E 'memibrium|ruvector|ollama' || true",
+    "exit_code": 0,
+    "output": "memibrium-server|Up 10 minutes (healthy)|memibrium-memibrium\nmemibrium-ollama|Up 2 days|ollama/ollama:latest\nmemibrium-ruvector-db|Up 2 days (healthy)|ruvnet/ruvector-postgres:latest"
+  },
+  "fresh_log_flags": {
+    "contains_decimal_not_json_serializable": false,
+    "contains_hybrid_retrieval_failed": false,
+    "contains_type_error": false,
+    "contains_type_vector_missing": false
+  },
+  "fresh_logs_tail": {
+    "cmd": "docker logs --since 5m memibrium-server 2>&1 | tail -200",
+    "exit_code": 0,
+    "output": "INFO:     127.0.0.1:46346 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:39548 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:58606 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60556 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:40316 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:59956 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:54108 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60702 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:46638 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:60842 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:49540 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:37152 - \"GET /health HTTP/1.1\" 200 OK"
+  },
+  "git": {
+    "cmd": "printf 'branch='; git branch --show-current; printf 'head='; git rev-parse HEAD; printf 'status=<<<'; git status --short; printf '>>>'",
+    "exit_code": 0,
+    "output": "branch=query-expansion\nhead=6294164e57c1ad29c035739da77cf0f6c27670a7\nstatus=<<<>>>"
+  },
+  "health": {
+    "cmd": "curl -fsS http://localhost:9999/health",
+    "exit_code": 0,
+    "output": "{\"status\":\"ok\",\"engine\":\"memibrium\"}"
+  },
+  "host_embedding_deployment_dimension_probe": {
+    "cmd": "set -a\n. ./.env\nset +a\npython3 - <<'PY'\nimport os, httpx, json\nendpoint=(os.environ.get('AZURE_EMBEDDING_ENDPOINT') or '').rstrip('/')\ndeployment=os.environ.get('AZURE_EMBEDDING_DEPLOYMENT') or os.environ.get('AZURE_EMBEDDING_MODEL')\nkey=os.environ.get('AZURE_EMBEDDING_API_KEY') or os.environ.get('AZURE_OPENAI_API_KEY') or os.environ.get('OPENAI_API_KEY')\napi_version=os.environ.get('AZURE_API_VERSION') or '2024-06-01'\nprint('deployment=' + str(deployment))\nif endpoint and deployment and key:\n    url=f\"{endpoint}/openai/deployments/{deployment}/embeddings?api-version={api_version}\"\n    r=httpx.post(url, headers={'api-key':key, 'Content-Type':'application/json'}, json={'input':'locomo substrate dimension probe'}, timeout=30)\n    print('status=' + str(r.status_code))\n    if r.status_code == 200:\n        data=r.json(); emb=data['data'][0]['embedding']; print('dimension=' + str(len(emb)))\n    else:\n        print('response=' + r.text[:500])\nelse:\n    print('missing_required_embedding_env')\nPY",
+    "exit_code": 0,
+    "output": "deployment=text-embedding-3-small\nstatus=200\ndimension=1536"
+  },
+  "host_env_effective_redacted_nonsecret_after_sourcing_env": {
+    "cmd": "set -a\n. ./.env\nset +a\npython3 - <<'PY'\nimport os\nkeys=['USE_RUVECTOR','AZURE_EMBEDDING_DEPLOYMENT','AZURE_EMBEDDING_ENDPOINT','AZURE_CHAT_DEPLOYMENT','AZURE_CHAT_ENDPOINT','AZURE_OPENAI_DEPLOYMENT','AZURE_OPENAI_ENDPOINT','CHAT_MODEL','EMBEDDING_MODEL','EMBEDDING_BASE_URL']\nfor k in keys:\n    v=os.environ.get(k,'')\n    print(f'{k}={v}')\nPY",
+    "exit_code": 0,
+    "output": "USE_RUVECTOR=true\nAZURE_EMBEDDING_DEPLOYMENT=text-embedding-3-small\nAZURE_EMBEDDING_ENDPOINT=https://sector-7.openai.azure.com/\nAZURE_CHAT_DEPLOYMENT=gpt-4.1-mini\nAZURE_CHAT_ENDPOINT=https://sector-7.services.ai.azure.com\nAZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini\nAZURE_OPENAI_ENDPOINT=https://sector-7.openai.azure.com/\nCHAT_MODEL=gpt-4.1-mini\nEMBEDDING_MODEL=nomic-embed-text\nEMBEDDING_BASE_URL=http://ollama:11434/v1"
+  },
+  "locomo_count": {
+    "cmd": "docker exec memibrium-ruvector-db psql -U memory -d memory -tA -c \"SELECT count(id) FROM memories WHERE domain LIKE 'locomo-%';\"",
+    "exit_code": 0,
+    "output": "0"
+  },
+  "prelaunch_gates": {
+    "canonical_substrate_quick_reconfirmed": true,
+    "fresh_logs_no_blocking_errors": true,
+    "git_clean": true,
+    "health_ok": true,
+    "host_container_source_hashes_match": true,
+    "instrumentation_result_exists": true,
+    "locomo_count_zero": true,
+    "no_forbidden_launch_models": true,
+    "telemetry_request_path_present": true
+  },
+  "server_inspect": {
+    "cmd": "docker inspect memibrium-server --format 'server_image={{.Image}} created={{.Created}} started={{.State.StartedAt}}'",
+    "exit_code": 0,
+    "output": "server_image=sha256:76fed12e0da1324ab1e26e927fa3fa1a3aa6e7b340d5f7ab6e481da3e0afe9b6 created=2026-05-02T12:30:16.960478122Z started=2026-05-02T12:30:18.612989007Z"
+  },
+  "source_feature_probe": {
+    "cmd": "docker exec memibrium-server python3 -c \"from pathlib import Path; text=Path('/app/hybrid_retrieval.py').read_text(); server=Path('/app/server.py').read_text(); bench=Path('/app/benchmark_scripts/locomo_bench_v2.py').read_text(); print('hardcoded_vector_cast_present=' + str('\\$1::vector' in text)); print('dynamic_vtype_cast_present=' + str('\\$1::{self.vtype}' in text)); print('decimal_import_present=' + str('from decimal import Decimal' in server)); print('server_include_telemetry_present=' + str('include_telemetry' in server)); print('bench_include_recall_telemetry_present=' + str('INCLUDE_RECALL_TELEMETRY' in bench));\"",
+    "exit_code": 0,
+    "output": "hardcoded_vector_cast_present=False\ndynamic_vtype_cast_present=True\ndecimal_import_present=True\nserver_include_telemetry_present=True\nbench_include_recall_telemetry_present=True"
+  },
+  "source_hashes": [
+    {
+      "container_exit_code": 0,
+      "container_sha256_output": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a  /app/server.py",
+      "file": "server.py",
+      "host_sha256": "150b161bd9bef5c021fd7f1b32472623b3cc03baac6d13ff42edd501ae3f6f1a"
+    },
+    {
+      "container_exit_code": 0,
+      "container_sha256_output": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07  /app/hybrid_retrieval.py",
+      "file": "hybrid_retrieval.py",
+      "host_sha256": "2ba660f547432c7fa5ae88955ee97024f5c39848790060358c82dcf0a8259c07"
+    },
+    {
+      "container_exit_code": 0,
+      "container_sha256_output": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff  /app/benchmark_scripts/locomo_bench_v2.py",
+      "file": "benchmark_scripts/locomo_bench_v2.py",
+      "host_sha256": "32dd68d0a0bad7322e8eea67bea90628d0cf42415769802f9e48a4528f3454ff"
+    }
+  ]
+}

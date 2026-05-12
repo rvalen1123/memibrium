@@ -1,0 +1,610 @@
+{
+  "blocked_error": null,
+  "completed_pairs": 8,
+  "ended_utc": "2026-05-02T16:43:21.537492+00:00",
+  "endpoint": "http://localhost:9999/mcp/recall",
+  "execution_order": "interleaved_by_query_off_then_on_no_randomization",
+  "pairs": [
+    {
+      "calls": {
+        "off": {
+          "body": "[]",
+          "body_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "condition": "off",
+          "headers": {
+            "Connection": "close",
+            "content-length": "2",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:14 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 1302.0883880089968,
+          "pair_index": 1,
+          "query": "project telemetry serialization behavior",
+          "request_payload": {
+            "query": "project telemetry serialization behavior",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": false,
+          "telemetry_server": null,
+          "timestamp_utc": "2026-05-02T16:43:14.796282+00:00",
+          "top_level_shape": "list",
+          "valid_json": true
+        },
+        "on": {
+          "body": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"project telemetry serialization behavior\",\"requested_top_k\":10,\"fetch_k\":20,\"state_filter\":null,\"domain\":null,\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"project\",\"telemetry\",\"serialization\",\"behavior\"],\"tsquery\":\"project | telemetry | serialization | behavior\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}",
+          "body_sha256": "273c5be924c17986aea1531c485f3c39afc0357eaa9b002a98e08f71739d00bf",
+          "condition": "on",
+          "headers": {
+            "Connection": "close",
+            "content-length": "1338",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:15 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 23.686569009441882,
+          "pair_index": 1,
+          "query": "project telemetry serialization behavior",
+          "request_payload": {
+            "include_telemetry": true,
+            "query": "project telemetry serialization behavior",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": true,
+          "telemetry_server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "timestamp_utc": "2026-05-02T16:43:16.270144+00:00",
+          "top_level_shape": "object",
+          "valid_json": true
+        }
+      },
+      "pair_index": 1,
+      "query": "project telemetry serialization behavior"
+    },
+    {
+      "calls": {
+        "off": {
+          "body": "[]",
+          "body_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "condition": "off",
+          "headers": {
+            "Connection": "close",
+            "content-length": "2",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:16 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 223.2634279935155,
+          "pair_index": 2,
+          "query": "Azure embedding deployment configuration",
+          "request_payload": {
+            "query": "Azure embedding deployment configuration",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": false,
+          "telemetry_server": null,
+          "timestamp_utc": "2026-05-02T16:43:16.539348+00:00",
+          "top_level_shape": "list",
+          "valid_json": true
+        },
+        "on": {
+          "body": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"Azure embedding deployment configuration\",\"requested_top_k\":10,\"fetch_k\":20,\"state_filter\":null,\"domain\":null,\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"azure\",\"embedding\",\"deployment\",\"configuration\"],\"tsquery\":\"azure | embedding | deployment | configuration\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}",
+          "body_sha256": "d7c18ec81dbfbc1bb54eb47e2ba25f29b7f105f7be70e21aa3b3d7ea70f2b97a",
+          "condition": "on",
+          "headers": {
+            "Connection": "close",
+            "content-length": "1338",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:16 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 21.63394700619392,
+          "pair_index": 2,
+          "query": "Azure embedding deployment configuration",
+          "request_payload": {
+            "include_telemetry": true,
+            "query": "Azure embedding deployment configuration",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": true,
+          "telemetry_server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "timestamp_utc": "2026-05-02T16:43:17.010444+00:00",
+          "top_level_shape": "object",
+          "valid_json": true
+        }
+      },
+      "pair_index": 2,
+      "query": "Azure embedding deployment configuration"
+    },
+    {
+      "calls": {
+        "off": {
+          "body": "[]",
+          "body_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "condition": "off",
+          "headers": {
+            "Connection": "close",
+            "content-length": "2",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:16 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 224.32733501773328,
+          "pair_index": 3,
+          "query": "Docker ruvector database health checks",
+          "request_payload": {
+            "query": "Docker ruvector database health checks",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": false,
+          "telemetry_server": null,
+          "timestamp_utc": "2026-05-02T16:43:17.294681+00:00",
+          "top_level_shape": "list",
+          "valid_json": true
+        },
+        "on": {
+          "body": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"Docker ruvector database health checks\",\"requested_top_k\":10,\"fetch_k\":20,\"state_filter\":null,\"domain\":null,\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"docker\",\"ruvector\",\"database\",\"health\",\"checks\"],\"tsquery\":\"docker | ruvector | database | health | checks\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}",
+          "body_sha256": "de56c713c6c243e105d9a3952059e5cbde62f09b6f9f808d3f75571541307bff",
+          "condition": "on",
+          "headers": {
+            "Connection": "close",
+            "content-length": "1336",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:17 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 22.061568015487865,
+          "pair_index": 3,
+          "query": "Docker ruvector database health checks",
+          "request_payload": {
+            "include_telemetry": true,
+            "query": "Docker ruvector database health checks",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": true,
+          "telemetry_server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "timestamp_utc": "2026-05-02T16:43:17.761342+00:00",
+          "top_level_shape": "object",
+          "valid_json": true
+        }
+      },
+      "pair_index": 3,
+      "query": "Docker ruvector database health checks"
+    },
+    {
+      "calls": {
+        "off": {
+          "body": "[]",
+          "body_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "condition": "off",
+          "headers": {
+            "Connection": "close",
+            "content-length": "2",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:17 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 186.52831198414788,
+          "pair_index": 4,
+          "query": "Memibrium query expansion context assembly",
+          "request_payload": {
+            "query": "Memibrium query expansion context assembly",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": false,
+          "telemetry_server": null,
+          "timestamp_utc": "2026-05-02T16:43:18.032234+00:00",
+          "top_level_shape": "list",
+          "valid_json": true
+        },
+        "on": {
+          "body": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"Memibrium query expansion context assembly\",\"requested_top_k\":10,\"fetch_k\":20,\"state_filter\":null,\"domain\":null,\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"memibrium\",\"query\",\"expansion\",\"context\",\"assembly\"],\"tsquery\":\"memibrium | query | expansion | context | assembly\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}",
+          "body_sha256": "fff5bf1214c0c57fcdbe15fa04939ba3be0329e2e6fec2d556ddbe871e1ec8d0",
+          "condition": "on",
+          "headers": {
+            "Connection": "close",
+            "content-length": "1348",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:17 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 22.162884008139372,
+          "pair_index": 4,
+          "query": "Memibrium query expansion context assembly",
+          "request_payload": {
+            "include_telemetry": true,
+            "query": "Memibrium query expansion context assembly",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": true,
+          "telemetry_server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "timestamp_utc": "2026-05-02T16:43:18.498724+00:00",
+          "top_level_shape": "object",
+          "valid_json": true
+        }
+      },
+      "pair_index": 4,
+      "query": "Memibrium query expansion context assembly"
+    },
+    {
+      "calls": {
+        "off": {
+          "body": "[]",
+          "body_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "condition": "off",
+          "headers": {
+            "Connection": "close",
+            "content-length": "2",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:18 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 238.07976598618552,
+          "pair_index": 5,
+          "query": "recent memory benchmark cleanup procedure",
+          "request_payload": {
+            "query": "recent memory benchmark cleanup procedure",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": false,
+          "telemetry_server": null,
+          "timestamp_utc": "2026-05-02T16:43:18.767576+00:00",
+          "top_level_shape": "list",
+          "valid_json": true
+        },
+        "on": {
+          "body": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"recent memory benchmark cleanup procedure\",\"requested_top_k\":10,\"fetch_k\":20,\"state_filter\":null,\"domain\":null,\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"recent\",\"memory\",\"benchmark\",\"cleanup\",\"procedure\"],\"tsquery\":\"recent | memory | benchmark | cleanup | procedure\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}",
+          "body_sha256": "bba8896dffcdf1f22fdb6eba07b111a1dc68a57630a174e0497d724d16befcff",
+          "condition": "on",
+          "headers": {
+            "Connection": "close",
+            "content-length": "1345",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:18 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 23.991613008547574,
+          "pair_index": 5,
+          "query": "recent memory benchmark cleanup procedure",
+          "request_payload": {
+            "include_telemetry": true,
+            "query": "recent memory benchmark cleanup procedure",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": true,
+          "telemetry_server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "timestamp_utc": "2026-05-02T16:43:19.253483+00:00",
+          "top_level_shape": "object",
+          "valid_json": true
+        }
+      },
+      "pair_index": 5,
+      "query": "recent memory benchmark cleanup procedure"
+    },
+    {
+      "calls": {
+        "off": {
+          "body": "[]",
+          "body_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "condition": "off",
+          "headers": {
+            "Connection": "close",
+            "content-length": "2",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:18 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 198.3133329777047,
+          "pair_index": 6,
+          "query": "When was the telemetry serialization fix recorded?",
+          "request_payload": {
+            "query": "When was the telemetry serialization fix recorded?",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": false,
+          "telemetry_server": null,
+          "timestamp_utc": "2026-05-02T16:43:19.527008+00:00",
+          "top_level_shape": "list",
+          "valid_json": true
+        },
+        "on": {
+          "body": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"When was the telemetry serialization fix recorded?\",\"requested_top_k\":10,\"fetch_k\":20,\"state_filter\":null,\"domain\":null,\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"when\",\"was\",\"the\",\"telemetry\",\"serialization\",\"fix\",\"recorded\"],\"tsquery\":\"when | was | the | telemetry | serialization | fix | recorded\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}",
+          "body_sha256": "28b7124c0ebc63bde890f46f080bac16f99f427d80d93f7eb79abc8c2a31c283",
+          "condition": "on",
+          "headers": {
+            "Connection": "close",
+            "content-length": "1378",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:19 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 23.297811014344916,
+          "pair_index": 6,
+          "query": "When was the telemetry serialization fix recorded?",
+          "request_payload": {
+            "include_telemetry": true,
+            "query": "When was the telemetry serialization fix recorded?",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": true,
+          "telemetry_server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "timestamp_utc": "2026-05-02T16:43:19.995105+00:00",
+          "top_level_shape": "object",
+          "valid_json": true
+        }
+      },
+      "pair_index": 6,
+      "query": "When was the telemetry serialization fix recorded?"
+    },
+    {
+      "calls": {
+        "off": {
+          "body": "[]",
+          "body_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "condition": "off",
+          "headers": {
+            "Connection": "close",
+            "content-length": "2",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:19 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 151.14796900888905,
+          "pair_index": 7,
+          "query": "How do recall telemetry responses preserve legacy result shape?",
+          "request_payload": {
+            "query": "How do recall telemetry responses preserve legacy result shape?",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": false,
+          "telemetry_server": null,
+          "timestamp_utc": "2026-05-02T16:43:20.264606+00:00",
+          "top_level_shape": "list",
+          "valid_json": true
+        },
+        "on": {
+          "body": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"How do recall telemetry responses preserve legacy result shape?\",\"requested_top_k\":10,\"fetch_k\":20,\"state_filter\":null,\"domain\":null,\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"how\",\"recall\",\"telemetry\",\"responses\",\"preserve\",\"legacy\",\"result\",\"shape\"],\"tsquery\":\"how | recall | telemetry | responses | preserve | legacy | result | shape\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}",
+          "body_sha256": "00e0285b3b92a6f6c4feffa758090ed2bca0e420d97e9b233c4be9a5785cb8d8",
+          "condition": "on",
+          "headers": {
+            "Connection": "close",
+            "content-length": "1415",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:19 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 20.89110598899424,
+          "pair_index": 7,
+          "query": "How do recall telemetry responses preserve legacy result shape?",
+          "request_payload": {
+            "include_telemetry": true,
+            "query": "How do recall telemetry responses preserve legacy result shape?",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": true,
+          "telemetry_server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "timestamp_utc": "2026-05-02T16:43:20.529508+00:00",
+          "top_level_shape": "object",
+          "valid_json": true
+        }
+      },
+      "pair_index": 7,
+      "query": "How do recall telemetry responses preserve legacy result shape?"
+    },
+    {
+      "calls": {
+        "off": {
+          "body": "[]",
+          "body_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "condition": "off",
+          "headers": {
+            "Connection": "close",
+            "content-length": "2",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:20 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 260.81824899301864,
+          "pair_index": 8,
+          "query": "nonexistent control query zyxwvu qptrace sentinel",
+          "request_payload": {
+            "query": "nonexistent control query zyxwvu qptrace sentinel",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": false,
+          "telemetry_server": null,
+          "timestamp_utc": "2026-05-02T16:43:20.792800+00:00",
+          "top_level_shape": "list",
+          "valid_json": true
+        },
+        "on": {
+          "body": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"nonexistent control query zyxwvu qptrace sentinel\",\"requested_top_k\":10,\"fetch_k\":20,\"state_filter\":null,\"domain\":null,\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"bm25_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null},\"path\":\"ilike_fallback\",\"words\":[\"nonexistent\",\"control\",\"query\",\"zyxwvu\",\"qptrace\",\"sentinel\"],\"tsquery\":\"nonexistent | control | query | zyxwvu | qptrace | sentinel\",\"tsvector_error\":null},\"temporal\":{\"requested_top_k\":20,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"temporal_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}}},\"temporal\":{\"executed\":false,\"window_start\":null,\"window_end\":null},\"fusion\":{\"streams_count\":2,\"fused_count_before_cap\":0,\"items_before_cap\":[]},\"multihop\":{\"executed\":false,\"expanded_count\":null},\"chronology_sort\":{\"executed\":false},\"final\":{\"returned_count\":0,\"items\":[],\"cutoff_items\":[]},\"errors\":{},\"server\":{\"hybrid_retriever_present\":true,\"hybrid_path_attempted\":true,\"legacy_fallback_executed\":false,\"embedding_success\":true,\"embedding_error\":null,\"response_result_count\":0}}}",
+          "body_sha256": "14c7688b648bb14bae63ade8e953d73e843498c0a6441edd73205eb915b2460a",
+          "condition": "on",
+          "headers": {
+            "Connection": "close",
+            "content-length": "1373",
+            "content-type": "application/json",
+            "date": "Sat, 02 May 2026 16:43:20 GMT",
+            "server": "uvicorn"
+          },
+          "latency_ms": 21.31709599052556,
+          "pair_index": 8,
+          "query": "nonexistent control query zyxwvu qptrace sentinel",
+          "request_payload": {
+            "include_telemetry": true,
+            "query": "nonexistent control query zyxwvu qptrace sentinel",
+            "top_k": 10
+          },
+          "result_content_hashes": [],
+          "result_count": 0,
+          "result_ids": [],
+          "result_scores": [],
+          "status": 200,
+          "telemetry_present": true,
+          "telemetry_server": {
+            "embedding_error": null,
+            "embedding_success": true,
+            "hybrid_path_attempted": true,
+            "hybrid_retriever_present": true,
+            "legacy_fallback_executed": false,
+            "response_result_count": 0
+          },
+          "timestamp_utc": "2026-05-02T16:43:21.268090+00:00",
+          "top_level_shape": "object",
+          "valid_json": true
+        }
+      },
+      "pair_index": 8,
+      "query": "nonexistent control query zyxwvu qptrace sentinel"
+    }
+  ],
+  "planned_calls": 16,
+  "planned_pairs": 8,
+  "planned_queries": [
+    "project telemetry serialization behavior",
+    "Azure embedding deployment configuration",
+    "Docker ruvector database health checks",
+    "Memibrium query expansion context assembly",
+    "recent memory benchmark cleanup procedure",
+    "When was the telemetry serialization fix recorded?",
+    "How do recall telemetry responses preserve legacy result shape?",
+    "nonexistent control query zyxwvu qptrace sentinel"
+  ],
+  "schema": "memibrium.locomo.paired_telemetry_flag_probe_pairs.v1",
+  "server_log_path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_paired_telemetry_flag_probe_server_log_2026-05-02.log",
+  "server_log_scan": {
+    "Decimal is not JSON serializable": false,
+    "ERROR": false,
+    "Hybrid retrieval failed": false,
+    "Internal Server Error": false,
+    "Traceback": false,
+    "TypeError": false,
+    "type \"vector\" does not exist": false
+  },
+  "started_utc": "2026-05-02T16:43:14.796265+00:00",
+  "step": "5h"
+}

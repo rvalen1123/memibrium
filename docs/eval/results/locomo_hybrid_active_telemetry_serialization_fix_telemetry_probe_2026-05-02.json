@@ -1,0 +1,114 @@
+{
+  "log_excerpt": "INFO:     172.21.0.1:34192 - \"POST /mcp/recall HTTP/1.1\" 200 OK\nINFO:     172.21.0.1:34194 - \"POST /mcp/recall HTTP/1.1\" 200 OK\n2026-05-02 12:31:21,651 [INFO] HTTP Request: POST https://sector-7.openai.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-06-01 \"HTTP/1.1 200 OK\"",
+  "log_flags": {
+    "contains_decimal_not_json_serializable": false,
+    "contains_hybrid_retrieval_failed": false,
+    "contains_type_error": false,
+    "contains_type_vector_missing": false
+  },
+  "plain_response": {
+    "json": [],
+    "ok": true,
+    "status": 200,
+    "text_excerpt": "[]"
+  },
+  "result_shape_match": true,
+  "started_at": "2026-05-02T12:31:21.503390+00:00",
+  "telemetry_response": {
+    "json": {
+      "results": [],
+      "telemetry": {
+        "chronology_sort": {
+          "executed": false
+        },
+        "domain": "__hybrid_telemetry_probe_no_rows__",
+        "errors": {},
+        "fetch_k": 6,
+        "final": {
+          "cutoff_items": [],
+          "items": [],
+          "returned_count": 0
+        },
+        "fusion": {
+          "fused_count_before_cap": 0,
+          "items_before_cap": [],
+          "streams_count": 2
+        },
+        "multihop": {
+          "executed": false,
+          "expanded_count": null
+        },
+        "query": "hybrid telemetry ruvector smoke probe",
+        "requested_top_k": 3,
+        "rerank_requested": false,
+        "schema": "memibrium.hybrid_retrieval.telemetry.v1",
+        "server": {
+          "embedding_error": null,
+          "embedding_success": true,
+          "hybrid_path_attempted": true,
+          "hybrid_retriever_present": true,
+          "legacy_fallback_executed": false,
+          "response_result_count": 0
+        },
+        "state_filter": null,
+        "streams": {
+          "lexical": {
+            "items": [],
+            "path": "ilike_fallback",
+            "requested_top_k": 6,
+            "returned_count": 0,
+            "score_summary": {
+              "count": 0,
+              "key": "bm25_score",
+              "max": null,
+              "mean": null,
+              "min": null
+            },
+            "tsquery": "hybrid | telemetry | ruvector | smoke | probe",
+            "tsvector_error": null,
+            "words": [
+              "hybrid",
+              "telemetry",
+              "ruvector",
+              "smoke",
+              "probe"
+            ]
+          },
+          "semantic": {
+            "items": [],
+            "requested_top_k": 6,
+            "returned_count": 0,
+            "score_summary": {
+              "count": 0,
+              "key": "cosine_score",
+              "max": null,
+              "mean": null,
+              "min": null
+            }
+          },
+          "temporal": {
+            "items": [],
+            "requested_top_k": 6,
+            "returned_count": 0,
+            "score_summary": {
+              "count": 0,
+              "key": "temporal_score",
+              "max": null,
+              "mean": null,
+              "min": null
+            }
+          }
+        },
+        "temporal": {
+          "executed": false,
+          "window_end": null,
+          "window_start": null
+        },
+        "use_rrf": true
+      }
+    },
+    "ok": true,
+    "status": 200,
+    "text_excerpt": "{\"results\":[],\"telemetry\":{\"schema\":\"memibrium.hybrid_retrieval.telemetry.v1\",\"query\":\"hybrid telemetry ruvector smoke probe\",\"requested_top_k\":3,\"fetch_k\":6,\"state_filter\":null,\"domain\":\"__hybrid_telemetry_probe_no_rows__\",\"use_rrf\":true,\"rerank_requested\":false,\"streams\":{\"semantic\":{\"requested_top_k\":6,\"returned_count\":0,\"items\":[],\"score_summary\":{\"key\":\"cosine_score\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null}},\"lexical\":{\"requested_top_k\":6,\"returned_count\":0,\"items\":[],\"score_summary\":{\""
+  }
+}

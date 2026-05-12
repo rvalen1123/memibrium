@@ -1,0 +1,3727 @@
+{
+  "pre_registration": "docs/eval/locomo_no_expansion_arm_b_preregistration_2026-04-30.md",
+  "run_commit": "1de8250",
+  "arm_b_behavior_commit": "18d9b54",
+  "parser_hygiene_commit": "ddb0aa8",
+  "slice": "full conv-26",
+  "n_common": 199,
+  "arm_a_artifact": "docs/eval/results/locomo_conv26_query_expansion_199q_2026-04-29.json",
+  "arm_b_artifact": "docs/eval/results/locomo_conv26_no_expansion_199q_2026-04-30.json",
+  "arm_a_credit": 94.5,
+  "arm_b_credit": 87.5,
+  "arm_a_accuracy": 47.48743718593,
+  "arm_b_accuracy": 43.969849246231,
+  "delta_pp": -3.517587939698,
+  "arm_a_avg_query_ms": 3285,
+  "arm_b_avg_query_ms": 904,
+  "arm_a_p50_query_ms": 2439,
+  "arm_b_p50_query_ms": 860,
+  "arm_a_p95_query_ms": 8473,
+  "arm_b_p95_query_ms": 1236,
+  "latency_delta_avg_ms": -2381,
+  "latency_delta_p50_ms": -1579,
+  "latency_delta_p95_ms": -7237,
+  "arm_a_expand_query_fallback_count": 57,
+  "arm_a_expand_query_fallback_rate": 0.2864,
+  "arm_b_expand_query_fallback_count": 0,
+  "arm_b_expand_query_fallback_rate": 0.0,
+  "arm_b_no_expansion_log_check": "no expansion activity in memibrium-server logs during smoke or full run",
+  "category_deltas": {
+    "adversarial": {
+      "n": 47,
+      "arm_a_credit": 6.5,
+      "arm_b_credit": 7.0,
+      "arm_a_accuracy": 13.8298,
+      "arm_b_accuracy": 14.8936,
+      "delta_pp": 1.0638,
+      "arm_a_avg_query_ms": 2429,
+      "arm_b_avg_query_ms": 943
+    },
+    "multi-hop": {
+      "n": 13,
+      "arm_a_credit": 8.0,
+      "arm_b_credit": 6.5,
+      "arm_a_accuracy": 61.5385,
+      "arm_b_accuracy": 50.0,
+      "delta_pp": -11.5385,
+      "arm_a_avg_query_ms": 3507,
+      "arm_b_avg_query_ms": 951
+    },
+    "single-hop": {
+      "n": 32,
+      "arm_a_credit": 14.0,
+      "arm_b_credit": 12.5,
+      "arm_a_accuracy": 43.75,
+      "arm_b_accuracy": 39.0625,
+      "delta_pp": -4.6875,
+      "arm_a_avg_query_ms": 5117,
+      "arm_b_avg_query_ms": 925
+    },
+    "temporal": {
+      "n": 37,
+      "arm_a_credit": 22.5,
+      "arm_b_credit": 22.5,
+      "arm_a_accuracy": 60.8108,
+      "arm_b_accuracy": 60.8108,
+      "delta_pp": 0.0,
+      "arm_a_avg_query_ms": 4243,
+      "arm_b_avg_query_ms": 963
+    },
+    "unanswerable": {
+      "n": 70,
+      "arm_a_credit": 43.5,
+      "arm_b_credit": 39.0,
+      "arm_a_accuracy": 62.1429,
+      "arm_b_accuracy": 55.7143,
+      "delta_pp": -6.4286,
+      "arm_a_avg_query_ms": 2475,
+      "arm_b_avg_query_ms": 827
+    }
+  },
+  "buckets": {
+    "unchanged_correct": 64,
+    "unchanged_wrong": 81,
+    "same_partial": 8,
+    "rescued": 14,
+    "harmed_from_fully_correct": 21,
+    "partial_changed": 11
+  },
+  "transitions": {
+    "1->1": 64,
+    "0->0": 81,
+    "1->0": 16,
+    "0.5->1": 6,
+    "0->1": 8,
+    "1->0.5": 5,
+    "0.5->0": 5,
+    "0->0.5": 6,
+    "0.5->0.5": 8
+  },
+  "decision_rules": {
+    "better_threshold_pp": 1.5,
+    "neutral_band_abs_pp": 1.5,
+    "category_harm_threshold_pp": -5.0
+  },
+  "outcome": "Outcome 3",
+  "verdict": "expansion_was_helping_no_config_change",
+  "verdict_reasons": [
+    "B_minus_A_le_-1.5pp"
+  ],
+  "mechanism_check": {
+    "prediction": {
+      "adversarial": "B improves substantially",
+      "unanswerable": "B improves moderately",
+      "single-hop": "B roughly neutral or slightly worse",
+      "multi-hop": "B directionally better low confidence",
+      "temporal": "B directionally better low confidence"
+    },
+    "observed": {
+      "adversarial": 1.0638,
+      "multi-hop": -11.5385,
+      "single-hop": -4.6875,
+      "temporal": 0.0,
+      "unanswerable": -6.4286
+    },
+    "matched": false,
+    "assessment": "Mechanistic prediction failed: adversarial improved slightly, but unanswerable and multi-hop worsened materially; single-hop worsened as allowed; temporal was neutral."
+  },
+  "paired": [
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "Did Caroline make the black and white bowl in the photo?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1707,
+      "arm_b_query_time_ms": 679,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "No",
+      "arm_a_predicted": "**No**, Caroline did not make the black and white bowl. Melanie made it in her pottery class.",
+      "arm_b_predicted": "**No**, Caroline did not make the black and white bowl. Melanie made it in her pottery class."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "How did Caroline feel about her family after the accident?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 3190,
+      "arm_b_query_time_ms": 940,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "They are important and mean the world to her",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no mention of any accident involving Caroline or her family, nor any discussion of her feelings toward her family in relation to one. All references to family focus on support during her transition, adoption plans, shared memories, and positive emotions like gratitude and love.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no mention of any accident involving Caroline or her family, nor do they describe her feelings about her family in relation to one. All discussions focus on positive topics like support systems, transitions, adoption plans, events, and hobbies."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "How did Caroline feel after the accident?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2543,
+      "arm_b_query_time_ms": 813,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Grateful and thankful for her family",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no mention of any accident involving Caroline (or anyone else). All discussions focus on topics like support groups, pride events, career goals in counseling/mental health, art, family activities, adoption plans, and personal growth—nothing about an accident or related feelings.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no mention of any accident involving Caroline (or anyone else), so there is no information about how she felt afterward."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "How did Caroline feel while watching the meteor shower?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2645,
+      "arm_b_query_time_ms": 851,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "in awe of the universe",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention Caroline watching a meteor shower or describe her feelings about it. The Perseid meteor shower is only discussed by Melanie in the context of her own 2022 family camping trip.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "How did Caroline's children handle the accident?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2762,
+      "arm_b_query_time_ms": 908,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "They were scared but resilient",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no information about any accident involving Caroline's children (or Caroline having children at all). Caroline discusses her interest in adoption as a single person, her transgender journey, mentoring LGBTQ+ youth, attending events, and personal items like her necklace, but nothing about children in her care or any accident."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "How did Caroline's son handle the accident?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2259,
+      "arm_b_query_time_ms": 611,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "He was scared but reassured by his family",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no information about Caroline having a son or any accident involving him."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "How often does Caroline go to the beach with her kids?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2354,
+      "arm_b_query_time_ms": 730,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "once or twice a year",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no information indicating that Caroline has any kids, nor do they mention her going to the beach with children. References to beach visits are associated with Melanie and her family.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "Is Oscar Melanie's pet?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2760,
+      "arm_b_query_time_ms": 779,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "No",
+      "arm_a_predicted": "**No**, Oscar is Caroline's guinea pig. Melanie's pets are Oliver (a dog), Luna (a cat), and Bailey (another cat).",
+      "arm_b_predicted": "**No**, Oscar is Caroline's guinea pig. Melanie's pets are Oliver (a dog), Bailey (a cat), and Luna (a cat)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What activity did Melanie used to do with her dad?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 7373,
+      "arm_b_query_time_ms": 1064,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Horseback riding",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention any specific activity Melanie did with her dad.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What are Melanie's plans for the summer with respect to adoption?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2434,
+      "arm_b_query_time_ms": 902,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "researching adoption agencies",
+      "arm_a_predicted": "**I don't know.**\n\nThe context shows Melanie discussing her own family activities like camping in June 2023 and pottery, while Caroline is the one focused on adoption (researching agencies, attending meetings, passing interviews in October 2023). Melanie expresses support and mentions a friend who adopted in 2022, but there are no specific plans from Melanie herself about adoption for the summer.",
+      "arm_b_predicted": "**I don't know.**\n\nMelanie does not mention any adoption plans. In the provided context, it is Caroline who is researching adoption agencies, attending council meetings, and building a library for future adopted children. Melanie discusses her own family activities like camping in June 2023 and museum visits, but nothing related to adoption."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What are the new shoes that Caroline got used for?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2240,
+      "arm_b_query_time_ms": 797,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Running",
+      "arm_a_predicted": "**I don't know.**\n\nThe context shows Melanie (not Caroline) got new purple running shoes for running to destress. No mention of Caroline getting new shoes.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context shows Melanie got new purple running shoes for running and destressing (from the 12 July 2023 conversation). There is no mention of Caroline getting new shoes."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What country is Melanie's grandma from?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1350,
+      "arm_b_query_time_ms": 652,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Sweden",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What did Caroline and her family do while camping?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2545,
+      "arm_b_query_time_ms": 666,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Caroline discussing her own activities (like volunteering, art, biking, pride events, and adoption), but it does not mention her going camping or any specific activities she and her family did while camping. Melanie is the one who frequently talks about family camping trips.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context only describes Melanie and her family's camping activities (e.g., roasting marshmallows, hiking, seeing the Perseid meteor shower). Caroline's camping or family outings are not mentioned."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What did Caroline and her family see during their camping trip last year?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2897,
+      "arm_b_query_time_ms": 1060,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Perseid meteor shower",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context mentions Melanie's family camping trips (e.g., mountains in June 2023, beach, forest), but contains no details about Caroline going camping with her family or what they saw. Caroline discusses adoption plans, LGBTQ+ events, mentoring, and support networks, but no camping trip is referenced for her.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context mentions Melanie's family camping trips (e.g., mountains in June 2023, beach), but contains no details about Caroline going camping with her family or what they saw."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What did Caroline do after the road trip to relax?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2394,
+      "arm_b_query_time_ms": 808,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Went on a nature walk or hike",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context does not mention Caroline taking a road trip or any specific activity she did afterward to relax.",
+      "arm_b_predicted": "**I don't know.** The provided context does not mention Caroline taking a road trip or any specific activity she did afterward to relax."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What did Caroline realize after her charity race?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2282,
+      "arm_b_query_time_ms": 864,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "self-care is important",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Melanie (not Caroline) ran a charity race for mental health on 20 May 2023. Caroline did not participate in or mention any charity race.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context shows Melanie (not Caroline) ran a charity race for mental health on 20 May 2023. Caroline did not participate in or mention any charity race."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What did Melanie find in her neighborhood during her walk?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 3466,
+      "arm_b_query_time_ms": 884,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "a rainbow sidewalk",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context does not mention Melanie finding anything during a walk in her neighborhood. Caroline is the one who found and photographed a rainbow sidewalk for Pride Month while walking.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention Melanie finding anything during a walk in her neighborhood. Caroline is the one who found a rainbow sidewalk for Pride Month while walking in her neighborhood."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What did Melanie make for a local church?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 1711,
+      "arm_b_query_time_ms": 679,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "a stained glass window",
+      "arm_a_predicted": "**Stained glass window.**\n\nFrom the conversation on 25 August 2023, Caroline describes making a stained glass window for a local church. It was inspired by time changing our lives and her journey as a transgender woman, to show acceptance of growth and change.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context shows Caroline made a stained glass window for a local church (inspired by time, change, and her transgender journey), but there's no mention of Melanie making anything for a church."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What did Melanie see at the council meeting for adoption?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2474,
+      "arm_b_query_time_ms": 840,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention Melanie attending or seeing anything at a council meeting for adoption. Caroline is the one who attended the meeting on 14 July 2023 and described it as inspiring and emotional.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context shows Caroline (not Melanie) attended the council meeting for adoption on 14 July 2023 and described it as inspiring and emotional. Melanie was not present and only responded to Caroline's account. No details indicate what Melanie saw there."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What does Caroline do to keep herself busy during her pottery break?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2146,
+      "arm_b_query_time_ms": 735,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Read a book and paint.",
+      "arm_a_predicted": "**I don't know.** The provided context does not mention Caroline taking a pottery break or any specific activity she does during one.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What does Caroline love most about camping with her family?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2882,
+      "arm_b_query_time_ms": 1111,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Being present and bonding with her family",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Melanie discussing her love for camping with her family (e.g., hiking, roasting marshmallows, nature's peace), but Caroline does not mention camping with her own family or what she loves most about it. Caroline talks about her support network, adoption journey, art, and other topics instead.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context shows Melanie discussing her love for camping with her family (e.g., nature's peace, family bonding, meteor showers), but Caroline never mentions camping with her own family or what she loves about it. Caroline's responses are supportive but do not share personal camping experiences."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What does Caroline say running has been great for?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 1.0,
+      "delta": 0.5,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2302,
+      "arm_b_query_time_ms": 1032,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Her mental health",
+      "arm_a_predicted": "**Caroline says running has been great for de-stressing and clearing her mind (mental health).**\n\nThis is based on the conversation from 12 July 2023, where Melanie mentions running to de-stress and improve her headspace, and Caroline agrees it boosts mood and supports mental health.",
+      "arm_b_predicted": "**Caroline says running has been great for de-stressing and boosting her mood (mental health).**\n\nThis is based on the conversation at 4:33 pm on 12 July 2023, where Melanie mentions running farther to de-stress and improve her headspace and mental health. Caroline responds positively, agreeing that \"Running can really boost your mood\" and emphasizing that \"Mental health's a priority.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What does Melanie's necklace symbolize?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1688,
+      "arm_b_query_time_ms": 1005,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "love, faith, and strength",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context does not mention Melanie owning or wearing a necklace, nor does it describe any symbolism for one. Caroline is the one who discusses her own necklace from her grandma in Sweden, which symbolizes love, faith, and strength.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context discusses Caroline's necklace (a gift from her Swedish grandma symbolizing love, faith, and strength), but provides no information about Melanie having or wearing a necklace."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What happened to Caroline's son on their road trip?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2068,
+      "arm_b_query_time_ms": 1036,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "He got into an accident",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no mention of Caroline having a son or any road trip incident involving one.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What inspired Caroline's sculpture for the art show?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2440,
+      "arm_b_query_time_ms": 787,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "visiting an LGBTQ center and wanting to capture unity and strength",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts discuss Caroline's paintings, stained glass window, and other artworks for her LGBTQ art show (e.g., inspired by an LGBTQ center for unity and strength, or her transgender journey), but they do not mention a sculpture or what inspired it.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context mentions Caroline's painting for the August 2023 LGBTQ art show (inspired by a visit to an LGBTQ center to capture unity and strength), but it does not reference any sculpture."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What inspired Melanie's painting for the art show?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2361,
+      "arm_b_query_time_ms": 904,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "visiting an LGBTQ center and wanting to capture unity and strength",
+      "arm_a_predicted": "**I don't know.**\n\nThe context shows Caroline was inspired by an LGBTQ center visit for her August 2023 art show painting (to capture \"unity and strength\"). No details are given about Melanie creating or being inspired for any art show painting.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context shows Caroline was inspired by an LGBTQ center visit for *her* painting in the August 2023 art show. No details are given about Melanie creating or being inspired for any painting specifically \"for the art show.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What is Caroline's hand-painted bowl a reminder of?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1563,
+      "arm_b_query_time_ms": 885,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "art and self-expression",
+      "arm_a_predicted": "**art and self-expression**",
+      "arm_b_predicted": "**Art and self-expression.** \n\nCaroline described her hand-painted bowl (a gift from a friend for her 18th birthday) as having a pattern and colors that remind her of art and self-expression (from the 27 June 2023 conversation)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What is Caroline's reason for getting into running?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2661,
+      "arm_b_query_time_ms": 776,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "To de-stress and clear her mind",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Melanie running to de-stress and improve mental health, but it does not mention Caroline getting into running or her reasons for it.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention Caroline getting into running or provide any reason for it. Running is only discussed by Melanie as part of her own self-care routine."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What is Melanie excited about in her adoption process?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1656,
+      "arm_b_query_time_ms": 1008,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "creating a family for kids who need one",
+      "arm_a_predicted": "**I don't know.**\n\nThe context shows Caroline is excited about her adoption process (e.g., applying to agencies, passing interviews, building a loving home for kids). Melanie discusses supporting Caroline and mentions her friend's adoption, but there is no information about Melanie being in an adoption process or what she is excited about regarding it.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context shows Caroline's excitement about adopting as a single LGBTQ+ parent (e.g., passing interviews on 20 October 2023, applying to agencies the week of 23 August 2023, and building a loving home). Melanie is supportive but does not discuss her own adoption process or personal excitement about it."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What kind of counseling and mental health services is Melanie interested in pursuing?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2780,
+      "arm_b_query_time_ms": 4784,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "working with trans people, helping them accept themselves and supporting their mental health",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Caroline discussing her interest in counseling and mental health services for trans people, but there is no information about Melanie pursuing any kind of counseling or mental health career.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context shows Caroline (not Melanie) discussing her interest in counseling and mental health services, specifically for trans and LGBTQ+ people, based on her experiences. Melanie supports her but does not express any personal interest in pursuing counseling or mental health work herself."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What kind of counseling workshop did Melanie attend recently?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1749,
+      "arm_b_query_time_ms": 754,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "LGBTQ+ counseling workshop",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Caroline (not Melanie) attended an LGBTQ+ counseling workshop on 23 June 2023. There is no mention of Melanie attending any counseling workshop.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What kind of place does Melanie want to create for people?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 1.0,
+      "delta": 1.0,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2291,
+      "arm_b_query_time_ms": 941,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "a safe and inviting place for people to grow",
+      "arm_a_predicted": "**A loving, accepting, and inclusive environment for her kids (and others).**",
+      "arm_b_predicted": "**A safe, inviting place for people to grow.** \n\nThis is based on Caroline's description of her counseling goals in the 27 June 2023 conversation, which Melanie enthusiastically supports and echoes in later chats about mental health, acceptance, and community."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What motivated Melanie to pursue counseling?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2866,
+      "arm_b_query_time_ms": 815,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "her own journey and the support she received, and how counseling improved her life",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Caroline discussing her motivation for pursuing counseling and mental health work (driven by her own transgender journey, mental health struggles, and desire to help others), but it does not mention Melanie pursuing counseling at all. Melanie expresses support for Caroline and discusses her own interests in painting, pottery, family time, running, and self-care, with no reference to her seeking or being motivated toward a counseling career.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context shows Caroline discussing her motivation for pursuing counseling and mental health work (to help others with experiences like her transgender journey), but it does not mention Melanie pursuing counseling at all."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What precautionary sign did Caroline see at the café?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2558,
+      "arm_b_query_time_ms": 993,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "A sign stating that someone is not being able to leave",
+      "arm_a_predicted": "**I don't know.**\n\nThe context mentions a \"thoughtful sign\" at the café (weekend of 09 September 2023) that Melanie saw and described as a precaution, but it does not specify what the sign said or showed, and Caroline did not see it herself.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context mentions a \"thoughtful sign\" at the café (or park) from the weekend of 09 September 2023 that Melanie saw, which Caroline asked about because it \"looks serious.\" However, the specific content or message on the precautionary sign is not provided."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What setback did Caroline face recently?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1536,
+      "arm_b_query_time_ms": 826,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "She got hurt and had to take a break from pottery.",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context only mentions a setback for Melanie (getting hurt in September 2023, forcing a break from pottery). No recent setback is described for Caroline.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context only mentions a setback for Melanie (injury in September 2023 that forced a break from pottery). No recent setback is described for Caroline."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What type of individuals does the adoption agency Melanie is considering support?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 3031,
+      "arm_b_query_time_ms": 1514,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "LGBTQ+ individuals",
+      "arm_a_predicted": "**LGBTQ+ folks (or individuals).**\n\nThis is based on the 25 May 2023 conversation, where Caroline explains choosing the agency because \"they help LGBTQ+ folks with adoption. Their inclusivity and support really spoke to me.\" (Note: The question says \"Melanie,\" but context shows it's Caroline who is considering the agency.)",
+      "arm_b_predicted": "**LGBTQ+ folks.** \n\nFrom the May 25, 2023 conversation, Caroline explicitly states she chose the agency because it helps LGBTQ+ individuals with adoption, highlighting its inclusivity and support."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What type of instrument does Caroline play?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2320,
+      "arm_b_query_time_ms": 887,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "clarinet and violin",
+      "arm_a_predicted": "**Acoustic guitar (and piano).**\n\nFrom the conversation on 28 August 2023, Caroline states she plays acoustic guitar, started about five years ago, and uses it to express emotions. A later chat on 3 July 2023 mentions she is also learning piano.",
+      "arm_b_predicted": "**Guitar (acoustic guitar).**\n\nThis is confirmed across multiple conversations, including her statements: \"I started playing acoustic guitar about five years ago,\" \"Guitar's mostly my thing,\" and \"Playing and singing let me express myself.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What was Caroline's reaction to her children enjoying the Grand Canyon?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 3416,
+      "arm_b_query_time_ms": 634,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "She was happy and thankful",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What was grandma's gift to Melanie?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1439,
+      "arm_b_query_time_ms": 801,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "necklace",
+      "arm_a_predicted": "**I don't know.**\n\nThe context only mentions Caroline receiving a necklace from her grandma in Sweden. There are no details about any gift from a grandma to Melanie.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What was grandpa's gift to Caroline?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1521,
+      "arm_b_query_time_ms": 819,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "necklace",
+      "arm_a_predicted": "**I don't know.**\n\nThe context mentions Caroline's grandma from Sweden giving her a special necklace symbolizing love, faith, and strength, but there's no information about any gift from her grandpa.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context only mentions a necklace from Caroline's *grandma* in Sweden, given as a gift symbolizing love, faith, and strength. There is no reference to any gift from her grandpa."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "What was the poetry reading that Melanie attended about?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2804,
+      "arm_b_query_time_ms": 918,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "It was a transgender poetry reading where transgender people shared their stories.",
+      "arm_a_predicted": "**I don't know.**\n\nThe context shows Caroline attended a transgender poetry reading, but there's no mention of Melanie attending any poetry reading.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context shows that Caroline attended a transgender poetry reading (on or around 15 July 2023), where transgender people shared their stories. Melanie explicitly said she had never been to one. There is no mention of Melanie attending any poetry reading."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "Where did Oscar hide his bone once?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2509,
+      "arm_b_query_time_ms": 617,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "In Melanie's slipper",
+      "arm_a_predicted": "**In Melanie's slipper.**\n\nFrom the 23 August 2023 conversation, Melanie said: \"Oliver's hilarious! He hid his bone in my slipper once!\" (Note: The question says \"Oscar,\" but context shows this refers to Melanie's pet Oliver, as Oscar is Caroline's guinea pig with no bone-hiding incident mentioned.)",
+      "arm_b_predicted": "**I don't know.**\n\nThe context mentions Oliver (Melanie's dog) hiding his bone in her slipper, but there's no information about Oscar (Caroline's guinea pig) hiding a bone."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "Which classical musicians does Caroline enjoy listening to?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2154,
+      "arm_b_query_time_ms": 747,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Bach and Mozart",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "**I don't know.** The provided conversation transcripts do not mention any classical musicians that Caroline enjoys listening to."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "Which song motivates Melanie to be courageous?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1834,
+      "arm_b_query_time_ms": 871,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Brave by Sara Bareilles",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention any specific song that motivates Melanie to be courageous. While Melanie discusses her family as motivation for courage and references a book from 2022 that inspires her to pursue dreams, no song is referenced in this context.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention any specific song that motivates Melanie to be courageous. While Melanie discusses motivation from her family and kids, and there are references to books, pottery, and other inspirations, no song is referenced in relation to courage."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "Who is Caroline a fan of in terms of modern music?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2324,
+      "arm_b_query_time_ms": 986,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Ed Sheeran",
+      "arm_a_predicted": "**Ed Sheeran (\"Perfect\").**\n\nThis is based on the conversation from 28 August 2023, where Melanie mentions being a fan of Ed Sheeran's \"Perfect\" as modern music, and Caroline responds positively without contradicting it. No other modern music artists are directly linked to Caroline in the provided context.",
+      "arm_b_predicted": "**Ed Sheeran (\"Perfect\").**\n\nThis is based on the conversation from [3:19 pm on 28 August, 2023], where Melanie mentions being a fan of Ed Sheeran's \"Perfect\" as modern music, in a discussion that also covers Caroline's music interests. No other modern music artists are directly attributed to Caroline."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "Why did Caroline choose to use colors and patterns in her pottery project?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2299,
+      "arm_b_query_time_ms": 838,
+      "arm_a_n_memories": 14,
+      "arm_b_n_memories": 10,
+      "ground_truth": "She wanted to catch the eye and make people smile.",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Melanie discussing colors and patterns in *her own* pottery project (e.g., \"I'm obsessed with those, so I made something to catch the eye...\"), but there is no mention of Caroline creating a pottery project or her reasons for using colors and patterns.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention Caroline creating or working on any pottery project, nor do they discuss her reasons for using colors and patterns in one. Caroline mentions a hand-painted bowl she received as a gift, but she did not make it."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "adversarial",
+        "question": "Why did Melanie choose the adoption agency?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1568,
+      "arm_b_query_time_ms": 791,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "because of their inclusivity and support for LGBTQ+ individuals",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context shows Caroline (not Melanie) chose the adoption agency because it helps LGBTQ+ folks with adoption and its inclusivity and support spoke to her. Melanie was supportive but did not select or discuss choosing any agency herself.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context shows Caroline (not Melanie) chose the adoption agency because it helps LGBTQ+ folks with adoption, due to its inclusivity and support. Melanie only responds positively to Caroline's choice."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "What fields would Caroline be likely to pursue in her educaton?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 1.0,
+      "delta": 0.5,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 13450,
+      "arm_b_query_time_ms": 816,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Psychology, counseling certification",
+      "arm_a_predicted": "**Counseling and mental health (focused on transgender and LGBTQ+ support).**\n\nThis is based on Caroline's repeated statements about exploring counseling/mental health as a career, her attendance at an LGBTQ+ counseling workshop on 23 June 2023, and her motivation to help trans people with self-acceptance and mental health after her own experiences.",
+      "arm_b_predicted": "**Counseling and mental health (focused on supporting transgender and LGBTQ+ individuals).**\n\nThis is based on Caroline's repeated statements about continuing her education to work in counseling, mental health services for trans people, and giving back through therapeutic support, inspired by her own journey and experiences like the LGBTQ+ counseling workshop."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "What personality traits might Melanie say Caroline has?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2439,
+      "arm_b_query_time_ms": 878,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Thoughtful, authentic, driven",
+      "arm_a_predicted": "**Inspiring, courageous, dedicated, and resilient.**",
+      "arm_b_predicted": "**Supportive, resilient, and passionate about helping others.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "What would Caroline's political leaning likely be?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.5,
+      "delta": -0.5,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2511,
+      "arm_b_query_time_ms": 693,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Liberal",
+      "arm_a_predicted": "**Progressive or left-leaning.** \n\nCaroline's conversations show strong, consistent support for LGBTQ+ rights, trans visibility, Pride events, transgender community advocacy, and using her personal story to promote inclusion, acceptance, and mental health support.",
+      "arm_b_predicted": "**Progressive or left-leaning.** \n\nCaroline's strong support for LGBTQ+ rights, trans stories, Pride events, fighting for trans rights, and adopting children aligns with progressive values."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Caroline be considered religious?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 3078,
+      "arm_b_query_time_ms": 1009,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Somewhat, but not extremely religious",
+      "arm_a_predicted": "**No**, Caroline would not be considered religious.\n\nFrom the conversations, she identifies as transgender, actively advocates for LGBTQ+ rights, participates in pride events, and faced negative experiences with \"religious conservatives.\" Her discussions focus on self-acceptance, community support, art, and activism, with no references to personal religious beliefs or practices.",
+      "arm_b_predicted": "**No**, Caroline would not be considered religious.\n\nFrom the provided context, she describes a negative encounter with \"religious conservatives\" during a hike that upset her and highlighted the need for more LGBTQ+ rights work. Her discussions focus on family, art, volunteering at an LGBTQ+ youth center, mental health counseling for trans people, pride events, and personal identity—without any mention of religious beliefs, practices, or affiliations. Her values center on self-expression, community support, and advocacy rather than religion."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Caroline likely have Dr. Seuss books on her bookshelf?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 3003,
+      "arm_b_query_time_ms": 1236,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Yes, since she collects classic children's books",
+      "arm_a_predicted": "**Yes**, Caroline would likely have Dr. Seuss books.\n\nFrom the context, she is building a children's library with \"classics, stories from different cultures, [and] educational books\" for when she adopts kids. Dr. Seuss books are widely considered children's classics that are educational and often culturally referenced, aligning with her stated interests in reading, motivating others, and opening children's minds.",
+      "arm_b_predicted": "**Yes**, Caroline would likely have Dr. Seuss books.\n\nFrom the context, she mentioned building a library for future kids with \"lots of kids' books - classics, stories from different cultures, educational books, all of that.\" Dr. Seuss books are widely considered children's classics that are educational and often used to open up young minds, which aligns with her stated goals."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Caroline pursue writing as a career option?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2804,
+      "arm_b_query_time_ms": 1050,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "LIkely no; though she likes reading, she wants to be a counselor",
+      "arm_a_predicted": "**No**, Caroline would not pursue writing as a career option.\n\nFrom the provided context, her career interests consistently focus on **counseling and mental health**, particularly supporting trans individuals, based on her personal experiences. She mentions exploring these fields multiple times (e.g., after support groups, workshops, and her own journey), with no references to writing as a professional path. While she values books for personal growth and uses art (painting, piano) for self-expression, writing is never discussed as a career interest.",
+      "arm_b_predicted": "**No**, Caroline would not pursue writing as a career option.\n\nFrom the provided context, her career interests consistently focus on **counseling and mental health**, particularly supporting trans and LGBTQ+ individuals. She mentions this repeatedly across multiple conversations (e.g., June, July, and October 2023), citing her own experiences with mental health support as motivation. There are no references to writing, literature-based careers, or any interest in writing professionally—only a general appreciation for reading books as a personal guide."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Caroline still want to pursue counseling as a career if she hadn't received support growing up?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.0,
+      "delta": -0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 3418,
+      "arm_b_query_time_ms": 1342,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Likely no",
+      "arm_a_predicted": "**Yes, but with less certainty and motivation.**\n\nThe context shows Caroline's interest in counseling stems directly from her positive experiences with support groups, mentorship, family/friends' acceptance, and the LGBTQ+ community, which helped her embrace her identity, build courage, and improve her mental health. She repeatedly says things like \"My own journey and the support I got made a huge difference. Now I want to help people go through it too\" and links her passion to \"the support I got was really helpful. It made me realize how important it is for others to have a support system.\"\n\nWithout that support growing up, her journey would likely have been much harder, reducing the inspiring \"before-and-after\" realization that drives her. While her core empathy and desire to help trans people might remain, the transcripts tie her career goal explicitly to having received that validation and guidance.",
+      "arm_b_predicted": "**No, Caroline would likely not want to pursue counseling as a career without the support she received growing up.**\n\nFrom the conversation history, Caroline repeatedly credits the support from friends, family, mentors, the LGBTQ+ community, support groups, and counseling for helping her accept herself, build courage, and improve her mental health during her transition. She states that her own positive experiences with this support directly motivated her to help others in similar situations, saying things like: “My own journey and the support I got made a huge difference. Now I want to help people go through it too,” and “I struggled with mental health, and support I got was really helpful. It made me realize how important it is for others to have a support system.”\n\nWithout that foundational support, her path toward self-acceptance and her desire to give back through counseling would not have developed in the same way."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Caroline want to move back to her home country soon?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2163,
+      "arm_b_query_time_ms": 947,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "No; she's in the process of adopting children.",
+      "arm_a_predicted": "**No**, Caroline would not want to move back to her home country soon. \n\nShe has lived away from Sweden for 4 years, values her current support system of friends, family, and mentors there, and is actively building a future through adoption processes, counseling career goals, and LGBTQ+ community involvement in her present location. No memories indicate any desire to return.",
+      "arm_b_predicted": "**No**, Caroline would not want to move back to her home country soon. She has lived away for 4 years, values her current support system of friends, family, and mentors there, and is actively building her future through education, counseling/mental health career plans, adoption research, and community involvement in her present location."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Melanie be considered a member of the LGBTQ community?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2809,
+      "arm_b_query_time_ms": 929,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Likely no, she does not refer to herself as part of it",
+      "arm_a_predicted": "**Yes**, Melanie would be considered a member of the LGBTQ community.\n\nThis is based on the conversation history, where she repeatedly uses inclusive language like \"our community,\" \"we,\" and \"our stories\" when discussing LGBTQ+ topics (e.g., pride parades, trans journeys, and advocacy). She also shares personal experiences of transition, mental health struggles, and finding peace through creativity and family support in ways that align with LGBTQ+ identity.",
+      "arm_b_predicted": "**Yes**, based on the context, Melanie would be considered a member of the LGBTQ community. \n\nShe actively participates in related conversations, expresses support for Caroline's transgender journey, attends or references LGBTQ events, and shares in discussions about identity, acceptance, and community."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Melanie be considered an ally to the transgender community?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2327,
+      "arm_b_query_time_ms": 753,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Yes, she is supportive",
+      "arm_a_predicted": "**Yes**, Melanie would be considered an ally to the transgender community.\n\nShe consistently offers support, validation, and encouragement to Caroline throughout their conversations, expressing pride in her journey, celebrating her advocacy work, and affirming the importance of LGBTQ+ acceptance and rights.",
+      "arm_b_predicted": "**Yes**, Melanie would be considered an ally to the transgender community. \n\nShe consistently offers support, validation, and encouragement to Caroline throughout her transgender journey, pride events, advocacy work, and career goals in mental health counseling for trans people."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Melanie be more interested in going to a national park or a theme park?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2784,
+      "arm_b_query_time_ms": 905,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "National park; she likes the outdoors",
+      "arm_a_predicted": "**Melanie would be more interested in a national park.**\n\nFrom the context, she frequently enjoys nature-based family activities like camping in the mountains (June 2023), hiking, beach trips, park visits, and especially the Grand Canyon during a road trip. These reflect her consistent preference for outdoor, relaxing, family-oriented experiences in natural settings. No mentions of theme parks appear in any of the conversations.",
+      "arm_b_predicted": "**National park.**\n\nMelanie repeatedly expresses strong interest in nature-based outdoor activities with her family, such as camping (June 2023, July 2023), hiking in mountains/forests, exploring nature, and swimming. She highlights these as refreshing, memorable, and joyful family bonding experiences. There is no mention of interest in theme parks."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Melanie go on another roadtrip soon?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2635,
+      "arm_b_query_time_ms": 851,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Likely no; since this one went badly",
+      "arm_a_predicted": "**No**, Melanie would not go on another roadtrip soon. The October 2023 roadtrip ended in a scary accident involving her son, which left the family traumatized. In the conversation right after, she emphasized cherishing family and that \"thankfully it's over now,\" with no mention of future trips. Her later plans focus on camping, hiking, beach visits, and family activities at home or in nature, not roadtrips.",
+      "arm_b_predicted": "**No, I don't know.**\n\nThe context shows Melanie discussing a recent roadtrip (with a son's accident) on 20 October 2023, but there's no mention of any plans for another one soon."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "multi-hop",
+        "question": "Would Melanie likely enjoy the song \"The Four Seasons\" by Vivaldi?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2169,
+      "arm_b_query_time_ms": 959,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Yes; it's classical music",
+      "arm_a_predicted": "**Yes**, Melanie would likely enjoy \"The Four Seasons\" by Vivaldi.\n\nShe plays clarinet, loves classical music (especially Bach and Mozart), and finds it relaxing and emotionally expressive—qualities that align closely with Vivaldi’s famous violin concertos.",
+      "arm_b_predicted": "**Yes**, Melanie would likely enjoy \"The Four Seasons\" by Vivaldi.\n\nShe explicitly likes classical music (Bach and Mozart) and finds it relaxing and expressive, just like her clarinet playing. Vivaldi’s “The Four Seasons” is a famous, accessible Baroque piece that fits perfectly with the classical composers she already enjoys."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "How many children does Melanie have?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2884,
+      "arm_b_query_time_ms": 832,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": 3,
+      "arm_a_predicted": "**2 children.**\n\nThis is based on multiple references in the conversation transcripts, such as \"We both helped with the painting\" (indicating two people: Melanie and one child in context), \"the 2 younger kids love nature,\" and consistent mentions of \"kids\" paired with specific activities that align with having two.",
+      "arm_b_predicted": "**2**\n\nMelanie mentions having \"2 younger kids\" who love nature (from the 27 June 2023 conversation) and refers to her children in plural throughout the chats, with no indication of more than two."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "How many times has Melanie gone to the beach in 2023?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2657,
+      "arm_b_query_time_ms": 977,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": 2,
+      "arm_a_predicted": "**Twice.**\n\nMelanie mentions two distinct beach trips in 2023:\n- One \"recently\" (context from ~20 July 2023 chat, after the 15 July pride event).\n- Another during the week of 18 August 2023 (mentioned in the 25 August 2023 chat, which inspired Caroline's painting).\n\nNo other beach visits are referenced in the provided memories.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention Melanie going to the beach at any point in 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "In what ways is Caroline participating in the LGBTQ community?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2544,
+      "arm_b_query_time_ms": 1057,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "arm_a_predicted": "**Caroline is participating in the LGBTQ+ community by:**\n\n- Attending and marching in multiple pride parades (e.g., June, July, and August 2023 events).\n- Giving talks and sharing her transgender journey at school events and conferences to promote awareness and allyship.\n- Joining and actively contributing to an LGBTQ activist group (“Connected LGBTQ Activists”), including planning events and campaigns.\n- Volunteering at an LGBTQ+ youth center, mentoring transgender youth, and sharing her story for support.\n- Creating and exhibiting art focused on her trans experience to foster understanding and acceptance (including an upcoming LGBTQ art show in September 2023).\n- Using her voice in mentorship programs and community events to build inclusivity and hope.",
+      "arm_b_predicted": "Caroline participates in the LGBTQ community by attending support groups, pride parades, and council meetings; volunteering at an LGBTQ youth center; joining activist groups like 'Connected LGBTQ Activists'; mentoring transgender youth; speaking at school events about her transgender journey; creating and exhibiting art inspired by trans experiences and community unity; and continuing education/career pursuits in counseling/mental health to help others."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What LGBTQ+ events has Caroline participated in?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1928,
+      "arm_b_query_time_ms": 1298,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Pride parade, school speech, support group",
+      "arm_a_predicted": "**Caroline has participated in these LGBTQ+ events:**\n\n- Spoke at a school event (week of 2 June 2023) about her transgender journey and encouraging LGBTQ involvement.\n- Attended an LGBTQ conference (10 July 2023).\n- Joined a mentorship program for LGBTQ youth and attended an LGBT pride event with her mentee (June 2023).\n- Attended a pride parade (week of 26 June 2023).\n- Attended a pride parade (11 August 2023).\n- Participated in an advocacy event (around 13–14 August 2023).\n- Planning an LGBTQ art show for August/September 2023 featuring her paintings.",
+      "arm_b_predicted": "**Caroline has participated in these LGBTQ+ events:**\n\n- LGBT pride event in June 2023 (with her transgender mentee).\n- Pride parade in the city on the weekend of 15 July 2023 (mentioned as a powerful reminder of community, though she missed attending in person).\n- LGBTQ+ counseling workshop on 23 June 2023.\n- School event the week of 2 June 2023, where she spoke about her transgender journey.\n- Volunteering at an LGBTQ+ youth center (ongoing, including after 28 August 2023).\n- Upcoming LGBTQ art show in August 2023 featuring her paintings.\n\nThese are drawn from her conversations with Melanie between June and August 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What activities does Melanie partake in?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.5,
+      "delta": 0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 2153,
+      "arm_b_query_time_ms": 1430,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "pottery, camping, painting, swimming",
+      "arm_a_predicted": "**Melanie partakes in pottery, painting, camping, hiking, volunteering at a homeless shelter, and family outings.**",
+      "arm_b_predicted": "**Pottery, painting, camping, swimming, attending live music shows/concerts, and reading.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What activities has Melanie done with her family?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.5,
+      "delta": 0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 2548,
+      "arm_b_query_time_ms": 1030,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+      "arm_a_predicted": "**Melanie has done the following activities with her family:**\n\n- Gone camping multiple times (e.g., at the beach, in the mountains, in the forest, weekend of 8 July 2023, and a few weeks before 13 September 2023).\n- Hiking and exploring nature/forests.\n- Road trip to the Grand Canyon (with an accident on the way).\n- Visited a park (27 August 2023).\n- Played games, ate good food, and hung out together.\n- Roasted marshmallows around a campfire and shared stories.",
+      "arm_b_predicted": "**Melanie has done the following activities with her family:**\n\n- Multiple **camping trips** (including in the forest, at the beach, and in the mountains), where they roast marshmallows, tell stories, hike, explore nature, and watch meteor showers (e.g., Perseid in 2022).\n- Hiking in the mountains and exploring forests.\n- Swimming with the kids.\n- Visiting a park (27 August 2023) for outdoor play and exploration.\n- Road trips followed by relaxing nature outings.\n\nThese are drawn from her conversations with Caroline between May and October 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What are Melanie's pets' names?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1761,
+      "arm_b_query_time_ms": 782,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Oliver, Luna, Bailey",
+      "arm_a_predicted": "Luna, Oliver, and Bailey.",
+      "arm_b_predicted": "**Luna, Oliver, and Bailey.**\n\nFrom the conversation history: Melanie mentions having a dog named Luna and a cat named Oliver (in the 12 July 2023 chat), and later confirms they also have another cat named Bailey (in the 23 August 2023 chat)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What are some changes Caroline has faced during her transition journey?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.5,
+      "delta": 0.0,
+      "bucket": "same_partial",
+      "arm_a_query_time_ms": 1578,
+      "arm_b_query_time_ms": 928,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Changes to her body, losing unsupportive friends",
+      "arm_a_predicted": "**Some changes Caroline has faced:** loss of some friends who couldn't handle her transition, challenges with mental health, struggles with self-acceptance and her changing body, and the need to build a more genuine support network.",
+      "arm_b_predicted": "**Some changes Caroline has faced:** loss of some friendships that couldn't handle her transition, while strengthening genuine relationships with supportive friends and family; mental health struggles that motivated her to pursue counseling careers; exploring and accepting her changing body through art; and overall shifts in self-identity, relationships, education, and career goals toward LGBTQ advocacy and mental health support."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What book did Melanie read from Caroline's suggestion?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2490,
+      "arm_b_query_time_ms": 873,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "\"Becoming Nicole\"",
+      "arm_a_predicted": "**\"Becoming Nicole\" by Amy Ellis Nutt.**\n\nIn the conversation on 12 July 2023, Caroline recommended this book to Melanie, describing it as an inspiring true story about a trans girl and her family. Later, on 13 October 2023, Melanie mentioned she had been reading the book Caroline recommended.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention Caroline suggesting any specific book to Melanie. Melanie references a book she read in 2022 that reminds her to pursue dreams, but it is not linked to any suggestion from Caroline."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What books has Melanie read?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.5,
+      "delta": 0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 2218,
+      "arm_b_query_time_ms": 728,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "arm_a_predicted": "**\"Charlotte's Web\" (from childhood) and an unnamed book from 2022 that reminds her to pursue dreams.**",
+      "arm_b_predicted": "**\"Charlotte's Web\" (from childhood) and an unnamed motivational book from 2022.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What career path has Caroline decided to persue?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2012,
+      "arm_b_query_time_ms": 884,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "counseling or mental health for Transgender people",
+      "arm_a_predicted": "**Counseling and mental health (focusing on trans people).**\n\nThis is based on multiple conversations where Caroline repeatedly mentions looking into counseling/mental health careers, attending an LGBTQ+ counseling workshop on 23 June 2023, and wanting to help others like herself by supporting trans individuals' self-acceptance and mental health.",
+      "arm_b_predicted": "**Counseling and mental health (working with trans people).**\n\nThis is clear from multiple conversations, where Caroline repeatedly discusses her interest in counseling, mental health careers, helping trans individuals with self-acceptance, and attending related workshops and events."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What did Caroline research?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 12491,
+      "arm_b_query_time_ms": 717,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Adoption agencies",
+      "arm_a_predicted": "**Caroline researched adoption agencies (and related processes like interviews and council meetings).**",
+      "arm_b_predicted": "**Caroline researched adoption agencies.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What did Melanie paint recently?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.5,
+      "delta": 0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 3028,
+      "arm_b_query_time_ms": 1026,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "sunset",
+      "arm_a_predicted": "**Melanie recently painted a horse (as shared in the conversation from 23 August 2023).**\n\nShe also mentioned other recent works like landscapes, still life, a lake sunrise (from 2022), and an abstract painting with peaceful blue streaks for tranquility, but the horse painting is the most specifically highlighted \"recent\" one in context.",
+      "arm_b_predicted": "**Melanie recently painted a sunset-inspired landscape (the week of 6 October 2023) and an abstract piece with peaceful blue streaks.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What do Melanie's kids like?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1994,
+      "arm_b_query_time_ms": 907,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "dinosaurs, nature",
+      "arm_a_predicted": "**Melanie's kids like nature, exploring outdoors, getting hands dirty in creative activities like pottery and painting, camping, hiking, roasting marshmallows, campfires, parks, concerts, and family time.**",
+      "arm_b_predicted": "**Melanie's kids like dinosaurs, the museum's dinosaur exhibit, getting hands dirty in pottery, nature-inspired painting, camping, exploring nature, hiking, roasting marshmallows, and learning about nature.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What does Melanie do to destress?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1797,
+      "arm_b_query_time_ms": 747,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Running, pottery",
+      "arm_a_predicted": "**Melanie runs (or goes running) to destress.**",
+      "arm_b_predicted": "**Melanie runs (or goes running) to destress.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What does Melanie do with her family on hikes?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2737,
+      "arm_b_query_time_ms": 951,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Roast marshmallows, tell stories",
+      "arm_a_predicted": "**Melanie hikes with her family in the mountains and forests to explore nature, connect with each other, and create special memories.**",
+      "arm_b_predicted": "**Melanie hikes in the mountains and explores forests with her family.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What events has Caroline participated in to help children?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 3325,
+      "arm_b_query_time_ms": 816,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Mentoring program, school speech",
+      "arm_a_predicted": "**Caroline has participated in these events to help children:**\n\n- Researched and attended a council meeting for adoption agencies (around 14 July 2023) to adopt and provide loving homes for kids in need.\n- Joined a mentorship program for LGBTQ youth (weekend of 15 July 2023), mentoring a transgender teen and supporting them at pride events.\n- Volunteered at an LGBTQ+ youth center (by 28 August 2023), guiding and sharing her story with young people facing similar challenges.",
+      "arm_b_predicted": "**Caroline has participated in researching and visiting adoption agencies (including an LGBTQ+-inclusive one), and attending a council meeting for adoption on 14 July 2023.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What has Melanie painted?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.0,
+      "delta": -0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 3171,
+      "arm_b_query_time_ms": 879,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Horse, sunset, sunrise",
+      "arm_a_predicted": "**Melanie has painted:**\n\n- A pottery plate (24 Aug 2023)\n- A lake sunrise (2022)\n- A horse\n- An abstract painting with peaceful blue streaks for tranquility\n- A sunset-inspired painting (week of 6 Oct 2023)\n- Nature-inspired paintings with her kids (weekend of 8 Jul 2023)\n- A family painting similar to a previous one\n\nShe also does pottery (bowls, pots) and mentions art as a calming, expressive outlet.",
+      "arm_b_predicted": "**Melanie has painted landscapes, still life, nature-inspired paintings (including one from the weekend of 08 July 2023 with bold colors), and a painting with vivid, unified colors inspired by an LGBTQ center visit (shared in July 2023).**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What instruments does Melanie play?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1943,
+      "arm_b_query_time_ms": 708,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "clarinet and violin",
+      "arm_a_predicted": "**Clarinet and violin.**",
+      "arm_b_predicted": "**Clarinet and violin.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What is Caroline's identity?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 4162,
+      "arm_b_query_time_ms": 864,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Transgender woman",
+      "arm_a_predicted": "**Caroline is a transgender woman.** \n\nThis is evident from multiple conversations where she discusses her \"transgender journey,\" \"transition\" (started ~3 years prior to June 2023), \"coming out,\" exploring her \"gender identity,\" and her involvement in the trans and LGBTQ+ community through talks, art, poetry readings, activism, and volunteering. She also refers to herself explicitly as a \"trans woman\" and \"transgender woman.\"",
+      "arm_b_predicted": "**Caroline is a transgender woman.** \n\nThis is evident from multiple conversations where she discusses her \"trans experience,\" \"transgender journey,\" transitioning three years ago (as of June 2023), exploring her gender identity through art, and advocating for the trans and LGBTQ+ community."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What is Caroline's relationship status?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 1.0,
+      "delta": 1.0,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 13519,
+      "arm_b_query_time_ms": 1022,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Single",
+      "arm_a_predicted": "**Single (post-breakup).**\n\nFrom the memories, Caroline mentions a \"tough breakup\" and having supportive friends since moving from Sweden 4 years ago. She expresses pride in her identity as a trans woman, focuses on self-acceptance, adoption goals, and building a chosen family, with no references to a current partner.",
+      "arm_b_predicted": "**Caroline is single.**\n\nThis is based on her conversation on 9 June 2023, where she mentioned a \"tough breakup\" after moving from her home country 4 years earlier, with no references to a current partner in any later discussions (including topics like family, adoption, or personal growth)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What items has Melanie bought?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1942,
+      "arm_b_query_time_ms": 800,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Figurines, shoes",
+      "arm_a_predicted": "**Figurines bought on 21 October 2023.**",
+      "arm_b_predicted": "**Figurines (bought on 21 October 2023).**\n\nThis is the only item explicitly mentioned as purchased by Melanie in the provided conversation memories."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What kind of art does Caroline make?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1555,
+      "arm_b_query_time_ms": 883,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "abstract art",
+      "arm_a_predicted": "**Caroline makes paintings (including of sunsets, flowers, and LGBTQ+ themes) and drawings.**",
+      "arm_b_predicted": "**Caroline makes paintings, drawings (including flowers and self-portraits), and stained glass windows.** She often creates art that expresses her trans experience, promotes LGBTQ+ acceptance, and captures nature or personal moments."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What musical artists/bands has Melanie seen?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 1517,
+      "arm_b_query_time_ms": 723,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Summer Sounds, Matt Patterson",
+      "arm_a_predicted": "**Matt Patterson and \"Summer Sounds\".**",
+      "arm_b_predicted": "**Matt Patterson (live in concert on 13 August 2023).**\n\nNo other musical artists or bands are mentioned as ones Melanie has seen live."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What subject have Caroline and Melanie both painted?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2700,
+      "arm_b_query_time_ms": 1033,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Sunsets",
+      "arm_a_predicted": "**Sunsets.**\n\nBoth have created paintings inspired by sunsets: Caroline painted one after visiting the beach (week of 18 August 2023), and Melanie painted one inspired by sunsets (week of 6 October 2023). This is supported by their conversation on 25 August 2023 and 13 October 2023.",
+      "arm_b_predicted": "**Nature (or landscapes and flowers).**\n\nFrom the context, Melanie explicitly states her favorite is \"Painting landscapes and still life\" and shares nature-inspired paintings (e.g., with bold colors highlighting nature's beauty, done with her kids). Caroline mentions painting flowers as one of her favorites, shares a self-portrait and other works, and discusses appreciating nature through art, showing they both engage with nature as a painting subject."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What symbols are important to Caroline?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2473,
+      "arm_b_query_time_ms": 867,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Rainbow flag, transgender symbol",
+      "arm_a_predicted": "**The rainbow flag mural (courage and strength of the trans community) and the eagle (freedom, pride, and resilience).**",
+      "arm_b_predicted": "**The necklace from her grandma in Sweden (symbolizing love, faith, and strength) and her hand-painted bowl (reminding her of art and self-expression).**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What transgender-specific events has Caroline attended?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2842,
+      "arm_b_query_time_ms": 1118,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Poetry reading, conference",
+      "arm_a_predicted": "**Caroline has attended these transgender-specific events:**\n\n- An LGBTQ conference (around 10 July 2023), where she connected with others on similar journeys and discussed trans rights.\n- A transgender poetry reading (around 6 October 2023), focused on trans people sharing their stories.\n- An LGBTQ+ youth center volunteering (around 27 August 2023), where she mentored a transgender teen and shared her experiences.\n- A mentorship program for LGBTQ youth (starting around 15 July 2023), specifically mentoring a transgender teen, including attending an LGBT pride event in June 2023.\n- An LGBTQ support group (7 May 2023), featuring inspiring transgender stories.\n- A pride parade (11 August 2023) and earlier city pride parade (15 July 2023), celebrating LGBTQ+ diversity with a focus on trans inclusion.\n- Her school event (week of 2 June 2023), where she spoke about her transgender journey.",
+      "arm_b_predicted": "**Caroline has attended these transgender-specific events:**\n\n- An LGBTQ support group on 7 May 2023, where she found the transgender stories inspiring.\n- A transgender conference in July 2023.\n- A pride parade on 11 August 2023, focused on LGBTQ rights and acceptance.\n- A school event the week of 2 June 2023, where she spoke about her transgender journey.\n- An LGBT pride event in June 2023 (with her mentee).\n- A transgender poetry reading in October 2023.\n\nThese are drawn directly from the conversation memories."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "What types of pottery have Melanie and her kids made?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 1.0,
+      "delta": 1.0,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 1624,
+      "arm_b_query_time_ms": 798,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "bowls, cup",
+      "arm_a_predicted": "**Melanie and her kids have made pots (at a pottery workshop) and painted nature-inspired artwork together.**",
+      "arm_b_predicted": "**Melanie and her kids have made pots, bowls, and cups (including a black-and-white bowl, colorful patterned bowls, and a cute kid-made cup).**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "When did Melanie go on a hike after the roadtrip?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2431,
+      "arm_b_query_time_ms": 907,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "19 October 2023",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context mentions Melanie going hiking during family camping trips (e.g., in the mountains the week of 20 June 2023, in forests, or the weekend of 8 July 2023), but it does not reference any roadtrip or a specific hike occurring after one. No matching details are available.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context mentions Melanie going on a hike during a family camping trip in the mountains the week of 20 June 2023 (session 14, 27 June 2023), but there is no reference to a roadtrip or any hike occurring after one."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "Where did Caroline move from 4 years ago?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2413,
+      "arm_b_query_time_ms": 937,
+      "arm_a_n_memories": 12,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Sweden",
+      "arm_a_predicted": "**Sweden.**\n\nFrom the conversation on 9 June 2023, Caroline mentions: \"I've known these friends for 4 years, since I moved from my home country. ... This necklace is super special to me - a gift from my grandma in my home country, Sweden.\" This directly indicates she moved from Sweden 4 years ago.",
+      "arm_b_predicted": "**Sweden.**\n\nFrom the conversation on 9 June 2023, Caroline states she has known her friends for 4 years \"since I moved from my home country\" and later confirms the necklace is from her grandma in Sweden, linking it to her roots."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "Where has Melanie camped?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 68535,
+      "arm_b_query_time_ms": 860,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "beach, mountains, forest",
+      "arm_a_predicted": "**Melanie has camped in the mountains, the forest, and at the beach.**\n\nThis is based on multiple conversations: mountains (20 June 2023 trip with family, including hiking), forest (multiple mentions, e.g., July 2023 and September 2023 trips with kids, roasting marshmallows, exploring), and the beach (family camping trip referenced in July 2023). She also mentions general family camping traditions like seeing the Perseid meteor shower in 2022.",
+      "arm_b_predicted": "Melanie has camped in the forest, mountains, and after a road trip (with family, including in 2022, June 2023, 8 July 2023, 19 October 2023)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "single-hop",
+        "question": "Who supports Caroline when she has a negative experience?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2783,
+      "arm_b_query_time_ms": 1218,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Her mentors, family, and friends",
+      "arm_a_predicted": "**Caroline's friends, family, and mentors support her during negative experiences.**\n\nFrom the context (e.g., session 13, turns 0-9 and session 14, turns 0-9), she describes her support system as \"rocks\" that motivate her through tough times, including a difficult breakup, transitioning, and finding self-acceptance. In session 4 (turns 0-9), after a negative hike encounter with religious conservatives, she notes that having accepting people around helps her know she'll be okay. She also credits this network for helping during her mental health struggles and transition (sessions 7, 14, and 19).",
+      "arm_b_predicted": "**Caroline's support network, including her friends, family, and community.**\n\nFrom the context (session 4, 17 August 2023), after a negative hike encounter with religious conservatives, Caroline explicitly states: \"It's been so helpful to have people around me who accept and support me, so I know I'll be ok!\" This aligns with earlier memories where she repeatedly highlights her friends, family, and LGBTQ+ community as key sources of love, guidance, acceptance, and backing during challenges (e.g., sessions 18, 16, 2, 15, 13)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "How long ago was Caroline's 18th birthday?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2239,
+      "arm_b_query_time_ms": 787,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "10 years ago",
+      "arm_a_predicted": "**10 years ago.**\n\nFrom the 27 June 2023 conversation, Caroline mentioned her hand-painted bowl was made by a friend for her 18th birthday \"ten years ago.\"",
+      "arm_b_predicted": "**10 years ago.**\n\nFrom the 27 June 2023 conversation, Caroline states her hand-painted bowl was made by a friend for her 18th birthday \"ten years ago.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "How long has Caroline had her current group of friends for?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 1.0,
+      "delta": 1.0,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2946,
+      "arm_b_query_time_ms": 810,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "4 years",
+      "arm_a_predicted": "**4 years.**\n\nCaroline mentioned this in the conversation on 9 June 2023, stating she has known her friends for 4 years since moving from her home country (Sweden). This is corroborated by her references to their long-term support during her transition and other life events.",
+      "arm_b_predicted": "**4 years** (as of the conversation on 9 June 2023). Caroline mentioned knowing her friends for 4 years since moving from her home country."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "How long has Melanie been practicing art?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 1.0,
+      "delta": 1.0,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2197,
+      "arm_b_query_time_ms": 936,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Since 2016",
+      "arm_a_predicted": "**Seven years.**",
+      "arm_b_predicted": "**Seven years.** \n\nThis is directly stated in the conversation from 12:09 am on 13 September 2023, where Melanie says: \"Seven years now, and I've finally found my real muses: painting and pottery.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline and Melanie go to a pride fesetival together?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1691,
+      "arm_b_query_time_ms": 1378,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": 2022,
+      "arm_a_predicted": "**I don't know.**\n\nThe context shows Caroline attended an LGBTQ+ pride parade/event in June 2023 (mentioned in sessions from July 3 and July 17), and she later referenced going with her mentee. However, there is no mention of Melanie attending or them going together.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context shows Caroline attended an LGBTQ+ pride parade alone during the week of 26 June 2023 (session 15, 3 July 2023), describing it as a personal experience that motivated her. There is no mention of Melanie attending any pride event with her, nor any joint festival."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline apply to adoption agencies?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2413,
+      "arm_b_query_time_ms": 913,
+      "arm_a_n_memories": 14,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The week of 23 August 2023",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context mentions Caroline researching adoption agencies (May 25, 2023), attending a council meeting for adoption (July 14, 2023), and her ongoing interest in adopting, but it does not specify any exact date when she applied.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context mentions Caroline researching and looking into adoption agencies (e.g., in the May 25, 2023 session and later references to council meetings), but it does not specify any exact date when she applied."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline attend a pride parade in August?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2418,
+      "arm_b_query_time_ms": 1003,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The Friday before 14 August 2023",
+      "arm_a_predicted": "**11 August 2023**\n\nFrom the first retrieved memory (session 3, 14 August 2023), Caroline explicitly states she attended a pride parade on 11 August 2023. No other pride parades in August are mentioned across the provided contexts.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context mentions Caroline attending a pride parade on 11 August 2023 (in the session from 2023-08-14), but there is no mention of her attending one in August in any other sessions. The only other pride event referenced is from June 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline draw a self-portrait?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.5,
+      "delta": 0.0,
+      "bucket": "same_partial",
+      "arm_a_query_time_ms": 2693,
+      "arm_b_query_time_ms": 833,
+      "arm_a_n_memories": 14,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The week before 23 August 2023",
+      "arm_a_predicted": "**The week of 16 August 2023.**\n\nThis is based on the conversation from 23 August 2023 (session 5), where Caroline shared a recent self-portrait she created that week. No other memories mention her drawing a self-portrait.",
+      "arm_b_predicted": "**The week of 16 August 2023.**\n\nThis is based on the conversation from 23 August 2023 (session 5), where Caroline shared a recent self-portrait she created that week. No other memories mention a self-portrait."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline encounter people on a hike and have a negative experience?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 3375,
+      "arm_b_query_time_ms": 1074,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The week before 25 August 2023",
+      "arm_a_predicted": "**17 August 2023 (or the week of 18 August 2023).**\n\nThis is from the conversation on 17 August 2023 (session 4), where Caroline says: \"Recently, I had a not-so-great experience on a hike. I ran into a group of religious conservatives who said something that really upset me.\" It is also referenced in the 25 August 2023 chat (session 6) as occurring \"the week of 18 August 2023.\"",
+      "arm_b_predicted": "**August 2023 (week of 18 August or 17 August).**\n\nFrom the memories:\n- In the 25 Aug 2023 chat (session 6), Caroline says she went hiking the week of 18 August 2023 and \"got into a bad spot with some people.\"\n- In the 17 Aug 2023 chat (session 4), she describes a negative hike encounter with religious conservatives that upset her regarding LGBTQ rights."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline give a speech at a school?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.5,
+      "delta": 0.0,
+      "bucket": "same_partial",
+      "arm_a_query_time_ms": 3380,
+      "arm_b_query_time_ms": 981,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The week before 9 June 2023",
+      "arm_a_predicted": "**Early June 2023 (the week of 02 June 2023).**\n\nThis is from the first retrieved memory (session 13, 9 June 2023), where Caroline describes her recent school event speech about her transgender journey.",
+      "arm_b_predicted": "**Early June 2023 (the week of 02 June 2023).**\n\nThis is from the conversation on 9 June 2023 (session 13), where Caroline describes speaking at a school event the week of 2 June 2023 about her transgender journey and encouraging LGBTQ+ involvement. No other memories mention a school speech."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline go biking with friends?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2508,
+      "arm_b_query_time_ms": 950,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The weekend before 13 September 2023",
+      "arm_a_predicted": "**Weekend of 09 September 2023.**\n\nThis is from the conversation on 13 September 2023 (session 8), where Caroline says: \"I had a wicked day out with the gang the weekend of 09 September 2023 - we went biking...\" (The later reference to a café that same weekend appears to be a separate or follow-up event.)",
+      "arm_b_predicted": "**September 9, 2023 (weekend of 09 September 2023).**\n\nThis is from the conversation on 13 September 2023 (session 8), where Caroline says: \"I had a wicked day out with the gang the weekend of 09 September 2023 - we went biking...\" No other memories mention biking."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline go to a pride parade during the summer?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.5,
+      "delta": 0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 2411,
+      "arm_b_query_time_ms": 1001,
+      "arm_a_n_memories": 14,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The week before 3 July 2023",
+      "arm_a_predicted": "**June 2023 and 11 August 2023.**\n\nFrom the context:  \n- In session 19 (17 July 2023), Caroline mentions attending an LGBT pride event in **June 2023** with her mentee.  \n- In session 3 (14 August 2023), she describes going to a pride parade on **11 August 2023**.  \n\nThese are the two specific summer pride parades referenced.",
+      "arm_b_predicted": "**The week of 26 June 2023.**\n\nThis is based on the conversation from session 15 on 3 July 2023, where Caroline states: \"the week of 26 June 2023 I went to an LGBTQ+ pride parade.\" This falls within summer (after 20 June camping and before the 3 July chat), following her earlier June events like the school talk in session 13."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline go to the LGBTQ conference?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.5,
+      "delta": -0.5,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2246,
+      "arm_b_query_time_ms": 791,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "10 July 2023",
+      "arm_a_predicted": "**July 10, 2023**\n\nCaroline mentioned attending the LGBTQ conference \"two days ago\" in the July 12, 2023 chat (session 17), placing it on July 10. This aligns with her earlier mention on July 3 of planning to attend one in July 2023.",
+      "arm_b_predicted": "**July 2023**\n\nCaroline mentioned in the July 3, 2023 conversation (session 15) that she was going to a transgender conference in July 2023. No specific date within the month is given."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline go to the LGBTQ support group?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 8473,
+      "arm_b_query_time_ms": 1215,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "7 May 2023",
+      "arm_a_predicted": "**Caroline went to the LGBTQ support group on 07 May 2023.**\n\nThis is directly stated in the first memory ([time=2023-05-08T13:56:00+00:00, session=1]): \"Caroline: I went to a LGBTQ support group 07 May 2023 and it was so powerful.\"",
+      "arm_b_predicted": "**Caroline went to the LGBTQ support group on 07 May 2023.**\n\nThis is directly stated in the first retrieved memory (session 1, 8 May 2023): \"Caroline: I went to a LGBTQ support group 07 May 2023 and it was so powerful.\" No other memories mention a different date for this event."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline go to the adoption meeting?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2583,
+      "arm_b_query_time_ms": 996,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The friday before 15 July 2023",
+      "arm_a_predicted": "**14 July 2023**\n\nFrom the context in session 18 (time=2023-07-18T13:51:00+00:00), Caroline states: \"14 July 2023 I went to a council meeting for adoption.\" This is the only mention of an adoption meeting or council meeting.",
+      "arm_b_predicted": "**14 July 2023**\n\nFrom the context in session 18 (time=2023-07-15T13:51:00+00:00), Caroline states: \"14 July 2023 I went to a council meeting for adoption.\" This is the only mention of the adoption meeting."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline have a picnic?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.5,
+      "delta": 0.0,
+      "bucket": "same_partial",
+      "arm_a_query_time_ms": 12684,
+      "arm_b_query_time_ms": 1045,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The week before 6 July 2023",
+      "arm_a_predicted": "**29 June 2023** (the week of, per the conversation on 6 July 2023).",
+      "arm_b_predicted": "**The week of 29 June 2023.**\n\nThis is based on the memory from [time=2023-07-06T20:18:00+00:00, session=16, turns=10-15], where Caroline says: \"We even had a picnic the week of 29 June 2023!\" This is the only mention of a picnic in the provided context."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline join a mentorship program?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2376,
+      "arm_b_query_time_ms": 832,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The weekend before 17 July 2023",
+      "arm_a_predicted": "**Weekend of 15 July 2023.**\n\nThis is directly stated in the 17 July 2023 conversation (session 19): Caroline tells Melanie she joined the LGBTQ youth mentorship program \"the weekend of 15 July 2023.\" No earlier mentions appear in the provided context.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts from May to July 2023 do not mention Caroline joining a mentorship program at any point."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline join a new activist group?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 1.0,
+      "delta": 1.0,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 3283,
+      "arm_b_query_time_ms": 856,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The Tuesday before 20 July 2023",
+      "arm_a_predicted": "**20 June 2023** (the Tuesday before their 20 July 2023 chat).",
+      "arm_b_predicted": "**Caroline joined a new LGBTQ activist group on Tuesday, 18 July 2023** (the week before their 20 July 2023 conversation)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline meet up with her friends, family, and mentors?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.5,
+      "delta": 0.0,
+      "bucket": "same_partial",
+      "arm_a_query_time_ms": 2583,
+      "arm_b_query_time_ms": 1388,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The week before 9 June 2023",
+      "arm_a_predicted": "**The week of 02 June 2023.**\n\nThis is based on the conversation in session 13 (9 June 2023), where Caroline shared a photo from the meetup and said: \"Here's a pic from when we met up the week of 02 June 2023!\" and later confirmed knowing her friends for 4 years since moving from Sweden. No other specific meetup dates with this group appear in the provided context.",
+      "arm_b_predicted": "**The week of 02 June 2023.**\n\nThis is based on Caroline's message in the 9 June 2023 conversation (session 13), where she shared a photo from the meet-up and said: \"Here's a pic from when we met up the week of 02 June 2023!\" No other dates in the context refer to this event."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Caroline pass the adoption interview?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.5,
+      "delta": 0.0,
+      "bucket": "same_partial",
+      "arm_a_query_time_ms": 2911,
+      "arm_b_query_time_ms": 963,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The Friday before 22 October 2023",
+      "arm_a_predicted": "**20 October 2023**\n\nFrom the earliest memory (session 11, 22 October 2023 at 9:55 am), Caroline states: \"Woohoo Melanie! I passed the adoption agency interviews 20 October 2023!\" This is the direct date given in the conversation.",
+      "arm_b_predicted": "**20 October 2023**\n\nFrom the first retrieved memory (session 11, 22 October 2023), Caroline states: \"Woohoo Melanie! I passed the adoption agency interviews 20 October 2023!\" This is the exact date mentioned in the conversation."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie buy the figurines?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2371,
+      "arm_b_query_time_ms": 928,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "21 October 2023",
+      "arm_a_predicted": "**21 October 2023**\n\nThis is directly stated in the first retrieved memory ([time=2023-10-22T09:55:00+00:00, session=11]): Melanie says, \"These figurines I bought 21 October 2023 remind me of family love.\" This is the only mention of the figurines across all provided context.",
+      "arm_b_predicted": "**21 October 2023**\n\nThis is directly stated in the memory from session 11 (time=2023-10-22T09:55:00+00:00): \"These figurines I bought 21 October 2023 remind me of family love.\" This is the only mention of the figurines across all provided contexts."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie get hurt?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2301,
+      "arm_b_query_time_ms": 977,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "September 2023",
+      "arm_a_predicted": "**September 2023**\n\nFrom the conversation on 13 October 2023 (session 9), Melanie states: \"recently I had a setback. September 2023 I got hurt and had to take a break from pottery.\" This is the only mention of the injury.",
+      "arm_b_predicted": "**September 2023**\n\nFrom the conversation on 13 October 2023 (session 9), Melanie states: \"September 2023 I got hurt and had to take a break from pottery.\" This is the only mention of the injury, and it aligns with the timeline before the October discussion."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie go camping in July?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 1.0,
+      "delta": 0.5,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2375,
+      "arm_b_query_time_ms": 921,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "two weekends before 17 July 2023",
+      "arm_a_predicted": "**the weekend of 08 July 2023**\n\nThis is confirmed in the first memory (session 19, 17 July 2023), where Melanie states she went camping with her family \"the weekend of 08 July 2023\". Other July camping references (e.g., \"another camping trip in the forest\" on 15 July or general summer trips) lack specific July dates.",
+      "arm_b_predicted": "**08 July 2023**\n\nFrom the memories:\n- In the 17 July 2023 session, Melanie mentions going camping with her family \"the weekend of 08 July 2023\".\n- This is corroborated in the 15 July 2023 session, where she refers to a recent camping trip in the forest and shares a related painting from the \"weekend of 08 July 2023\"."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie go camping in June?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 3790,
+      "arm_b_query_time_ms": 1059,
+      "arm_a_n_memories": 14,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The week before 27 June 2023",
+      "arm_a_predicted": "**20 June 2023**\n\nFrom the first memory (session 14, 27 June 2023), Melanie states she went camping with her family \"the week of 20 June 2023\". No other June camping trip is mentioned.",
+      "arm_b_predicted": "**June 2023**\n\nFrom the May 25, 2023 conversation (session 12), Melanie mentioned: \"My kids are so excited about summer break! We're thinking about going camping June 2023.\" This is the only reference to a June camping trip; no specific date within the month is given."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie go to the museum?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2559,
+      "arm_b_query_time_ms": 738,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "5 July 2023",
+      "arm_a_predicted": "**05 July 2023**\n\nFrom the conversation on 6 July 2023 (session 16), Melanie mentioned taking the kids to the museum on 05 July 2023.",
+      "arm_b_predicted": "**05 July 2023**\n\nFrom the conversation on 6 July 2023 (session 16), Melanie states she took the kids to the museum on 05 July 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie go to the park?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2638,
+      "arm_b_query_time_ms": 1092,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "27 August 2023",
+      "arm_a_predicted": "**27 August 2023**\n\nFrom the context in session 7 (time=2023-08-28T15:19:00+00:00), Melanie states she took her kids to a park on 27 August 2023. This is the only specific mention of her going to the park.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context mentions Melanie's activities like painting a lake sunrise (2022), running a charity race (20 May 2023), going swimming with the kids, family camping trips (June 2023, week of 20 June 2023, weekend of 8 July 2023), a beach trip, and family events, but there is no reference to her going to the park."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie go to the pottery workshop?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 1.0,
+      "delta": 1.0,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2602,
+      "arm_b_query_time_ms": 986,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The Friday before 15 July 2023",
+      "arm_a_predicted": "**Last Friday before 15 July 2023 (session 18).**\n\nThis is from the conversation on 15 July 2023, where Melanie says: \"Last Fri I finally took my kids to a pottery workshop.\" The context places this right before the 15 July session, making it the Friday of the week of 8 July 2023. No other pottery workshop dates are mentioned for Melanie.",
+      "arm_b_predicted": "**Last Friday before 15 July 2023 (or around 14 July 2023).**\n\nThis is based on the conversation from session 18 on 15 July 2023, where Melanie says: \"Last Fri I finally took my kids to a pottery workshop.\" The context places this just before their 15 July chat, after earlier mentions of her pottery class on 2 July 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie make a plate in pottery class?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 12969,
+      "arm_b_query_time_ms": 1039,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "24 August 2023",
+      "arm_a_predicted": "**24 August 2023**\n\nFrom the first retrieved memory (session 6, 25 August 2023), Melanie states she made the plate in pottery class on 24 August 2023. This is the only mention of her making a plate.",
+      "arm_b_predicted": "**24 August 2023**\n\nFrom the conversation on 25 August 2023 (session 6), Melanie states she made the plate in pottery class on 24 August 2023. This is the only mention of her making a specific plate."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie paint a sunrise?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 12622,
+      "arm_b_query_time_ms": 909,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": 2022,
+      "arm_a_predicted": "**2022**\n\nFrom the conversation on 8 May 2023 (session 1), Melanie mentioned painting the \"lake sunrise\" in 2022, describing it as special to her. No other sunrise paintings are referenced in the provided context.",
+      "arm_b_predicted": "**May 8, 2023 (or 2022).**\n\nIn the conversation from session 1 on May 8, 2023 (turns 10-17), Melanie says she painted the lake sunrise in 2022. This is the only mention of her painting a sunrise."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie read the book \"nothing is impossible\"?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2834,
+      "arm_b_query_time_ms": 906,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": 2022,
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context mentions Melanie reading a book in 2022 that reminds her to pursue dreams (session 17, July 12, 2023), and another book recommended by Caroline (session 9, October 13, 2023), but neither is identified as \"Nothing Is Impossible.\" No other memories reference that specific title or its reading date.",
+      "arm_b_predicted": "**I don't know.** The provided context does not mention Melanie reading the book \"Nothing Is Impossible\" (or any specific title matching that). The only book reference is Melanie mentioning an unnamed book from 2022 that reminds her to pursue dreams."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie run a charity race?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.5,
+      "delta": 0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 3028,
+      "arm_b_query_time_ms": 860,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The sunday before 25 May 2023",
+      "arm_a_predicted": "**20 May 2023**\n\nFrom the first memory ([time=2023-05-25T13:14:00+00:00, session=12]), Melanie states: \"I ran a charity race for mental health 20 May 2023.\" This is the only mention of the event.",
+      "arm_b_predicted": "**20 May 2023**\n\nFrom the context in session 12 (25 May 2023), Melanie states she ran a charity race for mental health on 20 May 2023. This is the only mention of the event."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie sign up for a pottery class?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 18692,
+      "arm_b_query_time_ms": 1572,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "2 July 2023",
+      "arm_a_predicted": "**02 July 2023**\n\nThis is directly stated in the first retrieved memory ([time=2023-07-03T13:36:00+00:00, session=15, turns=0-9]): Melanie says, \"I just signed up for a pottery class 02 July 2023.\" No other memories contradict this date.",
+      "arm_b_predicted": "**02 July 2023**\n\nThis is directly stated in the first memory ([time=2023-07-03T13:36:00+00:00, session=15, turns=0-9]), where Melanie tells Caroline: \"I just signed up for a pottery class 02 July 2023.\" No other memories contradict or provide a different date."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie's family go on a roadtrip?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.0,
+      "delta": -0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 2218,
+      "arm_b_query_time_ms": 726,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "The weekend before 20 October 2023",
+      "arm_a_predicted": "**20 October 2023 (or the weekend prior).**\n\nThis is based on the conversation from session 10 on 20 October 2023, where Melanie refers to the roadtrip \"this past weekend\" that included her son's accident. A later message on the same day confirms they went camping on 19 October 2023 right after the trip.",
+      "arm_b_predicted": "**20 October 2023** (the weekend before their 6:55 pm chat on 20 Oct)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When did Melanie's friend adopt a child?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2192,
+      "arm_b_query_time_ms": 811,
+      "arm_a_n_memories": 14,
+      "arm_b_n_memories": 10,
+      "ground_truth": 2022,
+      "arm_a_predicted": "**September 2022 (or 2022).**\n\nFrom the 13 October 2023 conversation (session 9), Melanie states: \"Yeah, a buddy of mine adopted 2022.\" This is the only mention of the adoption date.",
+      "arm_b_predicted": "**2022**\n\nFrom the October 13, 2023 conversation (session 9), Melanie states: \"Yeah, a buddy of mine adopted 2022.\" This is the only mention of the adoption date."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When is Caroline going to the transgender conference?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2674,
+      "arm_b_query_time_ms": 798,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "July 2023",
+      "arm_a_predicted": "**July 2023**\n\nFrom the conversation on 3 July 2023 (session 15), Caroline states she is going to a transgender conference in July 2023. This is the only mention of the event in the provided context.",
+      "arm_b_predicted": "**July 2023**\n\nFrom the conversation on July 3, 2023 (session 15), Caroline states she is going to a transgender conference in July 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When is Caroline's youth center putting on a talent show?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1375,
+      "arm_b_query_time_ms": 866,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "September 2023",
+      "arm_a_predicted": "**September 2023**\n\nFrom the conversation on 28 August 2023 (session 7), Caroline states they're organizing a talent show for the kids in September 2023 at the LGBTQ+ youth center where she volunteers.",
+      "arm_b_predicted": "**September 2023**\n\nFrom the memories (session 7, August 28, 2023), Caroline mentions organizing a talent show for the kids in September 2023 while discussing her volunteering at an LGBTQ+ youth center. This is the only reference to the event."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When is Melanie planning on going camping?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 11954,
+      "arm_b_query_time_ms": 855,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "June 2023",
+      "arm_a_predicted": "**June 2023**\n\nFrom the conversation on 25 May 2023 (session 12), Melanie mentioned that her kids were excited about summer break and that they were thinking about going camping in June 2023.",
+      "arm_b_predicted": "**June 2023**\n\nFrom the May 25, 2023 conversation (session 12), Melanie mentioned her kids were excited about summer break and that they were thinking about going camping in June 2023. No later conversations indicate a change in those plans."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "temporal",
+        "question": "When is Melanie's daughter's birthday?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.5,
+      "delta": -0.5,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2379,
+      "arm_b_query_time_ms": 823,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "13 August",
+      "arm_a_predicted": "**13 August 2023**\n\nFrom the first memory (session 3, 14 August 2023), Melanie states: \"13 August 2023 was amazing! We celebrated my daughter's birthday with a concert...\" This directly dates the birthday celebration. No other memories mention a different date.",
+      "arm_b_predicted": "**13 August 2023**\n\nFrom the 14 August 2023 conversation (session 3), Melanie states: \"13 August 2023 was amazing! We celebrated my daughter's birthday with a concert...\" This is the only mention of her daughter's birthday in the provided context."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Did Melanie make the black and white bowl in the photo?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1772,
+      "arm_b_query_time_ms": 796,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Yes",
+      "arm_a_predicted": "**Yes**, Melanie made the black and white bowl. In the conversation on 3 July 2023, she explicitly says: \"Yeah, I made this bowl in my class.\"",
+      "arm_b_predicted": "**Yes**, Melanie made the black and white bowl. In the conversation on 3 July 2023, she explicitly says: \"Thanks, Caroline! Yeah, I made this bowl in my class.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How did Melanie feel about her family after the accident?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2414,
+      "arm_b_query_time_ms": 880,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "They are important and mean the world to her",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no mention of any accident involving Melanie or her family, nor do they describe her feelings about her family in relation to one. All references to family are positive, focusing on support, camping trips, pottery activities, and cherished moments.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context contains no mention of any accident involving Melanie or her family, nor does it describe her feelings toward her family in relation to one. All discussions focus on positive family moments like camping, weddings, and daily life."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How did Melanie feel about her family supporting her?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.5,
+      "delta": -0.5,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2873,
+      "arm_b_query_time_ms": 998,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "She appreciated them a lot",
+      "arm_a_predicted": "**Melanie felt positive and appreciative about her family's support.** She described them as \"awesome,\" noting they helped during her move, showed \"lots of love and support,\" and motivated her, keeping her \"at peace.\" She also called them her \"rocks\" who give her love.",
+      "arm_b_predicted": "**Melanie felt motivated by her family's support.** \n\nIn the conversation on 9 June 2023, she said her husband and kids \"keep me motivated\" and that she wants to \"be courageous for my family—they motivate me and give me love.\" She also described family moments, like camping and her wedding, as making life \"awesome\" and \"worth it.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How did Melanie feel after the accident?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2207,
+      "arm_b_query_time_ms": 1203,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Grateful and thankful for her family",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts contain no mention of any accident involving Melanie (or Caroline), nor any related feelings or events. All discussions focus on topics like mental health, art, family activities, LGBTQ+ experiences, and personal goals.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How did Melanie feel while watching the meteor shower?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2286,
+      "arm_b_query_time_ms": 644,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "in awe of the universe",
+      "arm_a_predicted": "**Melanie felt tiny and in awe of the universe.** \n\nThis is from her memory of the 2022 camping trip during the Perseid meteor shower, where she described lying under a clear, star-filled sky watching streaks of light, feeling part of something huge and awe-inspiring.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How did Melanie's children handle the accident?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2732,
+      "arm_b_query_time_ms": 620,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "They were scared but resilient",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention any accident involving Melanie's children or how they handled it.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How did Melanie's son handle the accident?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2217,
+      "arm_b_query_time_ms": 729,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "He was scared but reassured by his family",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How do Melanie and Caroline describe their journey through life together?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2836,
+      "arm_b_query_time_ms": 814,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "An ongoing adventure of learning and growing.",
+      "arm_a_predicted": "**They describe their journey through life together as supporting and motivating each other, sharing stories, building a strong community of hope, and making a real impact together.**",
+      "arm_b_predicted": "**They describe their journey through life together as motivating and helping each other, tackling life's challenges together, spreading love and understanding, and making a real impact as a team.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How does Melanie prioritize self-care?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2187,
+      "arm_b_query_time_ms": 779,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "by carving out some me-time each day for activities like running, reading, or playing the violin",
+      "arm_a_predicted": "**Melanie prioritizes self-care by carving out daily \"me-time\" for running, reading, or playing her violin, which refreshes her and helps her stay present for her family.**",
+      "arm_b_predicted": "**Melanie prioritizes self-care by carving out daily \"me-time\" for running, reading, or playing her violin, which refreshes her and helps her stay present for her family.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How long has Melanie been creating art?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2221,
+      "arm_b_query_time_ms": 1076,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "7 years",
+      "arm_a_predicted": "**Seven years.**",
+      "arm_b_predicted": "**Seven years.** \n\nThis is directly stated in the conversation from 12:09 am on 13 September 2023, where Melanie says: \"Seven years now, and I've finally found my real muses: painting and pottery.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How long have Mel and her husband been married?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2439,
+      "arm_b_query_time_ms": 815,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Mel and her husband have been married for 5 years.",
+      "arm_a_predicted": "**5 years.**",
+      "arm_b_predicted": "**5 years.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "How often does Melanie go to the beach with her kids?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 3303,
+      "arm_b_query_time_ms": 647,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "once or twice a year",
+      "arm_a_predicted": "**Once or twice a year.**\n\nFrom the 20 July 2023 conversation, Melanie states: \"We don't go often, usually only once or twice a year. But those times are always special...\"",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What activity did Caroline used to do with her dad?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 6211,
+      "arm_b_query_time_ms": 761,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Horseback riding",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention any activities Caroline used to do with her dad.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention any activities Caroline did with her dad."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What advice does Caroline give for getting started with adoption?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2339,
+      "arm_b_query_time_ms": 836,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Do research, find an adoption agency or lawyer, gather necessary documents, and prepare emotionally.",
+      "arm_a_predicted": "**Caroline advises:** Do your research and find an adoption agency or lawyer for guidance. Gather documents like references, financial info, and medical checks. Also prepare emotionally, as the wait can be hard.",
+      "arm_b_predicted": "**Caroline advises doing research to find an adoption agency or lawyer for guidance, gathering documents like references, financial info, and medical checks, and preparing emotionally for the wait.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What are Caroline's plans for the summer?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.5,
+      "delta": -0.5,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 1525,
+      "arm_b_query_time_ms": 876,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "researching adoption agencies",
+      "arm_a_predicted": "**Caroline's plans for the summer include planning something special just with Melanie (to catch up and explore nature) and researching adoption agencies to start the process of building a family.**",
+      "arm_b_predicted": "**Caroline's plans for the summer include planning a special outing with Melanie to explore nature and make memories, researching adoption agencies as she pursues her dream of adopting children, and continuing her mentorship program for LGBTQ youth.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What are the new shoes that Melanie got used for?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2748,
+      "arm_b_query_time_ms": 819,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Running",
+      "arm_a_predicted": "**For running.** \n\nFrom the 12 July 2023 conversation, Melanie mentioned getting new purple shoes specifically \"for running\" and noted she's been running longer distances as a way to destress.",
+      "arm_b_predicted": "**For running.** \n\nFrom the 12 July 2023 conversation, Melanie mentioned getting new purple shoes specifically \"for running\" and noted she's been running longer distances as a way to destress."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What book did Caroline recommend to Melanie?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2046,
+      "arm_b_query_time_ms": 910,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "\"Becoming Nicole\"",
+      "arm_a_predicted": "**\"Becoming Nicole\" by Amy Ellis Nutt.**\n\nIn the conversation on 12 July 2023, Caroline recommended this book, describing it as an inspiring true story about a trans girl and her family that gave her hope and a sense of connection.",
+      "arm_b_predicted": "**\"Becoming Nicole\" by Amy Ellis Nutt.**\n\nIn the conversation on 12 July 2023, Caroline recommended this book, describing it as an inspiring true story about a trans girl and her family that gave her hope and a sense of connection."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What country is Caroline's grandma from?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1201,
+      "arm_b_query_time_ms": 861,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Sweden",
+      "arm_a_predicted": "Sweden.",
+      "arm_b_predicted": "**Sweden**\n\nFrom the conversation on 27 June 2023, Caroline states that the necklace is a gift from her grandma in her home country, Sweden."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What creative project do Mel and her kids do together besides pottery?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2151,
+      "arm_b_query_time_ms": 814,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "painting",
+      "arm_a_predicted": "**Painting (nature-inspired ones).**\n\nFrom the 15 July 2023 conversation, Melanie mentions they love painting together lately, especially nature-inspired ones, and shares their latest work from the weekend of 8 July 2023.",
+      "arm_b_predicted": "**Painting (nature-inspired ones).**\n\nFrom the 15 July 2023 conversation, Melanie mentions they love painting together lately, especially nature-inspired ones, and shares their latest work from the weekend of 8 July 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Caroline find in her neighborhood during her walk?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2157,
+      "arm_b_query_time_ms": 805,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "a rainbow sidewalk",
+      "arm_a_predicted": "**A cool rainbow sidewalk for Pride Month.**",
+      "arm_b_predicted": "**Caroline found a vibrant rainbow sidewalk for Pride Month.** \n\nThis is based on the 25 August 2023 conversation, where she described discovering it while walking, noting its colors and how it symbolized love and acceptance."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Caroline make for a local church?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2105,
+      "arm_b_query_time_ms": 1013,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "a stained glass window",
+      "arm_a_predicted": "**A stained glass window.**\n\nFrom the conversation on 25 August 2023, Caroline described making a stained glass window for a local church. It was inspired by time changing our lives, reflecting her journey as a transgender woman and the importance of accepting growth and change.",
+      "arm_b_predicted": "**Stained glass window.**\n\nFrom the conversation on 25 August 2023, Caroline described making a stained glass window for a local church. It was inspired by time changing our lives, her journey as a transgender woman, and the importance of accepting growth and change."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Caroline see at the council meeting for adoption?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2862,
+      "arm_b_query_time_ms": 901,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context mentions Caroline attending a council meeting for adoption on 14 July 2023, describing it as \"inspiring and emotional\" with \"so many people wanted to create loving homes for children in need,\" but it does not specify what she saw there.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context from the 14 July 2023 conversation mentions Caroline attending a council meeting for adoption that was inspiring and emotional, with many people wanting to create loving homes for children in need. It made her more determined to adopt, but it does not specify what she saw there."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Caroline take away from the book \"Becoming Nicole\"?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 1.0,
+      "delta": 0.5,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2739,
+      "arm_b_query_time_ms": 732,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Lessons on self-acceptance and finding support",
+      "arm_a_predicted": "**Self-acceptance, finding support, and that tough times don't last—hope and love exist (plus pets bring joy).**",
+      "arm_b_predicted": "**Self-acceptance, finding support, and that tough times don't last—hope and love exist.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Mel and her kids make during the pottery workshop?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2647,
+      "arm_b_query_time_ms": 729,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "pots",
+      "arm_a_predicted": "**They made their own pots (including a cute cup).**\n\nThis is from the 15 July 2023 conversation, where Melanie described taking her kids to a pottery workshop the previous Friday. She said they \"made their own pots\" and shared a picture of the cup they created.",
+      "arm_b_predicted": "**They made their own pots (including a cute cup).**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Mel and her kids paint in their latest project in July 2023?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1715,
+      "arm_b_query_time_ms": 939,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "a sunset with a palm tree",
+      "arm_a_predicted": "**Nature-inspired painting (with flowers).**\n\nFrom the 15 July 2023 conversation, Melanie described their latest project (from the weekend of 8 July 2023) as a nature-inspired painting they worked on together, and she shared a photo of the flowers they found.",
+      "arm_b_predicted": "**Nature-inspired painting (with flowers).**\n\nFrom the 15 July 2023 conversation, Melanie described their latest painting project (from the weekend of 8 July 2023) as nature-inspired, done together while bonding and discussing nature; she shared a photo of the flowers they found."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Melanie and her family do while camping?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.5,
+      "delta": 0.0,
+      "bucket": "same_partial",
+      "arm_a_query_time_ms": 2895,
+      "arm_b_query_time_ms": 734,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+      "arm_a_predicted": "**Roasted marshmallows around the campfire, went on hikes, explored nature, and told stories.**",
+      "arm_b_predicted": "**Roast marshmallows, tell stories around the campfire, explore nature, go hiking, and watch the Perseid meteor shower (in 2022).**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Melanie and her family see during their camping trip last year?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 3002,
+      "arm_b_query_time_ms": 1034,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Perseid meteor shower",
+      "arm_a_predicted": "**The view from the top of a hike (in the mountains).**\n\nFrom the June 27, 2023 conversation (session 14), Melanie described her family's camping trip the week of June 20, 2023: they explored nature, roasted marshmallows, and went on a hike where \"the view from the top was amazing.\" This is the only camping trip explicitly tied to \"last year\" relative to later 2023 dates in the context.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided context mentions Melanie's family camping trips (e.g., mountains in June 2023 with hiking, campfire, and nature exploration; beach in July 2023), but none are explicitly from \"last year\" relative to the conversation dates, and no specific sights like particular animals, landmarks, or views are detailed beyond general activities."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Melanie do after the road trip to relax?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2337,
+      "arm_b_query_time_ms": 603,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Went on a nature walk or hike",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided context does not mention any road trip or what Melanie did afterward to relax.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did Melanie realize after the charity race?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2381,
+      "arm_b_query_time_ms": 863,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "self-care is important",
+      "arm_a_predicted": "**Melanie realized that self-care is really important.** After the charity race for mental health on 20 May 2023, she told Caroline it was thought-provoking and helped her see that looking after herself allows her to better care for her family.",
+      "arm_b_predicted": "**Melanie realized that self-care is really important.** After the charity race for mental health on 20 May 2023, she noted it was thought-provoking and helped her see that looking after herself enables her to better care for her family."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did the charity race raise awareness for?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2457,
+      "arm_b_query_time_ms": 836,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "mental health",
+      "arm_a_predicted": "**Mental health.**\n\nFrom the conversation on 25 May 2023, Melanie mentioned running a charity race for mental health on 20 May 2023, which prompted discussions on self-care and mental well-being.",
+      "arm_b_predicted": "**Mental health.**\n\nFrom the conversation on 25 May 2023, Melanie states she ran a charity race for mental health on 20 May 2023, describing it as rewarding and thought-provoking about taking care of our minds."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What did the posters at the poetry reading say?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1396,
+      "arm_b_query_time_ms": 749,
+      "arm_a_n_memories": 7,
+      "arm_b_n_memories": 10,
+      "ground_truth": "\"Trans Lives Matter\"",
+      "arm_a_predicted": "**I don't know.**\n\nThe context mentions posters at the transgender poetry reading as \"amazing\" with \"so much pride and strength,\" but provides no details on what they said.",
+      "arm_b_predicted": "**I don't know.**\n\nThe context mentions posters at the transgender poetry reading as \"great\" but provides no details on what they said."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What do Melanie's family give her?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.5,
+      "delta": 0.0,
+      "bucket": "same_partial",
+      "arm_a_query_time_ms": 2786,
+      "arm_b_query_time_ms": 805,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Strength and motivation",
+      "arm_a_predicted": "**Melanie's family gives her strength, motivation, love, support, and peace.** \n\nThis is shown across multiple conversations, such as when she mentions her husband and kids keep her motivated (9 June 2023), they give her strength to keep going after the accident (20 October 2023), their love helped her through tough times and during her move (15 July 2023 and 13 October 2023), and they bring her peace alongside creativity (15 July 2023).",
+      "arm_b_predicted": "**Melanie's family gives her motivation, support, strength, joy, love, and helps her through tough times.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What do sunflowers represent according to Caroline?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2140,
+      "arm_b_query_time_ms": 862,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "warmth and happiness",
+      "arm_a_predicted": "**Sunflowers represent warmth and happiness according to Caroline.**",
+      "arm_b_predicted": "**I don't know.** \n\nThe provided conversation transcripts do not mention sunflowers or what they represent according to Caroline."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What does Caroline's drawing symbolize for her?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 1.0,
+      "delta": 1.0,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2451,
+      "arm_b_query_time_ms": 796,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Freedom and being true to herself.",
+      "arm_a_predicted": "**Caroline's drawing symbolizes self-acceptance, love, and the journey of embracing one's true identity.** \n\nIn her painting \"Embracing Identity,\" the woman represents finding comfort in being herself, reflecting her experiences as a transgender woman. Art has helped her explore her transition, accept imperfections, and work through personal growth. She also created a stained glass window showing time changing lives and the key to discovering true potential, inspired by her journey of growth and acceptance in the trans community.",
+      "arm_b_predicted": "**Freedom and being real (staying true to herself and embracing her womanhood).**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What does Caroline's necklace symbolize?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1758,
+      "arm_b_query_time_ms": 1118,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "love, faith, and strength",
+      "arm_a_predicted": "**Caroline's necklace symbolizes love, faith, and strength.** It was a gift from her grandma in Sweden and serves as a reminder of her roots and family support.",
+      "arm_b_predicted": "**Caroline's necklace symbolizes love, faith, and strength.** It was a gift from her grandma in Sweden and serves as a reminder of her roots and family support."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What does Melanie do to keep herself busy during her pottery break?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2180,
+      "arm_b_query_time_ms": 666,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Read a book and paint.",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What does Melanie say running has been great for?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.0,
+      "delta": -0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 2907,
+      "arm_b_query_time_ms": 1053,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Her mental health",
+      "arm_a_predicted": "**Melanie says running has been great for de-stressing, her headspace, mental health, and clearing her mind.**",
+      "arm_b_predicted": "**Melanie says running has been great for de-stressing and her mental health/headspace.** \n\nThis is supported by multiple conversations: on 12 July 2023, she mentions running farther to de-stress and improve her headspace and mental health; on 25 May 2023, she notes running as part of self-care; and on 20 July 2023, she links it to destressing and clearing her mind."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What does Melanie think about Caroline's decision to adopt?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2338,
+      "arm_b_query_time_ms": 1068,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "she thinks Caroline is doing something amazing and will be an awesome mom",
+      "arm_a_predicted": "**Melanie thinks Caroline's decision to adopt is awesome and inspiring.** She calls it a kind, loving act that will give kids a safe, supportive home, praises Caroline's caring heart, and says the children will be \"so lucky\" and \"so supported and happy.\"",
+      "arm_b_predicted": "**Melanie thinks Caroline's decision to adopt is awesome and kind.** She says it's amazing that Caroline is creating a family for kids in need, calls her \"so kind,\" and believes her future family will be \"so lucky to have you.\" She also tells Caroline she'll be an \"awesome mom\" who will give the kids love and stability."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What happened to Melanie's son on their road trip?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1422,
+      "arm_b_query_time_ms": 706,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "He got into an accident",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What inspired Caroline's painting for the art show?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2662,
+      "arm_b_query_time_ms": 867,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "visiting an LGBTQ center and wanting to capture unity and strength",
+      "arm_a_predicted": "**Caroline's painting for the August 2023 LGBTQ art show was inspired by her visit to an LGBTQ center.** She aimed to capture the unity and strength she observed there.",
+      "arm_b_predicted": "**Caroline's painting for the LGBTQ art show in August 2023 was inspired by a visit to an LGBTQ center**, which she wanted to capture through themes of unity and strength."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What is Caroline excited about in the adoption process?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1396,
+      "arm_b_query_time_ms": 667,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "creating a family for kids who need one",
+      "arm_a_predicted": "Caroline is excited about making a family for kids who need one.",
+      "arm_b_predicted": "**Caroline is excited about making a family for kids who need one.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What is Melanie's hand-painted bowl a reminder of?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 5903,
+      "arm_b_query_time_ms": 845,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "art and self-expression",
+      "arm_a_predicted": "**art and self-expression**\n\nMelanie's hand-painted bowl (made by a friend for Caroline's 18th birthday) reminds Caroline of art and self-expression, per the 27 June 2023 conversation.",
+      "arm_b_predicted": "art and self-expression"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What is Melanie's reason for getting into running?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 3517,
+      "arm_b_query_time_ms": 704,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "To de-stress and clear her mind",
+      "arm_a_predicted": "**Melanie's reason for getting into running is to de-stress and clear her mind, which has been great for her mental health.**",
+      "arm_b_predicted": "**Melanie's reason for getting into running is to de-stress and clear her mind, which has been great for her mental health and headspace.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What kind of books does Caroline have in her library?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1660,
+      "arm_b_query_time_ms": 782,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "kids' books - classics, stories from different cultures, educational books",
+      "arm_a_predicted": "Caroline has kids' books in her library, including classics, stories from different cultures, and educational books.",
+      "arm_b_predicted": "**Kids' books - classics, stories from different cultures, and educational books.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What kind of counseling and mental health services is Caroline interested in pursuing?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 3163,
+      "arm_b_query_time_ms": 768,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "working with trans people, helping them accept themselves and supporting their mental health",
+      "arm_a_predicted": "**Counseling and mental health services for trans people, focusing on self-acceptance and support.**",
+      "arm_b_predicted": "**Caroline is interested in counseling and mental health services focused on working with trans people, helping them with self-acceptance and mental health support.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What kind of painting did Caroline share with Melanie on October 13, 2023?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2239,
+      "arm_b_query_time_ms": 594,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "An abstract painting with blue streaks on a wall.",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation memories only go up to 23 August 2023. There is no record of any conversation or painting shared on 13 October 2023.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What kind of place does Caroline want to create for people?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 1.0,
+      "delta": 0.5,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 2426,
+      "arm_b_query_time_ms": 738,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "a safe and inviting place for people to grow",
+      "arm_a_predicted": "**A safe, inviting place for people (especially trans individuals) to grow, accept themselves, and receive mental health support.**",
+      "arm_b_predicted": "**A safe, inviting place for people to grow.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What kind of pot did Mel and her kids make with clay?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2454,
+      "arm_b_query_time_ms": 744,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "a cup with a dog face on it",
+      "arm_a_predicted": "**A cup.** In the July 15, 2023 conversation, Melanie shared that she and her kids made their own pots at a pottery workshop, and Caroline responded, \"That cup is so cute,\" referring to the one they created.",
+      "arm_b_predicted": "They made their own pots."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What motivated Caroline to pursue counseling?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2522,
+      "arm_b_query_time_ms": 773,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "her own journey and the support she received, and how counseling improved her life",
+      "arm_a_predicted": "**Caroline's own journey with mental health struggles and the positive impact of the counseling and support she received.**",
+      "arm_b_predicted": "**Caroline's own journey with mental health and the support she received, which helped her realize its importance for others.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What painting did Melanie show to Caroline on October 13, 2023?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2472,
+      "arm_b_query_time_ms": 749,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "A painting inspired by sunsets with a pink sky.",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation memories only go up to 25 August 2023. There is no record of any interaction or painting shared by Melanie on 13 October 2023.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What pet does Caroline have?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2614,
+      "arm_b_query_time_ms": 787,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "guinea pig",
+      "arm_a_predicted": "**Oscar, a guinea pig.**",
+      "arm_b_predicted": "**Oscar, a guinea pig.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What pets does Melanie have?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1307,
+      "arm_b_query_time_ms": 664,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Two cats and a dog",
+      "arm_a_predicted": "Melanie has a dog named Luna, cats named Oliver and Bailey, and a horse.",
+      "arm_b_predicted": "Melanie has a dog named Luna, a cat named Oliver, another cat named Bailey, and a horse."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What precautionary sign did Melanie see at the café?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2996,
+      "arm_b_query_time_ms": 887,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "A sign stating that someone is not being able to leave",
+      "arm_a_predicted": "The sign was just a precaution.",
+      "arm_b_predicted": "**The precautionary sign at the café (weekend of 09 September 2023) was a serious-looking warning sign put up as a precaution.** Caroline expressed concern upon seeing it, but Melanie clarified it was just a precaution and that she had a great time anyway."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What setback did Melanie face in October 2023?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 7216,
+      "arm_b_query_time_ms": 792,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "She got hurt and had to take a break from pottery.",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts from June to August 2023 contain no information about any events, setbacks, or activities involving Melanie (or Caroline) in October 2023.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts from May to July 2023 contain no information about any events, including setbacks, in October 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What type of individuals does the adoption agency Caroline is considering support?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2551,
+      "arm_b_query_time_ms": 857,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "LGBTQ+ individuals",
+      "arm_a_predicted": "**LGBTQ+ folks (or individuals).**\n\nFrom the 25 May 2023 conversation: Caroline chose the agency because \"they help LGBTQ+ folks with adoption. Their inclusivity and support really spoke to me.\"",
+      "arm_b_predicted": "**LGBTQ+ folks (or individuals).**\n\nFrom the May 25, 2023 conversation, Caroline explicitly states she chose the agency because \"they help LGBTQ+ folks with adoption. Their inclusivity and support really spoke to me.\" This is the direct answer from the provided context."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What was Melanie's favorite book from her childhood?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1555,
+      "arm_b_query_time_ms": 833,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "\"Charlotte's Web\"",
+      "arm_a_predicted": "**\"Charlotte's Web\"**\n\nFrom the conversation on 6 July 2023, Melanie directly states: \"I loved reading 'Charlotte's Web' as a kid. It was so cool seeing how friendship and compassion can make a difference.\"",
+      "arm_b_predicted": "**\"Charlotte's Web\"**\n\nFrom the conversation on 6 July 2023, Melanie directly states: \"I loved reading 'Charlotte's Web' as a kid. It was so cool seeing how friendship and compassion can make a difference.\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What was Melanie's reaction to her children enjoying the Grand Canyon?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2783,
+      "arm_b_query_time_ms": 1390,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "She was happy and thankful",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts do not mention the Grand Canyon or Melanie's children's reaction to it.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What was discussed in the LGBTQ+ counseling workshop?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1604,
+      "arm_b_query_time_ms": 1226,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "therapeutic methods and how to best work with trans people",
+      "arm_a_predicted": "**The different therapeutic methods and how to best work with trans people (including making a safe space for them).**",
+      "arm_b_predicted": "The LGBTQ+ counseling workshop (attended 23 June 2023) discussed different therapeutic methods and how to best work with trans people, including creating safe spaces."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What was grandma's gift to Caroline?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 1.0,
+      "delta": 0.5,
+      "bucket": "rescued",
+      "arm_a_query_time_ms": 1412,
+      "arm_b_query_time_ms": 730,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "necklace",
+      "arm_a_predicted": "**The necklace from Sweden, symbolizing love, faith, and strength.**",
+      "arm_b_predicted": "**The necklace from Sweden, symbolizing love, faith, and strength.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What was the poetry reading that Caroline attended about?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 3036,
+      "arm_b_query_time_ms": 760,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "It was a transgender poetry reading where transgender people shared their stories.",
+      "arm_a_predicted": "**The poetry reading Caroline attended was a transgender poetry reading where transgender people shared their stories through poetry.** It was a safe, empowering space for self-expression and celebrating identities (from the 13 October 2023 conversation).",
+      "arm_b_predicted": "**Transgender poetry reading where transgender people shared their stories through poetry.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "What workshop did Caroline attend recently?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 1585,
+      "arm_b_query_time_ms": 955,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "LGBTQ+ counseling workshop",
+      "arm_a_predicted": "**LGBTQ+ counseling workshop on 23 June 2023.**",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation memories mention Caroline attending an LGBTQ+ pride parade (June 2023), an LGBTQ support group (May 2023), an LGBTQ conference (July 2023), and an adoption advice/assistance group (August 2023), but none are described as a workshop."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Where did Oliver hide his bone once?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2330,
+      "arm_b_query_time_ms": 734,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "In Melanie's slipper",
+      "arm_a_predicted": "**In Melanie's slipper.**\n\nFrom the conversation on 23 August 2023, Melanie said: \"Oliver's hilarious! He hid his bone in my slipper once!\"",
+      "arm_b_predicted": "**In Melanie's slipper.**\n\nFrom the 23 August 2023 conversation: Melanie said, \"Oliver's hilarious! He hid his bone in my slipper once!\""
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Which  classical musicians does Melanie enjoy listening to?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 1521,
+      "arm_b_query_time_ms": 666,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Bach and Mozart",
+      "arm_a_predicted": "I don't know.",
+      "arm_b_predicted": "I don't know."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Which song motivates Caroline to be courageous?"
+      },
+      "arm_a_score": 0.0,
+      "arm_b_score": 0.0,
+      "delta": 0.0,
+      "bucket": "unchanged_wrong",
+      "arm_a_query_time_ms": 2099,
+      "arm_b_query_time_ms": 829,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Brave by Sara Bareilles",
+      "arm_a_predicted": "**I don't know.**\n\nThe provided conversation transcripts discuss Caroline's motivations like friends, family, mentors, her transgender journey, support groups, and books—but no specific song is mentioned as motivating her to be courageous.",
+      "arm_b_predicted": "**I don't know.**\n\nThe provided conversation transcripts discuss Caroline's motivations like friends, family, mentors, her transgender journey, support groups, and books—but no specific song is mentioned as motivating her to be courageous."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Who is Melanie a fan of in terms of modern music?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2337,
+      "arm_b_query_time_ms": 926,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Ed Sheeran",
+      "arm_a_predicted": "**Ed Sheeran (\"Perfect\").**\n\nThis is directly stated in the first memory from 28 August 2023, where Melanie says she likes classical music like Bach and Mozart, as well as modern music like Ed Sheeran's \"Perfect\". No other modern artists are mentioned in the provided context.",
+      "arm_b_predicted": "**Ed Sheeran (\"Perfect\")**\n\nThis is directly stated in the first retrieved memory from 28 August 2023, where Melanie says she likes both classical music and modern music like Ed Sheeran's \"Perfect\"."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Who performed at the concert at Melanie's daughter's birthday?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 2675,
+      "arm_b_query_time_ms": 766,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Matt Patterson",
+      "arm_a_predicted": "**Matt Patterson** performed at the concert for Melanie's daughter's birthday on 13 August 2023.",
+      "arm_b_predicted": "**Matt Patterson** performed at the concert for Melanie's daughter's birthday on 13 August 2023."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Whose birthday did Melanie celebrate recently?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1362,
+      "arm_b_query_time_ms": 785,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "Melanie's daughter",
+      "arm_a_predicted": "**Melanie's daughter's birthday.**\n\nThis is based on the conversation from 14 August 2023, where Melanie says: \"13 August 2023 was amazing! We celebrated my daughter's birthday with a concert...\"",
+      "arm_b_predicted": "**Melanie's daughter's birthday** (on 13 August 2023)."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Why are flowers important to Melanie?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 0.0,
+      "delta": -1.0,
+      "bucket": "harmed_from_fully_correct",
+      "arm_a_query_time_ms": 2875,
+      "arm_b_query_time_ms": 707,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "They remind her to appreciate the small moments and were a part of her wedding decor",
+      "arm_a_predicted": "**Flowers bring joy to Melanie. They represent growth, beauty, and appreciating small moments; they were also an important part of her wedding decor and always remind her of that day.**",
+      "arm_b_predicted": "**I don't know.** \n\nThe provided conversation transcripts do not mention flowers or their importance to Melanie."
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Why did Caroline choose the adoption agency?"
+      },
+      "arm_a_score": 1.0,
+      "arm_b_score": 1.0,
+      "delta": 0.0,
+      "bucket": "unchanged_correct",
+      "arm_a_query_time_ms": 1499,
+      "arm_b_query_time_ms": 815,
+      "arm_a_n_memories": 10,
+      "arm_b_n_memories": 10,
+      "ground_truth": "because of their inclusivity and support for LGBTQ+ individuals",
+      "arm_a_predicted": "**Caroline chose the adoption agency because it helps LGBTQ+ folks with adoption, and its inclusivity and support spoke to her.**",
+      "arm_b_predicted": "**Caroline chose the adoption agency because it helps LGBTQ+ folks with adoption, and its inclusivity and support spoke to her.**"
+    },
+    {
+      "key": {
+        "conv": "conv-26",
+        "cat": "unanswerable",
+        "question": "Why did Melanie choose to use colors and patterns in her pottery project?"
+      },
+      "arm_a_score": 0.5,
+      "arm_b_score": 0.0,
+      "delta": -0.5,
+      "bucket": "partial_changed",
+      "arm_a_query_time_ms": 3086,
+      "arm_b_query_time_ms": 660,
+      "arm_a_n_memories": 15,
+      "arm_b_n_memories": 10,
+      "ground_truth": "She wanted to catch the eye and make people smile.",
+      "arm_a_predicted": "**Melanie chose colors and patterns in her pottery project because she is obsessed with them; they catch the eye, make people smile, help her express her feelings, and allow her to be creative.**",
+      "arm_b_predicted": "I don't know."
+    }
+  ],
+  "interpretation": {
+    "default_config_verdict": "rejected_disable_expansion; Outcome 3 says expansion was net-helping",
+    "latency_accuracy_curve_point": {
+      "accepted_as": "quantified tradeoff datapoint, not a config promotion rule",
+      "accuracy_delta_pp_full_5cat": -3.517587939698,
+      "accuracy_delta_pp_protocol_4cat": -4.93,
+      "avg_latency_delta_ms": -2381,
+      "avg_latency_reduction_pct": 72.48,
+      "p95_latency_delta_ms": -7237,
+      "p95_latency_reduction_pct": 85.41,
+      "summary": "Expansion costs about 2.4s avg and 7.2s p95 latency while buying about +3.5pp full 5-cat accuracy on this substrate."
+    },
+    "mechanism_lesson": "Mechanism-defined fallback subpopulation comparisons do not estimate the full-population effect of disabling that mechanism; the fallback set is selected by the mechanism under test.",
+    "cross_run_multi_hop_pattern": "Arm B no-expansion hurt multi-hop by -11.54pp; gated append previously hurt multi-hop by -7.69pp. Treat multi-hop as especially sensitive to retrieval/context mechanism changes."
+  }
+}

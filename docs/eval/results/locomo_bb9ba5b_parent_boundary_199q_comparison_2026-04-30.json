@@ -1,0 +1,72 @@
+{
+  "artifact_type": "locomo_bb9ba5b_parent_boundary_199q_comparison",
+  "date": "2026-04-30",
+  "pre_registration": "docs/eval/locomo_bb9ba5b_parent_boundary_preregistration_2026-04-30.md",
+  "reference_artifact": "docs/eval/results/locomo_conv26_query_expansion_2026-04-24.json",
+  "run_artifact": "docs/eval/results/locomo_conv26_bb9ba5b_parent_boundary_199q_2026-04-30.json",
+  "run_log": "docs/eval/results/locomo_conv26_bb9ba5b_parent_boundary_199q_2026-04-30.log",
+  "boundary": {
+    "under_test": "bb9ba5b^",
+    "head": "bfeb90fc0465fdc24203d216c97cd1bc7226c0a4",
+    "resolved_parent": "bfeb90fc0465fdc24203d216c97cd1bc7226c0a4",
+    "worktree": "/home/zaddy/src/Memibrium-worktrees/locomo-bb9ba5b-parent-2026-04-30"
+  },
+  "command": "python3 benchmark_scripts/locomo_bench_v2.py --cleaned --normalize-dates --max-convs 1",
+  "inference_stack": {
+    "endpoint": "https://sector-7.services.ai.azure.com/models",
+    "answer_model": "gpt-4.1-mini",
+    "judge_model": "gpt-4.1-mini",
+    "query_expansion_model": "gpt-4.1-mini",
+    "azure_chat_deployment": "gpt-4.1-mini",
+    "azure_openai_deployment": "gpt-4.1-mini",
+    "chat_model": "gpt-4.1-mini",
+    "openai_base_url": "<unset>",
+    "azure_openai_endpoint": "<unset>",
+    "use_query_expansion": "1",
+    "temperature": 0
+  },
+  "results": {
+    "score": 61.81,
+    "reference_score": 68.09,
+    "delta_pp": -6.28,
+    "fallback_count": 0,
+    "fallback_total": 199,
+    "fallback_rate": 0.0,
+    "avg_query_ms": 4229,
+    "category_scores": {
+      "cat-temporal": 87.84,
+      "cat-multi-hop": 34.62,
+      "cat-single-hop": 70.31,
+      "cat-unanswerable": 75.71,
+      "cat-5": 22.34
+    },
+    "total_questions": 199
+  },
+  "decision_rules": {
+    "strong": "score within \u00b12pp of 68.09 AND fallback <=2/199",
+    "partial": "score within \u00b15pp AND fallback <=5/199",
+    "failed": "outside \u00b15pp OR fallback >5/199"
+  },
+  "verdict": "failed reproduction",
+  "threshold_driver": "score outside \u00b15pp (61.81% vs 68.09%, delta -6.28pp)",
+  "paired_overlap": {
+    "common_questions": 199,
+    "reference_only": 0,
+    "current_only": 0,
+    "rescued_vs_reference": 14,
+    "harmed_vs_reference": 23,
+    "unchanged_correct": 93,
+    "unchanged_wrong": 35,
+    "same_partial": 22,
+    "partial_changed": 12
+  },
+  "locomo_counts": {
+    "pre_run": 0,
+    "post_run_before_cleanup": "49",
+    "post_cleanup": "0"
+  },
+  "notes": [
+    "Latency is observational only and not a reproduction gate.",
+    "This boundary test is at bfeb90f, the same commit that produced the 04-24 reference artifact; failed reproduction points to environment/DB/dependency/provider-side drift rather than post-bfeb90f code drift alone."
+  ]
+}

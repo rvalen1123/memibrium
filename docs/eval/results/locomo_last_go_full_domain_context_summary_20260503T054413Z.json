@@ -1,0 +1,101 @@
+{
+  "schema": "memibrium.locomo.last_go_full_domain_context.v1",
+  "run_id": "20260503T054413Z",
+  "started_at": "2026-05-03T05:44:13Z",
+  "command": [
+    "python3",
+    "benchmark_scripts/locomo_bench_v2.py",
+    "--max-convs",
+    "1",
+    "--query-expansion",
+    "--full-domain-context"
+  ],
+  "purpose": "one last opt-in spike: full conversation context to test retrieval/context-selection ceiling",
+  "phase_c": "blocked; this run is not a baseline promotion",
+  "git_before": "c5761c7",
+  "health_before": {
+    "returncode": 0,
+    "stdout": "{\"status\":\"ok\",\"engine\":\"memibrium\"}",
+    "stderr": "",
+    "json": {
+      "status": "ok",
+      "engine": "memibrium"
+    }
+  },
+  "hygiene_before": {
+    "memories": 0,
+    "temporal_expressions": 0,
+    "memory_snapshots": 0,
+    "user_feedback": 0,
+    "contradictions": 0,
+    "memory_edges": 0,
+    "ok": true
+  },
+  "slice_proof": {
+    "path": "/tmp/locomo/data/locomo10.json",
+    "sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "top_level_type": "list",
+    "index0_sample_id": "conv-26",
+    "index0_speaker_a": "Caroline",
+    "index0_speaker_b": "Melanie",
+    "index0_qa_count": 199,
+    "ok": true
+  },
+  "host_benchmark_sha256": "4ade59af7233af4286bf8b27d7e83543fe008475a25292a51b0d246f7a06fdab",
+  "returncode": 0,
+  "validation": {
+    "ok": true,
+    "detail_rows": 199,
+    "all_conv26": true,
+    "full_5cat_overall": 69.1,
+    "protocol_4cat_overall": 77.63,
+    "category_scores": {
+      "cat-temporal": 79.73,
+      "cat-multi-hop": 38.46,
+      "cat-single-hop": 64.06,
+      "cat-unanswerable": 90.0,
+      "cat-adversarial": 41.49
+    },
+    "fallback_count": 0,
+    "condition": {
+      "cleaned": false,
+      "normalize_dates": false,
+      "query_expansion": true,
+      "context_rerank": false,
+      "append_context_expansion": false,
+      "gated_append_context_expansion": false,
+      "no_expansion_arm_b": false,
+      "legacy_context_assembly": false,
+      "full_domain_context": true
+    },
+    "mean_n_memories": 49,
+    "n_memories_distribution": {
+      "49": 199
+    },
+    "adversarial_score": 41.49,
+    "non_adversarial_score": 77.63
+  },
+  "raw_result": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_last_go_full_domain_context_raw_20260503T054413Z.json",
+  "raw_sha256": "fd549f6ee74c79e503c7386564df502ebe300c74c797f9ea79ded1317e6290ff",
+  "log": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_last_go_full_domain_context_log_20260503T054413Z.txt",
+  "cleanup": {
+    "memories": 0,
+    "temporal_expressions": 0,
+    "memory_snapshots": 0,
+    "user_feedback": 0,
+    "contradictions": 0,
+    "memory_edges": 0,
+    "ok": true
+  },
+  "health_after": {
+    "returncode": 0,
+    "stdout": "{\"status\":\"ok\",\"engine\":\"memibrium\"}",
+    "stderr": "",
+    "json": {
+      "status": "ok",
+      "engine": "memibrium"
+    }
+  },
+  "process_matches_after": [],
+  "completed_at": "2026-05-03T05:57:24Z"
+}

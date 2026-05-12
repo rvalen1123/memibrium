@@ -1,0 +1,1412 @@
+{
+  "overall_score": 42.86,
+  "full_5cat_overall": 42.86,
+  "protocol_4cat_overall": 50.0,
+  "category_scores": {
+    "cat-adversarial": 25.0,
+    "cat-unanswerable": 50.0,
+    "cat-temporal": 0.0,
+    "cat-single-hop": 50.0,
+    "cat-multi-hop": 100.0
+  },
+  "total_questions": 7,
+  "avg_query_ms": 2389,
+  "condition": {
+    "cleaned": false,
+    "normalize_dates": false,
+    "query_expansion": false,
+    "context_rerank": false,
+    "append_context_expansion": false,
+    "gated_append_context_expansion": false,
+    "no_expansion_arm_b": false,
+    "legacy_context_assembly": false,
+    "full_domain_context": false,
+    "context_packet": true
+  },
+  "expand_query_fallback_count": 0,
+  "expand_query_fallback_rate": 0.0,
+  "details": [
+    {
+      "arm": "treatment_context_packet",
+      "row_identity": {
+        "one_based_index": 153,
+        "label": "adversarial_split_early",
+        "cat": "adversarial",
+        "question": "What did Caroline realize after her charity race?",
+        "question_sha256": "27b4847984de1d6c9dde59d26f076fd6f729ed02020feb2ba8bea5a54afae319"
+      },
+      "conv": "conv-26",
+      "cat": "adversarial",
+      "question": "What did Caroline realize after her charity race?",
+      "ground_truth": "self-care is important",
+      "predicted": "Caroline did not run a charity race; Melanie did. After Melanie's charity race for mental health, she realized that self-care is really important.",
+      "score": 0.5,
+      "query_time_ms": 3112,
+      "n_memories": 8,
+      "recall_telemetry": {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": "What did Caroline realize after her charity race?",
+        "domain": "locomo-conv-26",
+        "expanded_queries": [
+          "What did Caroline realize after her charity race?"
+        ],
+        "per_query_recall": [],
+        "counts": {
+          "context_packet_enabled": true,
+          "final_answer_context_count": 8
+        },
+        "final_context": [
+          {
+            "rank": 1,
+            "id": "mem_d2121874a32f",
+            "dedupe_key": "id::mem_d2121874a32f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 12
+            },
+            "created_at": "2023-05-25T13:14:00+00:00",
+            "content_sha256": "6bd6d053e41285a0021f639b7a61ca469cca2fb0d01b65003475554bf5dd1111",
+            "snippet": "[1:14 pm on 25 May, 2023] Melanie: Hey Caroline, since we last chatted, I've had a lot of things happening to me. I ran a charity race for mental health last Sa"
+          },
+          {
+            "rank": 2,
+            "id": "mem_1ffdb31a1020",
+            "dedupe_key": "id::mem_1ffdb31a1020",
+            "refs": {
+              "turn_end": 17,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 14
+            },
+            "created_at": "2023-06-27T10:37:00+00:00",
+            "content_sha256": "82623f75115517c0f98f50419a0d4c805e83208a30320fa6df19ef5a85d39601",
+            "snippet": "[10:37 am on 27 June, 2023] Caroline: Lately, I've been looking into counseling and mental health as a career. I want to help people who have gone through the s"
+          },
+          {
+            "rank": 3,
+            "id": "mem_5c48f3379e94",
+            "dedupe_key": "id::mem_5c48f3379e94",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 19
+            },
+            "created_at": "2023-07-17T14:31:00+00:00",
+            "content_sha256": "18415704a1f1d3ad3a597543ef07ecb8b7bfb507bf448d8b23d162a4f9f4d927",
+            "snippet": "[2:31 pm on 17 July, 2023] Melanie: Hey Caroline, hope all's good! I had a quiet weekend after we went camping with my fam two weekends ago. It was great to unp"
+          },
+          {
+            "rank": 4,
+            "id": "mem_19c06404a11c",
+            "dedupe_key": "id::mem_19c06404a11c",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 8
+            },
+            "created_at": "2023-09-13T00:09:00+00:00",
+            "content_sha256": "4cac688f8bd4274119be4d1a651fabe54dd10f7120bbd8ae0a4e61e27cfbf401",
+            "snippet": "[12:09 am on 13 September, 2023] Caroline: I haven't done pottery yet, but I'm game for trying new art. I might try it sometime! Check out this piece I made! | "
+          },
+          {
+            "rank": 5,
+            "id": "mem_7f7edb2ae2f5",
+            "dedupe_key": "id::mem_7f7edb2ae2f5",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 7
+            },
+            "created_at": "2023-08-28T15:19:00+00:00",
+            "content_sha256": "f12493667ec23ca6fe0eb5ba6b3bb9a1c4bf764cf7c952acaa68e3d1daf19147",
+            "snippet": "[3:19 pm on 28 August, 2023] Caroline: Hey Melanie, great to hear from you. What's been up since we talked? | Melanie: Hey Caroline! Since we last spoke, I took"
+          },
+          {
+            "rank": 6,
+            "id": "mem_5607b8c1848e",
+            "dedupe_key": "id::mem_5607b8c1848e",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 9
+            },
+            "created_at": "2023-10-13T10:31:00+00:00",
+            "content_sha256": "4643ec22f6bd0512a17ed082ac32731f2ab226cd8fda4b73bb6e4457d5983e2b",
+            "snippet": "[10:31 am on 13 October, 2023] Caroline: Cool that you have creative outlets. Got any paintings to show? I'd love to check them out. | Melanie: Yeah, Here's one"
+          },
+          {
+            "rank": 7,
+            "id": "mem_c09d8b38cc1f",
+            "dedupe_key": "id::mem_c09d8b38cc1f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 1
+            },
+            "created_at": "2023-05-08T13:56:00+00:00",
+            "content_sha256": "af52c42005d46acaea09b6f4fa723ce947f0319ed5a6aad5028386a7f4065a73",
+            "snippet": "[1:56 pm on 8 May, 2023] Caroline: Hey Mel! Good to see you! How have you been? | Melanie: Hey Caroline! Good to see you! I'm swamped with the kids & work. What"
+          },
+          {
+            "rank": 8,
+            "id": "mem_6b04a676d0f0",
+            "dedupe_key": "id::mem_6b04a676d0f0",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "ad761d3cf5437df9116fe9826a00dd83509a0769dff842760605b69d76e4de66",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last "
+          }
+        ],
+        "gold_evidence_ref_coverage": {
+          "gold_ref_count": 1,
+          "final_context_refs_matched": 0,
+          "canary_gold_ref_count": 1,
+          "canary_final_context_refs_matched": 1,
+          "canary_mapping": "lexicographic"
+        },
+        "context_packet": {
+          "schema": "memibrium.context_packet.v1",
+          "query_type": "temporal_question",
+          "episodic_evidence_count": 8,
+          "deduped_episodic_evidence_count": 0,
+          "self_model_observation_count": 0,
+          "graph_fact_count": 0,
+          "decision_trace_count": 1,
+          "missing_evidence": [
+            "self_model_observations",
+            "graph_facts"
+          ],
+          "provenance_summary": {
+            "memory_ids": [
+              "mem_d2121874a32f",
+              "mem_1ffdb31a1020",
+              "mem_5c48f3379e94",
+              "mem_19c06404a11c",
+              "mem_7f7edb2ae2f5",
+              "mem_5607b8c1848e",
+              "mem_c09d8b38cc1f",
+              "mem_6b04a676d0f0"
+            ],
+            "self_model_observation_ids": [
+              "obs_smoke_context_graph_v0_timestamp_fix_4474e75"
+            ],
+            "entity_ids": [
+              "ent_42136ac7c8f0",
+              "ent_612b02880b00",
+              "ent_961ca44535c7",
+              "ent_ffe21b81f3cd",
+              "ent_4f0fd983b906",
+              "ent_2d89105417f8",
+              "ent_dd0b2cea997b",
+              "ent_e5873914bdb1",
+              "ent_538ff248981e",
+              "ent_1a6ace8ebdc1"
+            ]
+          }
+        }
+      },
+      "answer_prompt_context_sha256": "bfd882d788db0340fad00d2a3469f577f105e65a94d0c8178c7bec9a9634c721",
+      "answer_prompt_context_line_count": 19,
+      "answer_prompt_contains_context_packet": true,
+      "answer_prompt_context_preview": "Context (retrieved memories):\nContext Packet (episodic evidence):\n- [mem_d2121874a32f] [1:14 pm on 25 May, 2023] Melanie: Hey Caroline, since we last chatted, I've had a lot of things happening to me. I ran a charity race for mental health last Saturday \u2013 it was really rewarding. Really made me think about taking care of our minds. | Caroline: That charity race sounds great, Mel! Making a difference & raising awareness for mental health is super rewarding - I'm really proud of you for taking part! | Melanie: Thanks, Caroline! The event was really thought-provoking. I'm starting to realize that self-care is really important. It's a journey for me, but when I look after myself, I'm able to better look after my family. | Caroline: I totally agree, Melanie. Taking care of ourselves is so important - even if it's not always easy. Great that you're prioritizing self-care. | Melanie: Yeah, it's tough. So I'm carving out some me-time each day - running, reading, or playing my violin - which re"
+    },
+    {
+      "arm": "treatment_context_packet",
+      "row_identity": {
+        "one_based_index": 154,
+        "label": "adversarial_split_late",
+        "cat": "adversarial",
+        "question": "What are Melanie's plans for the summer with respect to adoption?",
+        "question_sha256": "753a2d308908a185eb2cca48e15941005e2fcac20dcd978d50ecf28f95f45641"
+      },
+      "conv": "conv-26",
+      "cat": "adversarial",
+      "question": "What are Melanie's plans for the summer with respect to adoption?",
+      "ground_truth": "researching adoption agencies",
+      "predicted": "Melanie does not have any plans related to adoption for the summer mentioned in the context.",
+      "score": 0.0,
+      "query_time_ms": 929,
+      "n_memories": 6,
+      "recall_telemetry": {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": "What are Melanie's plans for the summer with respect to adoption?",
+        "domain": "locomo-conv-26",
+        "expanded_queries": [
+          "What are Melanie's plans for the summer with respect to adoption?"
+        ],
+        "per_query_recall": [],
+        "counts": {
+          "context_packet_enabled": true,
+          "final_answer_context_count": 6
+        },
+        "final_context": [
+          {
+            "rank": 1,
+            "id": "mem_d2121874a32f",
+            "dedupe_key": "id::mem_d2121874a32f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 12
+            },
+            "created_at": "2023-05-25T13:14:00+00:00",
+            "content_sha256": "6bd6d053e41285a0021f639b7a61ca469cca2fb0d01b65003475554bf5dd1111",
+            "snippet": "[1:14 pm on 25 May, 2023] Melanie: Hey Caroline, since we last chatted, I've had a lot of things happening to me. I ran a charity race for mental health last Sa"
+          },
+          {
+            "rank": 2,
+            "id": "mem_9f1537a338b2",
+            "dedupe_key": "id::mem_9f1537a338b2",
+            "refs": {
+              "turn_end": 16,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 12
+            },
+            "created_at": "2023-05-25T13:14:00+00:00",
+            "content_sha256": "0a400866ddd15e7d979cbcac60b0661afd2b9fb06b1faf22d783abca68f984fd",
+            "snippet": "[1:14 pm on 25 May, 2023] Melanie: Wow, that agency looks great! What made you pick it? | Caroline: I chose them 'cause they help LGBTQ+ folks with adoption. Th"
+          },
+          {
+            "rank": 3,
+            "id": "mem_48974609ec90",
+            "dedupe_key": "id::mem_48974609ec90",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 9
+            },
+            "created_at": "2023-10-13T10:31:00+00:00",
+            "content_sha256": "67db00dea05d7bac08121822bde3d1c0472047beaf7e09577a9d17d9e63a576b",
+            "snippet": "[10:31 am on 13 October, 2023] Caroline: Hey Mel, what's up? Long time no see! I just contacted my mentor for adoption advice. I'm ready to be a mom and share m"
+          },
+          {
+            "rank": 4,
+            "id": "mem_67d7ebf7cc2c",
+            "dedupe_key": "id::mem_67d7ebf7cc2c",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 11
+            },
+            "created_at": "2023-10-22T09:55:00+00:00",
+            "content_sha256": "9c753a6195c243dd7b32d1625f0765726e76be54c8f90a723c1d31aa0c4186cc",
+            "snippet": "[9:55 am on 22 October, 2023] Caroline: Woohoo Melanie! I passed the adoption agency interviews last Friday! I'm so excited and thankful. This is a big move tow"
+          },
+          {
+            "rank": 5,
+            "id": "mem_11637c0e6dd0",
+            "dedupe_key": "id::mem_11637c0e6dd0",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 4
+            },
+            "created_at": "2023-08-17T13:50:00+00:00",
+            "content_sha256": "63583cb85bec11e69666d2283c662d478404bd2275e348313832a6d5048b0852",
+            "snippet": "[1:50 pm on 17 August, 2023] Caroline: Definitely, Mel! Finding those happy moments and clinging to them is key. It's what keeps us going, even when life's hard"
+          },
+          {
+            "rank": 6,
+            "id": "mem_fe775a0c43dc",
+            "dedupe_key": "id::mem_fe775a0c43dc",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 16
+            },
+            "created_at": "2023-07-06T20:18:00+00:00",
+            "content_sha256": "07ebaf11af45b7856390b8d47a50c88ac5048579662662ef44f8ac2e8ccce803",
+            "snippet": "[8:18 pm on 6 July, 2023] Caroline: Hey Mel! Long time no talk. Lots has been going on since then! | Melanie: Hey Caroline! Missed you. Anything new? Spill the "
+          }
+        ],
+        "gold_evidence_ref_coverage": {
+          "gold_ref_count": 1,
+          "final_context_refs_matched": 0,
+          "canary_gold_ref_count": 1,
+          "canary_final_context_refs_matched": 1,
+          "canary_mapping": "lexicographic"
+        },
+        "context_packet": {
+          "schema": "memibrium.context_packet.v1",
+          "query_type": "general_recall",
+          "episodic_evidence_count": 6,
+          "deduped_episodic_evidence_count": 2,
+          "self_model_observation_count": 0,
+          "graph_fact_count": 0,
+          "decision_trace_count": 1,
+          "missing_evidence": [
+            "self_model_observations",
+            "graph_facts"
+          ],
+          "provenance_summary": {
+            "memory_ids": [
+              "mem_d2121874a32f",
+              "mem_9f1537a338b2",
+              "mem_48974609ec90",
+              "mem_67d7ebf7cc2c",
+              "mem_11637c0e6dd0",
+              "mem_fe775a0c43dc"
+            ],
+            "self_model_observation_ids": [
+              "obs_smoke_context_graph_v0_timestamp_fix_4474e75"
+            ],
+            "entity_ids": [
+              "ent_9746ad97a9ae",
+              "ent_7bc5a578828f",
+              "ent_d3b2400ef1d6",
+              "ent_e74e12c09061",
+              "ent_ffe21b81f3cd",
+              "ent_4f0fd983b906",
+              "ent_f78abb70bc1f",
+              "ent_41580adb2ec7",
+              "ent_f11c9b66a0cd",
+              "ent_11e7c06422fa"
+            ]
+          }
+        }
+      },
+      "answer_prompt_context_sha256": "a69f9eafd18ebe5cfb2c4d06650125169205fd807f19c0288b8839a249dab7c8",
+      "answer_prompt_context_line_count": 17,
+      "answer_prompt_contains_context_packet": true,
+      "answer_prompt_context_preview": "Context (retrieved memories):\nContext Packet (episodic evidence):\n- [mem_d2121874a32f] [1:14 pm on 25 May, 2023] Melanie: Hey Caroline, since we last chatted, I've had a lot of things happening to me. I ran a charity race for mental health last Saturday \u2013 it was really rewarding. Really made me think about taking care of our minds. | Caroline: That charity race sounds great, Mel! Making a difference & raising awareness for mental health is super rewarding - I'm really proud of you for taking part! | Melanie: Thanks, Caroline! The event was really thought-provoking. I'm starting to realize that self-care is really important. It's a journey for me, but when I look after myself, I'm able to better look after my family. | Caroline: I totally agree, Melanie. Taking care of ourselves is so important - even if it's not always easy. Great that you're prioritizing self-care. | Melanie: Yeah, it's tough. So I'm carving out some me-time each day - running, reading, or playing my violin - which re"
+    },
+    {
+      "arm": "treatment_context_packet",
+      "row_identity": {
+        "one_based_index": 83,
+        "label": "unanswerable_high_context",
+        "cat": "unanswerable",
+        "question": "What did the charity race raise awareness for?",
+        "question_sha256": "d655f74fe3f7194564489450f0b77e69eacf705269e77bbae3c6d34242ab00be"
+      },
+      "conv": "conv-26",
+      "cat": "unanswerable",
+      "question": "What did the charity race raise awareness for?",
+      "ground_truth": "mental health",
+      "predicted": "The charity race raised awareness for mental health.",
+      "score": 1.0,
+      "query_time_ms": 1386,
+      "n_memories": 8,
+      "recall_telemetry": {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": "What did the charity race raise awareness for?",
+        "domain": "locomo-conv-26",
+        "expanded_queries": [
+          "What did the charity race raise awareness for?"
+        ],
+        "per_query_recall": [],
+        "counts": {
+          "context_packet_enabled": true,
+          "final_answer_context_count": 8
+        },
+        "final_context": [
+          {
+            "rank": 1,
+            "id": "mem_d2121874a32f",
+            "dedupe_key": "id::mem_d2121874a32f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 12
+            },
+            "created_at": "2023-05-25T13:14:00+00:00",
+            "content_sha256": "6bd6d053e41285a0021f639b7a61ca469cca2fb0d01b65003475554bf5dd1111",
+            "snippet": "[1:14 pm on 25 May, 2023] Melanie: Hey Caroline, since we last chatted, I've had a lot of things happening to me. I ran a charity race for mental health last Sa"
+          },
+          {
+            "rank": 2,
+            "id": "mem_54d913df20ec",
+            "dedupe_key": "id::mem_54d913df20ec",
+            "refs": {
+              "turn_end": 16,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 19
+            },
+            "created_at": "2023-07-17T14:31:00+00:00",
+            "content_sha256": "363fd43030fe7cf3546d8eee023c2921d6faa805b30bf09f18a20bf6c31f7239",
+            "snippet": "[2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! They must have felt so appreciated. It's awesome to see the difference we can make in each other's lives. Any"
+          },
+          {
+            "rank": 3,
+            "id": "mem_e3753b8a8d2a",
+            "dedupe_key": "id::mem_e3753b8a8d2a",
+            "refs": {
+              "turn_end": 26,
+              "turn_start": 20,
+              "chunk_index": 2,
+              "session_index": 17
+            },
+            "created_at": "2023-07-12T16:33:00+00:00",
+            "content_sha256": "8e60df4d4845b5e5a12a5e433b554be93c69aee2330754243cf763ad4218d3d7",
+            "snippet": "[4:33 pm on 12 July, 2023] Caroline: Wow! What got you into running? | Melanie: I've been running farther to de-stress, which has been great for my headspace. |"
+          },
+          {
+            "rank": 4,
+            "id": "mem_5ba6f73f6754",
+            "dedupe_key": "id::mem_5ba6f73f6754",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 6
+            },
+            "created_at": "2023-08-25T13:33:00+00:00",
+            "content_sha256": "1470963c729c8fba88e84048c832b63e242bb9cedb047bce8930e04630d23b8d",
+            "snippet": "[1:33 pm on 25 August, 2023] Caroline: Wow, Mel, you're amazing! Volunteering and making a difference- it's so heartwarming. You're an inspiration to us all! | "
+          },
+          {
+            "rank": 5,
+            "id": "mem_7f7edb2ae2f5",
+            "dedupe_key": "id::mem_7f7edb2ae2f5",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 7
+            },
+            "created_at": "2023-08-28T15:19:00+00:00",
+            "content_sha256": "f12493667ec23ca6fe0eb5ba6b3bb9a1c4bf764cf7c952acaa68e3d1daf19147",
+            "snippet": "[3:19 pm on 28 August, 2023] Caroline: Hey Melanie, great to hear from you. What's been up since we talked? | Melanie: Hey Caroline! Since we last spoke, I took"
+          },
+          {
+            "rank": 6,
+            "id": "mem_5c48f3379e94",
+            "dedupe_key": "id::mem_5c48f3379e94",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 19
+            },
+            "created_at": "2023-07-17T14:31:00+00:00",
+            "content_sha256": "18415704a1f1d3ad3a597543ef07ecb8b7bfb507bf448d8b23d162a4f9f4d927",
+            "snippet": "[2:31 pm on 17 July, 2023] Melanie: Hey Caroline, hope all's good! I had a quiet weekend after we went camping with my fam two weekends ago. It was great to unp"
+          },
+          {
+            "rank": 7,
+            "id": "mem_c09d8b38cc1f",
+            "dedupe_key": "id::mem_c09d8b38cc1f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 1
+            },
+            "created_at": "2023-05-08T13:56:00+00:00",
+            "content_sha256": "af52c42005d46acaea09b6f4fa723ce947f0319ed5a6aad5028386a7f4065a73",
+            "snippet": "[1:56 pm on 8 May, 2023] Caroline: Hey Mel! Good to see you! How have you been? | Melanie: Hey Caroline! Good to see you! I'm swamped with the kids & work. What"
+          },
+          {
+            "rank": 8,
+            "id": "mem_6b04a676d0f0",
+            "dedupe_key": "id::mem_6b04a676d0f0",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "ad761d3cf5437df9116fe9826a00dd83509a0769dff842760605b69d76e4de66",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last "
+          }
+        ],
+        "gold_evidence_ref_coverage": {
+          "gold_ref_count": 1,
+          "final_context_refs_matched": 0,
+          "canary_gold_ref_count": 1,
+          "canary_final_context_refs_matched": 1,
+          "canary_mapping": "lexicographic"
+        },
+        "context_packet": {
+          "schema": "memibrium.context_packet.v1",
+          "query_type": "general_recall",
+          "episodic_evidence_count": 8,
+          "deduped_episodic_evidence_count": 0,
+          "self_model_observation_count": 0,
+          "graph_fact_count": 0,
+          "decision_trace_count": 1,
+          "missing_evidence": [
+            "self_model_observations",
+            "graph_facts"
+          ],
+          "provenance_summary": {
+            "memory_ids": [
+              "mem_d2121874a32f",
+              "mem_54d913df20ec",
+              "mem_e3753b8a8d2a",
+              "mem_5ba6f73f6754",
+              "mem_7f7edb2ae2f5",
+              "mem_5c48f3379e94",
+              "mem_c09d8b38cc1f",
+              "mem_6b04a676d0f0"
+            ],
+            "self_model_observation_ids": [
+              "obs_smoke_context_graph_v0_timestamp_fix_4474e75"
+            ],
+            "entity_ids": [
+              "ent_961ca44535c7",
+              "ent_ffe21b81f3cd",
+              "ent_4f0fd983b906",
+              "ent_f78abb70bc1f",
+              "ent_f11c9b66a0cd",
+              "ent_2d89105417f8",
+              "ent_bba711264270",
+              "ent_10328422250b",
+              "ent_f5927fc33991",
+              "ent_459ff8aaa956"
+            ]
+          }
+        }
+      },
+      "answer_prompt_context_sha256": "cd6ae0a035168d89a016c0879b2b29ec9401f685653b21e34f31a7f8dfbe72d4",
+      "answer_prompt_context_line_count": 19,
+      "answer_prompt_contains_context_packet": true,
+      "answer_prompt_context_preview": "Context (retrieved memories):\nContext Packet (episodic evidence):\n- [mem_d2121874a32f] [1:14 pm on 25 May, 2023] Melanie: Hey Caroline, since we last chatted, I've had a lot of things happening to me. I ran a charity race for mental health last Saturday \u2013 it was really rewarding. Really made me think about taking care of our minds. | Caroline: That charity race sounds great, Mel! Making a difference & raising awareness for mental health is super rewarding - I'm really proud of you for taking part! | Melanie: Thanks, Caroline! The event was really thought-provoking. I'm starting to realize that self-care is really important. It's a journey for me, but when I look after myself, I'm able to better look after my family. | Caroline: I totally agree, Melanie. Taking care of ourselves is so important - even if it's not always easy. Great that you're prioritizing self-care. | Melanie: Yeah, it's tough. So I'm carving out some me-time each day - running, reading, or playing my violin - which re"
+    },
+    {
+      "arm": "treatment_context_packet",
+      "row_identity": {
+        "one_based_index": 149,
+        "label": "unanswerable_c_low_exception",
+        "cat": "unanswerable",
+        "question": "What was Melanie's reaction to her children enjoying the Grand Canyon?",
+        "question_sha256": "17f1b00d7eceafed2640e81b2342bf064f8284f124a4a676ef8d14d6054be2d7"
+      },
+      "conv": "conv-26",
+      "cat": "unanswerable",
+      "question": "What was Melanie's reaction to her children enjoying the Grand Canyon?",
+      "ground_truth": "She was happy and thankful",
+      "predicted": "I don't know.",
+      "score": 0.0,
+      "query_time_ms": 2638,
+      "n_memories": 8,
+      "recall_telemetry": {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": "What was Melanie's reaction to her children enjoying the Grand Canyon?",
+        "domain": "locomo-conv-26",
+        "expanded_queries": [
+          "What was Melanie's reaction to her children enjoying the Grand Canyon?"
+        ],
+        "per_query_recall": [],
+        "counts": {
+          "context_packet_enabled": true,
+          "final_answer_context_count": 8
+        },
+        "final_context": [
+          {
+            "rank": 1,
+            "id": "mem_fe775a0c43dc",
+            "dedupe_key": "id::mem_fe775a0c43dc",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 16
+            },
+            "created_at": "2023-07-06T20:18:00+00:00",
+            "content_sha256": "07ebaf11af45b7856390b8d47a50c88ac5048579662662ef44f8ac2e8ccce803",
+            "snippet": "[8:18 pm on 6 July, 2023] Caroline: Hey Mel! Long time no talk. Lots has been going on since then! | Melanie: Hey Caroline! Missed you. Anything new? Spill the "
+          },
+          {
+            "rank": 2,
+            "id": "mem_117054780cb6",
+            "dedupe_key": "id::mem_117054780cb6",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "74c61c8e3b71b1ca91b0b50c82e85e3542aacb48015efd7dc4ce92965836b243",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Sounds special, those beach trips! Do you have any other summer traditions you all do together? Create those memories! | Me"
+          },
+          {
+            "rank": 3,
+            "id": "mem_45cfb59ae75a",
+            "dedupe_key": "id::mem_45cfb59ae75a",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 14
+            },
+            "created_at": "2023-06-27T10:37:00+00:00",
+            "content_sha256": "5a80c57c0e908cb9281380f07630f68f5f32cc5c0b335fc83fa7043b42a9e869",
+            "snippet": "[10:37 am on 27 June, 2023] Caroline: Hey Melanie! Long time no talk! A lot's been going on in my life! Take a look at this. | Melanie: Hey, Caroline! Nice to h"
+          },
+          {
+            "rank": 4,
+            "id": "mem_c09d8b38cc1f",
+            "dedupe_key": "id::mem_c09d8b38cc1f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 1
+            },
+            "created_at": "2023-05-08T13:56:00+00:00",
+            "content_sha256": "af52c42005d46acaea09b6f4fa723ce947f0319ed5a6aad5028386a7f4065a73",
+            "snippet": "[1:56 pm on 8 May, 2023] Caroline: Hey Mel! Good to see you! How have you been? | Melanie: Hey Caroline! Good to see you! I'm swamped with the kids & work. What"
+          },
+          {
+            "rank": 5,
+            "id": "mem_6b04a676d0f0",
+            "dedupe_key": "id::mem_6b04a676d0f0",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "ad761d3cf5437df9116fe9826a00dd83509a0769dff842760605b69d76e4de66",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last "
+          },
+          {
+            "rank": 6,
+            "id": "mem_35f37ecf7b1f",
+            "dedupe_key": "id::mem_35f37ecf7b1f",
+            "refs": {
+              "turn_end": 17,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 1
+            },
+            "created_at": "2023-05-08T13:56:00+00:00",
+            "content_sha256": "8b040d32a5617d0b0df1c348dbd4825b8e9ad10af240b1a0005a2631572faaa0",
+            "snippet": "[1:56 pm on 8 May, 2023] Caroline: I'm keen on counseling or working in mental health - I'd love to support those with similar issues. | Melanie: You'd be a gre"
+          },
+          {
+            "rank": 7,
+            "id": "mem_2eca06600718",
+            "dedupe_key": "id::mem_2eca06600718",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 18
+            },
+            "created_at": "2023-07-15T13:51:00+00:00",
+            "content_sha256": "e6ad79d78b416d4e47b64055d55a66e162084faa4832db34bdf0f02785110c88",
+            "snippet": "[1:51 pm on 15 July, 2023] Caroline: Thanks Melanie - love the blue vase in the pic! Blue's my fave, it makes me feel relaxed. Sunflowers mean warmth and happin"
+          },
+          {
+            "rank": 8,
+            "id": "mem_8d0ec48de6b4",
+            "dedupe_key": "id::mem_8d0ec48de6b4",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 18
+            },
+            "created_at": "2023-07-15T13:51:00+00:00",
+            "content_sha256": "fd95618dd915b834f5feb6f5a7b9a258fe02cfcae830500a0ec239afadca0678",
+            "snippet": "[1:51 pm on 15 July, 2023] Caroline: Hey Mel, what's up? Been a busy week since we talked. | Melanie: Hey Caroline, it's been super busy here. So much since we "
+          }
+        ],
+        "gold_evidence_ref_coverage": {
+          "gold_ref_count": 1,
+          "final_context_refs_matched": 0,
+          "canary_gold_ref_count": 1,
+          "canary_final_context_refs_matched": 0,
+          "canary_mapping": "lexicographic"
+        },
+        "context_packet": {
+          "schema": "memibrium.context_packet.v1",
+          "query_type": "general_recall",
+          "episodic_evidence_count": 8,
+          "deduped_episodic_evidence_count": 0,
+          "self_model_observation_count": 0,
+          "graph_fact_count": 0,
+          "decision_trace_count": 1,
+          "missing_evidence": [
+            "self_model_observations",
+            "graph_facts"
+          ],
+          "provenance_summary": {
+            "memory_ids": [
+              "mem_fe775a0c43dc",
+              "mem_117054780cb6",
+              "mem_45cfb59ae75a",
+              "mem_c09d8b38cc1f",
+              "mem_6b04a676d0f0",
+              "mem_35f37ecf7b1f",
+              "mem_2eca06600718",
+              "mem_8d0ec48de6b4"
+            ],
+            "self_model_observation_ids": [
+              "obs_smoke_context_graph_v0_timestamp_fix_4474e75"
+            ],
+            "entity_ids": [
+              "ent_d3b2400ef1d6",
+              "ent_ffe21b81f3cd",
+              "ent_4f0fd983b906",
+              "ent_f78abb70bc1f",
+              "ent_f11c9b66a0cd",
+              "ent_2d89105417f8",
+              "ent_bba711264270",
+              "ent_10328422250b",
+              "ent_f5927fc33991",
+              "ent_459ff8aaa956"
+            ]
+          }
+        }
+      },
+      "answer_prompt_context_sha256": "a8474ca0d3148201b53d08d592a3ffb478012e504031d8310d37eb160c0ea71c",
+      "answer_prompt_context_line_count": 19,
+      "answer_prompt_contains_context_packet": true,
+      "answer_prompt_context_preview": "Context (retrieved memories):\nContext Packet (episodic evidence):\n- [mem_fe775a0c43dc] [8:18 pm on 6 July, 2023] Caroline: Hey Mel! Long time no talk. Lots has been going on since then! | Melanie: Hey Caroline! Missed you. Anything new? Spill the beans! | Caroline: Since our last chat, I've been looking into counseling or mental health work more. I'm passionate about helping people and making a positive impact. It's tough, but really rewarding too. Anything new happening with you? | Melanie: That's awesome, Caroline! Congrats on following your dreams. Yesterday I took the kids to the museum - it was so cool spending time with them and seeing their eyes light up! | Caroline: Melanie, that's a great pic! That must have been awesome. What were they so stoked about? | Melanie: They were stoked for the dinosaur exhibit! They love learning about animals and the bones were so cool. It reminds me why I love being a mom. | Caroline: Being a mom is awesome. I'm creating a library for when I have"
+    },
+    {
+      "arm": "treatment_context_packet",
+      "row_identity": {
+        "one_based_index": 34,
+        "label": "temporal_high_context",
+        "cat": "temporal",
+        "question": "When did Caroline go to a pride parade during the summer?",
+        "question_sha256": "46df9a32c68bda07d28e4b3d23f462cfc0a0839af1de47f130d74aac7afea8b3"
+      },
+      "conv": "conv-26",
+      "cat": "temporal",
+      "question": "When did Caroline go to a pride parade during the summer?",
+      "ground_truth": "The week before 3 July 2023",
+      "predicted": "Caroline mentioned missing the pride parade that took place last weekend before 8:56 pm on 20 July, 2023. So, the pride parade was during the summer, around mid-July 2023.",
+      "score": 0.0,
+      "query_time_ms": 2922,
+      "n_memories": 8,
+      "recall_telemetry": {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": "When did Caroline go to a pride parade during the summer?",
+        "domain": "locomo-conv-26",
+        "expanded_queries": [
+          "When did Caroline go to a pride parade during the summer?"
+        ],
+        "per_query_recall": [],
+        "counts": {
+          "context_packet_enabled": true,
+          "final_answer_context_count": 8
+        },
+        "final_context": [
+          {
+            "rank": 1,
+            "id": "mem_54d913df20ec",
+            "dedupe_key": "id::mem_54d913df20ec",
+            "refs": {
+              "turn_end": 16,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 19
+            },
+            "created_at": "2023-07-17T14:31:00+00:00",
+            "content_sha256": "363fd43030fe7cf3546d8eee023c2921d6faa805b30bf09f18a20bf6c31f7239",
+            "snippet": "[2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! They must have felt so appreciated. It's awesome to see the difference we can make in each other's lives. Any"
+          },
+          {
+            "rank": 2,
+            "id": "mem_aa3a6a10660e",
+            "dedupe_key": "id::mem_aa3a6a10660e",
+            "refs": {
+              "turn_end": 34,
+              "turn_start": 30,
+              "chunk_index": 3,
+              "session_index": 6
+            },
+            "created_at": "2023-08-25T13:33:00+00:00",
+            "content_sha256": "7956bb23528c8faf962ef2b4842fe539ca89c4e3095f4df9aa34df6630a0904f",
+            "snippet": "[1:33 pm on 25 August, 2023] Caroline: Wow, Mel! Any more paintings coming up? | Melanie: I'm feeling inspired by autumn so I'm planning a few. You got any cool"
+          },
+          {
+            "rank": 3,
+            "id": "mem_5c48f3379e94",
+            "dedupe_key": "id::mem_5c48f3379e94",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 19
+            },
+            "created_at": "2023-07-17T14:31:00+00:00",
+            "content_sha256": "18415704a1f1d3ad3a597543ef07ecb8b7bfb507bf448d8b23d162a4f9f4d927",
+            "snippet": "[2:31 pm on 17 July, 2023] Melanie: Hey Caroline, hope all's good! I had a quiet weekend after we went camping with my fam two weekends ago. It was great to unp"
+          },
+          {
+            "rank": 4,
+            "id": "mem_11637c0e6dd0",
+            "dedupe_key": "id::mem_11637c0e6dd0",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 4
+            },
+            "created_at": "2023-08-17T13:50:00+00:00",
+            "content_sha256": "63583cb85bec11e69666d2283c662d478404bd2275e348313832a6d5048b0852",
+            "snippet": "[1:50 pm on 17 August, 2023] Caroline: Definitely, Mel! Finding those happy moments and clinging to them is key. It's what keeps us going, even when life's hard"
+          },
+          {
+            "rank": 5,
+            "id": "mem_6b04a676d0f0",
+            "dedupe_key": "id::mem_6b04a676d0f0",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "ad761d3cf5437df9116fe9826a00dd83509a0769dff842760605b69d76e4de66",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last "
+          },
+          {
+            "rank": 6,
+            "id": "mem_c09d8b38cc1f",
+            "dedupe_key": "id::mem_c09d8b38cc1f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 1
+            },
+            "created_at": "2023-05-08T13:56:00+00:00",
+            "content_sha256": "af52c42005d46acaea09b6f4fa723ce947f0319ed5a6aad5028386a7f4065a73",
+            "snippet": "[1:56 pm on 8 May, 2023] Caroline: Hey Mel! Good to see you! How have you been? | Melanie: Hey Caroline! Good to see you! I'm swamped with the kids & work. What"
+          },
+          {
+            "rank": 7,
+            "id": "mem_1b307a744d2c",
+            "dedupe_key": "id::mem_1b307a744d2c",
+            "refs": {
+              "turn_end": 23,
+              "turn_start": 20,
+              "chunk_index": 2,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "488d99e899a4def468b1d70a8e3a7d4c62cbe42813344eb750af2d02e04593a6",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Aw, that's sweet, Mel! Those milestones are great reminders of how special our bonds are. | Melanie: Yeah, they sure are. I"
+          },
+          {
+            "rank": 8,
+            "id": "mem_84d46c1e9e0f",
+            "dedupe_key": "id::mem_84d46c1e9e0f",
+            "refs": {
+              "turn_end": 25,
+              "turn_start": 20,
+              "chunk_index": 2,
+              "session_index": 9
+            },
+            "created_at": "2023-10-13T10:31:00+00:00",
+            "content_sha256": "bef2b2f2650bdef1173109c00e21770dce86d9f70e527d97d873f391aa629912",
+            "snippet": "[10:31 am on 13 October, 2023] Caroline: The room was electric with energy and support! The posters were amazing, so much pride and strength! It inspired me to "
+          }
+        ],
+        "gold_evidence_ref_coverage": {
+          "gold_ref_count": 1,
+          "final_context_refs_matched": 0,
+          "canary_gold_ref_count": 1,
+          "canary_final_context_refs_matched": 0,
+          "canary_mapping": "lexicographic"
+        },
+        "context_packet": {
+          "schema": "memibrium.context_packet.v1",
+          "query_type": "temporal_question",
+          "episodic_evidence_count": 8,
+          "deduped_episodic_evidence_count": 0,
+          "self_model_observation_count": 0,
+          "graph_fact_count": 0,
+          "decision_trace_count": 1,
+          "missing_evidence": [
+            "self_model_observations",
+            "graph_facts"
+          ],
+          "provenance_summary": {
+            "memory_ids": [
+              "mem_54d913df20ec",
+              "mem_aa3a6a10660e",
+              "mem_5c48f3379e94",
+              "mem_11637c0e6dd0",
+              "mem_6b04a676d0f0",
+              "mem_c09d8b38cc1f",
+              "mem_1b307a744d2c",
+              "mem_84d46c1e9e0f"
+            ],
+            "self_model_observation_ids": [
+              "obs_smoke_context_graph_v0_timestamp_fix_4474e75"
+            ],
+            "entity_ids": [
+              "ent_612b02880b00",
+              "ent_42136ac7c8f0",
+              "ent_81d2dde249d9",
+              "ent_a9eb52ff46fd",
+              "ent_ffe21b81f3cd",
+              "ent_f78abb70bc1f",
+              "ent_f11c9b66a0cd",
+              "ent_2d89105417f8",
+              "ent_bba711264270",
+              "ent_10328422250b"
+            ]
+          }
+        }
+      },
+      "answer_prompt_context_sha256": "468c6df864de49286a0766e3f07797d25147f9eeea38209678752159d99f4de0",
+      "answer_prompt_context_line_count": 19,
+      "answer_prompt_contains_context_packet": true,
+      "answer_prompt_context_preview": "Context (retrieved memories):\nContext Packet (episodic evidence):\n- [mem_54d913df20ec] [2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! They must have felt so appreciated. It's awesome to see the difference we can make in each other's lives. Any other exciting LGBTQ advocacy stuff coming up? | Caroline: Yay! Next month I'm having an LGBTQ art show with my paintings - can't wait! | Melanie: Wow, Caroline, that sounds awesome! Can't wait to see your art - got any previews? | Caroline: Check out my painting for the art show! Hope you like it. | Melanie: Wow, Caroline, that painting is awesome! Those colors are so vivid and the whole thing looks really unified. What inspired you? | Caroline: Thanks, Melanie! I painted this after I visited a LGBTQ center. I wanted to capture everyone's unity and strength. | Melanie: Wow, Caroline! It really conveys unity and strength - such a gorgeous piece! My kids and I just finished another painting like our last one.\n- [mem_aa3a6a10660e] [1:33 pm on 2"
+    },
+    {
+      "arm": "treatment_context_packet",
+      "row_identity": {
+        "one_based_index": 33,
+        "label": "single_hop_high_context",
+        "cat": "single-hop",
+        "question": "What LGBTQ+ events has Caroline participated in?",
+        "question_sha256": "c26b7a216dfc7eacc85248cb275a25ec02964b1e0a40a550c014e7dbdc43b7a8"
+      },
+      "conv": "conv-26",
+      "cat": "single-hop",
+      "question": "What LGBTQ+ events has Caroline participated in?",
+      "ground_truth": "Pride parade, school speech, support group",
+      "predicted": "Caroline has participated in an LGBTQ support group, an LGBTQ pride event, and is organizing an LGBTQ art show. She also joined a new LGBTQ activist group called \"Connected LGBTQ Activists\" and mentioned a recent pride parade in her city.",
+      "score": 0.5,
+      "query_time_ms": 2564,
+      "n_memories": 8,
+      "recall_telemetry": {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": "What LGBTQ+ events has Caroline participated in?",
+        "domain": "locomo-conv-26",
+        "expanded_queries": [
+          "What LGBTQ+ events has Caroline participated in?"
+        ],
+        "per_query_recall": [],
+        "counts": {
+          "context_packet_enabled": true,
+          "final_answer_context_count": 8
+        },
+        "final_context": [
+          {
+            "rank": 1,
+            "id": "mem_aa3a6a10660e",
+            "dedupe_key": "id::mem_aa3a6a10660e",
+            "refs": {
+              "turn_end": 34,
+              "turn_start": 30,
+              "chunk_index": 3,
+              "session_index": 6
+            },
+            "created_at": "2023-08-25T13:33:00+00:00",
+            "content_sha256": "7956bb23528c8faf962ef2b4842fe539ca89c4e3095f4df9aa34df6630a0904f",
+            "snippet": "[1:33 pm on 25 August, 2023] Caroline: Wow, Mel! Any more paintings coming up? | Melanie: I'm feeling inspired by autumn so I'm planning a few. You got any cool"
+          },
+          {
+            "rank": 2,
+            "id": "mem_54d913df20ec",
+            "dedupe_key": "id::mem_54d913df20ec",
+            "refs": {
+              "turn_end": 16,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 19
+            },
+            "created_at": "2023-07-17T14:31:00+00:00",
+            "content_sha256": "363fd43030fe7cf3546d8eee023c2921d6faa805b30bf09f18a20bf6c31f7239",
+            "snippet": "[2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! They must have felt so appreciated. It's awesome to see the difference we can make in each other's lives. Any"
+          },
+          {
+            "rank": 3,
+            "id": "mem_5c48f3379e94",
+            "dedupe_key": "id::mem_5c48f3379e94",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 19
+            },
+            "created_at": "2023-07-17T14:31:00+00:00",
+            "content_sha256": "18415704a1f1d3ad3a597543ef07ecb8b7bfb507bf448d8b23d162a4f9f4d927",
+            "snippet": "[2:31 pm on 17 July, 2023] Melanie: Hey Caroline, hope all's good! I had a quiet weekend after we went camping with my fam two weekends ago. It was great to unp"
+          },
+          {
+            "rank": 4,
+            "id": "mem_1b307a744d2c",
+            "dedupe_key": "id::mem_1b307a744d2c",
+            "refs": {
+              "turn_end": 23,
+              "turn_start": 20,
+              "chunk_index": 2,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "488d99e899a4def468b1d70a8e3a7d4c62cbe42813344eb750af2d02e04593a6",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Aw, that's sweet, Mel! Those milestones are great reminders of how special our bonds are. | Melanie: Yeah, they sure are. I"
+          },
+          {
+            "rank": 5,
+            "id": "mem_c09d8b38cc1f",
+            "dedupe_key": "id::mem_c09d8b38cc1f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 1
+            },
+            "created_at": "2023-05-08T13:56:00+00:00",
+            "content_sha256": "af52c42005d46acaea09b6f4fa723ce947f0319ed5a6aad5028386a7f4065a73",
+            "snippet": "[1:56 pm on 8 May, 2023] Caroline: Hey Mel! Good to see you! How have you been? | Melanie: Hey Caroline! Good to see you! I'm swamped with the kids & work. What"
+          },
+          {
+            "rank": 6,
+            "id": "mem_6b04a676d0f0",
+            "dedupe_key": "id::mem_6b04a676d0f0",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "ad761d3cf5437df9116fe9826a00dd83509a0769dff842760605b69d76e4de66",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last "
+          },
+          {
+            "rank": 7,
+            "id": "mem_35f37ecf7b1f",
+            "dedupe_key": "id::mem_35f37ecf7b1f",
+            "refs": {
+              "turn_end": 17,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 1
+            },
+            "created_at": "2023-05-08T13:56:00+00:00",
+            "content_sha256": "8b040d32a5617d0b0df1c348dbd4825b8e9ad10af240b1a0005a2631572faaa0",
+            "snippet": "[1:56 pm on 8 May, 2023] Caroline: I'm keen on counseling or working in mental health - I'd love to support those with similar issues. | Melanie: You'd be a gre"
+          },
+          {
+            "rank": 8,
+            "id": "mem_117054780cb6",
+            "dedupe_key": "id::mem_117054780cb6",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "74c61c8e3b71b1ca91b0b50c82e85e3542aacb48015efd7dc4ce92965836b243",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Sounds special, those beach trips! Do you have any other summer traditions you all do together? Create those memories! | Me"
+          }
+        ],
+        "gold_evidence_ref_coverage": {
+          "gold_ref_count": 4,
+          "final_context_refs_matched": 0,
+          "canary_gold_ref_count": 4,
+          "canary_final_context_refs_matched": 1,
+          "canary_mapping": "lexicographic"
+        },
+        "context_packet": {
+          "schema": "memibrium.context_packet.v1",
+          "query_type": "general_recall",
+          "episodic_evidence_count": 8,
+          "deduped_episodic_evidence_count": 0,
+          "self_model_observation_count": 0,
+          "graph_fact_count": 0,
+          "decision_trace_count": 1,
+          "missing_evidence": [
+            "self_model_observations",
+            "graph_facts"
+          ],
+          "provenance_summary": {
+            "memory_ids": [
+              "mem_aa3a6a10660e",
+              "mem_54d913df20ec",
+              "mem_5c48f3379e94",
+              "mem_1b307a744d2c",
+              "mem_c09d8b38cc1f",
+              "mem_6b04a676d0f0",
+              "mem_35f37ecf7b1f",
+              "mem_117054780cb6"
+            ],
+            "self_model_observation_ids": [
+              "obs_smoke_context_graph_v0_timestamp_fix_4474e75"
+            ],
+            "entity_ids": [
+              "ent_612b02880b00",
+              "ent_9b788aa86b06",
+              "ent_42136ac7c8f0",
+              "ent_feeb727acdf5",
+              "ent_fbffe6f72634",
+              "ent_a9eb52ff46fd",
+              "ent_1a4123f1b9b0",
+              "ent_9a473b1fff5e",
+              "ent_4f0fd983b906",
+              "ent_dd0b2cea997b"
+            ]
+          }
+        }
+      },
+      "answer_prompt_context_sha256": "034a4e899809256eb118613142da84aa8908c4e4eb4bb0d24aace7d1040d5566",
+      "answer_prompt_context_line_count": 19,
+      "answer_prompt_contains_context_packet": true,
+      "answer_prompt_context_preview": "Context (retrieved memories):\nContext Packet (episodic evidence):\n- [mem_aa3a6a10660e] [1:33 pm on 25 August, 2023] Caroline: Wow, Mel! Any more paintings coming up? | Melanie: I'm feeling inspired by autumn so I'm planning a few. You got any cool art projects coming up? | Caroline: I'm putting together an LGBTQ art show next month and I'm gonna show my paintings. Super stoked! | Melanie: Wow, Caroline, that's awesome! Can't wait to see your show - the LGBTQ community needs more platforms like this! | Caroline: Yeah Mel, stoked! Gonna be a great night featuring LGBTQ artists and their awesome talents. We want it to spread understanding and acceptance - let's make it happen!\n- [mem_54d913df20ec] [2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! They must have felt so appreciated. It's awesome to see the difference we can make in each other's lives. Any other exciting LGBTQ advocacy stuff coming up? | Caroline: Yay! Next month I'm having an LGBTQ art show with my paintings - can't wait!"
+    },
+    {
+      "arm": "treatment_context_packet",
+      "row_identity": {
+        "one_based_index": 43,
+        "label": "multi_hop_high_context",
+        "cat": "multi-hop",
+        "question": "Would Melanie be more interested in going to a national park or a theme park?",
+        "question_sha256": "43ab1d1387937c9833a68417daeae616a8ac101c2473f6079464b448e0e5d42c"
+      },
+      "conv": "conv-26",
+      "cat": "multi-hop",
+      "question": "Would Melanie be more interested in going to a national park or a theme park?",
+      "ground_truth": "National park; she likes the outdoors",
+      "predicted": "Melanie would be more interested in going to a national park, as she enjoys nature, family outings like camping and hiking, and painting landscapes.",
+      "score": 1.0,
+      "query_time_ms": 3165,
+      "n_memories": 8,
+      "recall_telemetry": {
+        "schema": "memibrium.locomo_answer_question.telemetry.v1",
+        "question": "Would Melanie be more interested in going to a national park or a theme park?",
+        "domain": "locomo-conv-26",
+        "expanded_queries": [
+          "Would Melanie be more interested in going to a national park or a theme park?"
+        ],
+        "per_query_recall": [],
+        "counts": {
+          "context_packet_enabled": true,
+          "final_answer_context_count": 8
+        },
+        "final_context": [
+          {
+            "rank": 1,
+            "id": "mem_11637c0e6dd0",
+            "dedupe_key": "id::mem_11637c0e6dd0",
+            "refs": {
+              "turn_end": 19,
+              "turn_start": 10,
+              "chunk_index": 1,
+              "session_index": 4
+            },
+            "created_at": "2023-08-17T13:50:00+00:00",
+            "content_sha256": "63583cb85bec11e69666d2283c662d478404bd2275e348313832a6d5048b0852",
+            "snippet": "[1:50 pm on 17 August, 2023] Caroline: Definitely, Mel! Finding those happy moments and clinging to them is key. It's what keeps us going, even when life's hard"
+          },
+          {
+            "rank": 2,
+            "id": "mem_fe775a0c43dc",
+            "dedupe_key": "id::mem_fe775a0c43dc",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 16
+            },
+            "created_at": "2023-07-06T20:18:00+00:00",
+            "content_sha256": "07ebaf11af45b7856390b8d47a50c88ac5048579662662ef44f8ac2e8ccce803",
+            "snippet": "[8:18 pm on 6 July, 2023] Caroline: Hey Mel! Long time no talk. Lots has been going on since then! | Melanie: Hey Caroline! Missed you. Anything new? Spill the "
+          },
+          {
+            "rank": 3,
+            "id": "mem_c09d8b38cc1f",
+            "dedupe_key": "id::mem_c09d8b38cc1f",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 1
+            },
+            "created_at": "2023-05-08T13:56:00+00:00",
+            "content_sha256": "af52c42005d46acaea09b6f4fa723ce947f0319ed5a6aad5028386a7f4065a73",
+            "snippet": "[1:56 pm on 8 May, 2023] Caroline: Hey Mel! Good to see you! How have you been? | Melanie: Hey Caroline! Good to see you! I'm swamped with the kids & work. What"
+          },
+          {
+            "rank": 4,
+            "id": "mem_6b04a676d0f0",
+            "dedupe_key": "id::mem_6b04a676d0f0",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "ad761d3cf5437df9116fe9826a00dd83509a0769dff842760605b69d76e4de66",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Hey Melanie! Just wanted to say hi! | Melanie: Hey Caroline! Good to talk to you again. What's up? Anything new since last "
+          },
+          {
+            "rank": 5,
+            "id": "mem_1b307a744d2c",
+            "dedupe_key": "id::mem_1b307a744d2c",
+            "refs": {
+              "turn_end": 23,
+              "turn_start": 20,
+              "chunk_index": 2,
+              "session_index": 2
+            },
+            "created_at": "2023-07-20T20:56:00+00:00",
+            "content_sha256": "488d99e899a4def468b1d70a8e3a7d4c62cbe42813344eb750af2d02e04593a6",
+            "snippet": "[8:56 pm on 20 July, 2023] Caroline: Aw, that's sweet, Mel! Those milestones are great reminders of how special our bonds are. | Melanie: Yeah, they sure are. I"
+          },
+          {
+            "rank": 6,
+            "id": "mem_8c07ecfdb62a",
+            "dedupe_key": "id::mem_8c07ecfdb62a",
+            "refs": {
+              "turn_end": 23,
+              "turn_start": 20,
+              "chunk_index": 2,
+              "session_index": 10
+            },
+            "created_at": "2023-10-20T18:55:00+00:00",
+            "content_sha256": "cb4fcfb75c49f58042162ddeb6ed671b9e27cc2a03879b016a9baa3d211a7a42",
+            "snippet": "[6:55 pm on 20 October, 2023] Melanie: It's a chance to be present and together. We bond over stories, campfires and nature. It's so peaceful waking up to the s"
+          },
+          {
+            "rank": 7,
+            "id": "mem_45cfb59ae75a",
+            "dedupe_key": "id::mem_45cfb59ae75a",
+            "refs": {
+              "turn_end": 9,
+              "turn_start": 0,
+              "chunk_index": 0,
+              "session_index": 14
+            },
+            "created_at": "2023-06-27T10:37:00+00:00",
+            "content_sha256": "5a80c57c0e908cb9281380f07630f68f5f32cc5c0b335fc83fa7043b42a9e869",
+            "snippet": "[10:37 am on 27 June, 2023] Caroline: Hey Melanie! Long time no talk! A lot's been going on in my life! Take a look at this. | Melanie: Hey, Caroline! Nice to h"
+          },
+          {
+            "rank": 8,
+            "id": "mem_a3aacb74178e",
+            "dedupe_key": "id::mem_a3aacb74178e",
+            "refs": {
+              "turn_end": 29,
+              "turn_start": 20,
+              "chunk_index": 2,
+              "session_index": 6
+            },
+            "created_at": "2023-08-25T13:33:00+00:00",
+            "content_sha256": "9a3e4ddbb3be70c52c0dcbff836015f8dda6d1c3b3e778da799411bccb6af95b",
+            "snippet": "[1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate differences and be that much closer. I'd love "
+          }
+        ],
+        "gold_evidence_ref_coverage": {
+          "gold_ref_count": 2,
+          "final_context_refs_matched": 0,
+          "canary_gold_ref_count": 2,
+          "canary_final_context_refs_matched": 0,
+          "canary_mapping": "lexicographic"
+        },
+        "context_packet": {
+          "schema": "memibrium.context_packet.v1",
+          "query_type": "general_recall",
+          "episodic_evidence_count": 8,
+          "deduped_episodic_evidence_count": 0,
+          "self_model_observation_count": 0,
+          "graph_fact_count": 0,
+          "decision_trace_count": 1,
+          "missing_evidence": [
+            "self_model_observations",
+            "graph_facts"
+          ],
+          "provenance_summary": {
+            "memory_ids": [
+              "mem_11637c0e6dd0",
+              "mem_fe775a0c43dc",
+              "mem_c09d8b38cc1f",
+              "mem_6b04a676d0f0",
+              "mem_1b307a744d2c",
+              "mem_8c07ecfdb62a",
+              "mem_45cfb59ae75a",
+              "mem_a3aacb74178e"
+            ],
+            "self_model_observation_ids": [
+              "obs_smoke_context_graph_v0_timestamp_fix_4474e75"
+            ],
+            "entity_ids": [
+              "ent_3ba089faa10d",
+              "ent_d3b2400ef1d6",
+              "ent_3f152602dc38",
+              "ent_caf343c0835b",
+              "ent_8d9742db9270",
+              "ent_3e803e47a7d4",
+              "ent_de7796186e1d",
+              "ent_1af743a50d7a",
+              "ent_cc6dc8f06216",
+              "ent_2b5f502394a2"
+            ]
+          }
+        }
+      },
+      "answer_prompt_context_sha256": "62e1af6931c6e17fdf896df7bf32240feb795314d91ba9bd9bd0b38b5b84442d",
+      "answer_prompt_context_line_count": 19,
+      "answer_prompt_contains_context_packet": true,
+      "answer_prompt_context_preview": "Context (retrieved memories):\nContext Packet (episodic evidence):\n- [mem_11637c0e6dd0] [1:50 pm on 17 August, 2023] Caroline: Definitely, Mel! Finding those happy moments and clinging to them is key. It's what keeps us going, even when life's hard. I'm lucky to have people like you to remind me. | Melanie: Yeah, same here Caroline. You make life's struggles more bearable. | Caroline: Thanks, Melanie! It means a lot having you in my corner. Appreciate our friendship! | Melanie: I appreciate our friendship too, Caroline. You've always been there for me. | Caroline: I'm always here for you, Mel! We had a blast last year at the Pride fest. Those supportive friends definitely make everything worth it! | Melanie: That was a blast! So much fun with the whole gang! Wanna do a family outing this summer? | Caroline: Right, it was so much fun! We could do a family outting, or wanna plan something special for this summer, just us two? It'd be a great chance to catch up and explore nature! What do "
+    }
+  ],
+  "schema": "memibrium.locomo.context_packet_canary.arm.v1",
+  "run_id": "20260503T201307Z",
+  "arm": "treatment_context_packet",
+  "purpose": "tiny fixed-row context-packet A/B canary; not a 199Q LOCOMO benchmark",
+  "started_at": "2026-05-03T20:14:16.505673+00:00",
+  "input_slice": {
+    "data_path": "/tmp/locomo/data/locomo10.json",
+    "data_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "fixed_rows_path": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_step5o_prereg_fixed_rows_2026-05-02.json",
+    "fixed_row_count": 7
+  },
+  "ingest": {
+    "turns": 419,
+    "domain": "locomo-conv-26",
+    "seconds": 15.002
+  },
+  "hygiene_before_arm": {
+    "memories": 0,
+    "temporal_expressions": 0,
+    "memory_snapshots": 0,
+    "user_feedback": 0,
+    "contradictions": 0,
+    "memory_edges": 0,
+    "context_graph_edges": 0,
+    "decision_traces": 0,
+    "self_model_observations": 0,
+    "ok": true
+  },
+  "hygiene_after_cleanup": {
+    "memories": 0,
+    "temporal_expressions": 0,
+    "memory_snapshots": 0,
+    "user_feedback": 0,
+    "contradictions": 0,
+    "memory_edges": 0,
+    "context_graph_edges": 0,
+    "decision_traces": 0,
+    "self_model_observations": 0,
+    "ok": true
+  }
+}

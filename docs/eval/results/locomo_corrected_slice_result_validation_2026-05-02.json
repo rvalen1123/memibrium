@@ -1,0 +1,126 @@
+{
+  "step": "5j_v2_exec_result_validity_gate",
+  "timestamp_utc": "2026-05-02T20:00:30Z",
+  "result_path": "/tmp/locomo_results_query_expansion_raw.json",
+  "result_exists": true,
+  "log_path": "/tmp/locomo_conv26_telemetry_off_reproducibility_v2_2026-05-02.log",
+  "guard_path": "docs/eval/results/locomo_corrected_slice_guard_summary_2026-05-02.json",
+  "result_sha256": "317dc38bb7cbe8529c3f1d10fbbefe459d6b790c539f8395cf72729dd828f9e9",
+  "parseable": true,
+  "detail_rows": 199,
+  "unique_convs": [
+    "conv-26"
+  ],
+  "all_rows_conv26": true,
+  "non_conv26_rows": [],
+  "total_questions": 199,
+  "overall_score": 55.28,
+  "full_5cat_overall": 55.28,
+  "protocol_4cat_overall": 70.07,
+  "category_scores": {
+    "cat-temporal": 75.68,
+    "cat-multi-hop": 38.46,
+    "cat-single-hop": 68.75,
+    "cat-unanswerable": 73.57,
+    "cat-adversarial": 7.45
+  },
+  "condition": {
+    "cleaned": false,
+    "normalize_dates": false,
+    "query_expansion": true,
+    "context_rerank": false,
+    "append_context_expansion": false,
+    "gated_append_context_expansion": false,
+    "no_expansion_arm_b": false,
+    "legacy_context_assembly": false
+  },
+  "expand_query_fallback_count": 0,
+  "expand_query_fallback_rate": 0.0,
+  "n_memories_summary": {
+    "count": 199,
+    "mean": 11.9296,
+    "min": 4,
+    "max": 15,
+    "distribution": {
+      "4": 51,
+      "12": 6,
+      "13": 10,
+      "14": 12,
+      "15": 120
+    }
+  },
+  "recall_telemetry_rows": 0,
+  "cat_counts": {
+    "adversarial": 47,
+    "multi-hop": 13,
+    "single-hop": 32,
+    "temporal": 37,
+    "unanswerable": 70
+  },
+  "startup_lines": {
+    "conversations_to_process_1": true,
+    "total_questions_199_evaluated": true,
+    "first_conv_conv26": true
+  },
+  "log_error_flags": {
+    "Traceback": false,
+    "ERROR": false,
+    "Internal Server Error": false,
+    "TypeError": false,
+    "Decimal is not JSON serializable": false,
+    "type \"vector\" does not exist": false,
+    "Hybrid retrieval failed": false
+  },
+  "guard_summary": {
+    "step": "5j_v2_exec_guarded_launch",
+    "timestamp_utc": "2026-05-02T19:49:24+00:00",
+    "command": [
+      "python3",
+      "benchmark_scripts/locomo_bench_v2.py",
+      "--max-convs",
+      "1",
+      "--query-expansion"
+    ],
+    "log_path": "/tmp/locomo_conv26_telemetry_off_reproducibility_v2_2026-05-02.log",
+    "guard_timeout_seconds": 180,
+    "env_assertions": {
+      "INCLUDE_RECALL_TELEMETRY_absent": true,
+      "LOCOMO_RETRIEVAL_TELEMETRY_absent": true,
+      "USE_QUERY_EXPANSION": "1",
+      "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+      "AZURE_CHAT_DEPLOYMENT": "gpt-4.1-mini",
+      "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini"
+    },
+    "observed": {
+      "conversations_to_process": 1,
+      "total_questions": 199,
+      "evaluated_questions": 199,
+      "first_conversation_line": "[1/1] Conv conv-26: Caroline & Melanie"
+    },
+    "guard_status": "passed_startup_guard",
+    "abort_reason": null,
+    "returncode": 0,
+    "completed_utc": "2026-05-02T19:59:58+00:00"
+  },
+  "pass_conditions": {
+    "result_exists": true,
+    "parseable": true,
+    "detail_rows_199": true,
+    "total_questions_199": true,
+    "all_rows_conv26": true,
+    "no_other_sample": true,
+    "query_expansion_on": true,
+    "legacy_context_assembly_off": true,
+    "context_rerank_off": true,
+    "append_context_expansion_off": true,
+    "gated_append_context_expansion_off": true,
+    "no_expansion_arm_b_off": true,
+    "normalize_dates_off": true,
+    "telemetry_absent": true,
+    "fallback_present": true,
+    "n_memories_present_all_rows": true,
+    "startup_guard_passed": true
+  },
+  "gate_status": "valid",
+  "decision_label": "telemetry_off_third_regime_observed"
+}

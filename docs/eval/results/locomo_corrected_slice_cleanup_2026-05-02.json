@@ -1,0 +1,20 @@
+{
+  "step": "5j_v2_exec_cleanup",
+  "timestamp_utc": "2026-05-02T20:00:55Z",
+  "psql_returncode": 0,
+  "counts": {
+    "deleted_memory_edges": 417,
+    "deleted_contradictions": 1,
+    "deleted_user_feedback": 0,
+    "deleted_memory_snapshots": 0,
+    "deleted_temporal_expressions": 66,
+    "deleted_memories": 49,
+    "remaining_memories": 0,
+    "remaining_temporal_expressions": 0,
+    "remaining_memory_snapshots": 0,
+    "remaining_user_feedback": 0,
+    "remaining_contradictions": 0,
+    "remaining_memory_edges": 0
+  },
+  "hygiene_pass": true
+}

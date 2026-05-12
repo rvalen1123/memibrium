@@ -1,0 +1,350 @@
+{
+  "artifact_date": "2026-05-02",
+  "blocked_error": null,
+  "branch": "query-expansion",
+  "comparisons": [
+    {
+      "content_hashes_identical": true,
+      "counts_identical": true,
+      "ids_identical": true,
+      "numeric_diffs_gt_tolerance": [],
+      "pair_equal": true,
+      "pair_index": 1,
+      "path_consistent": true,
+      "query": "project telemetry serialization behavior",
+      "result_counts": {
+        "off": 0,
+        "on": 0
+      },
+      "scores_identical_within_tolerance": true,
+      "statuses": {
+        "off": 200,
+        "on": 200
+      },
+      "telemetry_present": {
+        "off": false,
+        "on": true
+      },
+      "telemetry_server": {
+        "embedding_error": null,
+        "embedding_success": true,
+        "hybrid_path_attempted": true,
+        "hybrid_retriever_present": true,
+        "legacy_fallback_executed": false,
+        "response_result_count": 0
+      },
+      "top_level_shapes": {
+        "off": "list",
+        "on": "object"
+      },
+      "valid_json": {
+        "off": true,
+        "on": true
+      }
+    },
+    {
+      "content_hashes_identical": true,
+      "counts_identical": true,
+      "ids_identical": true,
+      "numeric_diffs_gt_tolerance": [],
+      "pair_equal": true,
+      "pair_index": 2,
+      "path_consistent": true,
+      "query": "Azure embedding deployment configuration",
+      "result_counts": {
+        "off": 0,
+        "on": 0
+      },
+      "scores_identical_within_tolerance": true,
+      "statuses": {
+        "off": 200,
+        "on": 200
+      },
+      "telemetry_present": {
+        "off": false,
+        "on": true
+      },
+      "telemetry_server": {
+        "embedding_error": null,
+        "embedding_success": true,
+        "hybrid_path_attempted": true,
+        "hybrid_retriever_present": true,
+        "legacy_fallback_executed": false,
+        "response_result_count": 0
+      },
+      "top_level_shapes": {
+        "off": "list",
+        "on": "object"
+      },
+      "valid_json": {
+        "off": true,
+        "on": true
+      }
+    },
+    {
+      "content_hashes_identical": true,
+      "counts_identical": true,
+      "ids_identical": true,
+      "numeric_diffs_gt_tolerance": [],
+      "pair_equal": true,
+      "pair_index": 3,
+      "path_consistent": true,
+      "query": "Docker ruvector database health checks",
+      "result_counts": {
+        "off": 0,
+        "on": 0
+      },
+      "scores_identical_within_tolerance": true,
+      "statuses": {
+        "off": 200,
+        "on": 200
+      },
+      "telemetry_present": {
+        "off": false,
+        "on": true
+      },
+      "telemetry_server": {
+        "embedding_error": null,
+        "embedding_success": true,
+        "hybrid_path_attempted": true,
+        "hybrid_retriever_present": true,
+        "legacy_fallback_executed": false,
+        "response_result_count": 0
+      },
+      "top_level_shapes": {
+        "off": "list",
+        "on": "object"
+      },
+      "valid_json": {
+        "off": true,
+        "on": true
+      }
+    },
+    {
+      "content_hashes_identical": true,
+      "counts_identical": true,
+      "ids_identical": true,
+      "numeric_diffs_gt_tolerance": [],
+      "pair_equal": true,
+      "pair_index": 4,
+      "path_consistent": true,
+      "query": "Memibrium query expansion context assembly",
+      "result_counts": {
+        "off": 0,
+        "on": 0
+      },
+      "scores_identical_within_tolerance": true,
+      "statuses": {
+        "off": 200,
+        "on": 200
+      },
+      "telemetry_present": {
+        "off": false,
+        "on": true
+      },
+      "telemetry_server": {
+        "embedding_error": null,
+        "embedding_success": true,
+        "hybrid_path_attempted": true,
+        "hybrid_retriever_present": true,
+        "legacy_fallback_executed": false,
+        "response_result_count": 0
+      },
+      "top_level_shapes": {
+        "off": "list",
+        "on": "object"
+      },
+      "valid_json": {
+        "off": true,
+        "on": true
+      }
+    },
+    {
+      "content_hashes_identical": true,
+      "counts_identical": true,
+      "ids_identical": true,
+      "numeric_diffs_gt_tolerance": [],
+      "pair_equal": true,
+      "pair_index": 5,
+      "path_consistent": true,
+      "query": "recent memory benchmark cleanup procedure",
+      "result_counts": {
+        "off": 0,
+        "on": 0
+      },
+      "scores_identical_within_tolerance": true,
+      "statuses": {
+        "off": 200,
+        "on": 200
+      },
+      "telemetry_present": {
+        "off": false,
+        "on": true
+      },
+      "telemetry_server": {
+        "embedding_error": null,
+        "embedding_success": true,
+        "hybrid_path_attempted": true,
+        "hybrid_retriever_present": true,
+        "legacy_fallback_executed": false,
+        "response_result_count": 0
+      },
+      "top_level_shapes": {
+        "off": "list",
+        "on": "object"
+      },
+      "valid_json": {
+        "off": true,
+        "on": true
+      }
+    },
+    {
+      "content_hashes_identical": true,
+      "counts_identical": true,
+      "ids_identical": true,
+      "numeric_diffs_gt_tolerance": [],
+      "pair_equal": true,
+      "pair_index": 6,
+      "path_consistent": true,
+      "query": "When was the telemetry serialization fix recorded?",
+      "result_counts": {
+        "off": 0,
+        "on": 0
+      },
+      "scores_identical_within_tolerance": true,
+      "statuses": {
+        "off": 200,
+        "on": 200
+      },
+      "telemetry_present": {
+        "off": false,
+        "on": true
+      },
+      "telemetry_server": {
+        "embedding_error": null,
+        "embedding_success": true,
+        "hybrid_path_attempted": true,
+        "hybrid_retriever_present": true,
+        "legacy_fallback_executed": false,
+        "response_result_count": 0
+      },
+      "top_level_shapes": {
+        "off": "list",
+        "on": "object"
+      },
+      "valid_json": {
+        "off": true,
+        "on": true
+      }
+    },
+    {
+      "content_hashes_identical": true,
+      "counts_identical": true,
+      "ids_identical": true,
+      "numeric_diffs_gt_tolerance": [],
+      "pair_equal": true,
+      "pair_index": 7,
+      "path_consistent": true,
+      "query": "How do recall telemetry responses preserve legacy result shape?",
+      "result_counts": {
+        "off": 0,
+        "on": 0
+      },
+      "scores_identical_within_tolerance": true,
+      "statuses": {
+        "off": 200,
+        "on": 200
+      },
+      "telemetry_present": {
+        "off": false,
+        "on": true
+      },
+      "telemetry_server": {
+        "embedding_error": null,
+        "embedding_success": true,
+        "hybrid_path_attempted": true,
+        "hybrid_retriever_present": true,
+        "legacy_fallback_executed": false,
+        "response_result_count": 0
+      },
+      "top_level_shapes": {
+        "off": "list",
+        "on": "object"
+      },
+      "valid_json": {
+        "off": true,
+        "on": true
+      }
+    },
+    {
+      "content_hashes_identical": true,
+      "counts_identical": true,
+      "ids_identical": true,
+      "numeric_diffs_gt_tolerance": [],
+      "pair_equal": true,
+      "pair_index": 8,
+      "path_consistent": true,
+      "query": "nonexistent control query zyxwvu qptrace sentinel",
+      "result_counts": {
+        "off": 0,
+        "on": 0
+      },
+      "scores_identical_within_tolerance": true,
+      "statuses": {
+        "off": 200,
+        "on": 200
+      },
+      "telemetry_present": {
+        "off": false,
+        "on": true
+      },
+      "telemetry_server": {
+        "embedding_error": null,
+        "embedding_success": true,
+        "hybrid_path_attempted": true,
+        "hybrid_retriever_present": true,
+        "legacy_fallback_executed": false,
+        "response_result_count": 0
+      },
+      "top_level_shapes": {
+        "off": "list",
+        "on": "object"
+      },
+      "valid_json": {
+        "off": true,
+        "on": true
+      }
+    }
+  ],
+  "completed_pairs": 8,
+  "evidence_strength_caveat": "The preregistered 8 fixed queries all returned zero results in both telemetry-off and telemetry-on conditions. The primary label follows the preregistered stop/go rule because all pairs were identical and shapes/path/logs were valid, but this probe only exercises empty-result/no-hit behavior and does not stress non-empty result ordering or score comparison.",
+  "fresh_log_errors": [],
+  "head_at_probe": "544a003",
+  "next_step": "Preregister telemetry-off 199Q reproducibility or effective benchmark-harness/runtime drift audit for the f2466c9 low-context baseline; do not move to Phase C.",
+  "pair_summary": {
+    "all_counts_identical": true,
+    "all_ids_or_hashes_identical": true,
+    "all_paths_consistent": true,
+    "all_preregistered_pairs_empty_result_lists": true,
+    "all_scores_within_tolerance": true,
+    "all_shapes_valid": true,
+    "all_status_200": true,
+    "all_valid_json": true,
+    "material_divergence_count": 0
+  },
+  "phase_c_boundary": "Phase C remains blocked; this probe only adjudicates same-query telemetry flag perturbation under current live state.",
+  "planned_calls": 16,
+  "planned_pairs": 8,
+  "preflight_gate_failures": [],
+  "preflight_gate_status": "pass",
+  "primary_label": "telemetry_perturbation_ruled_out",
+  "protocol_deviation_artifact": "/home/zaddy/src/Memibrium/docs/eval/results/locomo_paired_telemetry_flag_probe_protocol_deviation_2026-05-02.json",
+  "repo": "/home/zaddy/src/Memibrium",
+  "schema": "memibrium.locomo.paired_telemetry_flag_probe_labels.v1",
+  "secondary_labels": [
+    "all_preregistered_pairs_empty_result_lists",
+    "non_empty_result_ordering_not_stressed",
+    "post_probe_protocol_deviation_documented"
+  ],
+  "step": "5h"
+}

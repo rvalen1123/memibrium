@@ -1,0 +1,983 @@
+{
+  "aggregate_match": true,
+  "per_query_match": [
+    [
+      "Caroline adoption agencies LGBTQ individuals",
+      true
+    ],
+    [
+      "Melanie charity race mental health self care",
+      true
+    ],
+    [
+      "LGBTQ counseling workshop therapeutic methods",
+      true
+    ],
+    [
+      "pottery workshop July Melanie",
+      true
+    ],
+    [
+      "beach with kids once or twice a year",
+      true
+    ],
+    [
+      "camping trip meteor shower family",
+      true
+    ],
+    [
+      "Grand Canyon accident children road trip",
+      true
+    ],
+    [
+      "necklace Sweden grandmother love faith strength",
+      true
+    ],
+    [
+      "pride parade school speech support group",
+      true
+    ],
+    [
+      "adoption council meeting loving homes children",
+      true
+    ],
+    [
+      "running de-stress clear her mind mental health",
+      true
+    ],
+    [
+      "Caroline picnic week before July 6 2023",
+      true
+    ],
+    [
+      "Nothing is Impossible book Melanie 2022",
+      true
+    ],
+    [
+      "The Four Seasons Vivaldi classical music",
+      true
+    ],
+    [
+      "safe and inviting place for people to grow",
+      true
+    ],
+    [
+      "hybrid active ruvector smoke probe",
+      true
+    ],
+    [
+      "Who did Caroline contact about adoption agency policy",
+      true
+    ],
+    [
+      "What event helped Melanie manage anxiety and self care",
+      true
+    ],
+    [
+      "Which workshop discussed therapeutic methods for LGBTQ counseling",
+      true
+    ],
+    [
+      "When did Melanie attend the pottery workshop in July",
+      true
+    ],
+    [
+      "How often did the family go to the beach with the kids",
+      true
+    ],
+    [
+      "What happened on the camping trip during the meteor shower",
+      true
+    ],
+    [
+      "Which child was affected by the Grand Canyon road trip accident",
+      true
+    ],
+    [
+      "What did the Swedish grandmother necklace symbolize",
+      true
+    ],
+    [
+      "Who spoke at the pride parade school support event",
+      true
+    ],
+    [
+      "What did the adoption council discuss about loving homes",
+      true
+    ],
+    [
+      "How did running help with stress and mental health",
+      true
+    ],
+    [
+      "Who had a picnic the week before July 6 2023",
+      true
+    ],
+    [
+      "What book was called Nothing is Impossible in 2022",
+      true
+    ],
+    [
+      "Which classical music piece was associated with The Four Seasons",
+      true
+    ],
+    [
+      "What place was described as safe and inviting for growth",
+      true
+    ],
+    [
+      "Which person preferred counseling over medication",
+      true
+    ],
+    [
+      "What meeting changed the adoption plan timeline",
+      true
+    ],
+    [
+      "Who organized the charity race for mental health",
+      true
+    ],
+    [
+      "What family activity happened once or twice a year",
+      true
+    ],
+    [
+      "Which memory involved love faith and strength",
+      true
+    ],
+    [
+      "What was the outcome of the LGBTQ adoption discussion",
+      true
+    ],
+    [
+      "Who needed support after the road trip accident",
+      true
+    ],
+    [
+      "Which July event involved pottery and Melanie",
+      true
+    ],
+    [
+      "What evidence supports an unanswerable adversarial question",
+      true
+    ]
+  ],
+  "post": {
+    "aggregate_hash": "ccdb88c7852853bfa4fa514b5a389c528c0425bbb970cd0e55772814080acc54",
+    "include_telemetry": false,
+    "label": "post_serialization_fix_mutation_smoke",
+    "queries": [
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline adoption agencies LGBTQ individuals",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Melanie charity race mental health self care",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "LGBTQ counseling workshop therapeutic methods",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pottery workshop July Melanie",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "beach with kids once or twice a year",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "camping trip meteor shower family",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Grand Canyon accident children road trip",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "necklace Sweden grandmother love faith strength",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pride parade school speech support group",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "adoption council meeting loving homes children",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "running de-stress clear her mind mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline picnic week before July 6 2023",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Nothing is Impossible book Melanie 2022",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "The Four Seasons Vivaldi classical music",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "safe and inviting place for people to grow",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "hybrid active ruvector smoke probe",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who did Caroline contact about adoption agency policy",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What event helped Melanie manage anxiety and self care",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which workshop discussed therapeutic methods for LGBTQ counseling",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "When did Melanie attend the pottery workshop in July",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "How often did the family go to the beach with the kids",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What happened on the camping trip during the meteor shower",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which child was affected by the Grand Canyon road trip accident",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What did the Swedish grandmother necklace symbolize",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who spoke at the pride parade school support event",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What did the adoption council discuss about loving homes",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "How did running help with stress and mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who had a picnic the week before July 6 2023",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What book was called Nothing is Impossible in 2022",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which classical music piece was associated with The Four Seasons",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What place was described as safe and inviting for growth",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which person preferred counseling over medication",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What meeting changed the adoption plan timeline",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who organized the charity race for mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What family activity happened once or twice a year",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which memory involved love faith and strength",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What was the outcome of the LGBTQ adoption discussion",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who needed support after the road trip accident",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which July event involved pottery and Melanie",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What evidence supports an unanswerable adversarial question",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      }
+    ],
+    "query_count": 40,
+    "top_k": 10
+  },
+  "pre": {
+    "aggregate_hash": "ccdb88c7852853bfa4fa514b5a389c528c0425bbb970cd0e55772814080acc54",
+    "include_telemetry": false,
+    "label": "pre_serialization_fix_mutation_smoke",
+    "queries": [
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline adoption agencies LGBTQ individuals",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Melanie charity race mental health self care",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "LGBTQ counseling workshop therapeutic methods",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pottery workshop July Melanie",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "beach with kids once or twice a year",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "camping trip meteor shower family",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Grand Canyon accident children road trip",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "necklace Sweden grandmother love faith strength",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "pride parade school speech support group",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "adoption council meeting loving homes children",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "running de-stress clear her mind mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Caroline picnic week before July 6 2023",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Nothing is Impossible book Melanie 2022",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "The Four Seasons Vivaldi classical music",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "safe and inviting place for people to grow",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "hybrid active ruvector smoke probe",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who did Caroline contact about adoption agency policy",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What event helped Melanie manage anxiety and self care",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which workshop discussed therapeutic methods for LGBTQ counseling",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "When did Melanie attend the pottery workshop in July",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "How often did the family go to the beach with the kids",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What happened on the camping trip during the meteor shower",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which child was affected by the Grand Canyon road trip accident",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What did the Swedish grandmother necklace symbolize",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who spoke at the pride parade school support event",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What did the adoption council discuss about loving homes",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "How did running help with stress and mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who had a picnic the week before July 6 2023",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What book was called Nothing is Impossible in 2022",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which classical music piece was associated with The Four Seasons",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What place was described as safe and inviting for growth",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which person preferred counseling over medication",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What meeting changed the adoption plan timeline",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who organized the charity race for mental health",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What family activity happened once or twice a year",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which memory involved love faith and strength",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What was the outcome of the LGBTQ adoption discussion",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Who needed support after the road trip accident",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "Which July event involved pottery and Melanie",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      },
+      {
+        "error_excerpt": null,
+        "ok": true,
+        "ordered_result_keys": [],
+        "per_query_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "query": "What evidence supports an unanswerable adversarial question",
+        "response_shape": "list",
+        "result_count": 0,
+        "status": 200
+      }
+    ],
+    "query_count": 40,
+    "top_k": 10
+  }
+}

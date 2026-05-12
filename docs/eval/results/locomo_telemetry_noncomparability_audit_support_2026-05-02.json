@@ -1,0 +1,1053 @@
+{
+  "alignment": {
+    "all_question_text_match": true,
+    "details_aligned_by_order": true,
+    "question_count": 199
+  },
+  "blocked_attempt_summary": {
+    "blocked_json_verdict": "telemetry_baseline_blocked_runtime_serialization_error",
+    "contains_n_memories": false,
+    "contains_running_score": false,
+    "failed_at_question": null,
+    "failed_evidence_keys": [
+      "last_progress_marker",
+      "mcp_recall_500_after_three_attempts",
+      "partial_main_result_valid",
+      "run_log_copy",
+      "run_log_sha256",
+      "server_decimal_serialization_error",
+      "server_log_copy",
+      "server_log_sha256",
+      "telemetry_traces_valid",
+      "tmp_result_json_present",
+      "traceback_present_in_run_log"
+    ],
+    "log_line_count": 32,
+    "progress_line_sample": [],
+    "progress_line_tail": []
+  },
+  "category_summary": {
+    "adversarial": {
+      "baseline_mean_n": 2.617021276595745,
+      "baseline_n_dist": {
+        "2": 18,
+        "3": 29
+      },
+      "baseline_score_mean": 0.0,
+      "count": 47,
+      "mean_delta_n": 12.063829787234043,
+      "mean_delta_score": 0.22340425531914893,
+      "retry_mean_n": 14.680851063829786,
+      "retry_n_dist": {
+        "13": 6,
+        "14": 3,
+        "15": 38
+      },
+      "retry_score_mean": 0.22340425531914893
+    },
+    "multi-hop": {
+      "baseline_mean_n": 7.230769230769231,
+      "baseline_n_dist": {
+        "12": 1,
+        "15": 4,
+        "2": 2,
+        "3": 6
+      },
+      "baseline_score_mean": 0.3076923076923077,
+      "count": 13,
+      "mean_delta_n": 7.3076923076923075,
+      "mean_delta_score": 0.11538461538461539,
+      "retry_mean_n": 14.538461538461538,
+      "retry_n_dist": {
+        "12": 2,
+        "15": 11
+      },
+      "retry_score_mean": 0.4230769230769231
+    },
+    "single-hop": {
+      "baseline_mean_n": 6.21875,
+      "baseline_n_dist": {
+        "12": 1,
+        "13": 3,
+        "14": 1,
+        "15": 5,
+        "2": 7,
+        "3": 15
+      },
+      "baseline_score_mean": 0.265625,
+      "count": 32,
+      "mean_delta_n": 8.46875,
+      "mean_delta_score": 0.375,
+      "retry_mean_n": 14.6875,
+      "retry_n_dist": {
+        "11": 1,
+        "13": 2,
+        "14": 2,
+        "15": 27
+      },
+      "retry_score_mean": 0.640625
+    },
+    "temporal": {
+      "baseline_mean_n": 8.135135135135135,
+      "baseline_n_dist": {
+        "11": 1,
+        "12": 1,
+        "14": 2,
+        "15": 13,
+        "2": 5,
+        "3": 15
+      },
+      "baseline_score_mean": 0.3918918918918919,
+      "count": 37,
+      "mean_delta_n": 6.27027027027027,
+      "mean_delta_score": 0.2972972972972973,
+      "retry_mean_n": 14.405405405405405,
+      "retry_n_dist": {
+        "11": 1,
+        "12": 2,
+        "13": 5,
+        "14": 2,
+        "15": 27
+      },
+      "retry_score_mean": 0.6891891891891891
+    },
+    "unanswerable": {
+      "baseline_mean_n": 2.642857142857143,
+      "baseline_n_dist": {
+        "2": 25,
+        "3": 45
+      },
+      "baseline_score_mean": 0.03571428571428571,
+      "count": 70,
+      "mean_delta_n": 12.042857142857143,
+      "mean_delta_score": 0.7357142857142858,
+      "retry_mean_n": 14.685714285714285,
+      "retry_n_dist": {
+        "11": 1,
+        "12": 2,
+        "13": 4,
+        "14": 4,
+        "15": 59
+      },
+      "retry_score_mean": 0.7714285714285715
+    }
+  },
+  "condition_summary": {
+    "baseline_condition": {
+      "append_context_expansion": false,
+      "cleaned": false,
+      "context_rerank": false,
+      "gated_append_context_expansion": false,
+      "legacy_context_assembly": false,
+      "no_expansion_arm_b": false,
+      "normalize_dates": false,
+      "query_expansion": true
+    },
+    "baseline_metrics": {
+      "avg_query_ms": 2478,
+      "expand_query_fallback_count": 0,
+      "expand_query_fallback_rate": 0.0,
+      "full_5cat_overall": 14.82,
+      "overall_score": 14.82,
+      "protocol_4cat_overall": 19.41,
+      "total_questions": 199
+    },
+    "noncomp_verdict": "telemetry_baseline_rejected_noncomparable",
+    "retry_condition": {
+      "append_context_expansion": false,
+      "cleaned": false,
+      "context_rerank": false,
+      "gated_append_context_expansion": false,
+      "legacy_context_assembly": false,
+      "no_expansion_arm_b": false,
+      "normalize_dates": false,
+      "query_expansion": true
+    },
+    "retry_metrics": {
+      "avg_query_ms": 3272,
+      "expand_query_fallback_count": 0,
+      "expand_query_fallback_rate": 0.0,
+      "full_5cat_overall": 58.29,
+      "overall_score": 58.29,
+      "protocol_4cat_overall": 69.41,
+      "total_questions": 199
+    },
+    "summary_telemetry": {
+      "adversarial_summary": {
+        "any_final_context_gold_rows": 0,
+        "final_context_gold_rows": 0,
+        "nonzero": 13,
+        "total": 47,
+        "zero": 34
+      },
+      "per_query_recall_count_shapes_sample": [
+        [
+          10,
+          10,
+          10,
+          10
+        ],
+        [
+          10,
+          10,
+          10,
+          10
+        ],
+        [
+          10,
+          10,
+          10,
+          10
+        ],
+        [
+          10,
+          10,
+          10,
+          10
+        ],
+        [
+          10,
+          10,
+          10,
+          10
+        ]
+      ],
+      "per_question_expanded_query_counts_distribution": {
+        "4": 199
+      },
+      "rows_with_gold_coverage_object": 197,
+      "rows_with_recall_telemetry": 199,
+      "server_telemetry_sample_count_objects": [
+        {
+          "count": 0,
+          "expanded_count": 20,
+          "fused_count_before_cap": 20,
+          "response_result_count": 10,
+          "returned_count": 0,
+          "streams_count": 2
+        },
+        {
+          "count": 0,
+          "expanded_count": null,
+          "fused_count_before_cap": 20,
+          "response_result_count": 10,
+          "returned_count": 0,
+          "streams_count": 2
+        },
+        {
+          "count": 0,
+          "expanded_count": null,
+          "fused_count_before_cap": 20,
+          "response_result_count": 10,
+          "returned_count": 0,
+          "streams_count": 2
+        }
+      ],
+      "zero_score_local_cause_conservative_counts": {
+        "evidence_present_synthesis_or_attribution_or_unresolved": 62
+      }
+    }
+  },
+  "n_memory_summary": {
+    "baseline_dist": {
+      "11": 1,
+      "12": 3,
+      "13": 3,
+      "14": 3,
+      "15": 22,
+      "2": 57,
+      "3": 110
+    },
+    "baseline_eq15_count": 22,
+    "baseline_le3_retry_ge11": 167,
+    "baseline_mean": 4.532663316582915,
+    "delta_dist": {
+      "-1": 2,
+      "-3": 1,
+      "0": 20,
+      "1": 5,
+      "10": 10,
+      "11": 10,
+      "12": 92,
+      "13": 48,
+      "2": 2,
+      "3": 2,
+      "8": 3,
+      "9": 4
+    },
+    "mean_delta": 10.090452261306533,
+    "median_delta": 12,
+    "retry_dist": {
+      "11": 3,
+      "12": 6,
+      "13": 17,
+      "14": 11,
+      "15": 162
+    },
+    "retry_eq15_count": 162,
+    "retry_ge11_count": 199,
+    "retry_mean": 14.623115577889447
+  },
+  "schema": "memibrium.locomo.telemetry_noncomparability_artifact_analysis.v1",
+  "score_summary": {
+    "delta_dist": {
+      "-0.5": 1,
+      "-1.0": 1,
+      "0.0": 91,
+      "0.5": 36,
+      "1.0": 70
+    },
+    "improved": 106,
+    "mean_delta": 0.43467336683417085,
+    "median_delta": 0.5,
+    "unchanged": 91,
+    "worsened": 2
+  },
+  "static_source_audit": {
+    "mechanisms": [
+      {
+        "evidence_against": [
+          "server.py handle_recall passes the same query, embedding, top_k, state_filter, and domain to hybrid_retriever.search; include_telemetry is only an additional boolean argument (server.py:1901-1908).",
+          "Non-telemetry response returns search_result directly; telemetry response unwraps (result, telemetry) then serializes {'results': result, 'telemetry': ...} (server.py:1909-1963)."
+        ],
+        "evidence_for": [],
+        "mechanism": "Server include_telemetry changes retrieval parameters or branch selection",
+        "static_verdict": "not_supported_by_static_source"
+      },
+      {
+        "evidence_against": [
+          "hybrid_retrieval.py computes fetch_k=top_k*2 unconditionally before telemetry allocation (lines 707-708).",
+          "semantic, lexical, temporal searches receive same fetch_k/state/domain regardless of telemetry; telemetry only records stream projections after result lists are materialized (lines 713-727).",
+          "RRF fusion, optional rerank, multihop, chronology sorting, and final_results=final[:top_k] are outside telemetry conditionals except for recording telemetry (lines 750-805)."
+        ],
+        "evidence_for": [],
+        "mechanism": "HybridRetriever include_telemetry changes SQL top_k/fetch_k, fusion, cutoff, or return count",
+        "static_verdict": "not_supported_by_static_source"
+      },
+      {
+        "evidence_against": [
+          "Telemetry projection creates new dicts and reads fields; it does not alter memory dictionaries (hybrid_retrieval.py:384-404).",
+          "_stream_telemetry and _record_final_telemetry enumerate lists and project items; they do not pop/sort/filter returned lists (hybrid_retrieval.py:418-464)."
+        ],
+        "evidence_for": [
+          "_normalize_scores mutates score fields in result dicts before telemetry and final return, but this happens regardless of telemetry and predates telemetry instrumentation."
+        ],
+        "mechanism": "Telemetry construction mutates returned result objects or consumes shared iterators",
+        "static_verdict": "unlikely_static_mechanism"
+      },
+      {
+        "evidence_against": [
+          "answer_question always builds recall_telemetry locally, independent of return_telemetry; return_telemetry only changes the function's return tuple at the end (lines 674-683, 816-818).",
+          "recall_for_query adds payload['include_telemetry']=True only when INCLUDE_RECALL_TELEMETRY is true, then _extract_recall_payload extracts the same results list from either a list response or {'results': ...} response (lines 685-703, 548-551).",
+          "Context assembly loops over the recalled list returned by recall_for_query; there is no conditional branch on return_telemetry or INCLUDE_RECALL_TELEMETRY in dedupe/candidate/final selection (lines 705-765)."
+        ],
+        "evidence_for": [
+          "When INCLUDE_RECALL_TELEMETRY is true, benchmark calls answer_question(..., return_telemetry=True, evidence_refs=...) and stores recall_telemetry in each result row (locomo_bench_v2.py:1151-1178)."
+        ],
+        "mechanism": "Benchmark INCLUDE_RECALL_TELEMETRY changes answer-context assembly",
+        "static_verdict": "not_supported_by_static_source"
+      },
+      {
+        "evidence_against": [
+          "The locked baseline artifact reports the same condition metadata: query_expansion=True and legacy_context_assembly=False, yet its n_memories distribution is low-context. Therefore this source-level mechanism cannot by itself explain baseline-vs-retry divergence without an additional runtime/artifact/source-version difference."
+        ],
+        "evidence_for": [
+          "With USE_QUERY_EXPANSION=true, the non-legacy assembly loops over all expanded queries and only breaks early if NOT USE_QUERY_EXPANSION (locomo_bench_v2.py:729-737).",
+          "Telemetry traces show every question used 4 expanded queries, every per-query recall returned 10 memories, candidate_memories_before_dedupe was exactly 40 for all 199 questions, and final context hit cap 15 for 162/199.",
+          "This mechanism directly matches the retry high-context shape."
+        ],
+        "mechanism": "Query expansion plus current non-legacy assembly explains high context counts independently of telemetry",
+        "static_verdict": "mechanism_explains_retry_shape_not_divergence"
+      },
+      {
+        "evidence_against": [
+          "Retry prelaunch benchmark env explicitly set INCLUDE_RECALL_TELEMETRY=1; blocked attempt benchmark_condition also recorded include_recall_telemetry=True; benchmark source probe confirmed bench_include_recall_telemetry_present=True.",
+          "This is documentation naming drift, not evidence of failed telemetry activation."
+        ],
+        "evidence_for": [
+          "Prereg text used LOCOMO_RETRIEVAL_TELEMETRY, while benchmark code-effective flag is INCLUDE_RECALL_TELEMETRY."
+        ],
+        "mechanism": "Effective flag-name mismatch caused unintended telemetry state",
+        "static_verdict": "documentation_alias_drift_not_condition_mismatch"
+      },
+      {
+        "evidence_against": [
+          "Baseline prelaunch reported source/hash/substrate checks and condition metadata matching canonical stack, and no direct baseline telemetry traces exist to prove its internal assembly path.",
+          "Artifact-only audit cannot inspect live f2466c9-era effective benchmark function behavior during that exact run beyond committed metadata."
+        ],
+        "evidence_for": [
+          "The baseline low-context distribution is consistent with early-break/legacy-style assembly over expanded queries: many rows at n=2 or n=3 rather than cap 15.",
+          "The current source with query_expansion=True and legacy_context_assembly=False should collect candidates from all four expanded queries and usually fill 15, as the retry traces demonstrate."
+        ],
+        "mechanism": "Baseline artifact was produced by a different effective benchmark code/context assembly than its condition metadata indicates",
+        "static_verdict": "plausible_artifact_or_effective_runtime_mismatch_requires_disambiguation"
+      }
+    ]
+  },
+  "telemetry_trace_summary": {
+    "candidate_after_dedupe_dist": {
+      "11": 3,
+      "12": 6,
+      "13": 17,
+      "14": 11,
+      "15": 16,
+      "16": 22,
+      "17": 16,
+      "18": 30,
+      "19": 13,
+      "20": 18,
+      "21": 8,
+      "22": 20,
+      "23": 8,
+      "24": 4,
+      "25": 4,
+      "26": 2,
+      "28": 1
+    },
+    "candidate_before_dedupe_dist": {
+      "40": 199
+    },
+    "candidate_count_after_dedupe_dist": {
+      "11": 3,
+      "12": 6,
+      "13": 17,
+      "14": 11,
+      "15": 16,
+      "16": 22,
+      "17": 16,
+      "18": 30,
+      "19": 13,
+      "20": 18,
+      "21": 8,
+      "22": 20,
+      "23": 8,
+      "24": 4,
+      "25": 4,
+      "26": 2,
+      "28": 1
+    },
+    "expanded_query_count_dist": {
+      "4": 199
+    },
+    "final_answer_context_at_15": 162,
+    "final_answer_context_count_dist": {
+      "11": 3,
+      "12": 6,
+      "13": 17,
+      "14": 11,
+      "15": 162
+    },
+    "final_context_at_15": 162,
+    "final_context_at_15_DEPRECATED_wrong_key": 0,
+    "final_context_count_dist": {
+      "11": 3,
+      "12": 6,
+      "13": 17,
+      "14": 11,
+      "15": 162
+    },
+    "final_context_count_dist_DEPRECATED_wrong_key": {
+      "null": 199
+    },
+    "per_query_calls_result_10": 796,
+    "per_query_calls_total": 796,
+    "per_query_result_count_dist": {
+      "10": 796
+    },
+    "per_query_result_mean": 10,
+    "questions_all_per_queries_return_10": 199,
+    "server_cutoff_count_dist": {
+      "5": 796
+    },
+    "server_final_returned_dist": {
+      "10": 796
+    },
+    "server_fused_before_cap_dist": {
+      "15": 1,
+      "16": 2,
+      "17": 1,
+      "18": 3,
+      "19": 1,
+      "20": 33,
+      "23": 2,
+      "24": 4,
+      "25": 19,
+      "26": 59,
+      "27": 119,
+      "28": 162,
+      "29": 153,
+      "30": 109,
+      "31": 70,
+      "32": 43,
+      "33": 9,
+      "34": 6
+    },
+    "server_lexical_returned_dist": {
+      "12": 1,
+      "15": 1,
+      "16": 1,
+      "17": 1,
+      "18": 3,
+      "2": 1,
+      "20": 780,
+      "3": 2,
+      "6": 3,
+      "7": 3
+    },
+    "server_semantic_returned_dist": {
+      "0": 32,
+      "11": 1,
+      "12": 1,
+      "17": 1,
+      "18": 1,
+      "20": 760
+    },
+    "server_temporal_returned_dist": {
+      "0": 790,
+      "3": 6
+    },
+    "trace_count": 199
+  },
+  "top20_largest_delta_n": [
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 1882,
+      "baseline_score": 0.0,
+      "category": "single-hop",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Oliver, Luna, Bailey",
+      "index": 53,
+      "question": "What are Melanie's pets' names?",
+      "retry_candidate_after_dedupe": 19,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie's pets' names are Luna, Oliver, and Bailey.",
+      "retry_query_time_ms": 2676,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 1783,
+      "baseline_score": 0.0,
+      "category": "single-hop",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Summer Sounds, Matt Patterson",
+      "index": 62,
+      "question": "What musical artists/bands has Melanie seen?",
+      "retry_candidate_after_dedupe": 20,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie has seen Matt Patterson and the band \"Summer Sounds.\"",
+      "retry_query_time_ms": 3248,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2222,
+      "baseline_score": 0.0,
+      "category": "multi-hop",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Yes; it's classical music",
+      "index": 65,
+      "question": "Would Melanie likely enjoy the song \"The Four Seasons\" by Vivaldi?",
+      "retry_candidate_after_dedupe": 18,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Yes, Melanie would likely enjoy \"The Four Seasons\" by Vivaldi since she likes classical music including Bach and Mozart.",
+      "retry_query_time_ms": 3476,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 1565,
+      "baseline_score": 0.0,
+      "category": "temporal",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Since 2016",
+      "index": 69,
+      "question": "How long has Melanie been practicing art?",
+      "retry_candidate_after_dedupe": 15,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie has been practicing art for seven years.",
+      "retry_query_time_ms": 2919,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 1809,
+      "baseline_score": 0.0,
+      "category": "temporal",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "September 2023",
+      "index": 74,
+      "question": "When did Melanie get hurt?",
+      "retry_candidate_after_dedupe": 26,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie got hurt last month before 13 October 2023.",
+      "retry_query_time_ms": 2590,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2073,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "self-care is important",
+      "index": 84,
+      "question": "What did Melanie realize after the charity race?",
+      "retry_candidate_after_dedupe": 18,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie realized that self-care is really important after the charity race.",
+      "retry_query_time_ms": 3815,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "The workshop included inspiring transgender stories and provided support that made Caroline feel accepted and gave her courage to embrace herself.",
+      "baseline_query_time_ms": 2603,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "therapeutic methods and how to best work with trans people",
+      "index": 99,
+      "question": "What was discussed in the LGBTQ+ counseling workshop?",
+      "retry_candidate_after_dedupe": 15,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "The LGBTQ+ counseling workshop discussed different therapeutic methods and how to best work with trans people, emphasizing creating a safe space for them.",
+      "retry_query_time_ms": 2896,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2915,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "\"Charlotte's Web\"",
+      "index": 104,
+      "question": "What was Melanie's favorite book from her childhood?",
+      "retry_candidate_after_dedupe": 22,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie's favorite book from her childhood was \"Charlotte's Web.\"",
+      "retry_query_time_ms": 3373,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 1871,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Running",
+      "index": 107,
+      "question": "What are the new shoes that Melanie got used for?",
+      "retry_candidate_after_dedupe": 20,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie's new shoes are used for running.",
+      "retry_query_time_ms": 3071,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 3152,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "To de-stress and clear her mind",
+      "index": 108,
+      "question": "What is Melanie's reason for getting into running?",
+      "retry_candidate_after_dedupe": 16,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie got into running to de-stress and improve her mental health.",
+      "retry_query_time_ms": 2909,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 3199,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "in awe of the universe",
+      "index": 120,
+      "question": "How did Melanie feel while watching the meteor shower?",
+      "retry_candidate_after_dedupe": 21,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie felt tiny, in awe of the universe, and reminded of how awesome life is while watching the meteor shower.",
+      "retry_query_time_ms": 3460,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 1728,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Matt Patterson",
+      "index": 122,
+      "question": "Who performed at the concert at Melanie's daughter's birthday?",
+      "retry_candidate_after_dedupe": 23,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Matt Patterson performed at the concert at Melanie's daughter's birthday.",
+      "retry_query_time_ms": 2680,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2239,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Two cats and a dog",
+      "index": 125,
+      "question": "What pets does Melanie have?",
+      "retry_candidate_after_dedupe": 20,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie has a dog named Oliver and two cats named Luna and Bailey.",
+      "retry_query_time_ms": 2571,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2069,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "In Melanie's slipper",
+      "index": 126,
+      "question": "Where did Oliver hide his bone once?",
+      "retry_candidate_after_dedupe": 18,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Oliver hid his bone in Melanie's slipper once.",
+      "retry_query_time_ms": 2315,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2122,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Bach and Mozart",
+      "index": 131,
+      "question": "Which  classical musicians does Melanie enjoy listening to?",
+      "retry_candidate_after_dedupe": 21,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie enjoys listening to classical musicians Bach and Mozart.",
+      "retry_query_time_ms": 3400,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 1588,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "Ed Sheeran",
+      "index": 132,
+      "question": "Who is Melanie a fan of in terms of modern music?",
+      "retry_candidate_after_dedupe": 22,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie is a fan of Ed Sheeran's \"Perfect\" in terms of modern music.",
+      "retry_query_time_ms": 2917,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2482,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "He was scared but reassured by his family",
+      "index": 145,
+      "question": "How did Melanie's son handle the accident?",
+      "retry_candidate_after_dedupe": 18,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie's son was scared but was reassured and explained that he would be okay.",
+      "retry_query_time_ms": 4956,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2085,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "She was happy and thankful",
+      "index": 149,
+      "question": "What was Melanie's reaction to her children enjoying the Grand Canyon?",
+      "retry_candidate_after_dedupe": 18,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie was thankful and happy that her children enjoyed the Grand Canyon despite the accident scare.",
+      "retry_query_time_ms": 2838,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2298,
+      "baseline_score": 0.0,
+      "category": "unanswerable",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "She appreciated them a lot",
+      "index": 151,
+      "question": "How did Melanie feel about her family supporting her?",
+      "retry_candidate_after_dedupe": 16,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "Melanie felt that her family's love and support really helped her through tough times and was awesome.",
+      "retry_query_time_ms": 3316,
+      "retry_score": 1.0
+    },
+    {
+      "baseline_n_memories": 2,
+      "baseline_predicted": "I don't know.",
+      "baseline_query_time_ms": 2757,
+      "baseline_score": 0.0,
+      "category": "adversarial",
+      "conv": "conv-26",
+      "delta_n_memories": 13,
+      "delta_score": 1.0,
+      "ground_truth": "LGBTQ+ individuals",
+      "index": 155,
+      "question": "What type of individuals does the adoption agency Melanie is considering support?",
+      "retry_candidate_after_dedupe": 19,
+      "retry_candidate_before_dedupe": 40,
+      "retry_expanded_query_count": 4,
+      "retry_final_context_count": null,
+      "retry_n_memories": 15,
+      "retry_per_query_result_counts": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "retry_predicted": "The adoption agency Melanie is considering supports LGBTQ+ individuals.",
+      "retry_query_time_ms": 2899,
+      "retry_score": 1.0
+    }
+  ]
+}
