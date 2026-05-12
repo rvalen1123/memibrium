@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import contextlib
 import importlib.util
+import io
 import json
 import tempfile
 import unittest
@@ -971,6 +973,202 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 longmem_canary.run_retrieval_bridge_phase_a(rows, selection, out_dir)
             self.assertEqual(list(out_dir.iterdir()), [])
 
+    def test_memibrium_http_ingest_adapter_posts_retain_with_namespaced_refs_and_redacted_endpoint_metadata(self):
+        planned = [{
+            'source_ref': 'sess_1:turn_1:user',
+            'content': 'I prefer trail runs near water.',
+            'metadata': {
+                'domain': longmem_canary.RETRIEVAL_BRIDGE_DOMAIN,
+                'session_id': 'sess_1',
+                'session_date': '2023/05/20 (Sat) 10:00',
+                'turn_index': 1,
+                'role': 'user',
+                'has_answer': True,
+                'question_ids': ['pref_1'],
+            },
+        }]
+        calls = []
+
+        def fake_post(path, payload, *, base_url, timeout=30):
+            calls.append((path, payload, base_url, timeout))
+            self.assertEqual(path, '/mcp/retain')
+            self.assertEqual(base_url, 'http://localhost:9999')
+            self.assertEqual(payload['domain'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+            self.assertEqual(payload['source'], 'longmemeval_bridge_phase_a')
+            self.assertEqual(payload['event_at'], '2023-05-20T10:00:00+00:00')
+            self.assertEqual(payload['refs']['longmemeval_bridge']['source_ref'], 'sess_1:turn_1:user')
+            self.assertEqual(payload['refs']['longmemeval_bridge']['question_ids'], ['pref_1'])
+            return {'id': 'mem_abc123', 'state': 'observation'}
+
+        adapter = longmem_canary.make_memibrium_ingest_fn(
+            base_url='http://localhost:9999',
+            post_fn=fake_post,
+        )
+        created_ids = adapter(planned, domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+
+        self.assertEqual(created_ids, ['mem_abc123'])
+        self.assertEqual(len(calls), 1)
+        metadata = longmem_canary.redacted_memibrium_runtime_metadata('http://user:credential@localhost:9999/path?query=value')
+        self.assertEqual(metadata['memibrium_base_url']['host'], 'localhost:9999')
+        self.assertEqual(metadata['memibrium_base_url']['path'], '/path')
+        self.assertNotIn('credential', json.dumps(metadata))
+        self.assertNotIn('query=value', json.dumps(metadata))
+
+    def test_memibrium_http_retrieval_adapter_calls_context_packet_with_source_attribution_and_normalizes_results(self):
+        calls = []
+
+        def fake_post(path, payload, *, base_url, timeout=30):
+            calls.append((path, payload, base_url, timeout))
+            self.assertEqual(path, '/mcp/context_packet')
+            self.assertEqual(payload['domain'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+            self.assertTrue(payload['include_source_attribution'])
+            self.assertFalse(payload['include_decision_traces'])
+            self.assertEqual(payload['top_k'], 8)
+            return {
+                'episodic_evidence': [
+                    {
+                        'memory_id': 'mem_1',
+                        'content': 'The user prefers Spanish and French practice events.',
+                        'combined_score': 0.91,
+                        'refs': {'longmemeval_bridge': {'source_ref': 'sess_pref_1:turn_1:user'}},
+                    }
+                ],
+                'source_attribution': {
+                    'retrieval_path': 'query_agent.recall',
+                    'evidence': [
+                        {'id': 'mem_1', 'refs': {'longmemeval_bridge': {'source_ref': 'sess_pref_1:turn_1:user'}}},
+                    ],
+                },
+            }
+
+        adapter = longmem_canary.make_memibrium_retrieval_fn(
+            base_url='http://localhost:9999',
+            post_fn=fake_post,
+            top_k=8,
+        )
+        retrieved = adapter(self.sample_rows()[2], domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, memory_ids=['mem_1'])
+
+        self.assertEqual(retrieved['retrieval_status'], 'ok')
+        self.assertEqual(retrieved['query_variants'], ['Can you recommend weekend events?'])
+        self.assertEqual(retrieved['retrieved_memory_ids'], ['mem_1'])
+        self.assertEqual(retrieved['scores'], [0.91])
+        self.assertEqual(retrieved['source_refs'], ['sess_pref_1:turn_1:user'])
+        self.assertEqual(retrieved['evidence_snippets'], ['The user prefers Spanish and French practice events.'])
+        self.assertEqual(retrieved['timestamp_source_metadata'][0]['retrieval_path'], 'query_agent.recall')
+        self.assertEqual(retrieved['coverage_class'], 'partial_support')
+        self.assertEqual(calls[0][2], 'http://localhost:9999')
+
+    def test_memibrium_http_cleanup_adapter_deletes_only_namespaced_domain_and_verifies_zero_count(self):
+        class FakeConn:
+            def __init__(self):
+                self.fetchvals = []
+                self.fetchrows = []
+                self.executes = []
+
+            async def fetchval(self, sql, *params):
+                self.fetchvals.append((sql, params))
+                if 'SELECT COUNT(id) FROM memories' in sql:
+                    return 0
+                return None
+
+            async def fetchrow(self, sql, *params):
+                self.fetchrows.append((sql, params))
+                return {'memory_count': 2, 'feedback_count': 1, 'snapshot_count': 1, 'edge_count': 1, 'contradiction_count': 1, 'temporal_expression_count': 1, 'context_graph_edge_count': 1, 'decision_trace_count': 1, 'self_model_observation_count': 1}
+
+            async def execute(self, sql, *params):
+                self.executes.append((sql, params))
+                if 'DELETE FROM memories' in sql:
+                    return 'DELETE 2'
+                return 'DELETE 1'
+
+            async def close(self):
+                self.closed = True
+
+        fake_conn = FakeConn()
+
+        async def fake_connect(dsn):
+            self.assertEqual(dsn, 'postgresql://localhost:5432/memory')
+            return fake_conn
+
+        adapter = longmem_canary.make_memibrium_cleanup_fn(
+            db_dsn='postgresql://localhost:5432/memory',
+            connect_fn=fake_connect,
+        )
+        result = adapter(domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, memory_ids=['mem_1', 'mem_2'])
+
+        self.assertEqual(result['deleted_memory_count'], 2)
+        self.assertEqual(result['final_domain_count_verified'], 0)
+        executed_sql = '\n'.join(sql for sql, _params in fake_conn.executes)
+        self.assertIn('memory_a_id', executed_sql)
+        self.assertIn('memory_b_id', executed_sql)
+        self.assertIn('DELETE FROM context_graph_edges', executed_sql)
+        self.assertIn('DELETE FROM decision_traces', executed_sql)
+        self.assertIn('DELETE FROM self_model_observations', executed_sql)
+        self.assertIn('ARRAY(SELECT id FROM memories WHERE domain = $1)', executed_sql)
+        self.assertIn('domain = $1', executed_sql)
+        self.assertIn('DELETE FROM memories', executed_sql)
+        self.assertNotIn('LIKE', executed_sql)
+        self.assertTrue(all(params[0] == longmem_canary.RETRIEVAL_BRIDGE_DOMAIN for _sql, params in fake_conn.executes if params))
+
+    def test_main_wires_live_phase_a_adapters_only_when_runtime_scaffold_is_requested(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        calls = []
+
+        def fake_runner(dataset, selection_payload, out_dir, **kwargs):
+            calls.append((dataset, selection_payload, out_dir, kwargs))
+            self.assertIsNotNone(kwargs['ingest_fn'])
+            self.assertIsNotNone(kwargs['retrieval_fn'])
+            self.assertIsNotNone(kwargs['cleanup_fn'])
+            self.assertIsNone(kwargs.get('chat_fn'))
+            return {
+                'mode': 'retrieval_bridge_phase_a_runtime_live_memibrium',
+                'domain': longmem_canary.RETRIEVAL_BRIDGE_DOMAIN,
+                'row_count': len(dataset),
+                'overall_pass': False,
+                'phase_b_recommendation': 'stop_before_answer_generation_phase_a_failed',
+                'phase_a_report_file': str(out_dir / 'longmemeval_retrieval_bridge_phase_a_gate_report.json'),
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            dataset_path = tmp_path / 'dataset.json'
+            selection_path = tmp_path / 'selection.json'
+            out_dir = tmp_path / 'phase-a-out'
+            dataset_path.write_text(json.dumps(rows))
+            selection['source_sha256'] = longmem_canary.sha256_file(dataset_path)
+            selection_path.write_text(json.dumps(selection))
+            argv = [
+                '--run-retrieval-bridge-phase-a',
+                '--allow-db-writes',
+                '--allow-runtime-retrieval',
+                '--allow-cleanup-deletes',
+                '--dataset', str(dataset_path),
+                '--selection', str(selection_path),
+                '--out-dir', str(out_dir),
+                '--memibrium-base-url', 'http://localhost:9999',
+                '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
+            ]
+            stdout = io.StringIO()
+            original_parse_args = longmem_canary.parse_args
+            original_runner = longmem_canary.run_retrieval_bridge_phase_a
+            try:
+                longmem_canary.parse_args = lambda: original_parse_args(argv)
+                longmem_canary.run_retrieval_bridge_phase_a = fake_runner
+                with contextlib.redirect_stdout(stdout):
+                    longmem_canary.main()
+            finally:
+                longmem_canary.parse_args = original_parse_args
+                longmem_canary.run_retrieval_bridge_phase_a = original_runner
+
+        self.assertEqual(len(calls), 1)
+        printed = json.loads(stdout.getvalue())
+        self.assertEqual(printed['mode'], 'retrieval_bridge_phase_a_runtime_live_memibrium')
+        self.assertFalse(printed['overall_pass'])
+        self.assertNotIn('postgresql://', stdout.getvalue())
+        self.assertNotIn('memory:memory', stdout.getvalue())
+
     def test_parse_args_supports_retrieval_bridge_phase_a_runtime_scaffold_but_keeps_models_off(self):
         args = longmem_canary.parse_args([
             '--run-retrieval-bridge-phase-a',
@@ -978,6 +1176,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             '--allow-runtime-retrieval',
             '--allow-cleanup-deletes',
             '--out-dir', 'phase-a-out',
+            '--memibrium-base-url', 'http://localhost:9999',
+            '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
         ])
 
         self.assertTrue(args.run_retrieval_bridge_phase_a)
@@ -987,6 +1187,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertFalse(args.allow_answer_generation)
         self.assertFalse(args.allow_judge_calls)
         self.assertEqual(args.out_dir, Path('phase-a-out'))
+        self.assertEqual(args.memibrium_base_url, 'http://localhost:9999')
+        self.assertEqual(args.memibrium_db_dsn, 'postgresql://localhost:5432/memory')
 
 
 if __name__ == '__main__':
