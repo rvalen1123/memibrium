@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
+import contextlib
 import importlib.util
+import io
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parent
@@ -971,6 +975,402 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 longmem_canary.run_retrieval_bridge_phase_a(rows, selection, out_dir)
             self.assertEqual(list(out_dir.iterdir()), [])
 
+    def test_memibrium_http_ingest_adapter_posts_retain_with_namespaced_refs_and_redacted_endpoint_metadata(self):
+        planned = [{
+            'source_ref': 'sess_1:turn_1:user',
+            'content': 'I prefer trail runs near water.',
+            'metadata': {
+                'domain': longmem_canary.RETRIEVAL_BRIDGE_DOMAIN,
+                'session_id': 'sess_1',
+                'session_date': '2023/05/20 (Sat) 10:00',
+                'turn_index': 1,
+                'role': 'user',
+                'has_answer': True,
+                'question_ids': ['pref_1'],
+            },
+        }]
+        calls = []
+
+        def fake_post(path, payload, *, base_url, timeout=30):
+            calls.append((path, payload, base_url, timeout))
+            self.assertEqual(path, '/mcp/retain')
+            self.assertEqual(base_url, 'http://localhost:9999')
+            self.assertEqual(payload['domain'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+            self.assertEqual(payload['source'], 'longmemeval_bridge_phase_a')
+            self.assertEqual(payload['event_at'], '2023-05-20T10:00:00+00:00')
+            self.assertEqual(payload['refs']['longmemeval_bridge']['source_ref'], 'sess_1:turn_1:user')
+            self.assertEqual(payload['refs']['longmemeval_bridge']['question_ids'], ['pref_1'])
+            return {'id': 'mem_abc123', 'state': 'observation'}
+
+        adapter = longmem_canary.make_memibrium_ingest_fn(
+            base_url='http://localhost:9999',
+            post_fn=fake_post,
+        )
+        created_ids = adapter(planned, domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+
+        self.assertEqual(created_ids, ['mem_abc123'])
+        self.assertEqual(len(calls), 1)
+        metadata = longmem_canary.redacted_memibrium_runtime_metadata('http://user:credential@localhost:9999/path?query=value')
+        self.assertEqual(metadata['memibrium_base_url']['host'], 'localhost:9999')
+        self.assertEqual(metadata['memibrium_base_url']['path'], '/path')
+        self.assertNotIn('credential', json.dumps(metadata))
+        self.assertNotIn('query=value', json.dumps(metadata))
+
+    def test_memibrium_http_ingest_adapter_raises_partial_failure_with_created_ids(self):
+        planned = [
+            {
+                'source_ref': 'sess_1:turn_1:user',
+                'content': 'First memory.',
+                'metadata': {'session_date': '2023/05/20 (Sat) 10:00'},
+            },
+            {
+                'source_ref': 'sess_1:turn_2:user',
+                'content': 'Second memory.',
+                'metadata': {'session_date': 'not a parseable LongMemEval date'},
+            },
+        ]
+        calls = []
+
+        def fake_post(path, payload, *, base_url, timeout=30):
+            calls.append((path, payload, base_url, timeout))
+            if len(calls) == 1:
+                return {'memory_id': 'mem_created'}
+            raise RuntimeError('retain failed')
+
+        adapter = longmem_canary.make_memibrium_ingest_fn(
+            base_url='http://localhost:9999',
+            post_fn=fake_post,
+        )
+
+        with self.assertRaises(longmem_canary.MemibriumIngestError) as cm:
+            adapter(planned, domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+
+        self.assertEqual(cm.exception.created_ids, ['mem_created'])
+        self.assertIsInstance(cm.exception.__cause__, RuntimeError)
+        self.assertIsNone(calls[1][1]['event_at'])
+
+    def test_parse_longmemeval_session_date_returns_none_for_unparseable_values(self):
+        self.assertEqual(
+            longmem_canary._parse_longmemeval_session_date('2023/05/20 (Sat) 10:00'),
+            '2023-05-20T10:00:00+00:00',
+        )
+        self.assertIsNone(longmem_canary._parse_longmemeval_session_date('not a parseable LongMemEval date'))
+
+    def test_memibrium_http_post_rejects_non_http_base_url_before_urlopen(self):
+        called = []
+
+        def forbidden_urlopen(*args, **kwargs):
+            called.append((args, kwargs))
+            raise AssertionError('urlopen must not be called for non-http schemes')
+
+        original_urlopen = longmem_canary.urllib.request.urlopen
+        try:
+            longmem_canary.urllib.request.urlopen = forbidden_urlopen
+            with self.assertRaisesRegex(ValueError, 'memibrium_http_invalid_base_url_scheme'):
+                longmem_canary.memibrium_http_post('/mcp/retain', {}, base_url='file:///tmp/memibrium')
+        finally:
+            longmem_canary.urllib.request.urlopen = original_urlopen
+
+        self.assertEqual(called, [])
+
+    def test_memibrium_http_post_wraps_non_json_success_response(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return b'<html>not json</html>'
+
+        def fake_urlopen(request, timeout=30):
+            return FakeResponse()
+
+        original_urlopen = longmem_canary.urllib.request.urlopen
+        try:
+            longmem_canary.urllib.request.urlopen = fake_urlopen
+            with self.assertRaisesRegex(RuntimeError, 'memibrium_http_invalid_json'):
+                longmem_canary.memibrium_http_post('/mcp/retain', {}, base_url='http://localhost:9999')
+        finally:
+            longmem_canary.urllib.request.urlopen = original_urlopen
+
+    def test_run_retrieval_bridge_phase_a_cleans_up_partial_ingest_failures(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        cleanup_calls = []
+
+        def failing_ingest(planned_memories, *, domain):
+            raise longmem_canary.MemibriumIngestError('partial ingest', ['mem_created'], RuntimeError('retain failed'))
+
+        def forbidden_retrieve(*args, **kwargs):
+            raise AssertionError('retrieval must not run after ingest failure')
+
+        def fake_cleanup(*, domain, memory_ids):
+            cleanup_calls.append((domain, list(memory_ids)))
+            return {'deleted_memory_count': len(memory_ids), 'final_domain_count_verified': 0, 'linked_rows_deleted': {}}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(longmem_canary.MemibriumIngestError):
+                longmem_canary.run_retrieval_bridge_phase_a(
+                    rows,
+                    selection,
+                    Path(tmp),
+                    allow_db_writes=True,
+                    allow_runtime_retrieval=True,
+                    allow_cleanup_deletes=True,
+                    ingest_fn=failing_ingest,
+                    retrieval_fn=forbidden_retrieve,
+                    cleanup_fn=fake_cleanup,
+                    dataset_sha256=longmem_canary.EXPECTED_ORACLE_SHA256,
+                )
+
+        self.assertEqual(cleanup_calls, [(longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, ['mem_created'])])
+
+    def test_memibrium_http_retrieval_adapter_calls_context_packet_with_source_attribution_and_normalizes_results(self):
+        calls = []
+
+        def fake_post(path, payload, *, base_url, timeout=30):
+            calls.append((path, payload, base_url, timeout))
+            self.assertEqual(path, '/mcp/context_packet')
+            self.assertEqual(payload['domain'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+            self.assertTrue(payload['include_source_attribution'])
+            self.assertFalse(payload['include_decision_traces'])
+            self.assertEqual(payload['top_k'], 8)
+            return {
+                'episodic_evidence': [
+                    {
+                        'memory_id': 'mem_1',
+                        'content': 'The user prefers Spanish and French practice events.',
+                        'combined_score': 0.91,
+                        'refs': {'longmemeval_bridge': {'source_ref': 'sess_pref_1:turn_1:user'}},
+                    }
+                ],
+                'source_attribution': {
+                    'retrieval_path': 'query_agent.recall',
+                    'evidence': [
+                        {'id': 'mem_1', 'refs': {'longmemeval_bridge': {'source_ref': 'sess_pref_1:turn_1:user'}}},
+                    ],
+                },
+            }
+
+        adapter = longmem_canary.make_memibrium_retrieval_fn(
+            base_url='http://localhost:9999',
+            post_fn=fake_post,
+            top_k=8,
+        )
+        retrieved = adapter(self.sample_rows()[2], domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, memory_ids=['mem_1'])
+
+        self.assertEqual(retrieved['retrieval_status'], 'ok')
+        self.assertEqual(retrieved['query_variants'], ['Can you recommend weekend events?'])
+        self.assertEqual(retrieved['retrieved_memory_ids'], ['mem_1'])
+        self.assertEqual(retrieved['scores'], [0.91])
+        self.assertEqual(retrieved['source_refs'], ['sess_pref_1:turn_1:user'])
+        self.assertEqual(retrieved['evidence_snippets'], ['The user prefers Spanish and French practice events.'])
+        self.assertEqual(retrieved['timestamp_source_metadata'][0]['retrieval_path'], 'query_agent.recall')
+        self.assertEqual(retrieved['coverage_class'], 'partial_support')
+        self.assertEqual(calls[0][2], 'http://localhost:9999')
+
+    def test_memibrium_http_cleanup_adapter_deletes_only_namespaced_domain_and_verifies_zero_count(self):
+        class FakeConn:
+            def __init__(self, fail_on_memory_delete=False):
+                self.fail_on_memory_delete = fail_on_memory_delete
+                self.fetchvals = []
+                self.fetchrows = []
+                self.executes = []
+                self.pending_executes = []
+                self.committed_executes = []
+                self.in_transaction = False
+
+            def transaction(self):
+                conn = self
+
+                class FakeTransaction:
+                    async def __aenter__(self):
+                        conn.in_transaction = True
+                        conn.pending_executes = []
+                        return self
+
+                    async def __aexit__(self, exc_type, exc, tb):
+                        conn.in_transaction = False
+                        if exc_type is None:
+                            conn.committed_executes.extend(conn.pending_executes)
+                        conn.pending_executes = []
+                        return False
+
+                return FakeTransaction()
+
+            async def fetchval(self, sql, *params):
+                self.fetchvals.append((sql, params, self.in_transaction))
+                if 'SELECT COUNT(id) FROM memories' in sql:
+                    return 0
+                return None
+
+            async def fetchrow(self, sql, *params):
+                self.fetchrows.append((sql, params, self.in_transaction))
+                return {'memory_count': 2, 'feedback_count': 1, 'snapshot_count': 1, 'edge_count': 1, 'contradiction_count': 1, 'temporal_expression_count': 1, 'context_graph_edge_count': 1, 'decision_trace_count': 1, 'self_model_observation_count': 1}
+
+            async def execute(self, sql, *params):
+                record = (sql, params, self.in_transaction)
+                self.executes.append(record)
+                if self.in_transaction:
+                    self.pending_executes.append(record)
+                else:
+                    self.committed_executes.append(record)
+                if self.fail_on_memory_delete and sql == 'DELETE FROM memories WHERE domain = $1 AND id = ANY($2::text[])':
+                    raise RuntimeError('memory delete failed')
+                if 'DELETE FROM memories' in sql:
+                    return 'DELETE 2'
+                return 'DELETE 1'
+
+            async def close(self):
+                self.closed = True
+
+        fake_conn = FakeConn()
+
+        async def fake_connect(dsn):
+            self.assertEqual(dsn, 'postgresql://localhost:5432/memory')
+            return fake_conn
+
+        adapter = longmem_canary.make_memibrium_cleanup_fn(
+            db_dsn='postgresql://localhost:5432/memory',
+            connect_fn=fake_connect,
+        )
+        result = adapter(domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, memory_ids=['mem_1', 'mem_2'])
+
+        self.assertEqual(result['deleted_memory_count'], 2)
+        self.assertEqual(result['final_domain_count_verified'], 0)
+        executed_sql = '\n'.join(sql for sql, _params, _in_transaction in fake_conn.executes)
+        self.assertIn('memory_a_id', executed_sql)
+        self.assertIn('memory_b_id', executed_sql)
+        self.assertIn('DELETE FROM context_graph_edges', executed_sql)
+        self.assertIn('DELETE FROM decision_traces', executed_sql)
+        self.assertIn('DELETE FROM self_model_observations', executed_sql)
+        self.assertIn('ARRAY(SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))', executed_sql)
+        self.assertIn('domain = $1', executed_sql)
+        self.assertIn('DELETE FROM memories', executed_sql)
+        self.assertNotIn('LIKE', executed_sql)
+        self.assertTrue(all(in_transaction for _sql, _params, in_transaction in fake_conn.executes))
+        self.assertTrue(all(params[0] == longmem_canary.RETRIEVAL_BRIDGE_DOMAIN for _sql, params, _in_transaction in fake_conn.executes if params))
+        self.assertTrue(all(params[1] == ['mem_1', 'mem_2'] for _sql, params, _in_transaction in fake_conn.executes if len(params) > 1))
+        self.assertEqual(fake_conn.committed_executes, fake_conn.executes)
+
+        failing_conn = FakeConn(fail_on_memory_delete=True)
+
+        async def fake_connect_failing(dsn):
+            return failing_conn
+
+        failing_adapter = longmem_canary.make_memibrium_cleanup_fn(
+            db_dsn='postgresql://localhost:5432/memory',
+            connect_fn=fake_connect_failing,
+        )
+        with self.assertRaisesRegex(RuntimeError, 'memory delete failed'):
+            failing_adapter(domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, memory_ids=['mem_1', 'mem_2'])
+        self.assertEqual(failing_conn.committed_executes, [])
+
+    def test_memibrium_cleanup_adapter_preserves_connect_failure_and_does_not_require_memory_ids(self):
+        async def fake_connect(_dsn):
+            raise RuntimeError('connect failed')
+
+        adapter = longmem_canary.make_memibrium_cleanup_fn(
+            db_dsn='postgresql://localhost:5432/memory',
+            connect_fn=fake_connect,
+        )
+        with self.assertRaisesRegex(RuntimeError, 'connect failed'):
+            adapter(domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, memory_ids=[])
+
+    def test_memibrium_cleanup_adapter_rejects_running_event_loop_with_clear_error(self):
+        async def fake_connect(_dsn):
+            raise AssertionError('connect should not be reached from a running loop')
+
+        adapter = longmem_canary.make_memibrium_cleanup_fn(
+            db_dsn='postgresql://localhost:5432/memory',
+            connect_fn=fake_connect,
+        )
+
+        async def invoke_adapter():
+            adapter(domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, memory_ids=[])
+
+        with self.assertRaisesRegex(RuntimeError, 'memibrium_cleanup_requires_async_cleanup_in_running_loop'):
+            longmem_canary.asyncio.run(invoke_adapter())
+
+    def test_main_wires_live_phase_a_adapters_only_when_runtime_scaffold_is_requested(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        calls = []
+
+        def fake_runner(dataset, selection_payload, out_dir, **kwargs):
+            calls.append((dataset, selection_payload, out_dir, kwargs))
+            self.assertIsNotNone(kwargs['ingest_fn'])
+            self.assertIsNotNone(kwargs['retrieval_fn'])
+            self.assertIsNotNone(kwargs['cleanup_fn'])
+            self.assertIsNone(kwargs.get('chat_fn'))
+            return {
+                'mode': 'retrieval_bridge_phase_a_runtime_live_memibrium',
+                'domain': longmem_canary.RETRIEVAL_BRIDGE_DOMAIN,
+                'row_count': len(dataset),
+                'overall_pass': False,
+                'phase_b_recommendation': 'stop_before_answer_generation_phase_a_failed',
+                'phase_a_report_file': str(out_dir / 'longmemeval_retrieval_bridge_phase_a_gate_report.json'),
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            dataset_path = tmp_path / 'dataset.json'
+            selection_path = tmp_path / 'selection.json'
+            out_dir = tmp_path / 'phase-a-out'
+            dataset_path.write_text(json.dumps(rows))
+            selection['source_sha256'] = longmem_canary.sha256_file(dataset_path)
+            selection_path.write_text(json.dumps(selection))
+            argv = [
+                '--run-retrieval-bridge-phase-a',
+                '--allow-db-writes',
+                '--allow-runtime-retrieval',
+                '--allow-cleanup-deletes',
+                '--dataset', str(dataset_path),
+                '--selection', str(selection_path),
+                '--out-dir', str(out_dir),
+                '--memibrium-base-url', 'http://localhost:9999',
+                '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
+            ]
+            stdout = io.StringIO()
+            original_parse_args = longmem_canary.parse_args
+            original_runner = longmem_canary.run_retrieval_bridge_phase_a
+            try:
+                longmem_canary.parse_args = lambda: original_parse_args(argv)
+                longmem_canary.run_retrieval_bridge_phase_a = fake_runner
+                with contextlib.redirect_stdout(stdout):
+                    longmem_canary.main()
+            finally:
+                longmem_canary.parse_args = original_parse_args
+                longmem_canary.run_retrieval_bridge_phase_a = original_runner
+
+        self.assertEqual(len(calls), 1)
+        printed = json.loads(stdout.getvalue())
+        self.assertEqual(printed['mode'], 'retrieval_bridge_phase_a_runtime_live_memibrium')
+        self.assertFalse(printed['overall_pass'])
+        self.assertNotIn('postgresql://', stdout.getvalue())
+        self.assertNotIn('memory:memory', stdout.getvalue())
+
+    def test_parse_args_requires_db_dsn_for_phase_a(self):
+        with mock.patch.dict(os.environ, {k: v for k, v in os.environ.items() if k != 'MEMIBRIUM_DB_DSN'}, clear=True):
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as cm:
+                longmem_canary.parse_args(['--run-retrieval-bridge-phase-a'])
+
+        self.assertNotEqual(cm.exception.code, 0)
+        self.assertIn('--memibrium-db-dsn', stderr.getvalue())
+
+    def test_redacted_memibrium_runtime_metadata_empty_and_none_urls(self):
+        for url in ('', None):
+            result = longmem_canary.redacted_memibrium_runtime_metadata(url)
+            self.assertFalse(result['memibrium_base_url']['configured'])
+            self.assertEqual(result['memibrium_base_url']['scheme'], '')
+            self.assertEqual(result['memibrium_base_url']['host'], '')
+            self.assertEqual(result['memibrium_base_url']['path'], '')
+
     def test_parse_args_supports_retrieval_bridge_phase_a_runtime_scaffold_but_keeps_models_off(self):
         args = longmem_canary.parse_args([
             '--run-retrieval-bridge-phase-a',
@@ -978,6 +1378,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             '--allow-runtime-retrieval',
             '--allow-cleanup-deletes',
             '--out-dir', 'phase-a-out',
+            '--memibrium-base-url', 'http://localhost:9999',
+            '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
         ])
 
         self.assertTrue(args.run_retrieval_bridge_phase_a)
@@ -987,6 +1389,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertFalse(args.allow_answer_generation)
         self.assertFalse(args.allow_judge_calls)
         self.assertEqual(args.out_dir, Path('phase-a-out'))
+        self.assertEqual(args.memibrium_base_url, 'http://localhost:9999')
+        self.assertEqual(args.memibrium_db_dsn, 'postgresql://localhost:5432/memory')
 
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ state, or run full LongMemEval.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import datetime as dt
 import hashlib
 import json
@@ -20,7 +21,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 ROOT = Path(__file__).resolve().parents[3]
 RESULTS_DIR = ROOT / "docs/eval/results"
@@ -1245,6 +1246,311 @@ def prepare_retrieval_bridge_canary(
     }
 
 
+def _redacted_url_metadata(url: str) -> dict[str, Any]:
+    parsed = urllib.parse.urlparse(url or "")
+    host = parsed.netloc.split("@")[-1]
+    return {
+        "scheme": parsed.scheme,
+        "host": host,
+        "path": parsed.path,
+        "configured": bool(url),
+    }
+
+
+def redacted_memibrium_runtime_metadata(base_url: str | None) -> dict[str, Any]:
+    return {"memibrium_base_url": _redacted_url_metadata(base_url or "")}
+
+
+class MemibriumIngestError(RuntimeError):
+    def __init__(self, message: str, created_ids: list[str], original_exception: Exception):
+        super().__init__(message)
+        self.created_ids = list(created_ids)
+        self.original_exception = original_exception
+        self.__cause__ = original_exception
+
+
+def memibrium_http_post(
+    path: str,
+    payload: dict[str, Any],
+    *,
+    base_url: str,
+    timeout: int = 30,
+) -> dict[str, Any]:
+    parsed_base = urllib.parse.urlparse(base_url)
+    if parsed_base.scheme not in {"http", "https"}:
+        raise ValueError(f"memibrium_http_invalid_base_url_scheme:{parsed_base.scheme or '<empty>'}")
+    validated_base_url = urllib.parse.urlunparse(parsed_base._replace(query="", fragment="")).rstrip("/")
+    url = f"{validated_base_url}/{path.lstrip('/')}"
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # pragma: no cover - live path
+            body = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:  # pragma: no cover - live path
+        body = exc.read().decode("utf-8", errors="replace")[:1000]
+        raise RuntimeError(f"memibrium_http_error:{path}:{exc.code}:{body}") from exc
+    except Exception as exc:  # pragma: no cover - live path
+        raise RuntimeError(f"memibrium_http_call_failed:{path}:{exc}") from exc
+    if not body:
+        return {}
+    try:
+        parsed = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"memibrium_http_invalid_json:{path}") from exc
+    if not isinstance(parsed, dict):
+        return {"response": parsed}
+    return parsed
+
+
+def _parse_longmemeval_session_date(value: Any) -> str | None:
+    """Return an ISO8601 timestamp string or None.
+
+    LongMemEval session dates are parsed as naive local-looking strings; Phase A
+    stamps successful parses as UTC so downstream artifacts are explicit about
+    the assumption.
+    """
+    if not value:
+        return None
+    text = str(value).strip()
+    try:
+        parsed = dt.datetime.strptime(text, "%Y/%m/%d (%a) %H:%M")
+    except ValueError:
+        return None
+    return parsed.replace(tzinfo=dt.timezone.utc).isoformat()
+
+
+def make_memibrium_ingest_fn(
+    *,
+    base_url: str,
+    post_fn: Callable[..., dict[str, Any]] = memibrium_http_post,
+    timeout: int = 30,
+) -> Callable[..., list[str]]:
+    def ingest(planned_memories: list[dict[str, Any]], *, domain: str) -> list[str]:
+        created_ids: list[str] = []
+        for item in planned_memories:
+            metadata = item.get("metadata") or {}
+            bridge_refs = {
+                "source_ref": item.get("source_ref"),
+                "source_dataset": metadata.get("source_dataset", "longmemeval_oracle_cleaned_pin"),
+                "session_id": metadata.get("session_id"),
+                "session_date": metadata.get("session_date"),
+                "turn_index": metadata.get("turn_index"),
+                "role": metadata.get("role"),
+                "has_answer": bool(metadata.get("has_answer")),
+                "question_ids": list(metadata.get("question_ids") or []),
+            }
+            payload = {
+                "content": item.get("content", ""),
+                "source": "longmemeval_bridge_phase_a",
+                "domain": domain,
+                "event_at": _parse_longmemeval_session_date(metadata.get("session_date")),
+                "refs": {"longmemeval_bridge": bridge_refs},
+            }
+            try:
+                response = post_fn("/mcp/retain", payload, base_url=base_url, timeout=timeout)
+                memory_id = response.get("id") or response.get("memory_id")
+                if not memory_id:
+                    raise RuntimeError("memibrium_retain_missing_memory_id")
+                created_ids.append(str(memory_id))
+            except Exception as exc:
+                raise MemibriumIngestError("memibrium_ingest_partial_failure", created_ids, exc) from exc
+        return created_ids
+    return ingest
+
+
+def _memory_id_from_evidence(item: dict[str, Any]) -> str | None:
+    value = item.get("memory_id") or item.get("id")
+    return str(value) if value else None
+
+
+def _score_from_evidence(item: dict[str, Any]) -> float | None:
+    for key in ("combined_score", "cosine_score", "score"):
+        value = item.get(key)
+        if value is not None:
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
+def _source_ref_from_evidence(item: dict[str, Any]) -> str | None:
+    refs = item.get("refs") if isinstance(item.get("refs"), dict) else {}
+    bridge_refs = refs.get("longmemeval_bridge") if isinstance(refs.get("longmemeval_bridge"), dict) else {}
+    source_ref = bridge_refs.get("source_ref") or item.get("source_ref")
+    return str(source_ref) if source_ref else None
+
+
+def _extract_context_packet_evidence(packet: dict[str, Any]) -> list[dict[str, Any]]:
+    for key in ("episodic_evidence", "memories", "results"):
+        value = packet.get(key)
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, dict)]
+    source_attribution = packet.get("source_attribution")
+    if isinstance(source_attribution, dict) and isinstance(source_attribution.get("evidence"), list):
+        return [item for item in source_attribution["evidence"] if isinstance(item, dict)]
+    return []
+
+
+def _heuristic_coverage_class(row: dict[str, Any], evidence: list[dict[str, Any]], source_refs: list[str]) -> str:
+    if not evidence:
+        return "unsupported"
+    question_id = str(row.get("question_id", ""))
+    if question_id.endswith("_abs"):
+        return "unanswerable_supported" if not source_refs else "unanswerable_contaminated"
+    answer = str(row.get("answer", "")).lower()
+    if answer and any(answer in str(item.get("content") or item.get("text") or "").lower() for item in evidence):
+        return "gold_supported"
+    if source_refs:
+        return "partial_support"
+    return "adjacent_entity_only"
+
+
+def make_memibrium_retrieval_fn(
+    *,
+    base_url: str,
+    post_fn: Callable[..., dict[str, Any]] = memibrium_http_post,
+    top_k: int = 8,
+    timeout: int = 30,
+) -> Callable[..., dict[str, Any]]:
+    def retrieve(row: dict[str, Any], *, domain: str, memory_ids: list[str]) -> dict[str, Any]:
+        query = row.get("question", "")
+        payload = {
+            "query": query,
+            "domain": domain,
+            "top_k": top_k,
+            "include_source_attribution": True,
+            "include_decision_traces": False,
+            "expand": True,
+        }
+        packet = post_fn("/mcp/context_packet", payload, base_url=base_url, timeout=timeout)
+        evidence = _extract_context_packet_evidence(packet)
+        retrieved_ids = [mid for mid in (_memory_id_from_evidence(item) for item in evidence) if mid]
+        scores = [score for score in (_score_from_evidence(item) for item in evidence) if score is not None]
+        source_refs = [ref for ref in (_source_ref_from_evidence(item) for item in evidence) if ref]
+        snippets = [str(item.get("content") or item.get("text") or "") for item in evidence if item.get("content") or item.get("text")]
+        source_attribution = packet.get("source_attribution") if isinstance(packet.get("source_attribution"), dict) else {}
+        retrieval_path = source_attribution.get("retrieval_path", "unknown")
+        return {
+            "retrieval_status": "ok",
+            "query_variants": [query],
+            "retrieved_memory_ids": retrieved_ids,
+            "scores": scores,
+            "source_refs": source_refs,
+            "evidence_snippets": snippets,
+            "timestamp_source_metadata": [{
+                "retrieval_path": retrieval_path,
+                "candidate_memory_count": len(memory_ids),
+                "source_attribution_present": bool(source_attribution),
+            }],
+            "fallback_error_flags": [],
+            "coverage_class": _heuristic_coverage_class(row, evidence, source_refs),
+        }
+    return retrieve
+
+
+def _parse_delete_count(status: Any) -> int:
+    if not isinstance(status, str):
+        return 0
+    parts = status.strip().split()
+    if len(parts) >= 2 and parts[-1].isdigit():
+        return int(parts[-1])
+    return 0
+
+
+def _run_coroutine_safely(coro: Any) -> Any:
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    coro.close()
+    raise RuntimeError("memibrium_cleanup_requires_async_cleanup_in_running_loop")
+
+
+def make_memibrium_cleanup_fn(
+    *,
+    db_dsn: str,
+    connect_fn: Callable[..., Awaitable[Any]] | None = None,
+) -> Callable[..., dict[str, Any]]:
+    async def _cleanup(domain: str, memory_ids: list[str]) -> dict[str, Any]:
+        if not domain or domain != RETRIEVAL_BRIDGE_DOMAIN:
+            raise ValueError("cleanup_requires_exact_retrieval_bridge_domain")
+        connector = connect_fn
+        if connector is None:  # pragma: no cover - live path
+            import asyncpg  # type: ignore
+            connector = asyncpg.connect
+        conn = None
+        try:
+            conn = await connector(db_dsn)
+            counts = await conn.fetchrow("""
+                SELECT
+                  (SELECT COUNT(*) FROM memories WHERE domain = $1) AS memory_count,
+                  (SELECT COUNT(*) FROM user_feedback WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)) AS feedback_count,
+                  (SELECT COUNT(*) FROM memory_snapshots WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)) AS snapshot_count,
+                  (SELECT COUNT(*) FROM memory_edges WHERE source_id IN (SELECT id FROM memories WHERE domain = $1) OR target_id IN (SELECT id FROM memories WHERE domain = $1)) AS edge_count,
+                  (SELECT COUNT(*) FROM contradictions WHERE memory_a_id IN (SELECT id FROM memories WHERE domain = $1) OR memory_b_id IN (SELECT id FROM memories WHERE domain = $1)) AS contradiction_count,
+                  (SELECT COUNT(*) FROM temporal_expressions WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)) AS temporal_expression_count,
+                  (SELECT COUNT(*) FROM context_graph_edges WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)) AS context_graph_edge_count,
+                  (SELECT COUNT(*) FROM decision_traces WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)) AS decision_trace_count,
+                  (SELECT COUNT(*) FROM self_model_observations WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)) AS self_model_observation_count
+            """, domain)
+            linked_rows_deleted: dict[str, int] = {}
+            if memory_ids:
+                statement_params: tuple[Any, ...] = (domain, list(memory_ids))
+                delete_statements = [
+                    ("user_feedback", "DELETE FROM user_feedback WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("memory_snapshots", "DELETE FROM memory_snapshots WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("memory_edges", "DELETE FROM memory_edges WHERE source_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[])) OR target_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("contradictions", "DELETE FROM contradictions WHERE memory_a_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[])) OR memory_b_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("temporal_expressions", "DELETE FROM temporal_expressions WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("context_graph_edges", "DELETE FROM context_graph_edges WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("decision_traces", "DELETE FROM decision_traces WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                    ("self_model_observations", "DELETE FROM self_model_observations WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1 AND id = ANY($2::text[]))"),
+                ]
+                delete_memories_sql = "DELETE FROM memories WHERE domain = $1 AND id = ANY($2::text[])"
+            else:
+                statement_params = (domain,)
+                delete_statements = [
+                    ("user_feedback", "DELETE FROM user_feedback WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("memory_snapshots", "DELETE FROM memory_snapshots WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("memory_edges", "DELETE FROM memory_edges WHERE source_id IN (SELECT id FROM memories WHERE domain = $1) OR target_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("contradictions", "DELETE FROM contradictions WHERE memory_a_id IN (SELECT id FROM memories WHERE domain = $1) OR memory_b_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("temporal_expressions", "DELETE FROM temporal_expressions WHERE memory_id IN (SELECT id FROM memories WHERE domain = $1)"),
+                    ("context_graph_edges", "DELETE FROM context_graph_edges WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)"),
+                    ("decision_traces", "DELETE FROM decision_traces WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)"),
+                    ("self_model_observations", "DELETE FROM self_model_observations WHERE evidence_memory_ids ?| ARRAY(SELECT id FROM memories WHERE domain = $1)"),
+                ]
+                delete_memories_sql = "DELETE FROM memories WHERE domain = $1"
+            async with conn.transaction():
+                for table, sql in delete_statements:
+                    linked_rows_deleted[table] = _parse_delete_count(await conn.execute(sql, *statement_params))
+                deleted_memory_count = _parse_delete_count(await conn.execute(delete_memories_sql, *statement_params))
+                final_count = await conn.fetchval("SELECT COUNT(id) FROM memories WHERE domain = $1", domain)
+            return {
+                "requested_memory_ids": list(memory_ids),
+                "pre_cleanup_counts": dict(counts) if counts else {},
+                "linked_rows_deleted": linked_rows_deleted,
+                "deleted_memory_count": deleted_memory_count,
+                "final_domain_count_verified": int(final_count or 0),
+            }
+        finally:
+            close = getattr(conn, "close", None) if conn is not None else None
+            if close is not None:
+                result = close()
+                if hasattr(result, "__await__"):
+                    await result
+
+    def cleanup(*, domain: str, memory_ids: list[str]) -> dict[str, Any]:
+        return _run_coroutine_safely(_cleanup(domain, memory_ids))
+    cleanup.async_cleanup = _cleanup  # type: ignore[attr-defined]
+    return cleanup
+
+
 def _selected_rows_from_selection(dataset: list[dict[str, Any]], selection: dict[str, Any]) -> list[dict[str, Any]]:
     by_id = {entry["question_id"]: entry for entry in dataset}
     return [by_id[row["question_id"]] for row in selection["rows"]]
@@ -1340,6 +1646,7 @@ def run_retrieval_bridge_phase_a(
     retrieval_fn: Callable[..., dict[str, Any]] | None = None,
     cleanup_fn: Callable[..., dict[str, Any]] | None = None,
     chat_fn: Callable[..., str] | None = None,
+    runtime_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     del chat_fn  # Phase A must never call answer or judge models.
     if allow_answer_generation or allow_judge_calls:
@@ -1353,87 +1660,95 @@ def run_retrieval_bridge_phase_a(
     selected_rows = _selected_rows_from_selection(dataset, selection)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    created_memory_ids = ingest_fn(manifest["planned_memories"], domain=RETRIEVAL_BRIDGE_DOMAIN)
-    manifest["memory_ids_created"] = list(created_memory_ids)
-    manifest["created_memory_ids"] = list(created_memory_ids)
-    manifest["ingest_status"] = "completed_with_injected_ingest_fn"
-    write_json(out_dir / "ingest_manifest.json", manifest)
-
-    retrieval_rows = []
-    coverage_rows = []
-    for row in selected_rows:
-        qid = row["question_id"]
+    created_memory_ids: list[str] = []
+    try:
         try:
-            retrieved = retrieval_fn(row, domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=list(created_memory_ids))
-            coverage_class = retrieved.get("coverage_class")
-            retrieval_row = {
+            created_memory_ids = ingest_fn(manifest["planned_memories"], domain=RETRIEVAL_BRIDGE_DOMAIN)
+        except MemibriumIngestError as exc:
+            created_memory_ids = list(exc.created_ids)
+            raise
+        manifest["memory_ids_created"] = list(created_memory_ids)
+        manifest["created_memory_ids"] = list(created_memory_ids)
+        manifest["ingest_status"] = "completed_with_injected_ingest_fn"
+        manifest["redacted_runtime_metadata"] = runtime_metadata or {}
+        write_json(out_dir / "ingest_manifest.json", manifest)
+
+        retrieval_rows = []
+        coverage_rows = []
+        for row in selected_rows:
+            qid = row["question_id"]
+            try:
+                retrieved = retrieval_fn(row, domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=list(created_memory_ids))
+                coverage_class = retrieved.get("coverage_class")
+                retrieval_row = {
+                    "question_id": qid,
+                    "question_type": row.get("question_type", ""),
+                    "question": row.get("question", ""),
+                    "query_variants": retrieved.get("query_variants", [row.get("question", "")]),
+                    "retrieved_memory_ids": retrieved.get("retrieved_memory_ids", []),
+                    "scores": retrieved.get("scores", []),
+                    "source_refs": retrieved.get("source_refs", []),
+                    "evidence_snippets": retrieved.get("evidence_snippets", []),
+                    "timestamp_source_metadata": retrieved.get("timestamp_source_metadata", []),
+                    "fallback_error_flags": retrieved.get("fallback_error_flags", []),
+                    "coverage_class": coverage_class,
+                    "retrieval_status": retrieved.get("retrieval_status", "ok"),
+                }
+            except Exception as exc:  # pragma: no cover - exercised by future live failures
+                retrieval_row = {
+                    "question_id": qid,
+                    "question_type": row.get("question_type", ""),
+                    "question": row.get("question", ""),
+                    "query_variants": [row.get("question", "")],
+                    "retrieved_memory_ids": [],
+                    "scores": [],
+                    "source_refs": [],
+                    "evidence_snippets": [],
+                    "timestamp_source_metadata": [],
+                    "fallback_error_flags": [str(exc)],
+                    "coverage_class": "unsupported",
+                    "retrieval_status": "runtime_exception",
+                }
+            retrieval_rows.append(retrieval_row)
+            coverage_rows.append({
                 "question_id": qid,
                 "question_type": row.get("question_type", ""),
-                "question": row.get("question", ""),
-                "query_variants": retrieved.get("query_variants", [row.get("question", "")]),
-                "retrieved_memory_ids": retrieved.get("retrieved_memory_ids", []),
-                "scores": retrieved.get("scores", []),
-                "source_refs": retrieved.get("source_refs", []),
-                "evidence_snippets": retrieved.get("evidence_snippets", []),
-                "timestamp_source_metadata": retrieved.get("timestamp_source_metadata", []),
-                "fallback_error_flags": retrieved.get("fallback_error_flags", []),
-                "coverage_class": coverage_class,
-                "retrieval_status": retrieved.get("retrieval_status", "ok"),
-            }
-        except Exception as exc:  # pragma: no cover - exercised by future live failures
-            retrieval_row = {
-                "question_id": qid,
-                "question_type": row.get("question_type", ""),
-                "question": row.get("question", ""),
-                "query_variants": [row.get("question", "")],
-                "retrieved_memory_ids": [],
-                "scores": [],
-                "source_refs": [],
-                "evidence_snippets": [],
-                "timestamp_source_metadata": [],
-                "fallback_error_flags": [str(exc)],
-                "coverage_class": "unsupported",
-                "retrieval_status": "runtime_exception",
-            }
-        retrieval_rows.append(retrieval_row)
-        coverage_rows.append({
-            "question_id": qid,
-            "question_type": row.get("question_type", ""),
-            "coverage_class": retrieval_row["coverage_class"],
-            "gold_supporting_evidence_present": retrieval_row.get("source_refs", []),
-            "gold_supporting_evidence_missing": [],
-            "stale_conflicting_evidence_present": [],
-            "source_refs": retrieval_row.get("source_refs", []),
-            "classification_notes": "coverage supplied by injected retrieval function for Phase A scaffold",
+                "coverage_class": retrieval_row["coverage_class"],
+                "gold_supporting_evidence_present": retrieval_row.get("source_refs", []),
+                "gold_supporting_evidence_missing": [],
+                "stale_conflicting_evidence_present": [],
+                "source_refs": retrieval_row.get("source_refs", []),
+                "classification_notes": "coverage supplied by injected retrieval function for Phase A scaffold",
+            })
+
+        write_jsonl(out_dir / "retrieval_results.jsonl", retrieval_rows)
+        coverage_audit = {
+            "mode": "retrieval_bridge_phase_a_coverage_audit",
+            "coverage_status": "evaluated_artifact_only",
+            "phase_a_gates": RETRIEVAL_BRIDGE_PHASE_A_GATES,
+            "coverage_classes": sorted(RETRIEVAL_COVERAGE_CLASSES),
+            "rows": coverage_rows,
+        }
+        write_json(out_dir / "retrieval_coverage_audit.json", coverage_audit)
+
+        phase_a_report = evaluate_retrieval_bridge_phase_a_gates(selected_rows, retrieval_rows)
+        phase_a_report.update({
+            "selection_proof": manifest["selection_proof"],
+            "condition": RETRIEVAL_BRIDGE_CONDITION,
+            "domain": RETRIEVAL_BRIDGE_DOMAIN,
+            "selection_sha256": RETRIEVAL_BRIDGE_SELECTION_SHA256,
+            "input_files": {"retrieval_results_file": str(out_dir / "retrieval_results.jsonl")},
+            "guardrails": [
+                "runtime functions injected by caller",
+                "no answer generation",
+                "no judge/model calls",
+                "no full LongMemEval _s/_m run",
+            ],
         })
+        write_json(out_dir / "longmemeval_retrieval_bridge_phase_a_gate_report.json", phase_a_report)
 
-    write_jsonl(out_dir / "retrieval_results.jsonl", retrieval_rows)
-    coverage_audit = {
-        "mode": "retrieval_bridge_phase_a_coverage_audit",
-        "coverage_status": "evaluated_artifact_only",
-        "phase_a_gates": RETRIEVAL_BRIDGE_PHASE_A_GATES,
-        "coverage_classes": sorted(RETRIEVAL_COVERAGE_CLASSES),
-        "rows": coverage_rows,
-    }
-    write_json(out_dir / "retrieval_coverage_audit.json", coverage_audit)
-
-    phase_a_report = evaluate_retrieval_bridge_phase_a_gates(selected_rows, retrieval_rows)
-    phase_a_report.update({
-        "selection_proof": manifest["selection_proof"],
-        "condition": RETRIEVAL_BRIDGE_CONDITION,
-        "domain": RETRIEVAL_BRIDGE_DOMAIN,
-        "selection_sha256": RETRIEVAL_BRIDGE_SELECTION_SHA256,
-        "input_files": {"retrieval_results_file": str(out_dir / "retrieval_results.jsonl")},
-        "guardrails": [
-            "runtime functions injected by caller",
-            "no answer generation",
-            "no judge/model calls",
-            "no full LongMemEval _s/_m run",
-        ],
-    })
-    write_json(out_dir / "longmemeval_retrieval_bridge_phase_a_gate_report.json", phase_a_report)
-
-    cleanup_result = cleanup_fn(domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=list(created_memory_ids))
+    finally:
+        cleanup_result = cleanup_fn(domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=list(created_memory_ids))
     cleanup_report = {
         "mode": "retrieval_bridge_phase_a_cleanup",
         "domain": RETRIEVAL_BRIDGE_DOMAIN,
@@ -1497,6 +1812,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--allow-runtime-retrieval", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation/reporting unless --run-retrieval-bridge-phase-a is used.")
     parser.add_argument("--allow-cleanup-deletes", action="store_true", help="Explicit approval flag for namespaced cleanup deletes in Phase A scaffold.")
     parser.add_argument("--allow-judge-calls", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation/reporting.")
+    parser.add_argument("--memibrium-base-url", default=os.environ.get("MEMIBRIUM_BASE_URL", "http://localhost:9999"), help="Memibrium server base URL for --run-retrieval-bridge-phase-a; redacted in artifacts/stdout.")
+    parser.add_argument("--memibrium-db-dsn", default=os.environ.get("MEMIBRIUM_DB_DSN", ""), help="Postgres DSN for namespaced cleanup in --run-retrieval-bridge-phase-a; never written to artifacts/stdout.")
     args = parser.parse_args(argv)
     if args.offline_gate_report and args.allow_answer_generation:
         parser.error("--offline-gate-report cannot be combined with --allow-answer-generation")
@@ -1508,6 +1825,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--run-retrieval-bridge-phase-a cannot be combined with answer or judge calls")
     if args.run_retrieval_bridge_phase_a and (args.offline_gate_report or args.retrieval_bridge_phase_a_report or args.prepare_retrieval_bridge):
         parser.error("--run-retrieval-bridge-phase-a cannot be combined with prep/report modes")
+    if args.run_retrieval_bridge_phase_a and not args.memibrium_db_dsn:
+        parser.error("--run-retrieval-bridge-phase-a requires --memibrium-db-dsn or MEMIBRIUM_DB_DSN for cleanup verification")
     if args.offline_gate_report and args.retrieval_bridge_phase_a_report:
         parser.error("--offline-gate-report cannot be combined with --retrieval-bridge-phase-a-report")
     if args.offline_gate_report and (args.baseline_eval_file is None or args.treatment_eval_file is None):
@@ -1568,6 +1887,25 @@ def main() -> None:
             allow_answer_generation=args.allow_answer_generation,
             allow_judge_calls=args.allow_judge_calls,
             dataset_sha256=dataset_sha256,
+        )
+        print(json.dumps(result, indent=2))
+        return
+    if args.run_retrieval_bridge_phase_a:
+        result = run_retrieval_bridge_phase_a(
+            dataset,
+            selection,
+            args.out_dir,
+            allow_db_writes=args.allow_db_writes,
+            allow_runtime_retrieval=args.allow_runtime_retrieval,
+            allow_cleanup_deletes=args.allow_cleanup_deletes,
+            allow_answer_generation=args.allow_answer_generation,
+            allow_judge_calls=args.allow_judge_calls,
+            dataset_sha256=dataset_sha256,
+            ingest_fn=make_memibrium_ingest_fn(base_url=args.memibrium_base_url),
+            retrieval_fn=make_memibrium_retrieval_fn(base_url=args.memibrium_base_url),
+            cleanup_fn=make_memibrium_cleanup_fn(db_dsn=args.memibrium_db_dsn),
+            chat_fn=None,
+            runtime_metadata=redacted_memibrium_runtime_metadata(args.memibrium_base_url),
         )
         print(json.dumps(result, indent=2))
         return
