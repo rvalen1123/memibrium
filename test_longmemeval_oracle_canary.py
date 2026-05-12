@@ -1295,6 +1295,97 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'memibrium_cleanup_requires_async_cleanup_in_running_loop'):
             longmem_canary.asyncio.run(invoke_adapter())
 
+    def test_run_retrieval_bridge_phase_a_writes_progress_checkpoint_before_ingest_and_after_cleanup(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        cleanup_calls = []
+
+        def failing_ingest(planned_memories, *, domain):
+            self.assertGreater(len(planned_memories), 0)
+            raise longmem_canary.MemibriumIngestError('memibrium_ingest_partial_failure', ['mem_partial'], RuntimeError('retain timed out'))
+
+        def retrieval_fn(*_args, **_kwargs):
+            raise AssertionError('retrieval should not run after ingest failure')
+
+        def cleanup_fn(*, domain, memory_ids):
+            cleanup_calls.append((domain, list(memory_ids)))
+            return {'deleted_memory_count': 1, 'final_domain_count_verified': 0, 'linked_rows_deleted': {'memory_edges': 0}}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp) / 'phase-a-out'
+            with self.assertRaises(longmem_canary.MemibriumIngestError):
+                longmem_canary.run_retrieval_bridge_phase_a(
+                    rows,
+                    selection,
+                    out_dir,
+                    allow_db_writes=True,
+                    allow_runtime_retrieval=True,
+                    allow_cleanup_deletes=True,
+                    ingest_fn=failing_ingest,
+                    retrieval_fn=retrieval_fn,
+                    cleanup_fn=cleanup_fn,
+                    runtime_metadata={'memibrium_base_url': {'host': 'localhost'}},
+                )
+            progress = json.loads((out_dir / 'progress_checkpoint.json').read_text())
+            cleanup_report = json.loads((out_dir / 'cleanup_report.json').read_text())
+
+        self.assertEqual(progress['stage'], 'cleanup_complete_after_failure')
+        self.assertEqual(progress['planned_memory_count'], 4)
+        self.assertEqual(progress['created_memory_count'], 1)
+        self.assertEqual(progress['retrieval_completed_count'], 0)
+        self.assertEqual(progress['last_error_class'], 'MemibriumIngestError')
+        self.assertNotIn('postgresql://', json.dumps(progress))
+        self.assertEqual(cleanup_report['cleanup_status'], 'complete')
+        self.assertEqual(cleanup_calls, [(longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, ['mem_partial'])])
+
+    def test_run_retrieval_bridge_phase_a_smoke_max_questions_limits_rows_and_manifest(self):
+        rows = self.sample_rows()[:2]
+        selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
+        selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
+        ingest_counts = []
+        retrieved_qids = []
+
+        def ingest_fn(planned_memories, *, domain):
+            ingest_counts.append(len(planned_memories))
+            return [f'mem_{idx}' for idx, _memory in enumerate(planned_memories, start=1)]
+
+        def retrieval_fn(row, *, domain, memory_ids):
+            retrieved_qids.append(row['question_id'])
+            return {
+                'retrieval_status': 'ok',
+                'coverage_class': 'partial_support',
+                'retrieved_memory_ids': memory_ids[:1],
+                'source_refs': ['smoke:turn_1:user'],
+            }
+
+        def cleanup_fn(*, domain, memory_ids):
+            return {'deleted_memory_count': len(memory_ids), 'final_domain_count_verified': 0, 'linked_rows_deleted': {}}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp) / 'phase-a-out'
+            result = longmem_canary.run_retrieval_bridge_phase_a(
+                rows,
+                selection,
+                out_dir,
+                allow_db_writes=True,
+                allow_runtime_retrieval=True,
+                allow_cleanup_deletes=True,
+                ingest_fn=ingest_fn,
+                retrieval_fn=retrieval_fn,
+                cleanup_fn=cleanup_fn,
+                smoke_max_questions=1,
+            )
+            manifest = json.loads((out_dir / 'ingest_manifest.json').read_text())
+            retrieval_lines = (out_dir / 'retrieval_results.jsonl').read_text().strip().splitlines()
+
+        self.assertEqual(result['row_count'], 1)
+        self.assertEqual(manifest['selected_question_ids'], [rows[0]['question_id']])
+        self.assertEqual(manifest['planned_memory_count'], 2)
+        self.assertEqual(ingest_counts, [2])
+        self.assertEqual(retrieved_qids, [rows[0]['question_id']])
+        self.assertEqual(len(retrieval_lines), 1)
+
     def test_main_wires_live_phase_a_adapters_only_when_runtime_scaffold_is_requested(self):
         rows = self.sample_rows()[:2]
         selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
@@ -1308,6 +1399,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             self.assertIsNotNone(kwargs['retrieval_fn'])
             self.assertIsNotNone(kwargs['cleanup_fn'])
             self.assertIsNone(kwargs.get('chat_fn'))
+            self.assertEqual(kwargs.get('smoke_max_questions'), 1)
             return {
                 'mode': 'retrieval_bridge_phase_a_runtime_live_memibrium',
                 'domain': longmem_canary.RETRIEVAL_BRIDGE_DOMAIN,
@@ -1348,6 +1440,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 '--memibrium-base-url', 'http://localhost:9999',
                 '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
                 '--memibrium-http-timeout', '180',
+                '--retrieval-bridge-smoke-max-questions', '1',
             ]
             stdout = io.StringIO()
             original_parse_args = longmem_canary.parse_args
@@ -1446,6 +1539,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             '--memibrium-base-url', 'http://localhost:9999',
             '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
             '--memibrium-http-timeout', '180',
+            '--retrieval-bridge-smoke-max-questions', '1',
         ])
 
         self.assertTrue(args.run_retrieval_bridge_phase_a)
@@ -1458,6 +1552,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(args.memibrium_base_url, 'http://localhost:9999')
         self.assertEqual(args.memibrium_db_dsn, 'postgresql://localhost:5432/memory')
         self.assertEqual(args.memibrium_http_timeout, 180)
+        self.assertEqual(args.retrieval_bridge_smoke_max_questions, 1)
 
 
 if __name__ == '__main__':

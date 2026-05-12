@@ -1610,6 +1610,58 @@ def _selected_rows_from_selection(dataset: list[dict[str, Any]], selection: dict
     return [by_id[row["question_id"]] for row in selection["rows"]]
 
 
+def _selection_subset_for_rows(selection: dict[str, Any], selected_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    selected_ids = {row["question_id"] for row in selected_rows}
+    subset = dict(selection)
+    subset_rows = [row for row in selection.get("rows", []) if row.get("question_id") in selected_ids]
+    qtype_counts: dict[str, int] = {}
+    abstention_count = 0
+    for row in subset_rows:
+        qtype = row.get("question_type")
+        qtype_counts[qtype] = qtype_counts.get(qtype, 0) + 1
+        abstention_count += 1 if row.get("abstention") else 0
+    subset["rows"] = subset_rows
+    subset["counts"] = {
+        "total": len(subset_rows),
+        "abstention": abstention_count,
+        "by_question_type": qtype_counts,
+    }
+    subset["smoke_subset"] = True
+    subset["smoke_question_count"] = len(subset["rows"])
+    return subset
+
+
+def _write_phase_a_progress_checkpoint(
+    out_dir: Path,
+    *,
+    stage: str,
+    selected_rows: list[dict[str, Any]],
+    planned_memory_count: int,
+    created_memory_ids: list[str],
+    retrieval_rows: list[dict[str, Any]] | None = None,
+    last_error: Exception | None = None,
+    runtime_metadata: dict[str, Any] | None = None,
+) -> None:
+    payload = {
+        "mode": "retrieval_bridge_phase_a_progress_checkpoint",
+        "stage": stage,
+        "domain": RETRIEVAL_BRIDGE_DOMAIN,
+        "condition": RETRIEVAL_BRIDGE_CONDITION,
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "selected_question_count": len(selected_rows),
+        "selected_question_ids": [row.get("question_id") for row in selected_rows],
+        "planned_memory_count": planned_memory_count,
+        "created_memory_count": len(created_memory_ids),
+        "created_memory_ids": list(created_memory_ids),
+        "retrieval_completed_count": len(retrieval_rows or []),
+        "last_error_class": type(last_error).__name__ if last_error is not None else None,
+        "last_error_message": str(last_error) if last_error is not None else None,
+        "redacted_runtime_metadata": runtime_metadata or {},
+        "communication_boundary": "operational progress only; not retrieval-quality evidence",
+    }
+    write_json(out_dir / "progress_checkpoint.json", payload)
+
+
 def _source_session_ids(selected_rows: list[dict[str, Any]]) -> list[Any]:
     return unique_ordered([
         session_id
@@ -1701,6 +1753,7 @@ def run_retrieval_bridge_phase_a(
     cleanup_fn: Callable[..., dict[str, Any]] | None = None,
     chat_fn: Callable[..., str] | None = None,
     runtime_metadata: dict[str, Any] | None = None,
+    smoke_max_questions: int | None = None,
 ) -> dict[str, Any]:
     del chat_fn  # Phase A must never call answer or judge models.
     if allow_answer_generation or allow_judge_calls:
@@ -1712,10 +1765,29 @@ def run_retrieval_bridge_phase_a(
 
     manifest = build_retrieval_bridge_ingest_manifest(dataset, selection, dataset_sha256=dataset_sha256)
     selected_rows = _selected_rows_from_selection(dataset, selection)
+    if smoke_max_questions is not None:
+        if smoke_max_questions <= 0:
+            raise ValueError("retrieval_bridge_smoke_max_questions_must_be_positive")
+        selected_rows = selected_rows[:smoke_max_questions]
+        manifest = build_retrieval_bridge_ingest_manifest(dataset, _selection_subset_for_rows(selection, selected_rows), dataset_sha256=dataset_sha256)
+        manifest["smoke_subset"] = True
+        manifest["smoke_max_questions"] = smoke_max_questions
     out_dir.mkdir(parents=True, exist_ok=True)
 
     created_memory_ids: list[str] = []
+    retrieval_rows: list[dict[str, Any]] = []
+    phase_a_report: dict[str, Any] | None = None
+    caught_error: Exception | None = None
     try:
+        _write_phase_a_progress_checkpoint(
+            out_dir,
+            stage="before_ingest",
+            selected_rows=selected_rows,
+            planned_memory_count=len(manifest["planned_memories"]),
+            created_memory_ids=created_memory_ids,
+            retrieval_rows=retrieval_rows,
+            runtime_metadata=runtime_metadata,
+        )
         try:
             created_memory_ids = ingest_fn(manifest["planned_memories"], domain=RETRIEVAL_BRIDGE_DOMAIN)
         except MemibriumIngestError as exc:
@@ -1726,8 +1798,16 @@ def run_retrieval_bridge_phase_a(
         manifest["ingest_status"] = "completed_with_injected_ingest_fn"
         manifest["redacted_runtime_metadata"] = runtime_metadata or {}
         write_json(out_dir / "ingest_manifest.json", manifest)
+        _write_phase_a_progress_checkpoint(
+            out_dir,
+            stage="after_ingest",
+            selected_rows=selected_rows,
+            planned_memory_count=len(manifest["planned_memories"]),
+            created_memory_ids=created_memory_ids,
+            retrieval_rows=retrieval_rows,
+            runtime_metadata=runtime_metadata,
+        )
 
-        retrieval_rows = []
         coverage_rows = []
         for row in selected_rows:
             qid = row["question_id"]
@@ -1764,6 +1844,15 @@ def run_retrieval_bridge_phase_a(
                     "retrieval_status": "runtime_exception",
                 }
             retrieval_rows.append(retrieval_row)
+            _write_phase_a_progress_checkpoint(
+                out_dir,
+                stage="retrieval_in_progress",
+                selected_rows=selected_rows,
+                planned_memory_count=len(manifest["planned_memories"]),
+                created_memory_ids=created_memory_ids,
+                retrieval_rows=retrieval_rows,
+                runtime_metadata=runtime_metadata,
+            )
             coverage_rows.append({
                 "question_id": qid,
                 "question_type": row.get("question_type", ""),
@@ -1800,7 +1889,18 @@ def run_retrieval_bridge_phase_a(
             ],
         })
         write_json(out_dir / "longmemeval_retrieval_bridge_phase_a_gate_report.json", phase_a_report)
+        _write_phase_a_progress_checkpoint(
+            out_dir,
+            stage="phase_a_report_written",
+            selected_rows=selected_rows,
+            planned_memory_count=len(manifest["planned_memories"]),
+            created_memory_ids=created_memory_ids,
+            retrieval_rows=retrieval_rows,
+            runtime_metadata=runtime_metadata,
+        )
 
+    except Exception as exc:
+        caught_error = exc
     finally:
         cleanup_result = cleanup_fn(domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=list(created_memory_ids))
     cleanup_report = {
@@ -1813,6 +1913,21 @@ def run_retrieval_bridge_phase_a(
         "cleanup_status": "complete" if cleanup_result.get("final_domain_count_verified") == 0 else "verification_failed",
     }
     write_json(out_dir / "cleanup_report.json", cleanup_report)
+    _write_phase_a_progress_checkpoint(
+        out_dir,
+        stage="cleanup_complete_after_failure" if caught_error is not None else "cleanup_complete",
+        selected_rows=selected_rows,
+        planned_memory_count=len(manifest["planned_memories"]),
+        created_memory_ids=created_memory_ids,
+        retrieval_rows=retrieval_rows,
+        last_error=caught_error,
+        runtime_metadata=runtime_metadata,
+    )
+    if caught_error is not None:
+        raise caught_error
+
+    if phase_a_report is None:
+        raise RuntimeError("retrieval_bridge_phase_a_report_missing")
 
     run_metadata = {
         "mode": "retrieval_bridge_phase_a_runtime_scaffold",
@@ -1871,6 +1986,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--memibrium-db-dsn-source", choices=("env-or-container", "env", "container"), default=os.environ.get("MEMIBRIUM_DB_DSN_SOURCE", "env-or-container"), help="How to resolve cleanup DSN when --memibrium-db-dsn is absent; container mode inspects env without printing secrets.")
     parser.add_argument("--memibrium-server-container", default=os.environ.get("MEMIBRIUM_SERVER_CONTAINER", "memibrium-server"), help="Container name used only for DSN derivation when enabled.")
     parser.add_argument("--memibrium-http-timeout", type=int, default=int(os.environ.get("MEMIBRIUM_HTTP_TIMEOUT", "180")), help="HTTP timeout in seconds for Memibrium Phase A retain/context calls.")
+    parser.add_argument("--retrieval-bridge-smoke-max-questions", type=int, help="Limit live Phase A to the first N selected questions for a no-answer/no-judge smoke rung.")
     args = parser.parse_args(argv)
     if args.run_retrieval_bridge_phase_a and args.selection == DEFAULT_SELECTION_PATH:
         args.selection = DEFAULT_SECOND_SLICE_SELECTION_PATH
@@ -1886,6 +2002,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--run-retrieval-bridge-phase-a cannot be combined with prep/report modes")
     if args.memibrium_http_timeout <= 0:
         parser.error("--memibrium-http-timeout must be positive")
+    if args.retrieval_bridge_smoke_max_questions is not None and args.retrieval_bridge_smoke_max_questions <= 0:
+        parser.error("--retrieval-bridge-smoke-max-questions must be positive")
+    if args.retrieval_bridge_smoke_max_questions is not None and not args.run_retrieval_bridge_phase_a:
+        parser.error("--retrieval-bridge-smoke-max-questions requires --run-retrieval-bridge-phase-a")
     if args.offline_gate_report and args.retrieval_bridge_phase_a_report:
         parser.error("--offline-gate-report cannot be combined with --retrieval-bridge-phase-a-report")
     if args.offline_gate_report and (args.baseline_eval_file is None or args.treatment_eval_file is None):
@@ -1970,6 +2090,7 @@ def main() -> None:
             cleanup_fn=make_memibrium_cleanup_fn(db_dsn=cleanup_dsn),
             chat_fn=None,
             runtime_metadata=redacted_memibrium_runtime_metadata(args.memibrium_base_url),
+            smoke_max_questions=args.retrieval_bridge_smoke_max_questions,
         )
         print(json.dumps(result, indent=2))
         return
