@@ -83,7 +83,7 @@ class HybridRetrievalRuvectorTests(unittest.TestCase):
 
         self.run_async(retriever._semantic_search([0.1, 0.2], top_k=3, domain="locomo-test"))
 
-        sql, params = pool.conn.calls[0]
+        sql, _params = pool.conn.calls[0]
         self.assertIn("::ruvector", sql)
         self.assertNotIn("::vector", sql)
 
@@ -125,6 +125,7 @@ class HybridRetrievalRuvectorTests(unittest.TestCase):
         self.assertIn("state IN", sql)
         self.assertIn("locomo-test", params)
         self.assertIn("accepted", params)
+
     def test_default_pgvector_alias_casts_to_vector_type(self):
         pool = FakePool()
         retriever = HybridRetriever(pool=pool)

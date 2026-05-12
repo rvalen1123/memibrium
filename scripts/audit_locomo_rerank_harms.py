@@ -31,9 +31,9 @@ PRIOR_QUERY_EXPANSION = RESULTS_DIR / "locomo_conv26_query_expansion_2026-04-24.
 PREFIX_RERANK = RESULTS_DIR / "locomo_conv26_query_expansion_prefix_rerank_2026-04-26.json"
 DEFAULT_DATA = Path("/tmp/locomo10_cleaned.json")
 
-ANSWER_CONTEXT_TOP_K = 15
-RERANK_RECALL_TOP_K = 20
-PRESERVE_PREFIX_K = 2
+ANSWER_CONTEXT_TOP_K = None
+RERANK_RECALL_TOP_K = None
+PRESERVE_PREFIX_K = None
 
 
 def load_bench_module():
@@ -42,6 +42,20 @@ def load_bench_module():
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
+
+
+def configure_benchmark_constants(bench: Any) -> None:
+    """Use the benchmark runner's canonical context/rerank constants."""
+    global ANSWER_CONTEXT_TOP_K, RERANK_RECALL_TOP_K, PRESERVE_PREFIX_K
+    ANSWER_CONTEXT_TOP_K = bench.ANSWER_CONTEXT_TOP_K
+    RERANK_RECALL_TOP_K = bench.RERANK_RECALL_TOP_K
+    PRESERVE_PREFIX_K = bench.RERANK_PRESERVE_PREFIX_K
+
+
+def normalize_category_label(cat: Any) -> str:
+    if cat == "5":
+        return "adversarial"
+    return str(cat)
 
 
 def run_cmd(cmd: list[str], timeout: int = 120, input_text: str | None = None) -> str:
@@ -228,6 +242,11 @@ def classify_case(
     reranked_overlap = [(m.get("id"), overlap(m), m.get("content", "")[:160]) for m in reranked_context]
     lost_overlap = [item for item in original_overlap if item[0] in lost_ids]
     top_original_lost = original_ids[:PRESERVE_PREFIX_K] != reranked_ids[:PRESERVE_PREFIX_K]
+    original_tail_ids = original_ids[PRESERVE_PREFIX_K:]
+    reranked_tail_ids = reranked_ids[PRESERVE_PREFIX_K:]
+    first_non_preserved_original_id = original_tail_ids[0] if original_tail_ids else None
+    first_non_preserved_reranked_id = reranked_tail_ids[0] if reranked_tail_ids else None
+    non_preserved_context_changed = original_tail_ids != reranked_tail_ids
 
     reasons = []
     if lost_ids:
@@ -268,6 +287,9 @@ def classify_case(
         "lost_ids": lost_ids,
         "gained_ids": gained_ids,
         "top_prefix_preserved": not top_original_lost,
+        "non_preserved_context_changed": non_preserved_context_changed,
+        "first_non_preserved_original_id": first_non_preserved_original_id,
+        "first_non_preserved_reranked_id": first_non_preserved_reranked_id,
         "evidence_terms": sorted(terms)[:50],
         "original_overlap": original_overlap,
         "reranked_overlap": reranked_overlap,
@@ -363,6 +385,7 @@ def main() -> int:
         raise RuntimeError(f"Memibrium health check failed: {health}")
 
     bench = load_bench_module()
+    configure_benchmark_constants(bench)
     bench.expand_query.fail_count = 0
 
     harmed = load_harmed_cases()
@@ -415,7 +438,7 @@ def main() -> int:
         )
 
     primary_counts = collections.Counter(item["primary_mechanism"] for item in cases)
-    cat_counts = collections.Counter(item["prior"]["cat"] for item in cases)
+    cat_counts = collections.Counter(normalize_category_label(item["prior"].get("cat")) for item in cases)
     cases_with_context_drops = sum(1 for item in cases if item["diagnostics"]["lost_from_original_context_count"] > 0)
     cases_answer_became_idk = sum(1 for item in cases if "answer_became_idk" in item["reasons"])
     cases_equivalent_context = sum(1 for item in cases if item["diagnostics"]["lost_from_original_context_count"] == 0 and item["diagnostics"]["gained_in_reranked_context_count"] == 0)

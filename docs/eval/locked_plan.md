@@ -12,49 +12,48 @@ Numbers without documentation = INCOMPLETE session. Do not shortcut step 4.
 
 ## Step 1: Diagnose and clear database (15 min)
 
-**Use surgical delete, not truncate:**
+**Use canonical LOCOMO cleanup, not a single-table delete or truncate:**
 ```bash
-docker stop memibrium-server
-docker exec -i memibrium-ruvector-db psql -U memory -d memory -c "DELETE FROM memories WHERE domain LIKE 'locomo-%';"
-docker start memibrium-server
+bash scripts/clear_locomo_domains.sh
 ```
+
+This script deletes dependent rows first, including temporal expressions, memory snapshots, user feedback, contradictions, memory edges, and related LOCOMO memory rows.
 
 **Verify empty state via SQL, not dashboard:**
 ```bash
-docker exec -i memibrium-ruvector-db psql -U memory -d memory -c "SELECT count(*) FROM memories;"
+docker exec -i memibrium-ruvector-db psql -U memory -d memory -c "SELECT count(id) FROM memories WHERE domain LIKE 'locomo-%';"
 ```
 Must return 0 before proceeding.
 
 ## Step 2: Full label cleanup on 107 retrieval-missing failures (2 hours max)
 
-- Use rubric in `/tmp/failure_mode_rubric.md`
+- Use rubric in `docs/eval/failure_mode_rubric.md`
 - Classify all 107 retrieval-missing-bucket failures
 - Remove confirmed gold-label errors from eval dataset
-- Save as `/tmp/locomo10_fully_cleaned.json`
+- Save cleaned dataset as `/tmp/locomo10_fully_cleaned.json` (ephemeral run input)
 - **Stop criterion:** All 107 classified OR 2 hours elapsed
 - **Out of scope:** Do NOT expand to other buckets or all 200 failures
 
 ## Step 3: Re-establish clean baseline WITHOUT normalization (~45 min)
 
 - Run condition 4 on fully-cleaned data
-- Command: `cd /tmp && python locomo_bench.py --data /tmp/locomo10_fully_cleaned.json`
-- Expected: ~45–50% (higher than 37.7% due to removed label noise)
-- Save result as `/tmp/locomo_results_baseline.json`
+- Command: `python3 benchmark_scripts/locomo_bench_v2.py --data /tmp/locomo10_fully_cleaned.json --cleaned`
+- Save result under `docs/eval/results/` with a condition-specific name such as `locomo_results_baseline.json`
 
 ## HARD CHECKPOINT: Re-clear memories before step 4
 
 **MANDATORY:** Before proceeding to step 4, verify database is empty:
 ```bash
-docker exec -i memibrium-ruvector-db psql -U memory -d memory -c "SELECT count(*) FROM memories;"
+docker exec -i memibrium-ruvector-db psql -U memory -d memory -c "SELECT count(id) FROM memories WHERE domain LIKE 'locomo-%';"
 ```
-If count > 0, re-run the delete from step 1. Do NOT skip this.
+If count > 0, re-run `bash scripts/clear_locomo_domains.sh`. Do NOT skip this.
 
 ## Step 4: Run with normalization (~45 min)
 
 - Clear memories again (see checkpoint above)
 - Run with `--normalize-dates`
-- Command: `cd /tmp && python locomo_bench.py --data /tmp/locomo10_fully_cleaned.json --normalize-dates`
-- Save result as `/tmp/locomo_results_normalized.json`
+- Command: `python3 benchmark_scripts/locomo_bench_v2.py --data /tmp/locomo10_fully_cleaned.json --cleaned --normalize-dates`
+- Save result under `docs/eval/results/` with a condition-specific name such as `locomo_results_normalized.json`
 
 ## Step 5: Compute measured fix-rate and document
 
@@ -68,10 +67,12 @@ Where 33.6 = absolute pp of relative-date failures (54% of 62.3% failure rate).
 **Contingency for small delta:**
 If baseline-to-normalization delta is <3 percentage points, also run a per-question correctness diff:
 ```bash
-cd /tmp && python3 -c "
+python3 -c "
 import json
-with open('locomo_results_baseline.json') as f: b = json.load(f)
-with open('locomo_results_normalized.json') as f: n = json.load(f)
+from pathlib import Path
+results_dir = Path('docs/eval/results')
+with (results_dir / 'locomo_results_baseline.json').open() as f: b = json.load(f)
+with (results_dir / 'locomo_results_normalized.json').open() as f: n = json.load(f)
 # Extract per-question correctness and diff
 "
 ```
@@ -92,6 +93,6 @@ This converts a potentially uninterpretable headline into actionable per-questio
 
 ## Files to have open
 
-- `/tmp/benchmark_prediction.md` — prediction and formula
-- `/tmp/failure_mode_rubric.md` — classification rubric
-- `/tmp/locomo_bench.py` — benchmark script
+- `docs/eval/benchmark_prediction.md` — prediction and formula
+- `docs/eval/failure_mode_rubric.md` — classification rubric
+- `benchmark_scripts/locomo_bench_v2.py` — benchmark script

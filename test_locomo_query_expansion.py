@@ -1611,6 +1611,53 @@ class ScriptReviewRegressionTests(unittest.TestCase):
         self.assertIn('except (ValueError, AttributeError):', bench)
         self.assertNotIn('\n    except:\n        score = 0', bench)
 
+    def test_audit_loads_top_k_constants_from_benchmark_module(self):
+        script = (Path(__file__).resolve().parent / 'scripts' / 'audit_locomo_rerank_harms.py').read_text()
+        self.assertIn('ANSWER_CONTEXT_TOP_K = bench.ANSWER_CONTEXT_TOP_K', script)
+        self.assertIn('RERANK_RECALL_TOP_K = bench.RERANK_RECALL_TOP_K', script)
+        self.assertIn('PRESERVE_PREFIX_K = bench.RERANK_PRESERVE_PREFIX_K', script)
+        self.assertNotIn('ANSWER_CONTEXT_TOP_K = 15', script)
+        self.assertNotIn('RERANK_RECALL_TOP_K = 20', script)
+        self.assertNotIn('PRESERVE_PREFIX_K = 2', script)
+
+    def test_audit_diagnostics_include_contract_and_candidate_reordering_checks(self):
+        audit_path = Path(__file__).resolve().parent / 'scripts' / 'audit_locomo_rerank_harms.py'
+        spec = importlib.util.spec_from_file_location('audit_locomo_rerank_harms_diag_test', audit_path)
+        audit = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(audit)
+        audit.PRESERVE_PREFIX_K = 2
+
+        class BenchStub:
+            def _tokenize_for_rerank(self, text):
+                return str(text).lower().split()
+
+        case = {
+            'prior': {'question': 'find evidence', 'ground_truth': 'evidence', 'predicted': 'evidence', 'score': 1.0, 'cat': 'temporal'},
+            'prefix': {'predicted': 'evidence', 'score': 1.0},
+        }
+        candidates = [{'id': 'm1', 'content': 'one'}, {'id': 'm2', 'content': 'two'}, {'id': 'm3', 'content': 'three'}]
+        original_context = candidates[:]
+        reranked_context = [candidates[0], candidates[1], {'id': 'm4', 'content': 'four'}]
+        _primary, _reasons, diagnostics = audit.classify_case(case, original_context, reranked_context, candidates, BenchStub())
+
+        self.assertTrue(diagnostics['top_prefix_preserved'])
+        self.assertTrue(diagnostics['non_preserved_context_changed'])
+        self.assertEqual(diagnostics['first_non_preserved_original_id'], 'm3')
+        self.assertEqual(diagnostics['first_non_preserved_reranked_id'], 'm4')
+
+    def test_locked_plan_uses_current_benchmark_paths_and_canonical_cleanup(self):
+        root = Path(__file__).resolve().parent
+        locked_plan = (root / 'docs' / 'eval' / 'locked_plan.md').read_text()
+        self.assertIn('bash scripts/clear_locomo_domains.sh', locked_plan)
+        self.assertIn('benchmark_scripts/locomo_bench_v2.py', locked_plan)
+        self.assertIn('docs/eval/benchmark_prediction.md', locked_plan)
+        self.assertIn('docs/eval/failure_mode_rubric.md', locked_plan)
+        self.assertNotIn('python locomo_bench.py', locked_plan)
+        self.assertNotIn('/tmp/benchmark_prediction.md', locked_plan)
+        self.assertNotIn('/tmp/failure_mode_rubric.md', locked_plan)
+        self.assertNotIn('/tmp/locomo_bench.py', locked_plan)
+        self.assertNotIn('DELETE FROM memories WHERE domain LIKE', locked_plan)
+
 
 if __name__ == '__main__':
     unittest.main()
