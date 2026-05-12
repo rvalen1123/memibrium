@@ -1190,7 +1190,7 @@ def judge_answer(question, predicted, ground_truth):
         score = float(response.strip())
         if score not in (0, 0.5, 1):
             score = 0
-    except:
+    except (ValueError, AttributeError):
         score = 0
     return score
 

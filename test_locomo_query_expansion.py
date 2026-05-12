@@ -1565,13 +1565,13 @@ class ScriptReviewRegressionTests(unittest.TestCase):
         self.assertIn('DELETE FROM entities', script)
         self.assertIn('DELETE FROM entity_relationships', script)
 
-    def test_server_related_memories_uses_union_all_for_ruvector_rows(self):
+    def test_server_related_memories_deduplicates_reciprocal_edges_before_limit(self):
         server = (Path(__file__).resolve().parent / 'server.py').read_text()
         start = server.index('async def get_related_memories')
         end = server.index('async def get_prefetch_candidates')
         method = server[start:end]
-        self.assertIn('UNION ALL', method)
-        self.assertNotIn('\n                UNION\n', method)
+        self.assertIn('\n                UNION\n', method)
+        self.assertNotIn('UNION ALL', method)
 
     def test_server_has_eval_toggles_for_expensive_background_ingest_tasks(self):
         server = (Path(__file__).resolve().parent / 'server.py').read_text()
@@ -1583,6 +1583,18 @@ class ScriptReviewRegressionTests(unittest.TestCase):
         self.assertIn('if ENABLE_CONTRADICTION_DETECTION and memory_type == "semantic":', server)
         self.assertIn('if ENABLE_HIERARCHY_PROCESSING and hierarchy_manager:', server)
 
+        start = server.index('async def _init_advanced_modules')
+        end = server.index('async def handle_retain')
+        init_method = server[start:end]
+        self.assertIn('if ENABLE_HIERARCHY_PROCESSING:', init_method)
+        self.assertIn('hierarchy_manager = MemoryHierarchyManager', init_method)
+        self.assertIn('hierarchy_manager = None', init_method)
+
+        start = server.index('    async def run_cycle')
+        end = server.index('    async def start_loop')
+        run_cycle = server[start:end]
+        self.assertIn('if ENABLE_HIERARCHY_PROCESSING and hierarchy_manager:', run_cycle)
+
     def test_compose_passes_background_ingest_toggles_to_server(self):
         compose = (Path(__file__).resolve().parent / 'docker-compose.ruvector.yml').read_text()
         self.assertIn('ENABLE_BACKGROUND_SCORING: ${ENABLE_BACKGROUND_SCORING:-true}', compose)
@@ -1593,6 +1605,11 @@ class ScriptReviewRegressionTests(unittest.TestCase):
         script = (Path(__file__).resolve().parent / 'scripts' / 'audit_locomo_rerank_harms.py').read_text()
         self.assertIn('"contaminated": expand_fallback_count > 0', script)
         self.assertLess(script.index('json_path.write_text'), script.rindex('raise RuntimeError'))
+
+    def test_locomo_bench_score_parse_handles_only_numeric_parse_errors(self):
+        bench = (Path(__file__).resolve().parent / 'benchmark_scripts' / 'locomo_bench_v2.py').read_text()
+        self.assertIn('except (ValueError, AttributeError):', bench)
+        self.assertNotIn('\n    except:\n        score = 0', bench)
 
 
 if __name__ == '__main__':

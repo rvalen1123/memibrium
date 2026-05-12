@@ -1095,7 +1095,7 @@ class ColdStore:
                 FROM memory_edges e
                 JOIN memories m ON m.id = e.target_id
                 WHERE e.source_id = $1 AND m.state != 'shed'
-                UNION ALL
+                UNION
                 SELECT m.*, e.edge_type, e.weight
                 FROM memory_edges e
                 JOIN memories m ON m.id = e.source_id
@@ -2073,7 +2073,7 @@ class ConsolidateAgent:
                 log.warning(f"Contradiction resolution error: {e}")
 
         # HIERARCHY CONSOLIDATION: run mental model synthesis periodically
-        if hierarchy_manager:
+        if ENABLE_HIERARCHY_PROCESSING and hierarchy_manager:
             try:
                 cons_result = await hierarchy_manager.run_consolidation()
                 if cons_result.get("consolidated", 0) > 0:
@@ -2422,9 +2422,13 @@ async def _init_advanced_modules():
     global hybrid_retriever, hierarchy_manager
     hybrid_retriever = HybridRetriever(store.pool, store.vtype, embedder)
     await hybrid_retriever.initialize()
-    hierarchy_manager = MemoryHierarchyManager(store.pool, chat, embedder)
-    await hierarchy_manager.initialize()
-    log.info("Advanced modules initialized: hybrid retrieval + memory hierarchy")
+    if ENABLE_HIERARCHY_PROCESSING:
+        hierarchy_manager = MemoryHierarchyManager(store.pool, chat, embedder)
+        await hierarchy_manager.initialize()
+        log.info("Advanced modules initialized: hybrid retrieval + memory hierarchy")
+    else:
+        hierarchy_manager = None
+        log.info("Advanced modules initialized: hybrid retrieval; memory hierarchy disabled")
 
 
 async def handle_retain(request: Request) -> JSONResponse:
