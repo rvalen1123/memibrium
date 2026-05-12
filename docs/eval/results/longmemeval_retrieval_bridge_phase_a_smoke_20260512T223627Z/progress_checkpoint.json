@@ -1,0 +1,49 @@
+{
+  "mode": "retrieval_bridge_phase_a_progress_checkpoint",
+  "stage": "cleanup_complete_after_failure",
+  "domain": "longmemeval-bridge-v1-20260508-second-slice",
+  "condition": "longmemeval_bridge_v1_retrieval_plus_category_contract_v1",
+  "created_at": "2026-05-12T22:40:08.699935+00:00",
+  "selected_question_count": 1,
+  "selected_question_ids": [
+    "031748ae_abs"
+  ],
+  "planned_memory_count": 24,
+  "created_memory_count": 22,
+  "created_memory_ids": [
+    "mem_23856783b8fb",
+    "mem_66f321e561ff",
+    "mem_bb94c2ff0797",
+    "mem_3ee40c06cbc8",
+    "mem_4d7a6e2d339c",
+    "mem_a73c091ad335",
+    "mem_ef93819ac70c",
+    "mem_d58790474932",
+    "mem_052ee8db8969",
+    "mem_28ba2c189496",
+    "mem_02ab2e2b4b88",
+    "mem_5a32163b9221",
+    "mem_81f1dff9c1cc",
+    "mem_1fef9ac0f1dc",
+    "mem_d271e83f6e69",
+    "mem_00c897a58a13",
+    "mem_f2aa5144da2e",
+    "mem_66cc15fc6259",
+    "mem_3722c9b6809d",
+    "mem_8342f254221b",
+    "mem_a8069a0b65d4",
+    "mem_35e2fe860766"
+  ],
+  "retrieval_completed_count": 0,
+  "last_error_class": "MemibriumIngestError",
+  "last_error_message": "memibrium_ingest_partial_failure",
+  "redacted_runtime_metadata": {
+    "memibrium_base_url": {
+      "scheme": "http",
+      "host": "localhost:9999",
+      "path": "",
+      "configured": true
+    }
+  },
+  "communication_boundary": "operational progress only; not retrieval-quality evidence"
+}

@@ -1903,6 +1903,14 @@ def run_retrieval_bridge_phase_a(
         caught_error = exc
     finally:
         cleanup_result = cleanup_fn(domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=list(created_memory_ids))
+    if caught_error is not None and cleanup_result.get("final_domain_count_verified") not in {0, None}:
+        recovery_cleanup_result = cleanup_fn(domain=RETRIEVAL_BRIDGE_DOMAIN, memory_ids=[])
+        cleanup_result = {
+            **cleanup_result,
+            "recovery_cleanup_result": recovery_cleanup_result,
+            "final_domain_count_verified": recovery_cleanup_result.get("final_domain_count_verified"),
+            "deleted_memory_count": cleanup_result.get("deleted_memory_count", 0) + recovery_cleanup_result.get("deleted_memory_count", 0),
+        }
     cleanup_report = {
         "mode": "retrieval_bridge_phase_a_cleanup",
         "domain": RETRIEVAL_BRIDGE_DOMAIN,
@@ -1911,6 +1919,7 @@ def run_retrieval_bridge_phase_a(
         "final_domain_count_verified": cleanup_result.get("final_domain_count_verified"),
         "linked_rows_deleted": cleanup_result.get("linked_rows_deleted", {}),
         "cleanup_status": "complete" if cleanup_result.get("final_domain_count_verified") == 0 else "verification_failed",
+        "recovery_cleanup_result": cleanup_result.get("recovery_cleanup_result"),
     }
     write_json(out_dir / "cleanup_report.json", cleanup_report)
     _write_phase_a_progress_checkpoint(

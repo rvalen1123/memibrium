@@ -1,0 +1,18 @@
+{
+  "mode": "retrieval_bridge_phase_a_cleanup",
+  "domain": "longmemeval-bridge-v1-20260508-second-slice",
+  "created_memory_count": 22,
+  "deleted_memory_count": 22,
+  "final_domain_count_verified": 1,
+  "linked_rows_deleted": {
+    "user_feedback": 0,
+    "memory_snapshots": 0,
+    "memory_edges": 10,
+    "contradictions": 0,
+    "temporal_expressions": 0,
+    "context_graph_edges": 0,
+    "decision_traces": 0,
+    "self_model_observations": 0
+  },
+  "cleanup_status": "verification_failed"
+}

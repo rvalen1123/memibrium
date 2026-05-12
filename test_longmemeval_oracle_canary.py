@@ -1310,7 +1310,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
 
         def cleanup_fn(*, domain, memory_ids):
             cleanup_calls.append((domain, list(memory_ids)))
-            return {'deleted_memory_count': 1, 'final_domain_count_verified': 0, 'linked_rows_deleted': {'memory_edges': 0}}
+            final_count = 1 if memory_ids else 0
+            return {'deleted_memory_count': len(memory_ids) or 1, 'final_domain_count_verified': final_count, 'linked_rows_deleted': {'memory_edges': 0}}
 
         with tempfile.TemporaryDirectory() as tmp:
             out_dir = Path(tmp) / 'phase-a-out'
@@ -1337,7 +1338,10 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(progress['last_error_class'], 'MemibriumIngestError')
         self.assertNotIn('postgresql://', json.dumps(progress))
         self.assertEqual(cleanup_report['cleanup_status'], 'complete')
-        self.assertEqual(cleanup_calls, [(longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, ['mem_partial'])])
+        self.assertEqual(cleanup_calls, [
+            (longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, ['mem_partial']),
+            (longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, []),
+        ])
 
     def test_run_retrieval_bridge_phase_a_smoke_max_questions_limits_rows_and_manifest(self):
         rows = self.sample_rows()[:2]
