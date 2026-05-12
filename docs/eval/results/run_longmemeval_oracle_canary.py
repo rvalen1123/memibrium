@@ -16,6 +16,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import subprocess
 import time
 import urllib.error
 import urllib.parse
@@ -27,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[3]
 RESULTS_DIR = ROOT / "docs/eval/results"
 DEFAULT_DATASET_PATH = Path("/tmp/longmemeval-cleaned-pin/longmemeval_oracle.json")
 DEFAULT_SELECTION_PATH = RESULTS_DIR / "longmemeval_oracle_canary_25_selection_20260508.json"
+DEFAULT_SECOND_SLICE_SELECTION_PATH = RESULTS_DIR / "longmemeval_oracle_canary_25_second_slice_selection_20260508.json"
 EXPECTED_HF_REVISION = "98d7416c24c778c2fee6e6f3006e7a073259d48f"
 EXPECTED_ORACLE_SHA256 = "821a2034d219ab45846873dd14c14f12cfe7776e73527a483f9dac095d38620c"
 EXPECTED_SELECTION_SEED = "memibrium-longmemeval-oracle-canary-2026-05-08-v1"
@@ -1454,6 +1456,58 @@ def make_memibrium_retrieval_fn(
     return retrieve
 
 
+def _env_list_to_dict(env_items: list[Any]) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for item in env_items:
+        if not isinstance(item, str) or "=" not in item:
+            continue
+        key, value = item.split("=", 1)
+        values[key] = value
+    return values
+
+
+def resolve_memibrium_cleanup_dsn(
+    *,
+    explicit_dsn: str = "",
+    source: str = "env-or-container",
+    container_name: str = "memibrium-server",
+    subprocess_run: Callable[..., Any] = subprocess.run,
+) -> str:
+    if explicit_dsn:
+        return explicit_dsn
+    if source == "env":
+        raise ValueError("memibrium_db_dsn_required")
+    if source not in {"container", "env-or-container"}:
+        raise ValueError(f"memibrium_db_dsn_source_unsupported:{source}")
+    result = subprocess_run(
+        ["docker", "inspect", container_name],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    inspected = json.loads(result.stdout)
+    if not inspected or not isinstance(inspected, list):
+        raise RuntimeError("memibrium_container_inspect_empty")
+    env_items = (((inspected[0] or {}).get("Config") or {}).get("Env") or [])
+    env = _env_list_to_dict(env_items)
+    host = env.get("DB_HOST") or env.get("POSTGRES_HOST") or "localhost"
+    if host not in {"localhost", "127.0.0.1", "::1"}:
+        host = "localhost"
+    port = env.get("DB_PORT") or env.get("POSTGRES_PORT") or "5432"
+    name = env.get("DB_NAME") or env.get("POSTGRES_DB") or "memory"
+    user = env.get("DB_USER") or env.get("POSTGRES_USER") or "memory"
+    password = env.get("DB_PASSWORD") or env.get("POSTGRES_PASSWORD")
+    if not password:
+        raise RuntimeError("memibrium_container_db_password_missing")
+    return "postgresql://{user}:{password}@{host}:{port}/{name}".format(
+        user=urllib.parse.quote(user, safe=""),
+        password=urllib.parse.quote(password, safe=""),
+        host=host,
+        port=port,
+        name=urllib.parse.quote(name, safe=""),
+    )
+
+
 def _parse_delete_count(status: Any) -> int:
     if not isinstance(status, str):
         return 0
@@ -1814,7 +1868,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--allow-judge-calls", action="store_true", help="Reserved future launch flag; currently rejected for retrieval bridge preparation/reporting.")
     parser.add_argument("--memibrium-base-url", default=os.environ.get("MEMIBRIUM_BASE_URL", "http://localhost:9999"), help="Memibrium server base URL for --run-retrieval-bridge-phase-a; redacted in artifacts/stdout.")
     parser.add_argument("--memibrium-db-dsn", default=os.environ.get("MEMIBRIUM_DB_DSN", ""), help="Postgres DSN for namespaced cleanup in --run-retrieval-bridge-phase-a; never written to artifacts/stdout.")
+    parser.add_argument("--memibrium-db-dsn-source", choices=("env-or-container", "env", "container"), default=os.environ.get("MEMIBRIUM_DB_DSN_SOURCE", "env-or-container"), help="How to resolve cleanup DSN when --memibrium-db-dsn is absent; container mode inspects env without printing secrets.")
+    parser.add_argument("--memibrium-server-container", default=os.environ.get("MEMIBRIUM_SERVER_CONTAINER", "memibrium-server"), help="Container name used only for DSN derivation when enabled.")
+    parser.add_argument("--memibrium-http-timeout", type=int, default=int(os.environ.get("MEMIBRIUM_HTTP_TIMEOUT", "180")), help="HTTP timeout in seconds for Memibrium Phase A retain/context calls.")
     args = parser.parse_args(argv)
+    if args.run_retrieval_bridge_phase_a and args.selection == DEFAULT_SELECTION_PATH:
+        args.selection = DEFAULT_SECOND_SLICE_SELECTION_PATH
     if args.offline_gate_report and args.allow_answer_generation:
         parser.error("--offline-gate-report cannot be combined with --allow-answer-generation")
     if args.retrieval_bridge_phase_a_report and args.allow_answer_generation:
@@ -1825,8 +1884,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--run-retrieval-bridge-phase-a cannot be combined with answer or judge calls")
     if args.run_retrieval_bridge_phase_a and (args.offline_gate_report or args.retrieval_bridge_phase_a_report or args.prepare_retrieval_bridge):
         parser.error("--run-retrieval-bridge-phase-a cannot be combined with prep/report modes")
-    if args.run_retrieval_bridge_phase_a and not args.memibrium_db_dsn:
-        parser.error("--run-retrieval-bridge-phase-a requires --memibrium-db-dsn or MEMIBRIUM_DB_DSN for cleanup verification")
+    if args.memibrium_http_timeout <= 0:
+        parser.error("--memibrium-http-timeout must be positive")
     if args.offline_gate_report and args.retrieval_bridge_phase_a_report:
         parser.error("--offline-gate-report cannot be combined with --retrieval-bridge-phase-a-report")
     if args.offline_gate_report and (args.baseline_eval_file is None or args.treatment_eval_file is None):
@@ -1891,6 +1950,11 @@ def main() -> None:
         print(json.dumps(result, indent=2))
         return
     if args.run_retrieval_bridge_phase_a:
+        cleanup_dsn = resolve_memibrium_cleanup_dsn(
+            explicit_dsn=args.memibrium_db_dsn,
+            source=args.memibrium_db_dsn_source,
+            container_name=args.memibrium_server_container,
+        )
         result = run_retrieval_bridge_phase_a(
             dataset,
             selection,
@@ -1901,9 +1965,9 @@ def main() -> None:
             allow_answer_generation=args.allow_answer_generation,
             allow_judge_calls=args.allow_judge_calls,
             dataset_sha256=dataset_sha256,
-            ingest_fn=make_memibrium_ingest_fn(base_url=args.memibrium_base_url),
-            retrieval_fn=make_memibrium_retrieval_fn(base_url=args.memibrium_base_url),
-            cleanup_fn=make_memibrium_cleanup_fn(db_dsn=args.memibrium_db_dsn),
+            ingest_fn=make_memibrium_ingest_fn(base_url=args.memibrium_base_url, timeout=args.memibrium_http_timeout),
+            retrieval_fn=make_memibrium_retrieval_fn(base_url=args.memibrium_base_url, timeout=args.memibrium_http_timeout),
+            cleanup_fn=make_memibrium_cleanup_fn(db_dsn=cleanup_dsn),
             chat_fn=None,
             runtime_metadata=redacted_memibrium_runtime_metadata(args.memibrium_base_url),
         )

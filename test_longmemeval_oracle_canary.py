@@ -1300,6 +1300,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         selection = self.make_selection(rows, seed=longmem_canary.SECOND_SLICE_SELECTION_SEED, prior_question_ids=[])
         selection['slice_id'] = 'longmemeval_oracle_canary_25_second_slice_20260508'
         calls = []
+        factory_calls = []
 
         def fake_runner(dataset, selection_payload, out_dir, **kwargs):
             calls.append((dataset, selection_payload, out_dir, kwargs))
@@ -1315,6 +1316,18 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 'phase_b_recommendation': 'stop_before_answer_generation_phase_a_failed',
                 'phase_a_report_file': str(out_dir / 'longmemeval_retrieval_bridge_phase_a_gate_report.json'),
             }
+
+        def fake_ingest_factory(*, base_url, timeout):
+            factory_calls.append(('ingest', base_url, timeout))
+            return lambda planned_memories, *, domain: ['mem_1']
+
+        def fake_retrieval_factory(*, base_url, timeout):
+            factory_calls.append(('retrieval', base_url, timeout))
+            return lambda row, *, domain, memory_ids: {'retrieval_status': 'ok'}
+
+        def fake_cleanup_factory(*, db_dsn):
+            factory_calls.append(('cleanup', db_dsn))
+            return lambda *, domain, memory_ids: {'final_domain_count_verified': 0}
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -1334,18 +1347,28 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 '--out-dir', str(out_dir),
                 '--memibrium-base-url', 'http://localhost:9999',
                 '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
+                '--memibrium-http-timeout', '180',
             ]
             stdout = io.StringIO()
             original_parse_args = longmem_canary.parse_args
             original_runner = longmem_canary.run_retrieval_bridge_phase_a
+            original_ingest_factory = longmem_canary.make_memibrium_ingest_fn
+            original_retrieval_factory = longmem_canary.make_memibrium_retrieval_fn
+            original_cleanup_factory = longmem_canary.make_memibrium_cleanup_fn
             try:
                 longmem_canary.parse_args = lambda: original_parse_args(argv)
                 longmem_canary.run_retrieval_bridge_phase_a = fake_runner
+                longmem_canary.make_memibrium_ingest_fn = fake_ingest_factory
+                longmem_canary.make_memibrium_retrieval_fn = fake_retrieval_factory
+                longmem_canary.make_memibrium_cleanup_fn = fake_cleanup_factory
                 with contextlib.redirect_stdout(stdout):
                     longmem_canary.main()
             finally:
                 longmem_canary.parse_args = original_parse_args
                 longmem_canary.run_retrieval_bridge_phase_a = original_runner
+                longmem_canary.make_memibrium_ingest_fn = original_ingest_factory
+                longmem_canary.make_memibrium_retrieval_fn = original_retrieval_factory
+                longmem_canary.make_memibrium_cleanup_fn = original_cleanup_factory
 
         self.assertEqual(len(calls), 1)
         printed = json.loads(stdout.getvalue())
@@ -1353,15 +1376,57 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertFalse(printed['overall_pass'])
         self.assertNotIn('postgresql://', stdout.getvalue())
         self.assertNotIn('memory:memory', stdout.getvalue())
+        self.assertIn(('ingest', 'http://localhost:9999', 180), factory_calls)
+        self.assertIn(('retrieval', 'http://localhost:9999', 180), factory_calls)
+        self.assertIn(('cleanup', 'postgresql://localhost:5432/memory'), factory_calls)
 
-    def test_parse_args_requires_db_dsn_for_phase_a(self):
+    def test_parse_args_defaults_phase_a_to_second_slice_and_allows_container_dsn_source(self):
         with mock.patch.dict(os.environ, {k: v for k, v in os.environ.items() if k != 'MEMIBRIUM_DB_DSN'}, clear=True):
-            stderr = io.StringIO()
-            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as cm:
-                longmem_canary.parse_args(['--run-retrieval-bridge-phase-a'])
+            args = longmem_canary.parse_args([
+                '--run-retrieval-bridge-phase-a',
+                '--allow-db-writes',
+                '--allow-runtime-retrieval',
+                '--allow-cleanup-deletes',
+            ])
 
-        self.assertNotEqual(cm.exception.code, 0)
-        self.assertIn('--memibrium-db-dsn', stderr.getvalue())
+        self.assertEqual(args.selection, longmem_canary.DEFAULT_SECOND_SLICE_SELECTION_PATH)
+        self.assertEqual(args.memibrium_db_dsn, '')
+        self.assertEqual(args.memibrium_db_dsn_source, 'env-or-container')
+        self.assertEqual(args.memibrium_server_container, 'memibrium-server')
+
+    def test_resolve_memibrium_cleanup_dsn_can_derive_from_container_env_without_printing_secret(self):
+        docker_payload = json.dumps([{
+            'Config': {
+                'Env': [
+                    'DB_HOST=memibrium-ruvector-db',
+                    'DB_PORT=5432',
+                    'DB_NAME=memory',
+                    'DB_USER=memory',
+                    'DB_PASSWORD=super secret/pw',
+                ]
+            }
+        }])
+        calls = []
+
+        def fake_run(cmd, *, check, capture_output, text):
+            calls.append(cmd)
+            self.assertEqual(cmd, ['docker', 'inspect', 'memibrium-server'])
+
+            class Result:
+                stdout = docker_payload
+
+            return Result()
+
+        dsn = longmem_canary.resolve_memibrium_cleanup_dsn(
+            explicit_dsn='',
+            source='container',
+            container_name='memibrium-server',
+            subprocess_run=fake_run,
+        )
+
+        self.assertEqual(calls, [['docker', 'inspect', 'memibrium-server']])
+        self.assertEqual(dsn, 'postgresql://memory:super%20secret%2Fpw@localhost:5432/memory')
+        self.assertNotIn('super secret/pw', repr(calls))
 
     def test_redacted_memibrium_runtime_metadata_empty_and_none_urls(self):
         for url in ('', None):
@@ -1380,6 +1445,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             '--out-dir', 'phase-a-out',
             '--memibrium-base-url', 'http://localhost:9999',
             '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
+            '--memibrium-http-timeout', '180',
         ])
 
         self.assertTrue(args.run_retrieval_bridge_phase_a)
@@ -1391,6 +1457,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(args.out_dir, Path('phase-a-out'))
         self.assertEqual(args.memibrium_base_url, 'http://localhost:9999')
         self.assertEqual(args.memibrium_db_dsn, 'postgresql://localhost:5432/memory')
+        self.assertEqual(args.memibrium_http_timeout, 180)
 
 
 if __name__ == '__main__':
