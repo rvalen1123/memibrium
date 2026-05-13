@@ -50,7 +50,8 @@ import os
 import uuid
 from datetime import date, datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+import time
+from typing import Any, Callable, Optional
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -164,6 +165,78 @@ COLD_STATES = ["crystallized", "shed"]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("memibrium")
+
+RETAIN_DIAGNOSTICS_MAX_PENDING = int(os.environ.get("RETAIN_DIAGNOSTICS_MAX_PENDING", "50"))
+_retain_diagnostics_pending: dict[str, dict[str, Any]] = {}
+_retain_diagnostics_lock = asyncio.Lock()
+
+
+def _monotonic_ms(start: float) -> float:
+    return round((time.perf_counter() - start) * 1000, 2)
+
+
+def _safe_retain_diagnostic_identity(content: str, source: str, domain: str) -> dict[str, Any]:
+    return {
+        "content_length": len(content),
+        "content_sha256_prefix": hashlib.sha256(content.encode("utf-8")).hexdigest()[:12] if content else None,
+        "source": source,
+        "domain": domain,
+    }
+
+
+async def _set_retain_diagnostic_stage(request_id: str, stage: str) -> None:
+    async with _retain_diagnostics_lock:
+        if request_id in _retain_diagnostics_pending:
+            _retain_diagnostics_pending[request_id]["stage"] = stage
+            _retain_diagnostics_pending[request_id]["stage_started_at"] = time.perf_counter()
+
+
+async def _start_retain_diagnostic(request_id: str, *, content: str, source: str, domain: str) -> dict[str, Any]:
+    started_at = time.perf_counter()
+    entry = {
+        "request_id": request_id,
+        "stage": "request_parse",
+        "started_at": started_at,
+        "stage_started_at": started_at,
+        **_safe_retain_diagnostic_identity(content, source, domain),
+    }
+    async with _retain_diagnostics_lock:
+        _retain_diagnostics_pending[request_id] = entry
+        if len(_retain_diagnostics_pending) > RETAIN_DIAGNOSTICS_MAX_PENDING:
+            oldest_key = min(
+                _retain_diagnostics_pending,
+                key=lambda key: _retain_diagnostics_pending[key].get("started_at", started_at),
+            )
+            if oldest_key != request_id:
+                _retain_diagnostics_pending.pop(oldest_key, None)
+    return entry
+
+
+async def _finish_retain_diagnostic(request_id: str) -> None:
+    async with _retain_diagnostics_lock:
+        _retain_diagnostics_pending.pop(request_id, None)
+
+
+async def _retain_pending_snapshot() -> list[dict[str, Any]]:
+    now = time.perf_counter()
+    async with _retain_diagnostics_lock:
+        entries = list(_retain_diagnostics_pending.values())
+    snapshot = []
+    for entry in entries:
+        started_at = entry.get("started_at", now)
+        stage_started_at = entry.get("stage_started_at", started_at)
+        snapshot.append({
+            "request_id": entry.get("request_id"),
+            "stage": entry.get("stage"),
+            "elapsed_ms": round((now - started_at) * 1000, 2),
+            "stage_elapsed_ms": round((now - stage_started_at) * 1000, 2),
+            "content_length": entry.get("content_length"),
+            "content_sha256_prefix": entry.get("content_sha256_prefix"),
+            "source": entry.get("source"),
+            "domain": entry.get("domain"),
+        })
+    return sorted(snapshot, key=lambda item: item["elapsed_ms"], reverse=True)
+
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1903,7 +1976,18 @@ class IngestAgent:
 
     async def ingest(self, content: str, source: str = "conversation",
                      domain: str = "default", event_at: Optional[str] = None,
-                     refs: Optional[dict] = None) -> dict:
+                     refs: Optional[dict] = None,
+                     diagnostics: Optional[dict[str, Any]] = None,
+                     stage_callback: Optional[Callable[[str], Any]] = None) -> dict:
+        async def mark_stage(stage: str) -> None:
+            if diagnostics is not None:
+                diagnostics.setdefault("stage_order", []).append(stage)
+            if stage_callback is not None:
+                await stage_callback(stage)
+
+        ingest_start = time.perf_counter()
+        timings = diagnostics.setdefault("timings_ms", {}) if diagnostics is not None else None
+        await mark_stage("ingest.start")
         mid = f"mem_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc)
         memory_type = self._auto_classify_memory_type(content)
@@ -1923,21 +2007,33 @@ class IngestAgent:
             prev_hash=witness_1["entry_hash"]
         )
 
+        embed_start = time.perf_counter()
+        await mark_stage("embedding")
         embedding = await asyncio.get_event_loop().run_in_executor(
             self.embedder._executor, self.embedder.embed, content
         )
+        if timings is not None:
+            timings["embedding_ms"] = _monotonic_ms(embed_start)
+        store_insert_start = time.perf_counter()
+        await mark_stage("store.insert_memory")
         await self.store.insert_memory(
             mid, content, embedding, final_state, source, domain,
             importance, entities, topics, [witness_1, witness_2],
             memory_type=memory_type, event_at=event_at, refs=refs,
         )
+        if timings is not None:
+            timings["store_insert_ms"] = _monotonic_ms(store_insert_start)
 
+        queue_start = time.perf_counter()
+        await mark_stage("background_score_queue")
         # BACKGROUND: add to batch scoring queue
         if ENABLE_BACKGROUND_SCORING:
             async with self._queue_lock:
                 self._score_queue.append((mid, content, source, domain, embedding, now))
                 if len(self._score_queue) >= self.BATCH_SIZE:
                     self._flush_event.set()
+        if timings is not None:
+            timings["background_score_queue_ms"] = _monotonic_ms(queue_start)
 
         # ADAPTIVE BACKPRESSURE: if too many background tasks, wait before spawning more
         if len(self._background_tasks) > 20:
@@ -1945,6 +2041,8 @@ class IngestAgent:
             while len(self._background_tasks) > 10:
                 await asyncio.sleep(0.1)
 
+        contradiction_start = time.perf_counter()
+        await mark_stage("contradiction_task_schedule")
         # BACKGROUND: contradiction detection for semantic memories
         if ENABLE_CONTRADICTION_DETECTION and memory_type == "semantic":
             task = asyncio.create_task(
@@ -1952,7 +2050,11 @@ class IngestAgent:
             )
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)
+        if timings is not None:
+            timings["contradiction_task_schedule_ms"] = _monotonic_ms(contradiction_start)
 
+        hierarchy_start = time.perf_counter()
+        await mark_stage("hierarchy_task_schedule")
         # HIERARCHY: async entity extraction + graph building (non-blocking)
         if ENABLE_HIERARCHY_PROCESSING and hierarchy_manager:
             async def _hierarchy_background(mid, content, event_at):
@@ -1968,6 +2070,16 @@ class IngestAgent:
             task = asyncio.create_task(_hierarchy_background(mid, content, event_at))
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)
+        if timings is not None:
+            timings["hierarchy_task_schedule_ms"] = _monotonic_ms(hierarchy_start)
+            timings["ingest_total_internal_ms"] = _monotonic_ms(ingest_start)
+            diagnostics["background"] = {
+                "background_scoring_enabled": ENABLE_BACKGROUND_SCORING,
+                "contradiction_detection_enabled": ENABLE_CONTRADICTION_DETECTION,
+                "hierarchy_processing_enabled": ENABLE_HIERARCHY_PROCESSING,
+                "background_task_count": len(self._background_tasks),
+                "score_queue_depth": len(self._score_queue),
+            }
 
         log.info(f"Ingested {mid} → {final_state} (type={memory_type}) [batch queued]")
         return {
@@ -2432,17 +2544,69 @@ async def _init_advanced_modules():
 
 
 async def handle_retain(request: Request) -> JSONResponse:
+    request_start = time.perf_counter()
     body = await request.json()
+    request_parse_ms = _monotonic_ms(request_start)
     content = body.get("content", "")
     if not content:
         return JSONResponse({"error": "content required"}, status_code=400)
-    result = await ingest_agent.ingest(
-        content, source=body.get("source", "conversation"),
-        domain=body.get("domain", "default"),
-        event_at=body.get("event_at"),
-        refs=body.get("refs"),
-    )
-    return JSONResponse(result)
+    source = body.get("source", "conversation")
+    domain = body.get("domain", "default")
+    include_diagnostics = bool(body.get("include_diagnostics", False))
+    request_id = f"retain_{uuid.uuid4().hex[:12]}"
+    await _start_retain_diagnostic(request_id, content=content, source=source, domain=domain)
+    diagnostics: dict[str, Any] = {}
+    ingest_start = time.perf_counter()
+    try:
+        await _set_retain_diagnostic_stage(request_id, "ingest_agent.ingest")
+        result = await ingest_agent.ingest(
+            content, source=source,
+            domain=domain,
+            event_at=body.get("event_at"),
+            refs=body.get("refs"),
+            diagnostics=diagnostics if include_diagnostics else None,
+            stage_callback=lambda stage: _set_retain_diagnostic_stage(request_id, stage),
+        )
+        ingest_total_ms = _monotonic_ms(ingest_start)
+        total_ms = _monotonic_ms(request_start)
+        response_serialize_start = time.perf_counter()
+        if include_diagnostics:
+            result = dict(result)
+            diagnostics_timings = dict(diagnostics.get("timings_ms") or {})
+            diagnostics_timings.update({
+                "request_parse_ms": request_parse_ms,
+                "ingest_total_ms": ingest_total_ms,
+                "response_serialize_ms": 0.0,
+                "total_ms": total_ms,
+            })
+            result["diagnostics"] = {
+                "schema": "memibrium.retain.diagnostics.v1",
+                "request_id": request_id,
+                **_safe_retain_diagnostic_identity(content, source, domain),
+                "stage_order": list(diagnostics.get("stage_order") or []),
+                "timings_ms": diagnostics_timings,
+                "background": dict(diagnostics.get("background") or {
+                    "background_scoring_enabled": ENABLE_BACKGROUND_SCORING,
+                    "contradiction_detection_enabled": ENABLE_CONTRADICTION_DETECTION,
+                    "hierarchy_processing_enabled": ENABLE_HIERARCHY_PROCESSING,
+                    "background_task_count": len(getattr(ingest_agent, "_background_tasks", [])),
+                    "score_queue_depth": len(getattr(ingest_agent, "_score_queue", [])),
+                }),
+            }
+            result["diagnostics"]["timings_ms"]["response_serialize_ms"] = _monotonic_ms(response_serialize_start)
+            result["diagnostics"]["timings_ms"]["total_ms"] = _monotonic_ms(request_start)
+        return JSONResponse(_serialize_result(result))
+    finally:
+        await _finish_retain_diagnostic(request_id)
+
+
+async def handle_retain_diagnostics(request: Request) -> JSONResponse:
+    pending = await _retain_pending_snapshot()
+    return JSONResponse({
+        "schema": "memibrium.retain.pending_diagnostics.v1",
+        "pending_count": len(pending),
+        "pending": pending,
+    })
 
 
 async def handle_recall(request: Request) -> JSONResponse:
@@ -3131,6 +3295,7 @@ app = Starlette(
         Route("/mcp/test_embeddings", handle_test_embeddings, methods=["POST"]),
         Route("/mcp/tools", handle_mcp_manifest, methods=["GET"]),
         Route("/mcp/retain", handle_retain, methods=["POST"]),
+        Route("/mcp/retain/diagnostics", handle_retain_diagnostics, methods=["GET", "POST"]),
         Route("/mcp/recall", handle_recall, methods=["POST"]),
         Route("/mcp/reflect", handle_reflect, methods=["POST"]),
         Route("/mcp/confirm", handle_confirm, methods=["POST"]),

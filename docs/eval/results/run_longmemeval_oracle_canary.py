@@ -1264,11 +1264,40 @@ def redacted_memibrium_runtime_metadata(base_url: str | None) -> dict[str, Any]:
 
 
 class MemibriumIngestError(RuntimeError):
-    def __init__(self, message: str, created_ids: list[str], original_exception: Exception):
+    def __init__(
+        self,
+        message: str,
+        created_ids: list[str],
+        original_exception: Exception,
+        *,
+        failure_index: int | None = None,
+        retain_diagnostics: list[dict[str, Any]] | None = None,
+    ):
         super().__init__(message)
         self.created_ids = list(created_ids)
+        self.created_count = len(created_ids)
+        self.failure_index = failure_index
+        self.retain_diagnostics = list(retain_diagnostics or [])
         self.original_exception = original_exception
         self.__cause__ = original_exception
+
+
+def _redact_retain_diagnostics(diagnostics: dict[str, Any], *, memory_id: str, source_ref: str | None) -> dict[str, Any]:
+    allowed = {
+        "schema",
+        "request_id",
+        "content_length",
+        "content_sha256_prefix",
+        "source",
+        "domain",
+        "timings_ms",
+        "background",
+    }
+    return {
+        "memory_id": memory_id,
+        "source_ref": source_ref,
+        **{key: diagnostics[key] for key in allowed if key in diagnostics},
+    }
 
 
 def memibrium_http_post(
@@ -1331,10 +1360,13 @@ def make_memibrium_ingest_fn(
     base_url: str,
     post_fn: Callable[..., dict[str, Any]] = memibrium_http_post,
     timeout: int = 30,
+    include_diagnostics: bool = False,
 ) -> Callable[..., list[str]]:
+    retain_diagnostics: list[dict[str, Any]] = []
+
     def ingest(planned_memories: list[dict[str, Any]], *, domain: str) -> list[str]:
         created_ids: list[str] = []
-        for item in planned_memories:
+        for index, item in enumerate(planned_memories):
             metadata = item.get("metadata") or {}
             bridge_refs = {
                 "source_ref": item.get("source_ref"),
@@ -1353,15 +1385,35 @@ def make_memibrium_ingest_fn(
                 "event_at": _parse_longmemeval_session_date(metadata.get("session_date")),
                 "refs": {"longmemeval_bridge": bridge_refs},
             }
+            if include_diagnostics:
+                payload["include_diagnostics"] = True
             try:
                 response = post_fn("/mcp/retain", payload, base_url=base_url, timeout=timeout)
                 memory_id = response.get("id") or response.get("memory_id")
                 if not memory_id:
                     raise RuntimeError("memibrium_retain_missing_memory_id")
-                created_ids.append(str(memory_id))
+                memory_id = str(memory_id)
+                created_ids.append(memory_id)
+                diagnostics = response.get("diagnostics")
+                if include_diagnostics and isinstance(diagnostics, dict):
+                    retain_diagnostics.append(
+                        _redact_retain_diagnostics(
+                            diagnostics,
+                            memory_id=memory_id,
+                            source_ref=str(item.get("source_ref")) if item.get("source_ref") else None,
+                        )
+                    )
             except Exception as exc:
-                raise MemibriumIngestError("memibrium_ingest_partial_failure", created_ids, exc) from exc
+                raise MemibriumIngestError(
+                    "memibrium_ingest_partial_failure",
+                    created_ids,
+                    exc,
+                    failure_index=index,
+                    retain_diagnostics=retain_diagnostics,
+                ) from exc
         return created_ids
+
+    ingest.retain_diagnostics = retain_diagnostics  # type: ignore[attr-defined]
     return ingest
 
 
@@ -1641,6 +1693,7 @@ def _write_phase_a_progress_checkpoint(
     retrieval_rows: list[dict[str, Any]] | None = None,
     last_error: Exception | None = None,
     runtime_metadata: dict[str, Any] | None = None,
+    retain_diagnostics: list[dict[str, Any]] | None = None,
 ) -> None:
     payload = {
         "mode": "retrieval_bridge_phase_a_progress_checkpoint",
@@ -1654,6 +1707,8 @@ def _write_phase_a_progress_checkpoint(
         "created_memory_count": len(created_memory_ids),
         "created_memory_ids": list(created_memory_ids),
         "retrieval_completed_count": len(retrieval_rows or []),
+        "retain_diagnostics_count": len(retain_diagnostics or []),
+        "retain_diagnostics": list(retain_diagnostics or []),
         "last_error_class": type(last_error).__name__ if last_error is not None else None,
         "last_error_message": str(last_error) if last_error is not None else None,
         "redacted_runtime_metadata": runtime_metadata or {},
@@ -1775,6 +1830,7 @@ def run_retrieval_bridge_phase_a(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     created_memory_ids: list[str] = []
+    retain_diagnostics: list[dict[str, Any]] = []
     retrieval_rows: list[dict[str, Any]] = []
     phase_a_report: dict[str, Any] | None = None
     caught_error: Exception | None = None
@@ -1787,14 +1843,18 @@ def run_retrieval_bridge_phase_a(
             created_memory_ids=created_memory_ids,
             retrieval_rows=retrieval_rows,
             runtime_metadata=runtime_metadata,
+            retain_diagnostics=retain_diagnostics,
         )
         try:
             created_memory_ids = ingest_fn(manifest["planned_memories"], domain=RETRIEVAL_BRIDGE_DOMAIN)
+            retain_diagnostics = list(getattr(ingest_fn, "retain_diagnostics", []))
         except MemibriumIngestError as exc:
             created_memory_ids = list(exc.created_ids)
+            retain_diagnostics = list(exc.retain_diagnostics or getattr(ingest_fn, "retain_diagnostics", []))
             raise
         manifest["memory_ids_created"] = list(created_memory_ids)
         manifest["created_memory_ids"] = list(created_memory_ids)
+        manifest["retain_diagnostics"] = retain_diagnostics
         manifest["ingest_status"] = "completed_with_injected_ingest_fn"
         manifest["redacted_runtime_metadata"] = runtime_metadata or {}
         write_json(out_dir / "ingest_manifest.json", manifest)
@@ -1806,6 +1866,7 @@ def run_retrieval_bridge_phase_a(
             created_memory_ids=created_memory_ids,
             retrieval_rows=retrieval_rows,
             runtime_metadata=runtime_metadata,
+            retain_diagnostics=retain_diagnostics,
         )
 
         coverage_rows = []
@@ -1852,6 +1913,7 @@ def run_retrieval_bridge_phase_a(
                 created_memory_ids=created_memory_ids,
                 retrieval_rows=retrieval_rows,
                 runtime_metadata=runtime_metadata,
+                retain_diagnostics=retain_diagnostics,
             )
             coverage_rows.append({
                 "question_id": qid,
@@ -1897,6 +1959,7 @@ def run_retrieval_bridge_phase_a(
             created_memory_ids=created_memory_ids,
             retrieval_rows=retrieval_rows,
             runtime_metadata=runtime_metadata,
+            retain_diagnostics=retain_diagnostics,
         )
 
     except Exception as exc:
@@ -1931,6 +1994,7 @@ def run_retrieval_bridge_phase_a(
         retrieval_rows=retrieval_rows,
         last_error=caught_error,
         runtime_metadata=runtime_metadata,
+        retain_diagnostics=retain_diagnostics,
     )
     if caught_error is not None:
         raise caught_error
@@ -1995,6 +2059,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--memibrium-db-dsn-source", choices=("env-or-container", "env", "container"), default=os.environ.get("MEMIBRIUM_DB_DSN_SOURCE", "env-or-container"), help="How to resolve cleanup DSN when --memibrium-db-dsn is absent; container mode inspects env without printing secrets.")
     parser.add_argument("--memibrium-server-container", default=os.environ.get("MEMIBRIUM_SERVER_CONTAINER", "memibrium-server"), help="Container name used only for DSN derivation when enabled.")
     parser.add_argument("--memibrium-http-timeout", type=int, default=int(os.environ.get("MEMIBRIUM_HTTP_TIMEOUT", "180")), help="HTTP timeout in seconds for Memibrium Phase A retain/context calls.")
+    parser.add_argument("--memibrium-retain-diagnostics", action="store_true", help="Request redacted per-retain timing diagnostics during live Phase A ingest; no content, refs, DSNs, answers, or judge calls are written.")
     parser.add_argument("--retrieval-bridge-smoke-max-questions", type=int, help="Limit live Phase A to the first N selected questions for a no-answer/no-judge smoke rung.")
     args = parser.parse_args(argv)
     if args.run_retrieval_bridge_phase_a and args.selection == DEFAULT_SELECTION_PATH:
@@ -2094,7 +2159,11 @@ def main() -> None:
             allow_answer_generation=args.allow_answer_generation,
             allow_judge_calls=args.allow_judge_calls,
             dataset_sha256=dataset_sha256,
-            ingest_fn=make_memibrium_ingest_fn(base_url=args.memibrium_base_url, timeout=args.memibrium_http_timeout),
+            ingest_fn=make_memibrium_ingest_fn(
+                base_url=args.memibrium_base_url,
+                timeout=args.memibrium_http_timeout,
+                include_diagnostics=args.memibrium_retain_diagnostics,
+            ),
             retrieval_fn=make_memibrium_retrieval_fn(base_url=args.memibrium_base_url, timeout=args.memibrium_http_timeout),
             cleanup_fn=make_memibrium_cleanup_fn(db_dsn=cleanup_dsn),
             chat_fn=None,

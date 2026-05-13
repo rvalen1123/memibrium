@@ -1016,6 +1016,74 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertNotIn('credential', json.dumps(metadata))
         self.assertNotIn('query=value', json.dumps(metadata))
 
+    def test_memibrium_http_ingest_adapter_can_capture_per_retain_diagnostics_without_content_or_refs(self):
+        planned = [{
+            'source_ref': 'sess_1:turn_1:user',
+            'content': 'Secret preference text.',
+            'metadata': {'session_date': '2023/05/20 (Sat) 10:00'},
+        }]
+
+        def fake_post(path, payload, *, base_url, timeout=30):
+            self.assertTrue(payload['include_diagnostics'])
+            return {
+                'id': 'mem_diag',
+                'diagnostics': {
+                    'schema': 'memibrium.retain.diagnostics.v1',
+                    'domain': payload['domain'],
+                    'source': payload['source'],
+                    'content_length': len(payload['content']),
+                    'content_sha256_prefix': 'abc123abc123',
+                    'timings_ms': {'total_ms': 12.5, 'ingest_total_ms': 10.0},
+                    'refs': {'should_not': 'be recorded'},
+                    'content': payload['content'],
+                },
+            }
+
+        adapter = longmem_canary.make_memibrium_ingest_fn(
+            base_url='http://localhost:9999',
+            post_fn=fake_post,
+            include_diagnostics=True,
+        )
+        created_ids = adapter(planned, domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+
+        self.assertEqual(created_ids, ['mem_diag'])
+        diagnostics = adapter.retain_diagnostics
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(diagnostics[0]['memory_id'], 'mem_diag')
+        self.assertEqual(diagnostics[0]['source_ref'], 'sess_1:turn_1:user')
+        self.assertEqual(diagnostics[0]['timings_ms']['ingest_total_ms'], 10.0)
+        diagnostics_json = json.dumps(diagnostics)
+        self.assertNotIn('Secret preference text', diagnostics_json)
+        self.assertNotIn('should_not', diagnostics_json)
+        self.assertNotIn('refs', diagnostics_json)
+
+    def test_memibrium_http_ingest_adapter_records_failure_index_and_created_count(self):
+        planned = [
+            {'source_ref': 'sess_1:turn_1:user', 'content': 'First memory.', 'metadata': {}},
+            {'source_ref': 'sess_1:turn_2:user', 'content': 'Second memory.', 'metadata': {}},
+        ]
+        calls = []
+
+        def fake_post(path, payload, *, base_url, timeout=30):
+            calls.append(payload)
+            if len(calls) == 1:
+                return {'id': 'mem_created', 'diagnostics': {'timings_ms': {'total_ms': 1.0}}}
+            raise RuntimeError('retain timed out')
+
+        adapter = longmem_canary.make_memibrium_ingest_fn(
+            base_url='http://localhost:9999',
+            post_fn=fake_post,
+            include_diagnostics=True,
+        )
+
+        with self.assertRaises(longmem_canary.MemibriumIngestError) as cm:
+            adapter(planned, domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+
+        self.assertEqual(cm.exception.created_ids, ['mem_created'])
+        self.assertEqual(cm.exception.failure_index, 1)
+        self.assertEqual(cm.exception.created_count, 1)
+        self.assertEqual(len(cm.exception.retain_diagnostics), 1)
+
     def test_memibrium_http_ingest_adapter_raises_partial_failure_with_created_ids(self):
         planned = [
             {
@@ -1413,8 +1481,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 'phase_a_report_file': str(out_dir / 'longmemeval_retrieval_bridge_phase_a_gate_report.json'),
             }
 
-        def fake_ingest_factory(*, base_url, timeout):
-            factory_calls.append(('ingest', base_url, timeout))
+        def fake_ingest_factory(*, base_url, timeout, include_diagnostics=False):
+            factory_calls.append(('ingest', base_url, timeout, include_diagnostics))
             return lambda planned_memories, *, domain: ['mem_1']
 
         def fake_retrieval_factory(*, base_url, timeout):
@@ -1444,6 +1512,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 '--memibrium-base-url', 'http://localhost:9999',
                 '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
                 '--memibrium-http-timeout', '180',
+                '--memibrium-retain-diagnostics',
                 '--retrieval-bridge-smoke-max-questions', '1',
             ]
             stdout = io.StringIO()
@@ -1473,7 +1542,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertFalse(printed['overall_pass'])
         self.assertNotIn('postgresql://', stdout.getvalue())
         self.assertNotIn('memory:memory', stdout.getvalue())
-        self.assertIn(('ingest', 'http://localhost:9999', 180), factory_calls)
+        self.assertIn(('ingest', 'http://localhost:9999', 180, True), factory_calls)
         self.assertIn(('retrieval', 'http://localhost:9999', 180), factory_calls)
         self.assertIn(('cleanup', 'postgresql://localhost:5432/memory'), factory_calls)
 
@@ -1490,6 +1559,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(args.memibrium_db_dsn, '')
         self.assertEqual(args.memibrium_db_dsn_source, 'env-or-container')
         self.assertEqual(args.memibrium_server_container, 'memibrium-server')
+        self.assertFalse(args.memibrium_retain_diagnostics)
 
     def test_resolve_memibrium_cleanup_dsn_can_derive_from_container_env_without_printing_secret(self):
         docker_payload = json.dumps([{
