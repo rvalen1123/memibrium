@@ -489,7 +489,7 @@ class HybridRetriever:
             SELECT id, content, source, domain, state, memory_type,
                    confirmation_count, recency_score, validation_score,
                    importance_score, frozen, frozen_at, created_at, updated_at,
-                   entities, topics, refs, witness_chain, embedding,
+                   entities, topics, refs, witness_chain,
                    {score_expr}
             FROM memories
         """

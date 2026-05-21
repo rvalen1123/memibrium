@@ -157,6 +157,11 @@ CRYSTALLIZE_CONFIRMATIONS = int(os.environ.get("CRYSTALLIZE_CONFIRMATIONS", "3")
 # Stores pruned graph + recomputes embeddings on-demand = 97% storage savings
 # Falls back to pgvector/ruvector cold search if leann not installed
 USE_LEANN = os.environ.get("USE_LEANN", "false").lower() in ("true", "1", "yes")
+# When true, recall_memories() adds extra hot+cold vector_candidates passes on top of hybrid.
+# Both a HOT_STATES pass and a COLD_STATES pass are executed, each fetching top_k*2 rows.
+# Defaults to false: hybrid already covers semantic retrieval; extra passes duplicate DB work.
+# Enable for wider candidate sweeps in experiments or regression checks.
+RECALL_EXTRA_VECTOR_CANDIDATES = os.environ.get("RECALL_EXTRA_VECTOR_CANDIDATES", "false").lower() in ("true", "1", "yes")
 LEANN_INDEX_DIR = os.environ.get("LEANN_INDEX_DIR", "./data/leann")
 LEANN_BACKEND = os.environ.get("LEANN_BACKEND", "hnsw")  # hnsw or diskann
 LEANN_EMBEDDING_MODE = os.environ.get("LEANN_EMBEDDING_MODE", "openai")
@@ -2561,7 +2566,10 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
     server_telemetry = {
         "hybrid_retriever_present": bool(hybrid_retriever),
         "hybrid_path_attempted": bool(hybrid_retriever),
+        "hybrid_succeeded": False,
         "legacy_fallback_executed": False,
+        "extra_vector_candidates_enabled": RECALL_EXTRA_VECTOR_CANDIDATES,
+        "extra_vector_candidates_executed": False,
         "embedding_success": None,
         "embedding_error": None,
     }
@@ -2612,6 +2620,7 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
                 item.setdefault("retrieval_source", "hybrid")
             candidate_groups.append(hybrid_candidates)
             tier_parts.append("hybrid")
+            server_telemetry["hybrid_succeeded"] = True
         except Exception as e:
             server_telemetry["legacy_fallback_executed"] = True
             server_telemetry["hybrid_error"] = {"class": e.__class__.__name__, "message": str(e)}
@@ -2619,7 +2628,14 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
     else:
         server_telemetry["legacy_fallback_executed"] = True
 
-    if embedding is not None:
+    # Run extra hot+cold vector_candidates only when:
+    #   - hybrid is absent or failed (legacy fallback path), OR
+    #   - RECALL_EXTRA_VECTOR_CANDIDATES=true (opt-in wider candidate sweep)
+    _should_run_extra_vector_candidates = embedding is not None and (
+        server_telemetry["legacy_fallback_executed"] or RECALL_EXTRA_VECTOR_CANDIDATES
+    )
+    if _should_run_extra_vector_candidates:
+        server_telemetry["extra_vector_candidates_executed"] = True
         hot = await store.vector_candidates(embedding, top_k=top_k * 2, state_filter=state_filter or HOT_STATES, domain=domain, include_shed=include_shed)
         for item in hot:
             item["retrieval_source"] = "hot_vector"
