@@ -3,8 +3,13 @@
 
 import asyncio
 import unittest
+from datetime import datetime, timezone
 
 from hybrid_retrieval import HybridRetriever
+
+
+def server_datetime(year, month, day):
+    return datetime(year, month, day, tzinfo=timezone.utc)
 
 
 class FakeConn:
@@ -55,19 +60,19 @@ class FakeHybridRetriever(HybridRetriever):
             {"id": "t1", "content": "temporal one", "refs": {"session_index": 3}, "created_at": "2026-05-01T00:03:00Z", "temporal_score": 1.0},
         ]
 
-    async def _semantic_search(self, embedding, top_k, state_filter=None, domain=None, telemetry=None):
+    async def _semantic_search(self, embedding, top_k, state_filter=None, domain=None, telemetry=None, include_shed=False):
         result = [dict(item) for item in self.semantic[:top_k]]
         if telemetry is not None:
             telemetry["streams"]["semantic"] = self._stream_telemetry(result, "cosine_score", top_k)
         return result
 
-    async def _lexical_search(self, query, top_k, state_filter=None, domain=None, telemetry=None):
+    async def _lexical_search(self, query, top_k, state_filter=None, domain=None, telemetry=None, include_shed=False):
         result = [dict(item) for item in self.lexical[:top_k]]
         if telemetry is not None:
             telemetry["streams"]["lexical"] = self._stream_telemetry(result, "bm25_score", top_k, path="fake")
         return result
 
-    async def _temporal_search(self, start, end, top_k, state_filter=None, domain=None, telemetry=None):
+    async def _temporal_search(self, start, end, top_k, state_filter=None, domain=None, telemetry=None, include_shed=False):
         result = [dict(item) for item in self.temporal[:top_k]]
         if telemetry is not None:
             telemetry["streams"]["temporal"] = self._stream_telemetry(result, "temporal_score", top_k)
@@ -252,6 +257,120 @@ class HybridRetrievalRuvectorTests(unittest.TestCase):
         self.assertEqual(telemetry["streams"]["lexical"]["path"], "ilike_fallback")
         self.assertEqual(telemetry["streams"]["lexical"]["tsvector_error"]["class"], "RuntimeError")
         self.assertEqual(telemetry["streams"]["lexical"]["returned_count"], len(instrumented))
+    def test_ruvector_semantic_search_selects_ct_ranking_fields(self):
+        pool = FakePool()
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+
+        self.run_async(retriever._semantic_search([0.1, 0.2], top_k=3))
+
+        sql, _params = pool.conn.calls[0]
+        for field in (
+            "source", "domain", "confirmation_count", "recency_score",
+            "validation_score", "importance_score", "frozen", "witness_chain",
+        ):
+            self.assertIn(field, sql)
+
+    def test_shed_memories_excluded_by_default_but_included_when_explicit(self):
+        pool = FakePool()
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+
+        self.run_async(retriever._semantic_search([0.1, 0.2], top_k=3))
+        default_sql, _ = pool.conn.calls[-1]
+        self.assertIn("state != 'shed'", default_sql)
+
+        self.run_async(retriever._semantic_search([0.1, 0.2], top_k=3, state_filter=["shed"]))
+        explicit_sql, explicit_params = pool.conn.calls[-1]
+        self.assertNotIn("state != 'shed'", explicit_sql)
+        self.assertIn("shed", explicit_params)
+
+
+    def test_ruvector_lexical_search_selects_ct_fields_and_default_shed_filter_tsvector(self):
+        pool = FakePool()
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+
+        self.run_async(retriever._lexical_search("alice cobalt", top_k=3, include_shed=False))
+
+        sql, params = pool.conn.calls[0]
+        for field in (
+            "source", "domain", "confirmation_count", "recency_score",
+            "validation_score", "importance_score", "frozen", "witness_chain",
+        ):
+            self.assertIn(field, sql)
+        self.assertIn("state != 'shed'", sql)
+        self.assertNotIn("shed", params)
+
+    def test_ruvector_lexical_search_selects_ct_fields_and_shed_override_ilike(self):
+        pool = FakePool(fail_first_fetch=True)
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+
+        self.run_async(retriever._lexical_search("alice cobalt", top_k=3, state_filter=["shed"], include_shed=True))
+
+        self.assertEqual(len(pool.conn.calls), 2)
+        sql, params = pool.conn.calls[1]
+        for field in (
+            "source", "domain", "confirmation_count", "recency_score",
+            "validation_score", "importance_score", "frozen", "witness_chain",
+        ):
+            self.assertIn(field, sql)
+        self.assertIn("ILIKE", sql.upper())
+        self.assertNotIn("state != 'shed'", sql)
+        self.assertIn("state IN", sql)
+        self.assertIn("shed", params)
+
+    def test_ruvector_temporal_search_selects_ct_fields_and_shed_filtering(self):
+        pool = FakePool()
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+
+        self.run_async(retriever._temporal_search(
+            start=server_datetime(2026, 5, 1),
+            end=server_datetime(2026, 5, 2),
+            top_k=3,
+            include_shed=False,
+        ))
+
+        sql, params = pool.conn.calls[0]
+        for field in (
+            "source", "domain", "confirmation_count", "recency_score",
+            "validation_score", "importance_score", "frozen", "witness_chain",
+        ):
+            self.assertIn(field, sql)
+        self.assertIn("state != 'shed'", sql)
+        self.assertNotIn("shed", params)
+
+        pool = FakePool()
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+        self.run_async(retriever._temporal_search(
+            start=server_datetime(2026, 5, 1),
+            end=server_datetime(2026, 5, 2),
+            top_k=3,
+            state_filter=["shed"],
+            include_shed=True,
+        ))
+
+        sql, params = pool.conn.calls[0]
+        self.assertNotIn("state != 'shed'", sql)
+        self.assertIn("state IN", sql)
+        self.assertIn("shed", params)
+
+    def test_multihop_session_adjacency_can_add_adjacent_candidate(self):
+        retriever = FakeHybridRetriever()
+        retriever.semantic = [
+            {"id": "base", "content": "Alice then Bob", "refs": {"session_index": 1, "chunk_index": 1}, "created_at": "2026-05-01T00:00:00Z", "cosine_score": 0.9},
+            {"id": "adjacent", "content": "next chunk", "refs": {"session_index": 1, "chunk_index": 2}, "created_at": "2026-05-01T00:01:00Z", "cosine_score": 0.2},
+        ]
+        retriever.lexical = []
+        retriever.temporal = []
+
+        result = self.run_async(
+            retriever.search(
+                "how did Alice connect to Bob",
+                embedding=[0.1, 0.2],
+                top_k=2,
+                use_rrf=False,
+            )
+        )
+
+        self.assertIn("adjacent", [item["id"] for item in result])
 
 
 if __name__ == "__main__":

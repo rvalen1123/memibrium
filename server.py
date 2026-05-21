@@ -45,7 +45,6 @@ from decimal import Decimal
 import hashlib
 import json
 import logging
-import math
 import os
 import uuid
 from datetime import date, datetime, timezone
@@ -83,6 +82,8 @@ from ingest_engine import DocumentIngestEngine, WikiCompiler
 from knowledge_taxonomy import KnowledgeClassifier
 from hybrid_retrieval import HybridRetriever, approximate_tokens
 from memory_hierarchy import MemoryHierarchyManager, HierarchyLevel
+from ct_ranker import CTRanker
+from ct_scoring import compute_weight
 
 # ── Configuration ──────────────────────────────────────────────────
 
@@ -127,11 +128,14 @@ DB_USER = os.environ.get("DB_USER", "memory")
 DB_PASS = os.environ.get("DB_PASSWORD", "memory")
 
 # RuVector Configuration (Phase 2.5)
-# Set USE_RUVECTOR=true to use ruvector-postgres extension for hot tier
-# RuVector is a drop-in pgvector replacement with GNN re-ranking + SONA self-learning
-# Docker: docker pull ruvnet/ruvector-postgres:latest
+# Set USE_RUVECTOR=true to use ruvector-postgres extension for hot candidate retrieval.
+# RuVector/pgvector are retrieval engines; CT ranking remains the governance layer.
+# Extension-level GNN/SONA behavior depends on RuVector runtime configuration.
 USE_RUVECTOR = os.environ.get("USE_RUVECTOR", "false").lower() in ("true", "1", "yes")
+REQUIRE_RUVECTOR = os.environ.get("REQUIRE_RUVECTOR", "false").lower() in ("true", "1", "yes")
 RUVECTOR_GNN = os.environ.get("RUVECTOR_GNN", "true").lower() in ("true", "1", "yes")
+EMBEDDING_DIM = int(os.environ.get("EMBEDDING_DIM", "1536"))
+ALLOW_EMBEDDING_DIM_MISMATCH = os.environ.get("ALLOW_EMBEDDING_DIM_MISMATCH", "false").lower() in ("true", "1", "yes")
 VECTOR_EXTENSION = "ruvector" if USE_RUVECTOR else "vector"
 
 # Type + operator mapping: ruvector uses its own type name, same operators
@@ -153,6 +157,11 @@ CRYSTALLIZE_CONFIRMATIONS = int(os.environ.get("CRYSTALLIZE_CONFIRMATIONS", "3")
 # Stores pruned graph + recomputes embeddings on-demand = 97% storage savings
 # Falls back to pgvector/ruvector cold search if leann not installed
 USE_LEANN = os.environ.get("USE_LEANN", "false").lower() in ("true", "1", "yes")
+# When true, recall_memories() adds extra hot+cold vector_candidates passes on top of hybrid.
+# Both a HOT_STATES pass and a COLD_STATES pass are executed, each fetching top_k*2 rows.
+# Defaults to false: hybrid already covers semantic retrieval; extra passes duplicate DB work.
+# Enable for wider candidate sweeps in experiments or regression checks.
+RECALL_EXTRA_VECTOR_CANDIDATES = os.environ.get("RECALL_EXTRA_VECTOR_CANDIDATES", "false").lower() in ("true", "1", "yes")
 LEANN_INDEX_DIR = os.environ.get("LEANN_INDEX_DIR", "./data/leann")
 LEANN_BACKEND = os.environ.get("LEANN_BACKEND", "hnsw")  # hnsw or diskann
 LEANN_EMBEDDING_MODE = os.environ.get("LEANN_EMBEDDING_MODE", "openai")
@@ -258,23 +267,6 @@ VALID_TRANSITIONS = {
     "crystallized":  ["shed"],
     "shed":          ["observation"],
 }
-
-
-def compute_weight(confirmation_count: int, recency_score: float,
-                   validation_score: float, created_at, now=None) -> float:
-    """
-    W(k,t) = (C × R × V) / A
-    CT patent core formula. Drives retrieval ranking AND shedding.
-    """
-    now = now or datetime.now(timezone.utc)
-    c = max(confirmation_count, 1)
-    r = recency_score
-    v = max(validation_score, 0.1)
-    if hasattr(created_at, "timestamp"):
-        age_hours = max((now - created_at).total_seconds() / 3600, 1.0)
-    else:
-        age_hours = max((now - datetime.fromisoformat(str(created_at))).total_seconds() / 3600, 1.0)
-    return (c * r * v) / age_hours
 
 
 def make_witness_entry(from_state: str, to_state: str, trigger: str,
@@ -643,12 +635,10 @@ class ColdStore:
     PostgreSQL + pgvector/ruvector. Serves BOTH hot and cold tiers,
     distinguished by lifecycle state.
 
-    Phase 2.5 (current): USE_RUVECTOR=true swaps the extension to
-    ruvector-postgres, a drop-in pgvector replacement with:
-      - GNN re-ranking (attention over HNSW candidates)
-      - SONA self-learning (query patterns improve results over time)
-      - Same SQL operators: <=> cosine, <-> L2, <#> inner product
-      - Same vector(N) type, same index syntax
+    Phase 2.5 (current): USE_RUVECTOR=true swaps the hot candidate
+    engine to ruvector-postgres when available. RuVector/pgvector are
+    candidate sources only; CT ranking is applied after retrieval.
+    Extension-level GNN/SONA behavior depends on RuVector runtime config.
     Docker: docker pull ruvnet/ruvector-postgres:latest
     """
 
@@ -657,6 +647,12 @@ class ColdStore:
         self.vector_ext: str = VECTOR_EXTENSION
         self.vtype: str = VECTOR_TYPE
         self.vcosine_ops: str = VECTOR_COSINE_OPS
+        self.vector_extension_requested: str = VECTOR_EXTENSION
+        self.vector_extension_loaded: Optional[str] = None
+        self.vector_fallback_occurred: bool = False
+        self.require_ruvector: bool = REQUIRE_RUVECTOR
+        self.embedding_dim_expected: int = EMBEDDING_DIM
+        self.embedding_dim_actual: Optional[int] = None
 
     async def initialize(self):
         self.pool = await asyncpg.create_pool(
@@ -665,17 +661,22 @@ class ColdStore:
             min_size=2, max_size=10,
         )
         async with self.pool.acquire() as conn:
-            # Phase 2.5: Use ruvector extension when available, fall back to pgvector
+            # Phase 2.5: Use ruvector extension when requested; optionally hard fail.
             try:
                 await conn.execute(f"CREATE EXTENSION IF NOT EXISTS {self.vector_ext};")
-                log.info(f"Vector extension: {self.vector_ext}")
+                self.vector_extension_loaded = self.vector_ext
+                log.info(f"Vector extension loaded: {self.vector_ext}")
             except Exception as e:
                 if self.vector_ext == "ruvector":
+                    if REQUIRE_RUVECTOR:
+                        raise RuntimeError("REQUIRE_RUVECTOR=true but ruvector extension could not load") from e
                     log.warning(f"ruvector extension not available, falling back to pgvector: {e}")
+                    self.vector_fallback_occurred = True
                     self.vector_ext = "vector"
                     self.vtype = "vector"
                     self.vcosine_ops = "vector_cosine_ops"
                     await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+                    self.vector_extension_loaded = "vector"
                 else:
                     raise
             await conn.execute(f"""
@@ -683,7 +684,7 @@ class ColdStore:
                     id                  TEXT PRIMARY KEY,
                     content             TEXT NOT NULL,
                     source              TEXT NOT NULL DEFAULT 'unknown',
-                    embedding           {self.vtype}(1536),
+                    embedding           {self.vtype}({EMBEDDING_DIM}),
                     state               TEXT NOT NULL DEFAULT 'observation',
                     domain              TEXT NOT NULL DEFAULT 'default',
                     memory_type         TEXT NOT NULL DEFAULT 'semantic',
@@ -712,7 +713,7 @@ class ColdStore:
             hnsw_params = "WITH (m = 16, ef_construction = 200)"
             if self.vector_ext == "ruvector" and RUVECTOR_GNN:
                 hnsw_params = "WITH (m = 16, ef_construction = 200)"
-                log.info("RuVector HNSW index with GNN re-ranking enabled")
+                log.info("RuVector opclass selected; extension-level GNN/SONA behavior depends on RuVector runtime configuration")
             await conn.execute(f"""
                 CREATE INDEX IF NOT EXISTS memories_embedding_idx
                 ON memories USING hnsw (embedding {self.vcosine_ops})
@@ -1203,17 +1204,19 @@ class ColdStore:
             results.append(r)
         return results
 
-    async def search(self, embedding: list, top_k: int = 5,
-                     state_filter: Optional[list] = None,
-                     domain: Optional[str] = None,
-                     apply_personalization: bool = True) -> list:
-        """Vector search with W(k,t) re-ranking + optional personalization."""
-        where_parts, params = [], [json.dumps(embedding), top_k * 3]
+    async def vector_candidates(self, embedding: list, top_k: int = 5,
+                                state_filter: Optional[list] = None,
+                                domain: Optional[str] = None,
+                                include_shed: bool = False) -> list:
+        """Raw Postgres/RuVector vector candidates only; no CT ranking."""
+        where_parts, params = [], [json.dumps(embedding), top_k]
         idx = 3
         if state_filter:
             where_parts.append(f"state = ANY(${idx}::text[])")
             params.append(state_filter)
             idx += 1
+        elif not include_shed:
+            where_parts.append("state != 'shed'")
         if domain:
             where_parts.append(f"domain = ${idx}")
             params.append(domain)
@@ -1222,51 +1225,47 @@ class ColdStore:
 
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(f"""
-                SELECT *, 1 - (embedding <=> $1::{self.vtype}) AS cosine_score
+                SELECT id, content, source, domain, state, memory_type,
+                       confirmation_count, recency_score, validation_score,
+                       importance_score, frozen, frozen_at, created_at, updated_at,
+                       entities, topics, refs, witness_chain,
+                       1 - (embedding <=> $1::{self.vtype}) AS cosine_score
                 FROM memories {where}
                 ORDER BY embedding <=> $1::{self.vtype} LIMIT $2
             """, *params)
 
-        now = datetime.now(timezone.utc)
         results = []
         for row in rows:
             r = dict(row)
-            cosine = r.pop("cosine_score", 0.5)
-            if cosine is None:
-                cosine = 0.5
-            w = compute_weight(r["confirmation_count"], r["recency_score"],
-                               r["validation_score"], r["created_at"], now)
-            r["cosine_score"] = round(cosine, 4)
-            r["w_kt"] = round(w, 4)
-            # Base combined score
-            base_score = cosine * (1.0 + math.log1p(w))
-            # Personalization boost from user feedback (confirm/freeze/revert)
-            if apply_personalization:
-                feedback_boost = 0.0
-                try:
-                    feedback_boost = await self.get_memory_feedback_score(r["id"])
-                except Exception:
-                    pass
-                # Normalize: each confirm adds ~0.05, freeze adds ~0.10, revert subtracts
-                base_score += min(feedback_boost * 0.05, 0.3)
-            # Memory type decay adjustment in scoring
-            mem_type = r.get("memory_type", "semantic")
-            if mem_type == "episodic":
-                base_score *= 0.9  # episodic memories are less stable
-            elif mem_type == "procedural":
-                base_score *= 1.05  # procedures are reliably useful
-            r["combined_score"] = round(base_score, 4)
-            r.pop("embedding", None)
+            if r.get("cosine_score") is None:
+                r["cosine_score"] = 0.0
+            else:
+                r["cosine_score"] = round(float(r["cosine_score"]), 4)
             for k in ("created_at", "updated_at", "frozen_at"):
                 if r.get(k) and hasattr(r[k], "isoformat"):
                     r[k] = r[k].isoformat()
             for k in ("entities", "topics", "refs", "witness_chain"):
                 if isinstance(r.get(k), str):
                     r[k] = json.loads(r[k])
+            r["retrieval_source"] = "vector"
             results.append(r)
+        return results
 
-        results.sort(key=lambda x: x["combined_score"], reverse=True)
-        return results[:top_k]
+    async def search(self, embedding: list, top_k: int = 5,
+                     state_filter: Optional[list] = None,
+                     domain: Optional[str] = None,
+                     apply_personalization: bool = True) -> list:
+        """Backward-compatible vector search wrapper with CT final ranking."""
+        include_shed = bool(state_filter and "shed" in state_filter)
+        candidates = await self.vector_candidates(
+            embedding,
+            top_k=top_k * 3,
+            state_filter=state_filter,
+            domain=domain,
+            include_shed=include_shed,
+        )
+        ranker = CTRanker(store=self if apply_personalization else None)
+        return await ranker.rank(candidates, top_k=top_k, allow_shed=include_shed)
 
     async def update_memory(self, mid: str, **kwargs) -> None:
         """Generic update — pass only the columns you want to change."""
@@ -1373,6 +1372,11 @@ class ColdStore:
 # ══════════════════════════════════════════════════════════════════
 # §2b LEANN COLD TIER — 97% storage compression (Phase 3)
 # ══════════════════════════════════════════════════════════════════
+
+# TODO: ColdStore currently stores both hot and cold lifecycle states. Prefer
+# VectorMemoryStore or TieredMemoryStore when a larger rename is safe.
+VectorMemoryStore = ColdStore
+
 
 class LEANNColdTier:
     """
@@ -1532,7 +1536,7 @@ class EmbedClient:
         else:
             self.client = OpenAI(api_key="ollama", base_url=EMBED_BASE)
         self._model = AZURE_EMBEDDING_DEPLOYMENT if _use_azure_embed else EMBED_MODEL
-        self._dimensions = 1536 if _use_azure_embed else None
+        self._dimensions = EMBEDDING_DIM if _use_azure_embed else None
         # LRU cache with bounded size (max 2000 entries)
         self._cache: dict[str, list[float]] = {}
         self._cache_order: list[str] = []  # LRU tracking
@@ -2226,106 +2230,13 @@ class QueryAgent:
     async def recall(self, query: str, top_k: int = 5,
                      domain: Optional[str] = None, expand: bool = True,
                      graph_walk: bool = True) -> dict:
-        # Tier 0: predictive prefetch cache (instant)
-        cached_ids = self.tier0.get(query, domain)
-        if cached_ids:
-            results = []
-            for mid in cached_ids[:top_k]:
-                mem = await self.store.get_memory(mid)
-                if mem and mem.get("state") != "shed":
-                    results.append(mem)
-            if results:
-                return {"results": results, "tier": "tier0",
-                        "query": query, "total_searched": len(results)}
-
-        embedding = await asyncio.get_event_loop().run_in_executor(
-            self.embedder._executor, self.embedder.embed, query
+        return await recall_memories(
+            query,
+            top_k=top_k,
+            domain=domain,
+            expand=expand,
+            graph_walk=graph_walk,
         )
-
-        # Tier 1: Hot search
-        hot_results = await self.store.search(
-            embedding, top_k=top_k, state_filter=HOT_STATES, domain=domain,
-        )
-        good_hot = [r for r in hot_results if r.get("combined_score", 0) > 0.6]
-
-        if len(good_hot) >= 2:
-            # Cache direct search results for subsequent identical queries
-            self.tier0.set(query, [r["id"] for r in hot_results[:top_k]], domain)
-            return {"results": hot_results[:top_k], "tier": "hot",
-                    "query": query, "total_searched": len(hot_results)}
-
-        # Tier 2: Cold search (crystallized history)
-        cold_results = await self.store.search(
-            embedding, top_k=top_k, state_filter=COLD_STATES, domain=domain,
-        )
-
-        # Tier 2b: LEANN cold tier (Phase 3 — 97% storage compression)
-        leann_results = []
-        if self.leann and self.leann.available and self.leann.searcher:
-            leann_results = await self.leann.search(query, top_k=top_k)
-
-        # Topic expansion
-        expanded = []
-        if expand:
-            related_terms = await asyncio.to_thread(self.chat.expand_query, query)
-            for term in related_terms[:2]:
-                try:
-                    exp_emb = await asyncio.get_event_loop().run_in_executor(
-                        self.embedder._executor, self.embedder.embed, term
-                    )
-                    exp_results = await self.store.search(exp_emb, top_k=2, domain=domain)
-                    expanded.extend(exp_results)
-                except Exception:
-                    pass
-
-        # Merge and de-duplicate (pgvector/ruvector + LEANN + expanded)
-        seen = set()
-        merged = []
-        for r in hot_results + cold_results + expanded:
-            if r["id"] not in seen:
-                seen.add(r["id"])
-                merged.append(r)
-
-        # Append LEANN results (text-based, no ID dedup needed)
-        for lr in leann_results:
-            merged.append({
-                "id": f"leann_{hash(lr.get('text', '')) % 10**8}",
-                "content": lr.get("text", ""),
-                "state": "crystallized",
-                "source": "leann_cold",
-                "cosine_score": lr.get("score", 0.0),
-                "w_kt": 0.0,
-                "combined_score": lr.get("score", 0.0),
-            })
-
-        # ── Graph-walking recall: fetch neighbors of top results ──
-        if graph_walk and merged:
-            neighbor_ids = set()
-            for r in merged[:top_k]:
-                try:
-                    neighbors = await self.store.get_related_memories(r["id"], limit=3)
-                    for n in neighbors:
-                        nid = n["id"]
-                        if nid not in seen and nid not in neighbor_ids:
-                            neighbor_ids.add(nid)
-                            n["combined_score"] = r.get("combined_score", 0.5) * 0.85
-                            n["graph_walk_source"] = r["id"]
-                            merged.append(n)
-                except Exception:
-                    pass
-
-        merged.sort(key=lambda x: x.get("combined_score", 0), reverse=True)
-        tier_label = "hot+cold"
-        if leann_results:
-            tier_label += "+leann"
-        if graph_walk:
-            tier_label += "+graph"
-
-        # Cache direct search results in Tier-0 so next identical query is instant
-        self.tier0.set(query, [r["id"] for r in merged[:top_k]], domain)
-
-        return {"results": merged[:top_k], "tier": tier_label,
-                "query": query, "total_searched": len(merged)}
 
     async def reflect(self, topic: str, top_k: int = 10,
                       domain: Optional[str] = None) -> dict:
@@ -2423,12 +2334,24 @@ class Tier0Cache:
         self._cache: dict[str, tuple[list[str], float]] = {}
         self._ttl = ttl_seconds
 
-    def _key(self, query: str, domain: Optional[str] = None) -> str:
-        h = hashlib.sha256(f"{domain or ''}:{query.lower().strip()}".encode()).hexdigest()[:16]
+    def _key(self, query: str, domain: Optional[str] = None,
+             state_filter: Optional[list] = None, include_shed: bool = False,
+             ranking_mode: str = "general") -> str:
+        states = tuple(sorted(str(s) for s in (state_filter or [])))
+        payload = {
+            "domain": domain or "",
+            "query": query.lower().strip(),
+            "state_filter": states,
+            "include_shed": bool(include_shed),
+            "ranking_mode": ranking_mode or "general",
+        }
+        h = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
         return h
 
-    def get(self, query: str, domain: Optional[str] = None) -> Optional[list[str]]:
-        key = self._key(query, domain)
+    def get(self, query: str, domain: Optional[str] = None,
+            state_filter: Optional[list] = None, include_shed: bool = False,
+            ranking_mode: str = "general") -> Optional[list[str]]:
+        key = self._key(query, domain, state_filter, include_shed, ranking_mode)
         if key in self._cache:
             ids, expiry = self._cache[key]
             if datetime.now(timezone.utc).timestamp() < expiry:
@@ -2436,13 +2359,17 @@ class Tier0Cache:
             del self._cache[key]
         return None
 
-    def set(self, query: str, memory_ids: list[str], domain: Optional[str] = None) -> None:
-        key = self._key(query, domain)
+    def set(self, query: str, memory_ids: list[str], domain: Optional[str] = None,
+            state_filter: Optional[list] = None, include_shed: bool = False,
+            ranking_mode: str = "general") -> None:
+        key = self._key(query, domain, state_filter, include_shed, ranking_mode)
         expiry = datetime.now(timezone.utc).timestamp() + self._ttl
         self._cache[key] = (memory_ids, expiry)
 
-    def invalidate(self, query: str, domain: Optional[str] = None) -> None:
-        key = self._key(query, domain)
+    def invalidate(self, query: str, domain: Optional[str] = None,
+                   state_filter: Optional[list] = None, include_shed: bool = False,
+                   ranking_mode: str = "general") -> None:
+        key = self._key(query, domain, state_filter, include_shed, ranking_mode)
         self._cache.pop(key, None)
 
     def stats(self) -> dict:
@@ -2543,6 +2470,314 @@ async def _init_advanced_modules():
         log.info("Advanced modules initialized: hybrid retrieval; memory hierarchy disabled")
 
 
+async def _leann_candidates(query: str, top_k: int = 5, domain: Optional[str] = None,
+                            state_filter: Optional[list] = None, include_shed: bool = False) -> list:
+    """Convert LEANN hits into safe candidates without inventing CT authority."""
+    if not (leann_tier and leann_tier.available and leann_tier.searcher):
+        return []
+    hits = await leann_tier.search(query, top_k=top_k)
+    candidates = []
+    allowed_states = set(state_filter or [])
+
+    def passes_filters(mem: dict) -> bool:
+        if domain and mem.get("domain") != domain:
+            return False
+        state = mem.get("state")
+        if allowed_states and state not in allowed_states:
+            return False
+        if not include_shed and state == "shed":
+            return False
+        return True
+
+    for hit in hits:
+        memory_id = hit.get("id") or hit.get("memory_id")
+        score = hit.get("score", hit.get("leann_score", 0.0))
+        if memory_id:
+            mem = await store.get_memory(memory_id)
+            if not mem:
+                continue
+            mem = dict(mem)
+            if not passes_filters(mem):
+                continue
+            mem.pop("embedding", None)
+            mem["leann_score"] = score
+            mem["retrieval_source"] = "leann"
+            candidates.append(mem)
+            continue
+        # Text-only hits have unknown domain/state; keep only for unfiltered broad
+        # recalls where unknown metadata cannot bypass a restrictive option.
+        if domain or state_filter or not include_shed:
+            continue
+        candidates.append({
+            "id": f"leann_{hash(hit.get('text', '')) % 10**8}",
+            "content": hit.get("text", ""),
+            "source": hit.get("source", "leann_cold"),
+            "state": None,
+            "memory_type": "semantic",
+            "leann_score": score,
+            "retrieval_source": "leann_text_only",
+            "rank_explanation": "LEANN text-only hit; CT metadata unavailable, safe defaults used.",
+        })
+    return candidates
+
+
+def _merge_candidates(candidate_groups: list[list[dict]]) -> list[dict]:
+    merged_by_id: dict[str, dict] = {}
+    order = 0
+    for group in candidate_groups:
+        for candidate in group or []:
+            item = dict(candidate)
+            mid = str(item.get("id") or f"candidate_{order}")
+            order += 1
+            if mid not in merged_by_id:
+                merged_by_id[mid] = item
+                continue
+            existing = merged_by_id[mid]
+            existing_sources = existing.get("retrieval_sources") or []
+            if isinstance(existing_sources, str):
+                existing_sources = [existing_sources]
+            else:
+                existing_sources = list(existing_sources)
+            existing_source = existing.get("retrieval_source")
+            if existing_source and existing_source not in existing_sources:
+                existing_sources.insert(0, existing_source)
+            new_sources = item.get("retrieval_sources") or []
+            if isinstance(new_sources, str):
+                new_sources = [new_sources]
+            if item.get("retrieval_source"):
+                new_sources.append(item["retrieval_source"])
+            for key in ("cosine_score", "bm25_score", "temporal_score", "rrf_score", "graph_score", "leann_score", "combined_score"):
+                if item.get(key) is not None and existing.get(key) is None:
+                    existing[key] = item[key]
+            for src in new_sources:
+                if src and src not in existing_sources:
+                    existing_sources.append(src)
+            if existing_sources:
+                existing["retrieval_sources"] = existing_sources
+    return list(merged_by_id.values())
+
+
+async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = None,
+                          state_filter: Optional[list] = None, expand: bool = True,
+                          graph_walk: bool = True, include_telemetry: bool = False,
+                          ranking_mode: str = "general", include_shed: bool = False) -> dict:
+    """Shared CT-governed recall path: candidates -> CTRanker -> results."""
+    retrieval_telemetry = None
+    server_telemetry = {
+        "hybrid_retriever_present": bool(hybrid_retriever),
+        "hybrid_path_attempted": bool(hybrid_retriever),
+        "hybrid_succeeded": False,
+        "legacy_fallback_executed": False,
+        "extra_vector_candidates_enabled": RECALL_EXTRA_VECTOR_CANDIDATES,
+        "extra_vector_candidates_executed": False,
+        "embedding_success": None,
+        "embedding_error": None,
+    }
+    embedding = None
+    try:
+        embedding = await asyncio.get_event_loop().run_in_executor(embedder._executor, embedder.embed, query)
+        server_telemetry["embedding_success"] = True
+    except Exception as e:
+        server_telemetry["embedding_success"] = False
+        server_telemetry["embedding_error"] = {"class": e.__class__.__name__, "message": str(e)}
+        log.warning(f"Embedding failed for recall, falling back to keyword-only: {e}")
+
+    candidate_groups: list[list[dict]] = []
+    tier_parts: list[str] = []
+
+    cached_ids = tier0_cache.get(
+        query, domain, state_filter=state_filter, include_shed=include_shed, ranking_mode=ranking_mode
+    )
+    if cached_ids:
+        cached = []
+        for mid in cached_ids[:top_k]:
+            mem = await store.get_memory(mid)
+            if mem and (include_shed or mem.get("state") != "shed"):
+                mem = dict(mem)
+                mem.pop("embedding", None)
+                mem["retrieval_source"] = "tier0"
+                cached.append(mem)
+        if cached:
+            candidate_groups.append(cached)
+            tier_parts.append("tier0")
+
+    if hybrid_retriever:
+        try:
+            search_result = await hybrid_retriever.search(
+                query=query,
+                embedding=embedding,
+                top_k=top_k,
+                state_filter=state_filter,
+                domain=domain,
+                include_telemetry=include_telemetry,
+                include_shed=include_shed,
+            )
+            if include_telemetry:
+                hybrid_candidates, retrieval_telemetry = search_result
+            else:
+                hybrid_candidates = search_result
+            for item in hybrid_candidates:
+                item.setdefault("retrieval_source", "hybrid")
+            candidate_groups.append(hybrid_candidates)
+            tier_parts.append("hybrid")
+            server_telemetry["hybrid_succeeded"] = True
+        except Exception as e:
+            server_telemetry["legacy_fallback_executed"] = True
+            server_telemetry["hybrid_error"] = {"class": e.__class__.__name__, "message": str(e)}
+            log.error(f"Hybrid retrieval failed: {e}, falling back to vector candidate recall")
+    else:
+        server_telemetry["legacy_fallback_executed"] = True
+
+    # Run extra hot+cold vector_candidates only when:
+    #   - hybrid is absent or failed (legacy fallback path), OR
+    #   - RECALL_EXTRA_VECTOR_CANDIDATES=true (opt-in wider candidate sweep)
+    _should_run_extra_vector_candidates = embedding is not None and (
+        server_telemetry["legacy_fallback_executed"] or RECALL_EXTRA_VECTOR_CANDIDATES
+    )
+    if _should_run_extra_vector_candidates:
+        server_telemetry["extra_vector_candidates_executed"] = True
+        hot = await store.vector_candidates(embedding, top_k=top_k * 2, state_filter=state_filter or HOT_STATES, domain=domain, include_shed=include_shed)
+        for item in hot:
+            item["retrieval_source"] = "hot_vector"
+        candidate_groups.append(hot)
+        tier_parts.append("hot")
+
+        cold_filter = state_filter if state_filter else COLD_STATES
+        cold_include_shed = include_shed or bool(cold_filter and "shed" in cold_filter)
+        cold = await store.vector_candidates(embedding, top_k=top_k * 2, state_filter=cold_filter, domain=domain, include_shed=cold_include_shed)
+        for item in cold:
+            item["retrieval_source"] = "cold_vector"
+        candidate_groups.append(cold)
+        tier_parts.append("cold")
+
+    leann_candidates = await _leann_candidates(
+        query, top_k=top_k, domain=domain, state_filter=state_filter, include_shed=include_shed
+    )
+    if leann_candidates:
+        candidate_groups.append(leann_candidates)
+        tier_parts.append("leann")
+
+    if expand and embedding is not None:
+        expanded = []
+        try:
+            related_terms = await asyncio.to_thread(chat.expand_query, query)
+        except Exception:
+            related_terms = []
+        for term in related_terms[:2]:
+            try:
+                exp_emb = await asyncio.get_event_loop().run_in_executor(embedder._executor, embedder.embed, term)
+                exp_results = await store.vector_candidates(exp_emb, top_k=2, domain=domain, include_shed=include_shed)
+                for item in exp_results:
+                    item["retrieval_source"] = "query_expansion"
+                expanded.extend(exp_results)
+            except Exception:
+                pass
+        if expanded:
+            candidate_groups.append(expanded)
+            tier_parts.append("expanded")
+
+    merged = _merge_candidates(candidate_groups)
+
+    if graph_walk and merged:
+        graph_candidates = []
+        seen_ids = {m.get("id") for m in merged}
+        for candidate in merged[: max(top_k, 1)]:
+            try:
+                neighbors = await store.get_related_memories(candidate["id"], limit=3)
+            except Exception:
+                neighbors = []
+            for n in neighbors:
+                if n.get("id") in seen_ids:
+                    continue
+                seen_ids.add(n.get("id"))
+                n = dict(n)
+                n.pop("embedding", None)
+                n["graph_score"] = float(n.get("weight", 0.5) or 0.5)
+                n["retrieval_source"] = "graph_walk"
+                n["graph_walk_source"] = candidate.get("id")
+                graph_candidates.append(n)
+        if graph_candidates:
+            merged.extend(graph_candidates)
+            tier_parts.append("graph")
+
+    ranker = CTRanker(store=store)
+    ranked_result = await ranker.rank(
+        merged,
+        top_k=top_k,
+        ranking_mode=ranking_mode,
+        allow_shed=include_shed or bool(state_filter and "shed" in state_filter),
+        include_telemetry=include_telemetry,
+    )
+    if include_telemetry:
+        ranked, ranking_telemetry = ranked_result
+    else:
+        ranked = ranked_result
+        ranking_telemetry = None
+
+    tier0_cache.set(
+        query,
+        [r["id"] for r in ranked if r.get("id")][:top_k],
+        domain,
+        state_filter=state_filter,
+        include_shed=include_shed,
+        ranking_mode=ranking_mode,
+    )
+    tier_label = "+".join(dict.fromkeys(tier_parts)) if tier_parts else "none"
+    response = {
+        "results": ranked,
+        "tier": tier_label,
+        "query": query,
+        "total_searched": len(merged),
+    }
+    if include_telemetry:
+        server_telemetry["response_result_count"] = len(ranked)
+        response["telemetry"] = retrieval_telemetry or {
+            "schema": "memibrium.recall.telemetry.v1",
+            "query": query,
+            "requested_top_k": top_k,
+        }
+        response["telemetry"]["ranking"] = ranking_telemetry
+        response["telemetry"]["server"] = server_telemetry
+    return response
+
+
+def validate_embedding_dimension(vector: list[float], expected_dim: int = EMBEDDING_DIM,
+                                 allow_mismatch: bool = ALLOW_EMBEDDING_DIM_MISMATCH) -> dict:
+    """Validate embedding dimensionality against configured schema dimension."""
+    actual_dim = len(vector) if vector is not None else 0
+    result = {
+        "expected_dim": expected_dim,
+        "actual_dim": actual_dim,
+        "matches": actual_dim == expected_dim,
+        "allow_mismatch": allow_mismatch,
+    }
+    if actual_dim != expected_dim and not allow_mismatch:
+        raise RuntimeError(
+            f"Embedding dimension mismatch: expected EMBEDDING_DIM={expected_dim}, got {actual_dim}. "
+            "Set ALLOW_EMBEDDING_DIM_MISMATCH=true only for deliberate migration/testing."
+        )
+    return result
+
+
+async def verify_startup_embedding_dimension() -> dict:
+    """Embed a fixed probe string and record/fail on dimension mismatch."""
+    embed_fn = embedder.embed
+    if asyncio.iscoroutinefunction(embed_fn):
+        vector = await embed_fn("memibrium embedding dimension startup check")
+    else:
+        vector = await asyncio.get_event_loop().run_in_executor(
+            getattr(embedder, "_executor", None), embed_fn, "memibrium embedding dimension startup check"
+        )
+    result = validate_embedding_dimension(vector)
+    store.embedding_dim_actual = result["actual_dim"]
+    if not result["matches"]:
+        log.warning(
+            "Embedding dimension mismatch allowed: expected %s got %s",
+            result["expected_dim"], result["actual_dim"],
+        )
+    return result
+
+
 async def handle_retain(request: Request) -> JSONResponse:
     request_start = time.perf_counter()
     body = await request.json()
@@ -2616,83 +2851,20 @@ async def handle_recall(request: Request) -> JSONResponse:
     if not query:
         return JSONResponse({"error": "query required"}, status_code=400)
 
-    response_telemetry = None
-
-    # Use hybrid retriever if available, else fallback to old query_agent
-    if hybrid_retriever:
-        embedding = None
-        embedding_ok = False
-        embedding_error = None
-        try:
-            embedding = await asyncio.get_event_loop().run_in_executor(embedder._executor, embedder.embed, query)
-            embedding_ok = True
-        except Exception as e:
-            embedding_error = {"class": e.__class__.__name__, "message": str(e)}
-            log.warning(f"Embedding failed for recall, falling back to keyword-only: {e}")
-        try:
-            search_result = await hybrid_retriever.search(
-                query=query,
-                embedding=embedding,
-                top_k=body.get("top_k", 5),
-                state_filter=body.get("state_filter"),
-                domain=body.get("domain"),
-                include_telemetry=include_telemetry,
-            )
-            if include_telemetry:
-                result, response_telemetry = search_result
-                response_telemetry["server"] = {
-                    "hybrid_retriever_present": True,
-                    "hybrid_path_attempted": True,
-                    "legacy_fallback_executed": False,
-                    "embedding_success": embedding_ok,
-                    "embedding_error": embedding_error,
-                    "response_result_count": len(result),
-                }
-            else:
-                result = search_result
-        except Exception as e:
-            log.error(f"Hybrid retrieval failed: {e}, falling back to legacy recall")
-            result = await query_agent.recall(
-                query, top_k=body.get("top_k", 5),
-                domain=body.get("domain"), expand=body.get("expand", True),
-            )
-            if include_telemetry:
-                response_telemetry = {
-                    "schema": "memibrium.recall.telemetry.v1",
-                    "query": query,
-                    "requested_top_k": body.get("top_k", 5),
-                    "server": {
-                        "hybrid_retriever_present": True,
-                        "hybrid_path_attempted": True,
-                        "legacy_fallback_executed": True,
-                        "embedding_success": embedding_ok,
-                        "embedding_error": embedding_error,
-                        "hybrid_error": {"class": e.__class__.__name__, "message": str(e)},
-                        "response_result_count": len(result),
-                    },
-                }
-    else:
-        result = await query_agent.recall(
-            query, top_k=body.get("top_k", 5),
-            domain=body.get("domain"), expand=body.get("expand", True),
-        )
-        if include_telemetry:
-            response_telemetry = {
-                "schema": "memibrium.recall.telemetry.v1",
-                "query": query,
-                "requested_top_k": body.get("top_k", 5),
-                "server": {
-                    "hybrid_retriever_present": False,
-                    "hybrid_path_attempted": False,
-                    "legacy_fallback_executed": True,
-                    "embedding_success": None,
-                    "embedding_error": None,
-                    "response_result_count": len(result),
-                },
-            }
+    recall = await recall_memories(
+        query,
+        top_k=body.get("top_k", 5),
+        domain=body.get("domain"),
+        state_filter=body.get("state_filter"),
+        expand=body.get("expand", True),
+        graph_walk=body.get("graph_walk", True),
+        include_telemetry=include_telemetry,
+        ranking_mode=body.get("ranking_mode", "general"),
+        include_shed=bool(body.get("include_shed", False)),
+    )
     if include_telemetry:
-        return JSONResponse(_serialize_result({"results": result, "telemetry": response_telemetry}))
-    return JSONResponse(_serialize_result(result))
+        return JSONResponse(_serialize_result({"results": recall["results"], "telemetry": recall.get("telemetry")}))
+    return JSONResponse(_serialize_result(recall["results"]))
 
 
 async def handle_reflect(request: Request) -> JSONResponse:
@@ -2701,40 +2873,36 @@ async def handle_reflect(request: Request) -> JSONResponse:
     if not topic:
         return JSONResponse({"error": "topic required"}, status_code=400)
 
-    # Use hybrid retriever for better recall, then hierarchy-aware synthesis
-    if hybrid_retriever and hierarchy_manager:
-        embedding = None
-        try:
-            embedding = await asyncio.get_event_loop().run_in_executor(embedder._executor, embedder.embed, topic)
-        except Exception:
-            pass
-        recall_result = await hybrid_retriever.search(
-            query=topic,
-            embedding=embedding,
-            top_k=body.get("top_k", 10),
-            domain=body.get("domain"),
-        )
-        memories = recall_result
-        if not memories:
-            return JSONResponse({"synthesis": "No memories found for this topic.", "memories": []})
+    recall = await recall_memories(
+        topic,
+        top_k=body.get("top_k", 10),
+        domain=body.get("domain"),
+        expand=body.get("expand", True),
+        graph_walk=body.get("graph_walk", True),
+        ranking_mode=body.get("ranking_mode", "ct_heavy"),
+    )
+    memories = recall.get("results", [])
+    if not memories:
+        return JSONResponse({"synthesis": "No memories found for this topic.", "memories": []})
 
-        # Apply hierarchy priority to synthesis context
+    synthesis_memories = memories
+    hierarchy_context = ""
+    if hierarchy_manager:
         hierarchy_result = await asyncio.to_thread(
             hierarchy_manager.synthesize_with_priority, memories, topic
         )
-        synthesis = chat.synthesize(hierarchy_result["sorted_memories"], topic)
-        return JSONResponse(_serialize_result({
-            "synthesis": synthesis,
-            "memory_count": len(memories),
-            "tier": "hybrid",
-            "crystallized_count": sum(1 for m in memories if m.get("state") == "crystallized"),
-            "hierarchy_context": hierarchy_result.get("context", ""),
-        }))
-    else:
-        result = await query_agent.reflect(
-            topic, top_k=body.get("top_k", 10), domain=body.get("domain"),
-        )
-        return JSONResponse(_serialize_result(result))
+        # Hierarchy affects synthesis order only; CT final_score remains governance order.
+        synthesis_memories = hierarchy_result.get("sorted_memories", memories)
+        hierarchy_context = hierarchy_result.get("context", "")
+    synthesis = chat.synthesize(synthesis_memories, topic)
+    return JSONResponse(_serialize_result({
+        "synthesis": synthesis,
+        "memory_count": len(memories),
+        "tier": recall.get("tier", "ct_ranked"),
+        "crystallized_count": sum(1 for m in memories if m.get("state") == "crystallized"),
+        "hierarchy_context": hierarchy_context,
+        "ranking_path": "recall_memories->ct_ranker",
+    }))
 
 
 async def handle_confirm(request: Request) -> JSONResponse:
@@ -2881,19 +3049,21 @@ async def handle_context_packet(request: Request) -> JSONResponse:
     episodic_evidence = body.get("episodic_evidence")
     if episodic_evidence is None:
         try:
-            recall = await query_agent.recall(
+            recall = await recall_memories(
                 query,
                 top_k=top_k,
                 domain=domain,
                 expand=body.get("expand", True),
+                graph_walk=body.get("graph_walk", True),
+                ranking_mode=body.get("ranking_mode", "general"),
             )
-            episodic_evidence = recall.get("results", recall.get("memories", recall)) if isinstance(recall, dict) else recall
+            episodic_evidence = recall.get("results", [])
             if include_source_attribution:
                 source_attribution = build_context_packet_source_attribution(
                     query=query,
                     top_k=top_k,
                     domain=domain,
-                    retrieval_path="query_agent.recall",
+                    retrieval_path="recall_memories.ct_ranked",
                     recall_result=recall,
                     episodic_evidence=episodic_evidence,
                 )
@@ -2977,11 +3147,22 @@ async def handle_dashboard(request: Request) -> JSONResponse:
         },
         "architecture": {
             "vector_extension": store.vector_ext,
-            "hot_tier": f"{'ruvector (GNN + SONA)' if store.vector_ext == 'ruvector' else 'pgvector'} HNSW",
-            "cold_tier": f"LEANN ({LEANN_BACKEND})" if leann_tier.available else f"{store.vector_ext} (LEANN not installed)",
+            "vector_extension_requested": store.vector_extension_requested,
+            "vector_extension_loaded": store.vector_extension_loaded or store.vector_ext,
+            "vector_fallback_occurred": store.vector_fallback_occurred,
+            "vector_type": store.vtype,
+            "cosine_opclass": store.vcosine_ops,
+            "require_ruvector": REQUIRE_RUVECTOR,
+            "embedding_dim": EMBEDDING_DIM,
+            "actual_embedding_dim": store.embedding_dim_actual,
+            "hot_tier": f"{store.vector_ext} HNSW candidate engine",
+            "cold_tier": f"LEANN ({LEANN_BACKEND})" if leann_tier.available else f"{store.vector_ext} candidates (LEANN not installed)",
             "leann_available": leann_tier.available,
             "leann_index_dir": leann_tier.index_path if leann_tier.available else None,
-            "ruvector_gnn": RUVECTOR_GNN if store.vector_ext == "ruvector" else "n/a",
+            "ruvector_runtime_note": (
+                "RuVector opclass selected; extension-level GNN/SONA behavior depends on RuVector runtime configuration."
+                if store.vector_ext == "ruvector" else "pgvector/vector opclass selected."
+            ),
             "embeddings": EMBED_MODEL,
             "synthesis": CHAT_MODEL,
             "provider": "ollama (local)" if "ollama" in OLLAMA_CHAT_BASE else ("azure" if USE_AZURE else "openai-compatible"),
@@ -3205,7 +3386,7 @@ async def handle_mcp_manifest(request: Request) -> JSONResponse:
                 "domain": {"type": "string", "default": "default"},
                 "event_at": {"type": "string", "description": "Optional ISO-8601 event timestamp to preserve original chronology"},
                 "refs": {"type": "object", "description": "Optional chronology metadata like session_index, chunk_index, turn_start, turn_end"}}, "required": ["content"]}},
-            {"name": "recall", "description": "Dual-tier memory search. Hot first, cold fallback. Ranked by cosine × W(k,t).",
+            {"name": "recall", "description": "Hybrid memory search. Retrieves semantic, lexical, temporal, graph, and cold-tier candidates, then applies CT ranking using W(k,t), lifecycle state, confirmations, validation, recency, feedback, and provenance.",
              "inputSchema": {"type": "object", "properties": {
                  "query": {"type": "string"}, "top_k": {"type": "integer", "default": 5},
                  "domain": {"type": "string"}, "expand": {"type": "boolean", "default": True}}, "required": ["query"]}},
@@ -3324,11 +3505,12 @@ app = Starlette(
 @app.on_event("startup")
 async def startup():
     await store.initialize()
+    await verify_startup_embedding_dimension()
     await leann_tier.initialize()
     await _init_advanced_modules()
     ingest_agent.start()
     asyncio.create_task(consolidate_agent.start_loop())
-    ext_label = "ruvector (GNN + SONA)" if store.vector_ext == "ruvector" else "pgvector"
+    ext_label = f"{store.vector_ext} candidate engine"
     leann_label = "LEANN" if leann_tier.available else "pgvector"
     log.info(f"Memibrium started — hot: {ext_label}, cold: {leann_label}, fully sovereign")
 
