@@ -2088,6 +2088,8 @@ class IngestAgent:
         log.info(f"Ingested {mid} → {final_state} (type={memory_type}) [batch queued]")
         return {
             "id": mid, "state": final_state, "importance": importance,
+            "source": source,
+            "domain": domain,
             "entities": entities, "topics": topics, "witness_count": 2,
             "memory_type": memory_type,
             "event_at": event_at,
@@ -2563,6 +2565,8 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
                           ranking_mode: str = "general", include_shed: bool = False) -> dict:
     """Shared CT-governed recall path: candidates -> CTRanker -> results."""
     retrieval_telemetry = None
+    recall_start = time.perf_counter()
+    timings_ms: dict[str, float] = {}
     server_telemetry = {
         "hybrid_retriever_present": bool(hybrid_retriever),
         "hybrid_path_attempted": bool(hybrid_retriever),
@@ -2574,6 +2578,7 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
         "embedding_error": None,
     }
     embedding = None
+    embed_start = time.perf_counter()
     try:
         embedding = await asyncio.get_event_loop().run_in_executor(embedder._executor, embedder.embed, query)
         server_telemetry["embedding_success"] = True
@@ -2581,10 +2586,12 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
         server_telemetry["embedding_success"] = False
         server_telemetry["embedding_error"] = {"class": e.__class__.__name__, "message": str(e)}
         log.warning(f"Embedding failed for recall, falling back to keyword-only: {e}")
+    timings_ms["embed_ms"] = _monotonic_ms(embed_start)
 
     candidate_groups: list[list[dict]] = []
     tier_parts: list[str] = []
 
+    tier0_start = time.perf_counter()
     cached_ids = tier0_cache.get(
         query, domain, state_filter=state_filter, include_shed=include_shed, ranking_mode=ranking_mode
     )
@@ -2600,7 +2607,9 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
         if cached:
             candidate_groups.append(cached)
             tier_parts.append("tier0")
+    timings_ms["tier0_ms"] = _monotonic_ms(tier0_start)
 
+    hybrid_start = time.perf_counter()
     if hybrid_retriever:
         try:
             search_result = await hybrid_retriever.search(
@@ -2627,6 +2636,7 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
             log.error(f"Hybrid retrieval failed: {e}, falling back to vector candidate recall")
     else:
         server_telemetry["legacy_fallback_executed"] = True
+    timings_ms["hybrid_ms"] = _monotonic_ms(hybrid_start)
 
     # Run extra hot+cold vector_candidates only when:
     #   - hybrid is absent or failed (legacy fallback path), OR
@@ -2634,6 +2644,7 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
     _should_run_extra_vector_candidates = embedding is not None and (
         server_telemetry["legacy_fallback_executed"] or RECALL_EXTRA_VECTOR_CANDIDATES
     )
+    extra_vector_start = time.perf_counter()
     if _should_run_extra_vector_candidates:
         server_telemetry["extra_vector_candidates_executed"] = True
         hot = await store.vector_candidates(embedding, top_k=top_k * 2, state_filter=state_filter or HOT_STATES, domain=domain, include_shed=include_shed)
@@ -2649,14 +2660,18 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
             item["retrieval_source"] = "cold_vector"
         candidate_groups.append(cold)
         tier_parts.append("cold")
+    timings_ms["extra_vector_ms"] = _monotonic_ms(extra_vector_start)
 
+    leann_start = time.perf_counter()
     leann_candidates = await _leann_candidates(
         query, top_k=top_k, domain=domain, state_filter=state_filter, include_shed=include_shed
     )
     if leann_candidates:
         candidate_groups.append(leann_candidates)
         tier_parts.append("leann")
+    timings_ms["leann_ms"] = _monotonic_ms(leann_start)
 
+    expansion_start = time.perf_counter()
     if expand and embedding is not None:
         expanded = []
         try:
@@ -2675,9 +2690,13 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
         if expanded:
             candidate_groups.append(expanded)
             tier_parts.append("expanded")
+    timings_ms["expansion_ms"] = _monotonic_ms(expansion_start)
 
+    merge_start = time.perf_counter()
     merged = _merge_candidates(candidate_groups)
+    timings_ms["merge_ms"] = _monotonic_ms(merge_start)
 
+    graph_walk_start = time.perf_counter()
     if graph_walk and merged:
         graph_candidates = []
         seen_ids = {m.get("id") for m in merged}
@@ -2699,7 +2718,9 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
         if graph_candidates:
             merged.extend(graph_candidates)
             tier_parts.append("graph")
+    timings_ms["graph_walk_ms"] = _monotonic_ms(graph_walk_start)
 
+    ct_rank_start = time.perf_counter()
     ranker = CTRanker(store=store)
     ranked_result = await ranker.rank(
         merged,
@@ -2713,6 +2734,7 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
     else:
         ranked = ranked_result
         ranking_telemetry = None
+    timings_ms["ct_rank_ms"] = _monotonic_ms(ct_rank_start)
 
     tier0_cache.set(
         query,
@@ -2730,7 +2752,9 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
         "total_searched": len(merged),
     }
     if include_telemetry:
+        timings_ms["total_ms"] = _monotonic_ms(recall_start)
         server_telemetry["response_result_count"] = len(ranked)
+        server_telemetry["timings_ms"] = timings_ms
         response["telemetry"] = retrieval_telemetry or {
             "schema": "memibrium.recall.telemetry.v1",
             "query": query,
@@ -2802,6 +2826,8 @@ async def handle_retain(request: Request) -> JSONResponse:
             diagnostics=diagnostics if include_diagnostics else None,
             stage_callback=lambda stage: _set_retain_diagnostic_stage(request_id, stage),
         )
+        result.setdefault("source", source)
+        result.setdefault("domain", domain)
         ingest_total_ms = _monotonic_ms(ingest_start)
         total_ms = _monotonic_ms(request_start)
         response_serialize_start = time.perf_counter()

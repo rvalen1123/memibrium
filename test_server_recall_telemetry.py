@@ -150,10 +150,16 @@ class RetainDiagnosticTelemetryTests(unittest.TestCase):
 
     def test_handle_retain_omits_diagnostics_unless_requested(self):
         with patch.object(server, "ingest_agent", FakeIngestAgent()):
-            response = self.run_async(server.handle_retain(FakeRequest({"content": "hello", "domain": "diagnostic-test"})))
+            response = self.run_async(server.handle_retain(FakeRequest({
+                "content": "hello",
+                "source": "diagnostic-test",
+                "domain": "diagnostic-test",
+            })))
 
         payload = self.decode_response(response)
         self.assertEqual(payload["id"], "mem_fake")
+        self.assertEqual(payload["source"], "diagnostic-test")
+        self.assertEqual(payload["domain"], "diagnostic-test")
         self.assertNotIn("diagnostics", payload)
 
     def test_handle_retain_include_diagnostics_returns_redacted_stage_timings(self):
@@ -304,6 +310,10 @@ class RecallTelemetryResponseTests(unittest.TestCase):
         self.assertIsInstance(payload["telemetry"]["streams"]["semantic"]["score_summary"]["mean"], float)
         self.assertIsInstance(payload["telemetry"]["fusion"]["cutoff_items"][0]["rrf_score"], float)
         self.assertIn("ranking", payload["telemetry"])
+        timings = payload["telemetry"]["server"]["timings_ms"]
+        for key in ["embed_ms", "tier0_ms", "hybrid_ms", "leann_ms", "expansion_ms", "merge_ms", "graph_walk_ms", "ct_rank_ms", "total_ms"]:
+            self.assertIn(key, timings)
+            self.assertGreaterEqual(timings[key], 0)
 
     def test_handle_recall_omits_telemetry_unless_requested(self):
         fake_retriever = FakeHybridRetriever()
