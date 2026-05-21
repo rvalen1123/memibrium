@@ -1204,6 +1204,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             self.assertEqual(path, '/mcp/context_packet')
             self.assertEqual(payload['domain'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
             self.assertTrue(payload['include_source_attribution'])
+            self.assertTrue(payload['include_recall_telemetry'])
             self.assertFalse(payload['include_decision_traces'])
             self.assertEqual(payload['top_k'], 8)
             return {
@@ -1221,6 +1222,13 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                         {'id': 'mem_1', 'refs': {'longmemeval_bridge': {'source_ref': 'sess_pref_1:turn_1:user'}}},
                     ],
                 },
+                'recall_telemetry': {
+                    'server': {
+                        'timings_ms': {'total_ms': 12.5},
+                        'hybrid_succeeded': True,
+                        'extra_vector_candidates_executed': False,
+                    }
+                },
             }
 
         adapter = longmem_canary.make_memibrium_retrieval_fn(
@@ -1236,7 +1244,12 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(retrieved['scores'], [0.91])
         self.assertEqual(retrieved['source_refs'], ['sess_pref_1:turn_1:user'])
         self.assertEqual(retrieved['evidence_snippets'], ['The user prefers Spanish and French practice events.'])
-        self.assertEqual(retrieved['timestamp_source_metadata'][0]['retrieval_path'], 'query_agent.recall')
+        metadata = retrieved['timestamp_source_metadata'][0]
+        self.assertEqual(metadata['retrieval_path'], 'query_agent.recall')
+        self.assertTrue(metadata['recall_telemetry_present'])
+        self.assertEqual(metadata['recall_timings_ms']['total_ms'], 12.5)
+        self.assertTrue(metadata['hybrid_succeeded'])
+        self.assertFalse(metadata['extra_vector_candidates_executed'])
         self.assertEqual(retrieved['coverage_class'], 'partial_support')
         self.assertEqual(calls[0][2], 'http://localhost:9999')
 

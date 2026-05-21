@@ -68,6 +68,7 @@ class FakeHybridRetriever:
                 "memory_type": "procedural",
                 "rrf_score": 0.03,
                 "witness_chain": [{"kind": "confirm"}],
+                "refs": {"longmemeval_bridge": {"source_ref": "sess_1:turn_2:assistant"}},
             },
         ]
         telemetry = {
@@ -264,6 +265,36 @@ class RecallHybridCTTests(unittest.TestCase):
         self.assertEqual(payload["source_attribution"]["retrieval_path"], "recall_memories.ct_ranked")
         self.assertEqual(payload["source_attribution"]["evidence"][0]["id"], "ct_high")
 
+
+
+    def test_context_packet_preserves_longmemeval_source_refs_and_nested_recall_telemetry(self):
+        fake_store = FakeStore()
+        with patch.object(server, "store", fake_store), patch.object(server, "embedder", FakeEmbedder()), patch.object(
+            server, "chat", FakeChat()
+        ), patch.object(server, "leann_tier", FakeLeann()), patch.object(
+            server, "hybrid_retriever", FakeHybridRetriever()
+        ), patch.object(server, "hierarchy_manager", None):
+            response = self.run_async(server.handle_context_packet(FakeRequest({
+                "query": "q",
+                "top_k": 2,
+                "expand": False,
+                "graph_walk": False,
+                "include_source_attribution": True,
+                "include_recall_telemetry": True,
+            })))
+
+        payload = self.decode_response(response)
+        evidence = payload["episodic_evidence"][0]
+        self.assertEqual(
+            evidence["refs"]["longmemeval_bridge"]["source_ref"],
+            "sess_1:turn_2:assistant",
+        )
+        self.assertEqual(evidence["source_ref"], "sess_1:turn_2:assistant")
+        projected = payload["source_attribution"]["evidence"][0]
+        self.assertEqual(projected["source_ref"], "sess_1:turn_2:assistant")
+        self.assertIn("recall_telemetry", payload)
+        self.assertIn("timings_ms", payload["recall_telemetry"]["server"])
+        self.assertIn("ranking", payload["recall_telemetry"])
 
     def test_leann_candidates_apply_domain_state_and_shed_filters(self):
         with patch.object(server, "store", FakeStore()), patch.object(server, "leann_tier", FakeAvailableLeann()):
