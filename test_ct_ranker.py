@@ -188,6 +188,41 @@ class CTRankerTests(unittest.TestCase):
         self.assertEqual(telemetry["top_ranked_ids"], ["m1"])
         self.assertEqual(telemetry["score_components"][0]["id"], "m1")
 
+    def test_near_exact_retrieval_remains_top_for_endpoint_compatibility(self):
+        now = datetime(2026, 5, 20, tzinfo=timezone.utc)
+        ranker = CTRanker(now=now)
+        old = now - timedelta(days=10)
+        candidates = [
+            {
+                "id": "near_exact",
+                "content": "exact vector match",
+                "state": "observation",
+                "memory_type": "episodic",
+                "confirmation_count": 0,
+                "recency_score": 0.4,
+                "validation_score": 0.3,
+                "created_at": old,
+                "cosine_score": 0.99,
+            },
+            {
+                "id": "ct_strong",
+                "content": "strong CT but weaker vector match",
+                "state": "crystallized",
+                "memory_type": "procedural",
+                "confirmation_count": 10,
+                "recency_score": 1.0,
+                "validation_score": 1.0,
+                "created_at": old,
+                "cosine_score": 0.60,
+            },
+        ]
+
+        ranked = self.run_async(ranker.rank(candidates, top_k=2))
+
+        self.assertEqual(ranked[0]["id"], "near_exact")
+        self.assertGreater(ranked[0]["retrieval_score"], ranked[1]["retrieval_score"])
+
+
 
 if __name__ == "__main__":
     unittest.main()

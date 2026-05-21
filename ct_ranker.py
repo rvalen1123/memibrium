@@ -288,6 +288,27 @@ class CTRanker:
             ranked.append(item)
 
         ranked.sort(key=lambda x: (x.get("final_score", 0.0), x.get("retrieval_score", 0.0), str(x.get("id", ""))), reverse=True)
+        near_exact = [
+            item for item in ranked
+            if item.get("state") != "shed"
+            and item.get("retrieval_score", 0.0) >= 0.95
+            and item.get("cosine_score", 0.0) >= 0.95
+            and item.get("ct_score", 0.0) >= 0.10
+            and item.get("final_score", 0.0) >= (ranked[0].get("final_score", 0.0) - 0.02)
+        ]
+        if near_exact:
+            rest = [
+                item for item in ranked
+                if not (
+                    item.get("state") != "shed"
+                    and item.get("retrieval_score", 0.0) >= 0.95
+                    and item.get("cosine_score", 0.0) >= 0.95
+                    and item.get("ct_score", 0.0) >= 0.10
+                    and item.get("final_score", 0.0) >= (ranked[0].get("final_score", 0.0) - 0.02)
+                )
+            ]
+            near_exact.sort(key=lambda x: (x.get("retrieval_score", 0.0), x.get("final_score", 0.0), str(x.get("id", ""))), reverse=True)
+            ranked = near_exact + rest
         returned = ranked[:top_k] if top_k is not None else ranked
         if not include_telemetry:
             return returned
