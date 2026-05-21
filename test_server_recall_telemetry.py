@@ -115,6 +115,32 @@ class FakeHybridRetriever:
         return list(self.results)
 
 
+
+
+class FakeStore:
+    async def get_memory_feedback_score(self, _mid):
+        return 0.0
+
+    async def get_memory(self, _mid):
+        return None
+
+    async def vector_candidates(self, embedding, top_k=5, state_filter=None, domain=None, include_shed=False):
+        return []
+
+    async def get_related_memories(self, _mid, limit=3):
+        return []
+
+
+class FakeChat:
+    def expand_query(self, _query):
+        return []
+
+
+class FakeLeann:
+    available = False
+    searcher = None
+
+
 class RetainDiagnosticTelemetryTests(unittest.TestCase):
     def run_async(self, coro):
         return asyncio.run(coro)
@@ -263,47 +289,53 @@ class RecallTelemetryResponseTests(unittest.TestCase):
         fake_retriever = FakeHybridRetriever()
         with patch.object(server, "hybrid_retriever", fake_retriever), patch.object(
             server, "embedder", FakeEmbedder()
-        ):
+        ), patch.object(server, "store", FakeStore()), patch.object(
+            server, "chat", FakeChat()
+        ), patch.object(server, "leann_tier", FakeLeann()), patch.object(server, "hierarchy_manager", None):
             response = self.run_async(
-                server.handle_recall(FakeRequest({"query": "q", "top_k": 2, "include_telemetry": True}))
+                server.handle_recall(FakeRequest({"query": "q", "top_k": 2, "include_telemetry": True, "expand": False, "graph_walk": False}))
             )
 
         payload = self.decode_response(response)
-        self.assertEqual([item["id"] for item in payload["results"]], ["m1", "m2"])
+        self.assertEqual([item["id"] for item in payload["results"]], ["m2", "m1"])
         self.assertIsInstance(payload["results"][0]["cosine_score"], float)
         self.assertIsInstance(payload["results"][0]["similarity"], float)
         self.assertIsInstance(payload["telemetry"]["streams"]["semantic"]["items"][0]["cosine_score"], float)
         self.assertIsInstance(payload["telemetry"]["streams"]["semantic"]["score_summary"]["mean"], float)
         self.assertIsInstance(payload["telemetry"]["fusion"]["cutoff_items"][0]["rrf_score"], float)
-        self.assertIsInstance(payload["telemetry"]["final"]["items"][0]["combined_score"], float)
+        self.assertIn("ranking", payload["telemetry"])
 
     def test_handle_recall_omits_telemetry_unless_requested(self):
         fake_retriever = FakeHybridRetriever()
         with patch.object(server, "hybrid_retriever", fake_retriever), patch.object(
             server, "embedder", FakeEmbedder()
-        ):
-            response = self.run_async(server.handle_recall(FakeRequest({"query": "q", "top_k": 2})))
+        ), patch.object(server, "store", FakeStore()), patch.object(
+            server, "chat", FakeChat()
+        ), patch.object(server, "leann_tier", FakeLeann()), patch.object(server, "hierarchy_manager", None):
+            response = self.run_async(server.handle_recall(FakeRequest({"query": "q", "top_k": 2, "expand": False, "graph_walk": False})))
 
         payload = self.decode_response(response)
         self.assertIsInstance(payload, list)
-        self.assertEqual([item["id"] for item in payload], ["m1", "m2"])
+        self.assertEqual([item["id"] for item in payload], ["m2", "m1"])
         self.assertEqual(fake_retriever.calls[0]["include_telemetry"], False)
 
     def test_handle_recall_include_telemetry_preserves_results_and_adds_telemetry_object(self):
         fake_retriever = FakeHybridRetriever()
         with patch.object(server, "hybrid_retriever", fake_retriever), patch.object(
             server, "embedder", FakeEmbedder()
-        ):
-            plain = self.run_async(server.handle_recall(FakeRequest({"query": "q", "top_k": 2})))
+        ), patch.object(server, "store", FakeStore()), patch.object(
+            server, "chat", FakeChat()
+        ), patch.object(server, "leann_tier", FakeLeann()), patch.object(server, "hierarchy_manager", None):
+            plain = self.run_async(server.handle_recall(FakeRequest({"query": "q", "top_k": 2, "expand": False, "graph_walk": False})))
             instrumented = self.run_async(
-                server.handle_recall(FakeRequest({"query": "q", "top_k": 2, "include_telemetry": True}))
+                server.handle_recall(FakeRequest({"query": "q", "top_k": 2, "include_telemetry": True, "expand": False, "graph_walk": False}))
             )
 
         plain_payload = self.decode_response(plain)
         telemetry_payload = self.decode_response(instrumented)
         self.assertEqual([item["id"] for item in telemetry_payload["results"]], [item["id"] for item in plain_payload])
         self.assertEqual(len(telemetry_payload["results"]), len(plain_payload))
-        self.assertEqual(telemetry_payload["telemetry"]["final"]["returned_count"], len(plain_payload))
+        self.assertEqual(telemetry_payload["telemetry"]["ranking"]["returned_count_after_ct"], len(plain_payload))
         self.assertFalse(telemetry_payload["telemetry"]["server"]["legacy_fallback_executed"])
         self.assertTrue(telemetry_payload["telemetry"]["server"]["hybrid_retriever_present"])
         self.assertTrue(telemetry_payload["telemetry"]["server"]["embedding_success"])

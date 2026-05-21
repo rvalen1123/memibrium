@@ -89,7 +89,19 @@ class FakeQueryAgent:
         }
 
 
+async def fake_recall_memories(query, top_k=5, domain=None, **kwargs):
+    return {
+        "results": [
+            {"id": "mem_recalled", "content": "Recalled episodic evidence from the active domain.", "domain": domain},
+        ],
+        "tier": "fake",
+        "total_searched": 1,
+        "query": query,
+    }
+
+
 class ContextGraphV0Tests(unittest.TestCase):
+
     def run_async(self, coro):
         return asyncio.run(coro)
 
@@ -248,7 +260,7 @@ class ContextGraphV0Tests(unittest.TestCase):
             confidence=0.88,
         ))
 
-        with patch.object(server, "store", fake_store), patch.object(server, "query_agent", FakeQueryAgent()):
+        with patch.object(server, "store", fake_store), patch.object(server, "recall_memories", fake_recall_memories):
             obs_response = self.run_async(server.handle_self_model_observe(FakeRequest({
                 "engine": "disposition",
                 "observation_type": "flow_signal",
@@ -294,9 +306,8 @@ class ContextGraphV0Tests(unittest.TestCase):
 
     def test_context_packet_source_attribution_is_opt_in_and_records_internal_recall_source(self):
         fake_store = FakeContextStore()
-        fake_agent = FakeQueryAgent()
 
-        with patch.object(server, "store", fake_store), patch.object(server, "query_agent", fake_agent):
+        with patch.object(server, "store", fake_store), patch.object(server, "recall_memories", fake_recall_memories):
             plain_response = self.run_async(server.handle_context_packet(FakeRequest({
                 "query": "What did active recall return?",
                 "domain": "locomo-test",
@@ -318,7 +329,7 @@ class ContextGraphV0Tests(unittest.TestCase):
         self.assertEqual(source["request"]["query"], "What did active recall return?")
         self.assertEqual(source["request"]["domain"], "locomo-test")
         self.assertEqual(source["request"]["top_k"], 3)
-        self.assertEqual(source["retrieval_path"], "query_agent.recall")
+        self.assertEqual(source["retrieval_path"], "recall_memories.ct_ranked")
         self.assertEqual(source["recall_tier"], "fake")
         self.assertEqual(source["evidence"][0]["id"], "mem_recalled")
         self.assertIn("content_sha256", source["evidence"][0])

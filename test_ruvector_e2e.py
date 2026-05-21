@@ -121,7 +121,7 @@ async def run_tests():
              f"got {results[0]['id']}")
         test("Cosine score exists", "cosine_score" in results[0])
         test("W(k,t) computed", "w_kt" in results[0])
-        test("Combined score", "combined_score" in results[0])
+        test("Final CT score", "final_score" in results[0])
         test("Cosine > 0.9 for exact match",
              results[0]["cosine_score"] > 0.9,
              f"got {results[0]['cosine_score']}")

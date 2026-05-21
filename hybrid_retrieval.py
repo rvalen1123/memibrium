@@ -463,10 +463,42 @@ class HybridRetriever:
             ],
         }
 
+    def _candidate_where(self, state_filter: Optional[list] = None,
+                         domain: Optional[str] = None,
+                         *, start_param: int,
+                         include_shed: bool = False) -> tuple[list[str], list, int]:
+        params = []
+        idx = start_param
+        state_filter = list(state_filter or [])
+        explicit_shed = "shed" in state_filter
+        where_clauses = [] if (include_shed or explicit_shed) else ["state != 'shed'"]
+        if state_filter:
+            placeholders = ", ".join(f"${i}" for i in range(idx, idx + len(state_filter)))
+            where_clauses.append(f"state IN ({placeholders})")
+            params.extend(state_filter)
+            idx += len(state_filter)
+        if domain:
+            where_clauses.append(f"domain = ${idx}")
+            params.append(domain)
+            idx += 1
+        return where_clauses, params, idx
+
+    @staticmethod
+    def _candidate_select(score_expr: str) -> str:
+        return f"""
+            SELECT id, content, source, domain, state, memory_type,
+                   confirmation_count, recency_score, validation_score,
+                   importance_score, frozen, frozen_at, created_at, updated_at,
+                   entities, topics, refs, witness_chain, embedding,
+                   {score_expr}
+            FROM memories
+        """
+
     async def _semantic_search(self, embedding: list, top_k: int,
                                 state_filter: Optional[list] = None,
                                 domain: Optional[str] = None,
-                                telemetry: Optional[dict] = None) -> List[dict]:
+                                telemetry: Optional[dict] = None,
+                                include_shed: bool = False) -> List[dict]:
         """Vector similarity search via pgvector or ruvector."""
         if not self.pool or embedding is None:
             if telemetry is not None:
@@ -474,23 +506,14 @@ class HybridRetriever:
             return []
 
         params = [json.dumps(embedding), top_k]
-        where_clauses = ["state != 'shed'"]
-
-        if state_filter:
-            placeholders = ", ".join(f"${i+3}" for i in range(len(state_filter)))
-            where_clauses.append(f"state IN ({placeholders})")
-            params.extend(state_filter)
-
-        if domain:
-            where_clauses.append(f"domain = ${len(params)+1}")
-            params.append(domain)
+        where_clauses, extra_params, _idx = self._candidate_where(
+            state_filter, domain, start_param=3, include_shed=include_shed
+        )
+        params.extend(extra_params)
 
         query = f"""
-            SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
-                   entities, topics, refs, witness_chain, embedding,
-                   1 - (embedding <=> $1::{self.vtype}) AS cosine_score
-            FROM memories
-            WHERE {" AND ".join(where_clauses)}
+            {self._candidate_select(f'1 - (embedding <=> $1::{self.vtype}) AS cosine_score')}
+            WHERE {" AND ".join(where_clauses) if where_clauses else "TRUE"}
             ORDER BY embedding <=> $1::{self.vtype}
             LIMIT $2
         """
@@ -504,7 +527,8 @@ class HybridRetriever:
     async def _lexical_search(self, query: str, top_k: int,
                              state_filter: Optional[list] = None,
                              domain: Optional[str] = None,
-                             telemetry: Optional[dict] = None) -> List[dict]:
+                             telemetry: Optional[dict] = None,
+                             include_shed: bool = False) -> List[dict]:
         """BM25-style text search. Falls back to ILIKE if no full-text index."""
         if not self.pool:
             if telemetry is not None:
@@ -527,19 +551,13 @@ class HybridRetriever:
                 if telemetry is not None:
                     telemetry["streams"].setdefault("lexical", {})["tsquery"] = tsquery
                 params = [tsquery, top_k]
-                where_clauses = ["state != 'shed'", "to_tsvector('english', content) @@ to_tsquery('english', $1)"]
-                if state_filter:
-                    placeholders = ", ".join(f"${i+3}" for i in range(len(state_filter)))
-                    where_clauses.append(f"state IN ({placeholders})")
-                    params.extend(state_filter)
-                if domain:
-                    where_clauses.append(f"domain = ${len(params)+1}")
-                    params.append(domain)
+                where_clauses, extra_params, _idx = self._candidate_where(
+                    state_filter, domain, start_param=3, include_shed=include_shed
+                )
+                where_clauses.append("to_tsvector('english', content) @@ to_tsquery('english', $1)")
+                params.extend(extra_params)
                 query_sql = f"""
-                    SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
-                           entities, topics, refs, witness_chain, embedding,
-                           ts_rank(to_tsvector('english', content), to_tsquery('english', $1)) AS bm25_score
-                    FROM memories
+                    {self._candidate_select("ts_rank(to_tsvector('english', content), to_tsquery('english', $1)) AS bm25_score")}
                     WHERE {" AND ".join(where_clauses)}
                     ORDER BY bm25_score DESC
                     LIMIT $2
@@ -560,27 +578,18 @@ class HybridRetriever:
             
             # Fallback: ILIKE with OR
             patterns = [f"%{w}%" for w in words[:5]]
-            where_clauses = ["state != 'shed'"]
+            where_clauses, extra_params, _idx = self._candidate_where(
+                state_filter, domain, start_param=2, include_shed=include_shed
+            )
             params = [top_k]
             
-            if state_filter:
-                placeholders = ", ".join(f"${i+2}" for i in range(len(state_filter)))
-                where_clauses.append(f"state IN ({placeholders})")
-                params.extend(state_filter)
-            
-            if domain:
-                where_clauses.append(f"domain = ${len(params)+1}")
-                params.append(domain)
-            
-            or_clauses = " OR ".join(f"content ILIKE ${i+len(params)+1}" for i in range(len(patterns)))
+            or_clauses = " OR ".join(f"content ILIKE ${i+len(params)+len(extra_params)+1}" for i in range(len(patterns)))
             where_clauses.append(f"({or_clauses})")
+            params.extend(extra_params)
             params.extend(patterns)
             
             query_sql = f"""
-                SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
-                       entities, topics, refs, witness_chain, embedding,
-                       0.5 AS bm25_score
-                FROM memories
+                {self._candidate_select("0.5 AS bm25_score")}
                 WHERE {" AND ".join(where_clauses)}
                 LIMIT $1
             """
@@ -598,7 +607,8 @@ class HybridRetriever:
     async def _temporal_search(self, start: datetime, end: datetime, top_k: int,
                                 state_filter: Optional[list] = None,
                                 domain: Optional[str] = None,
-                                telemetry: Optional[dict] = None) -> List[dict]:
+                                telemetry: Optional[dict] = None,
+                                include_shed: bool = False) -> List[dict]:
         """Search memories within a temporal window."""
         if not self.pool:
             if telemetry is not None:
@@ -606,23 +616,15 @@ class HybridRetriever:
             return []
         
         async with self.pool.acquire() as conn:
-            where_clauses = ["state != 'shed'", "created_at >= $1", "created_at < $2"]
+            where_clauses, extra_params, _idx = self._candidate_where(
+                state_filter, domain, start_param=4, include_shed=include_shed
+            )
+            where_clauses.extend(["created_at >= $1", "created_at < $2"])
             params = [start, end, top_k]
-            
-            if state_filter:
-                placeholders = ", ".join(f"${i+4}" for i in range(len(state_filter)))
-                where_clauses.append(f"state IN ({placeholders})")
-                params.extend(state_filter)
-            
-            if domain:
-                where_clauses.append(f"domain = ${len(params)+1}")
-                params.append(domain)
+            params.extend(extra_params)
             
             query = f"""
-                SELECT id, content, state, memory_type, created_at, updated_at, frozen_at,
-                       entities, topics, refs, witness_chain, embedding,
-                       1.0 AS temporal_score
-                FROM memories
+                {self._candidate_select("1.0 AS temporal_score")}
                 WHERE {" AND ".join(where_clauses)}
                 ORDER BY created_at
                 LIMIT $3
@@ -682,7 +684,8 @@ class HybridRetriever:
                      temporal_window: Optional[tuple] = None,
                      use_rrf: bool = True,
                      rerank: bool = False,
-                     include_telemetry: bool = False):
+                     include_telemetry: bool = False,
+                     include_shed: bool = False):
         """
         Full hybrid search.
 
@@ -710,9 +713,11 @@ class HybridRetriever:
             telemetry["temporal"]["window_start"] = temporal_window[0]
             telemetry["temporal"]["window_end"] = temporal_window[1]
         
+        include_shed = include_shed or bool(state_filter and "shed" in state_filter)
+
         # Launch searches concurrently
-        semantic_task = self._semantic_search(embedding, fetch_k, state_filter, domain, telemetry=telemetry)
-        lexical_task = self._lexical_search(query, fetch_k, state_filter, domain, telemetry=telemetry)
+        semantic_task = self._semantic_search(embedding, fetch_k, state_filter, domain, telemetry=telemetry, include_shed=include_shed)
+        lexical_task = self._lexical_search(query, fetch_k, state_filter, domain, telemetry=telemetry, include_shed=include_shed)
         tasks = [semantic_task, lexical_task]
         
         if temporal_window:
@@ -721,7 +726,7 @@ class HybridRetriever:
                 telemetry["temporal"]["executed"] = True
                 telemetry["temporal"]["window_start"] = start
                 telemetry["temporal"]["window_end"] = end
-            temporal_task = self._temporal_search(start, end, fetch_k, state_filter, domain, telemetry=telemetry)
+            temporal_task = self._temporal_search(start, end, fetch_k, state_filter, domain, telemetry=telemetry, include_shed=include_shed)
             tasks.append(temporal_task)
         
         results = await asyncio.gather(*tasks)
@@ -779,7 +784,7 @@ class HybridRetriever:
                 telemetry["multihop"]["executed"] = True
             # Session adjacency expansion only (safe baseline per benchmark findings)
             all_candidates = semantic_results + lexical_results
-            seen = {r["id"] for r in all_candidates}
+            seen = set()
             # Deduplicate candidates
             candidates = []
             for r in all_candidates:
