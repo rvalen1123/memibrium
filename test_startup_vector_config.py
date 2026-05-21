@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for vector runtime configuration helpers."""
 
+import asyncio
 import unittest
 
 import server
@@ -25,6 +26,47 @@ class StartupVectorConfigTests(unittest.TestCase):
         self.assertEqual(store.require_ruvector, server.REQUIRE_RUVECTOR)
         self.assertEqual(store.vector_extension_requested, server.VECTOR_EXTENSION)
         self.assertFalse(store.vector_fallback_occurred)
+
+    def test_vector_extension_identifier_is_restricted_to_known_safe_values(self):
+        store = server.ColdStore()
+        self.assertIn(store.vtype, {"vector", "ruvector"})
+        self.assertIn(store.vector_ext, {"vector", "ruvector"})
+
+    def test_verify_startup_embedding_dimension_updates_store_and_validates(self):
+        asyncio.run(self._run_verify_startup_embedding_dimension_updates_store_and_validates())
+
+    async def _run_verify_startup_embedding_dimension_updates_store_and_validates(self):
+        test_vector = [0.1] * server.EMBEDDING_DIM
+
+        class DummyStore:
+            def __init__(self):
+                self.embedding_dim_actual = None
+
+        def embed_stub(*_args, **_kwargs):
+            return test_vector
+
+        original_store = server.store
+        original_embedder = server.embedder
+        try:
+            class DummyEmbedder:
+                _executor = None
+                embed = staticmethod(embed_stub)
+
+            server.store = DummyStore()
+            server.embedder = DummyEmbedder()
+
+            result = await server.verify_startup_embedding_dimension()
+
+            self.assertEqual(server.store.embedding_dim_actual, len(test_vector))
+            expected = server.validate_embedding_dimension(
+                test_vector,
+                expected_dim=server.EMBEDDING_DIM,
+                allow_mismatch=server.ALLOW_EMBEDDING_DIM_MISMATCH,
+            )
+            self.assertEqual(result, expected)
+        finally:
+            server.store = original_store
+            server.embedder = original_embedder
 
 
 if __name__ == "__main__":

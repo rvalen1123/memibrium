@@ -88,6 +88,38 @@ class ColdStoreVectorCandidateTests(unittest.TestCase):
         self.assertIn("domain = $3", sql)
         self.assertEqual(params[1], 3)
 
+    def test_vector_candidates_include_shed_removes_default_state_predicate(self):
+        conn = FakeConn(rows=[])
+        store = server.ColdStore()
+        store.pool = FakePool(conn)
+
+        self.run_async(store.vector_candidates([0.1, 0.2], top_k=10, include_shed=True))
+
+        self.assertEqual(len(conn.fetch_calls), 1)
+        sql, _params = conn.fetch_calls[0]
+        self.assertNotIn("state != 'shed'", sql)
+        self.assertIn("FROM memories", sql)
+
+    def test_vector_candidates_state_filter_shed_overrides_default_state_predicate(self):
+        conn = FakeConn(rows=[])
+        store = server.ColdStore()
+        store.pool = FakePool(conn)
+
+        self.run_async(store.vector_candidates([0.1, 0.2], top_k=10, state_filter=["shed"]))
+
+        self.assertEqual(len(conn.fetch_calls), 1)
+        sql, params = conn.fetch_calls[0]
+        self.assertNotIn("state != 'shed'", sql)
+        self.assertIn("state = ANY", sql)
+        flattened = []
+        for param in params:
+            if isinstance(param, (list, tuple)):
+                flattened.extend(param)
+            else:
+                flattened.append(param)
+        state_filter_params = [p for p in params if isinstance(p, (list, tuple)) and "shed" in p]
+        self.assertEqual(state_filter_params, [["shed"]])
+
     def test_legacy_search_wraps_vector_candidates_with_ct_ranker(self):
         conn = FakeConn(rows=[
             {

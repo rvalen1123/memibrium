@@ -130,21 +130,23 @@ async def run_tests():
              exact["cosine_score"] > 0.9,
              f"got {exact['cosine_score']}")
 
-    # State filter: only accepted states (mem_1 and mem_2 are accepted on clean DBs)
-    hot_results = await store.search(emb1, top_k=3,
-                                     state_filter=["accepted", "observation", "crystallized", "shed"])
+    # State filter: exercise store.search with a narrow lifecycle set.
+    hot_results = await store.search(emb1, top_k=3, state_filter=["accepted"])
     test("State filter works", len(hot_results) >= 1,
          f"got {len(hot_results)} results")
+    if hot_results:
+        test("State filter only returns accepted",
+             all(r.get("state") == "accepted" for r in hot_results),
+             f"got {[r.get('state') for r in hot_results]}")
 
-    # Domain filter over all expected test states. Verify scalar SQL filtering
-    # directly; RuVector candidate filtering with both vector ORDER BY and domain
-    # predicates can be runtime/opclass dependent.
-    async with store.pool.acquire() as conn:
-        domain_count = await conn.fetchval(
-            "SELECT COUNT(*) FROM memories WHERE domain = $1 AND state = ANY($2::text[])",
-            "project-api", ["accepted", "observation", "crystallized", "shed"]
-        )
-    test("Domain filter works", domain_count >= 1)
+    # Domain filter: exercise store.search end-to-end rather than raw SQL.
+    domain_results = await store.search(emb1, top_k=3, domain="project-api", state_filter=["accepted"])
+    test("Domain filter works", len(domain_results) >= 1,
+         f"got {len(domain_results)} results")
+    if domain_results:
+        test("Domain filter only returns project-api",
+             all(r.get("domain") == "project-api" for r in domain_results),
+             f"got {[r.get('domain') for r in domain_results]}")
 
     # ── Test 4: Confirm → Crystallization ──
     print("\n═══ Test 4: Confirm → Crystallization Path ═══")

@@ -6,6 +6,8 @@ universal lifecycle/governance score and orders the final result set.
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import math
 import os
 from copy import deepcopy
@@ -14,6 +16,9 @@ from decimal import Decimal
 from typing import Any, Optional
 
 from ct_scoring import compute_weight
+
+
+log = logging.getLogger(__name__)
 
 
 RETRIEVAL_SCORE_FIELDS = (
@@ -26,14 +31,26 @@ RETRIEVAL_SCORE_FIELDS = (
     "combined_score",
 )
 
-DEFAULT_RETRIEVAL_WEIGHT = float(os.environ.get("CT_RANKER_RETRIEVAL_WEIGHT", "0.55"))
-DEFAULT_CT_WEIGHT = float(os.environ.get("CT_RANKER_CT_WEIGHT", "0.45"))
-CT_HEAVY_RETRIEVAL_WEIGHT = float(os.environ.get("CT_RANKER_CT_HEAVY_RETRIEVAL_WEIGHT", "0.40"))
-CT_HEAVY_CT_WEIGHT = float(os.environ.get("CT_RANKER_CT_HEAVY_CT_WEIGHT", "0.60"))
-SHED_PENALTY = float(os.environ.get("CT_RANKER_SHED_PENALTY", "0.20"))
-FROZEN_BONUS = float(os.environ.get("CT_RANKER_FROZEN_BONUS", "0.05"))
-FEEDBACK_SCALE = float(os.environ.get("CT_RANKER_FEEDBACK_SCALE", "0.05"))
-MAX_FEEDBACK_BONUS = float(os.environ.get("CT_RANKER_MAX_FEEDBACK_BONUS", "0.30"))
+def parse_env_float(key: str, default: float) -> float:
+    """Parse float env vars defensively; invalid config falls back to default."""
+    raw = os.environ.get(key)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        log.warning("Invalid %s=%r; using default %s", key, raw, default)
+        return default
+
+
+DEFAULT_RETRIEVAL_WEIGHT = parse_env_float("CT_RANKER_RETRIEVAL_WEIGHT", 0.55)
+DEFAULT_CT_WEIGHT = parse_env_float("CT_RANKER_CT_WEIGHT", 0.45)
+CT_HEAVY_RETRIEVAL_WEIGHT = parse_env_float("CT_RANKER_CT_HEAVY_RETRIEVAL_WEIGHT", 0.40)
+CT_HEAVY_CT_WEIGHT = parse_env_float("CT_RANKER_CT_HEAVY_CT_WEIGHT", 0.60)
+SHED_PENALTY = parse_env_float("CT_RANKER_SHED_PENALTY", 0.20)
+FROZEN_BONUS = parse_env_float("CT_RANKER_FROZEN_BONUS", 0.05)
+FEEDBACK_SCALE = parse_env_float("CT_RANKER_FEEDBACK_SCALE", 0.05)
+MAX_FEEDBACK_BONUS = parse_env_float("CT_RANKER_MAX_FEEDBACK_BONUS", 0.30)
 
 LIFECYCLE_BASE = {
     None: 0.45,
@@ -153,6 +170,16 @@ class CTRanker:
             return self.ct_heavy_retrieval_weight, self.ct_heavy_ct_weight
         return self.default_retrieval_weight, self.default_ct_weight
 
+    @staticmethod
+    def _is_near_exact(item: dict, top_final_score: float) -> bool:
+        return (
+            item.get("state") != "shed"
+            and item.get("retrieval_score", 0.0) >= 0.95
+            and item.get("cosine_score", 0.0) >= 0.95
+            and item.get("ct_score", 0.0) >= 0.10
+            and item.get("final_score", 0.0) >= (top_final_score - 0.02)
+        )
+
     def _retrieval_score(self, candidate: dict) -> float:
         raw_scores = []
         for field in RETRIEVAL_SCORE_FIELDS:
@@ -257,13 +284,20 @@ class CTRanker:
         retrieval_weight /= total_weight
         ct_weight /= total_weight
 
-        ranked = []
+        prepared = []
+        feedback_tasks = []
         for candidate in candidates or []:
             item = deepcopy(dict(candidate))
             if "combined_score" in item and "source_combined_score" not in item:
                 item["source_combined_score"] = item.get("combined_score")
+            prepared.append(item)
+            feedback_tasks.append(self._feedback_score(item))
+
+        feedback_scores = await asyncio.gather(*feedback_tasks) if feedback_tasks else []
+
+        ranked = []
+        for item, feedback_score in zip(prepared, feedback_scores):
             retrieval_score = self._retrieval_score(item)
-            feedback_score = await self._feedback_score(item)
             ct_score, w_kt, explanation_parts = self._ct_score(item, feedback_score, allow_shed, now)
             final_score = (retrieval_weight * retrieval_score) + (ct_weight * ct_score)
 
@@ -288,25 +322,13 @@ class CTRanker:
             ranked.append(item)
 
         ranked.sort(key=lambda x: (x.get("final_score", 0.0), x.get("retrieval_score", 0.0), str(x.get("id", ""))), reverse=True)
-        near_exact = [
-            item for item in ranked
-            if item.get("state") != "shed"
-            and item.get("retrieval_score", 0.0) >= 0.95
-            and item.get("cosine_score", 0.0) >= 0.95
-            and item.get("ct_score", 0.0) >= 0.10
-            and item.get("final_score", 0.0) >= (ranked[0].get("final_score", 0.0) - 0.02)
-        ]
+        if ranked:
+            top_final = ranked[0].get("final_score", 0.0)
+            near_exact = [item for item in ranked if self._is_near_exact(item, top_final)]
+        else:
+            near_exact = []
         if near_exact:
-            rest = [
-                item for item in ranked
-                if not (
-                    item.get("state") != "shed"
-                    and item.get("retrieval_score", 0.0) >= 0.95
-                    and item.get("cosine_score", 0.0) >= 0.95
-                    and item.get("ct_score", 0.0) >= 0.10
-                    and item.get("final_score", 0.0) >= (ranked[0].get("final_score", 0.0) - 0.02)
-                )
-            ]
+            rest = [item for item in ranked if not self._is_near_exact(item, top_final)]
             near_exact.sort(key=lambda x: (x.get("retrieval_score", 0.0), x.get("final_score", 0.0), str(x.get("id", ""))), reverse=True)
             ranked = near_exact + rest
         returned = ranked[:top_k] if top_k is not None else ranked

@@ -3,8 +3,13 @@
 
 import asyncio
 import unittest
+from datetime import datetime, timezone
 
 from hybrid_retrieval import HybridRetriever
+
+
+def server_datetime(year, month, day):
+    return datetime(year, month, day, tzinfo=timezone.utc)
 
 
 class FakeConn:
@@ -277,6 +282,75 @@ class HybridRetrievalRuvectorTests(unittest.TestCase):
         explicit_sql, explicit_params = pool.conn.calls[-1]
         self.assertNotIn("state != 'shed'", explicit_sql)
         self.assertIn("shed", explicit_params)
+
+
+    def test_ruvector_lexical_search_selects_ct_fields_and_default_shed_filter_tsvector(self):
+        pool = FakePool()
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+
+        self.run_async(retriever._lexical_search("alice cobalt", top_k=3, include_shed=False))
+
+        sql, params = pool.conn.calls[0]
+        for field in (
+            "source", "domain", "confirmation_count", "recency_score",
+            "validation_score", "importance_score", "frozen", "witness_chain",
+        ):
+            self.assertIn(field, sql)
+        self.assertIn("state != 'shed'", sql)
+        self.assertNotIn("shed", params)
+
+    def test_ruvector_lexical_search_selects_ct_fields_and_shed_override_ilike(self):
+        pool = FakePool(fail_first_fetch=True)
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+
+        self.run_async(retriever._lexical_search("alice cobalt", top_k=3, state_filter=["shed"], include_shed=True))
+
+        self.assertEqual(len(pool.conn.calls), 2)
+        sql, params = pool.conn.calls[1]
+        for field in (
+            "source", "domain", "confirmation_count", "recency_score",
+            "validation_score", "importance_score", "frozen", "witness_chain",
+        ):
+            self.assertIn(field, sql)
+        self.assertIn("ILIKE", sql.upper())
+        self.assertNotIn("state != 'shed'", sql)
+        self.assertIn("state IN", sql)
+        self.assertIn("shed", params)
+
+    def test_ruvector_temporal_search_selects_ct_fields_and_shed_filtering(self):
+        pool = FakePool()
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+
+        self.run_async(retriever._temporal_search(
+            start=server_datetime(2026, 5, 1),
+            end=server_datetime(2026, 5, 2),
+            top_k=3,
+            include_shed=False,
+        ))
+
+        sql, params = pool.conn.calls[0]
+        for field in (
+            "source", "domain", "confirmation_count", "recency_score",
+            "validation_score", "importance_score", "frozen", "witness_chain",
+        ):
+            self.assertIn(field, sql)
+        self.assertIn("state != 'shed'", sql)
+        self.assertNotIn("shed", params)
+
+        pool = FakePool()
+        retriever = HybridRetriever(pool=pool, vtype="ruvector")
+        self.run_async(retriever._temporal_search(
+            start=server_datetime(2026, 5, 1),
+            end=server_datetime(2026, 5, 2),
+            top_k=3,
+            state_filter=["shed"],
+            include_shed=True,
+        ))
+
+        sql, params = pool.conn.calls[0]
+        self.assertNotIn("state != 'shed'", sql)
+        self.assertIn("state IN", sql)
+        self.assertIn("shed", params)
 
     def test_multihop_session_adjacency_can_add_adjacent_candidate(self):
         retriever = FakeHybridRetriever()

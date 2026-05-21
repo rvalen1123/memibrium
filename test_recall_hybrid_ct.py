@@ -88,8 +88,34 @@ class FakeStore:
     async def get_memory_feedback_score(self, mid):
         return self.feedback.get(mid, 0.0)
 
-    async def get_memory(self, _mid):
-        return None
+    async def get_memory(self, mid):
+        memories = {
+            "leann_ok": {
+                "id": "leann_ok",
+                "content": "LEANN memory",
+                "domain": "allowed",
+                "state": "accepted",
+                "memory_type": "semantic",
+                "confirmation_count": 1,
+                "validation_score": 0.6,
+                "recency_score": 0.7,
+            },
+            "leann_shed": {
+                "id": "leann_shed",
+                "content": "shed LEANN memory",
+                "domain": "allowed",
+                "state": "shed",
+                "memory_type": "semantic",
+            },
+            "leann_wrong_domain": {
+                "id": "leann_wrong_domain",
+                "content": "wrong domain LEANN memory",
+                "domain": "blocked",
+                "state": "accepted",
+                "memory_type": "semantic",
+            },
+        }
+        return memories.get(mid)
 
     async def vector_candidates(self, embedding, top_k=5, state_filter=None, domain=None, include_shed=False):
         self.vector_calls.append({"embedding": embedding, "state_filter": state_filter, "domain": domain, "include_shed": include_shed})
@@ -124,6 +150,22 @@ class FakeStore:
 class FakeLeann:
     available = False
     searcher = None
+
+    async def search(self, *args, **kwargs):
+        return []
+
+
+class FakeAvailableLeann:
+    available = True
+    searcher = object()
+
+    async def search(self, *args, **kwargs):
+        return [
+            {"id": "leann_ok", "score": 0.9},
+            {"id": "leann_shed", "score": 0.95},
+            {"id": "leann_wrong_domain", "score": 0.8},
+            {"text": "text-only unknown metadata", "score": 0.7},
+        ]
 
 
 class RecallHybridCTTests(unittest.TestCase):
@@ -222,6 +264,43 @@ class RecallHybridCTTests(unittest.TestCase):
         self.assertEqual(payload["source_attribution"]["retrieval_path"], "recall_memories.ct_ranked")
         self.assertEqual(payload["source_attribution"]["evidence"][0]["id"], "ct_high")
 
+
+    def test_leann_candidates_apply_domain_state_and_shed_filters(self):
+        with patch.object(server, "store", FakeStore()), patch.object(server, "leann_tier", FakeAvailableLeann()):
+            candidates = self.run_async(
+                server._leann_candidates(
+                    "q", top_k=5, domain="allowed", state_filter=["accepted"], include_shed=False
+                )
+            )
+
+        self.assertEqual([c["id"] for c in candidates], ["leann_ok"])
+        self.assertEqual(candidates[0]["retrieval_source"], "leann")
+        self.assertEqual(candidates[0]["leann_score"], 0.9)
+
+    def test_leann_text_only_hits_are_skipped_when_filters_require_known_metadata(self):
+        with patch.object(server, "store", FakeStore()), patch.object(server, "leann_tier", FakeAvailableLeann()):
+            candidates = self.run_async(
+                server._leann_candidates("q", top_k=5, domain="allowed")
+            )
+
+        self.assertNotIn("leann_text_only", [c.get("retrieval_source") for c in candidates])
+
+    def test_tier0_cache_key_includes_recall_options(self):
+        cache = server.Tier0Cache(ttl_seconds=300)
+
+        cache.set("q", ["broad"], domain="d", state_filter=None, include_shed=True, ranking_mode="general")
+
+        self.assertEqual(cache.get("q", domain="d", state_filter=None, include_shed=True, ranking_mode="general"), ["broad"])
+        self.assertIsNone(cache.get("q", domain="d", state_filter=["accepted"], include_shed=False, ranking_mode="general"))
+        self.assertIsNone(cache.get("q", domain="d", state_filter=None, include_shed=True, ranking_mode="ct_heavy"))
+
+    def test_merge_candidates_preserves_existing_single_retrieval_source(self):
+        merged = server._merge_candidates([
+            [{"id": "m1", "retrieval_source": "hybrid", "cosine_score": 0.7}],
+            [{"id": "m1", "retrieval_source": "leann", "leann_score": 0.6}],
+        ])
+
+        self.assertEqual(merged[0]["retrieval_sources"], ["hybrid", "leann"])
 
 
 if __name__ == "__main__":

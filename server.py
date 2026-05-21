@@ -2329,12 +2329,24 @@ class Tier0Cache:
         self._cache: dict[str, tuple[list[str], float]] = {}
         self._ttl = ttl_seconds
 
-    def _key(self, query: str, domain: Optional[str] = None) -> str:
-        h = hashlib.sha256(f"{domain or ''}:{query.lower().strip()}".encode()).hexdigest()[:16]
+    def _key(self, query: str, domain: Optional[str] = None,
+             state_filter: Optional[list] = None, include_shed: bool = False,
+             ranking_mode: str = "general") -> str:
+        states = tuple(sorted(str(s) for s in (state_filter or [])))
+        payload = {
+            "domain": domain or "",
+            "query": query.lower().strip(),
+            "state_filter": states,
+            "include_shed": bool(include_shed),
+            "ranking_mode": ranking_mode or "general",
+        }
+        h = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
         return h
 
-    def get(self, query: str, domain: Optional[str] = None) -> Optional[list[str]]:
-        key = self._key(query, domain)
+    def get(self, query: str, domain: Optional[str] = None,
+            state_filter: Optional[list] = None, include_shed: bool = False,
+            ranking_mode: str = "general") -> Optional[list[str]]:
+        key = self._key(query, domain, state_filter, include_shed, ranking_mode)
         if key in self._cache:
             ids, expiry = self._cache[key]
             if datetime.now(timezone.utc).timestamp() < expiry:
@@ -2342,13 +2354,17 @@ class Tier0Cache:
             del self._cache[key]
         return None
 
-    def set(self, query: str, memory_ids: list[str], domain: Optional[str] = None) -> None:
-        key = self._key(query, domain)
+    def set(self, query: str, memory_ids: list[str], domain: Optional[str] = None,
+            state_filter: Optional[list] = None, include_shed: bool = False,
+            ranking_mode: str = "general") -> None:
+        key = self._key(query, domain, state_filter, include_shed, ranking_mode)
         expiry = datetime.now(timezone.utc).timestamp() + self._ttl
         self._cache[key] = (memory_ids, expiry)
 
-    def invalidate(self, query: str, domain: Optional[str] = None) -> None:
-        key = self._key(query, domain)
+    def invalidate(self, query: str, domain: Optional[str] = None,
+                   state_filter: Optional[list] = None, include_shed: bool = False,
+                   ranking_mode: str = "general") -> None:
+        key = self._key(query, domain, state_filter, include_shed, ranking_mode)
         self._cache.pop(key, None)
 
     def stats(self) -> dict:
@@ -2449,26 +2465,46 @@ async def _init_advanced_modules():
         log.info("Advanced modules initialized: hybrid retrieval; memory hierarchy disabled")
 
 
-async def _leann_candidates(query: str, top_k: int = 5) -> list:
+async def _leann_candidates(query: str, top_k: int = 5, domain: Optional[str] = None,
+                            state_filter: Optional[list] = None, include_shed: bool = False) -> list:
     """Convert LEANN hits into safe candidates without inventing CT authority."""
     if not (leann_tier and leann_tier.available and leann_tier.searcher):
         return []
     hits = await leann_tier.search(query, top_k=top_k)
     candidates = []
+    allowed_states = set(state_filter or [])
+
+    def passes_filters(mem: dict) -> bool:
+        if domain and mem.get("domain") != domain:
+            return False
+        state = mem.get("state")
+        if allowed_states and state not in allowed_states:
+            return False
+        if not include_shed and state == "shed":
+            return False
+        return True
+
     for hit in hits:
         memory_id = hit.get("id") or hit.get("memory_id")
         score = hit.get("score", hit.get("leann_score", 0.0))
         if memory_id:
             mem = await store.get_memory(memory_id)
-            if mem:
-                mem = dict(mem)
-                mem.pop("embedding", None)
-                mem["leann_score"] = score
-                mem["retrieval_source"] = "leann"
-                candidates.append(mem)
+            if not mem:
                 continue
+            mem = dict(mem)
+            if not passes_filters(mem):
+                continue
+            mem.pop("embedding", None)
+            mem["leann_score"] = score
+            mem["retrieval_source"] = "leann"
+            candidates.append(mem)
+            continue
+        # Text-only hits have unknown domain/state; keep only for unfiltered broad
+        # recalls where unknown metadata cannot bypass a restrictive option.
+        if domain or state_filter or not include_shed:
+            continue
         candidates.append({
-            "id": memory_id or f"leann_{hash(hit.get('text', '')) % 10**8}",
+            "id": f"leann_{hash(hit.get('text', '')) % 10**8}",
             "content": hit.get("text", ""),
             "source": hit.get("source", "leann_cold"),
             "state": None,
@@ -2495,6 +2531,11 @@ def _merge_candidates(candidate_groups: list[list[dict]]) -> list[dict]:
             existing_sources = existing.get("retrieval_sources") or []
             if isinstance(existing_sources, str):
                 existing_sources = [existing_sources]
+            else:
+                existing_sources = list(existing_sources)
+            existing_source = existing.get("retrieval_source")
+            if existing_source and existing_source not in existing_sources:
+                existing_sources.insert(0, existing_source)
             new_sources = item.get("retrieval_sources") or []
             if isinstance(new_sources, str):
                 new_sources = [new_sources]
@@ -2536,7 +2577,9 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
     candidate_groups: list[list[dict]] = []
     tier_parts: list[str] = []
 
-    cached_ids = tier0_cache.get(query, domain)
+    cached_ids = tier0_cache.get(
+        query, domain, state_filter=state_filter, include_shed=include_shed, ranking_mode=ranking_mode
+    )
     if cached_ids:
         cached = []
         for mid in cached_ids[:top_k]:
@@ -2591,7 +2634,9 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
         candidate_groups.append(cold)
         tier_parts.append("cold")
 
-    leann_candidates = await _leann_candidates(query, top_k=top_k)
+    leann_candidates = await _leann_candidates(
+        query, top_k=top_k, domain=domain, state_filter=state_filter, include_shed=include_shed
+    )
     if leann_candidates:
         candidate_groups.append(leann_candidates)
         tier_parts.append("leann")
@@ -2653,7 +2698,14 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
         ranked = ranked_result
         ranking_telemetry = None
 
-    tier0_cache.set(query, [r["id"] for r in ranked if r.get("id")][:top_k], domain)
+    tier0_cache.set(
+        query,
+        [r["id"] for r in ranked if r.get("id")][:top_k],
+        domain,
+        state_filter=state_filter,
+        include_shed=include_shed,
+        ranking_mode=ranking_mode,
+    )
     tier_label = "+".join(dict.fromkeys(tier_parts)) if tier_parts else "none"
     response = {
         "results": ranked,
@@ -2693,9 +2745,13 @@ def validate_embedding_dimension(vector: list[float], expected_dim: int = EMBEDD
 
 async def verify_startup_embedding_dimension() -> dict:
     """Embed a fixed probe string and record/fail on dimension mismatch."""
-    vector = await asyncio.get_event_loop().run_in_executor(
-        embedder._executor, embedder.embed, "memibrium embedding dimension startup check"
-    )
+    embed_fn = embedder.embed
+    if asyncio.iscoroutinefunction(embed_fn):
+        vector = await embed_fn("memibrium embedding dimension startup check")
+    else:
+        vector = await asyncio.get_event_loop().run_in_executor(
+            getattr(embedder, "_executor", None), embed_fn, "memibrium embedding dimension startup check"
+        )
     result = validate_embedding_dimension(vector)
     store.embedding_dim_actual = result["actual_dim"]
     if not result["matches"]:
