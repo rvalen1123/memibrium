@@ -1479,6 +1479,7 @@ def make_memibrium_retrieval_fn(
             "domain": domain,
             "top_k": top_k,
             "include_source_attribution": True,
+            "include_recall_telemetry": True,
             "include_decision_traces": False,
             "expand": True,
         }
@@ -1489,6 +1490,8 @@ def make_memibrium_retrieval_fn(
         source_refs = [ref for ref in (_source_ref_from_evidence(item) for item in evidence) if ref]
         snippets = [str(item.get("content") or item.get("text") or "") for item in evidence if item.get("content") or item.get("text")]
         source_attribution = packet.get("source_attribution") if isinstance(packet.get("source_attribution"), dict) else {}
+        recall_telemetry = packet.get("recall_telemetry") if isinstance(packet.get("recall_telemetry"), dict) else {}
+        recall_server = recall_telemetry.get("server") if isinstance(recall_telemetry.get("server"), dict) else {}
         retrieval_path = source_attribution.get("retrieval_path", "unknown")
         return {
             "retrieval_status": "ok",
@@ -1501,6 +1504,10 @@ def make_memibrium_retrieval_fn(
                 "retrieval_path": retrieval_path,
                 "candidate_memory_count": len(memory_ids),
                 "source_attribution_present": bool(source_attribution),
+                "recall_telemetry_present": bool(recall_telemetry),
+                "recall_timings_ms": recall_server.get("timings_ms", {}),
+                "hybrid_succeeded": recall_server.get("hybrid_succeeded"),
+                "extra_vector_candidates_executed": recall_server.get("extra_vector_candidates_executed"),
             }],
             "fallback_error_flags": [],
             "coverage_class": _heuristic_coverage_class(row, evidence, source_refs),

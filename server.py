@@ -484,9 +484,37 @@ def infer_context_query_type(query: str) -> str:
     return "general_recall"
 
 
+def _coerce_refs_dict(refs: Any) -> dict:
+    if isinstance(refs, str):
+        try:
+            refs = json.loads(refs)
+        except json.JSONDecodeError:
+            refs = {}
+    return refs if isinstance(refs, dict) else {}
+
+
+def _extract_source_ref_from_refs(refs: Any) -> Optional[str]:
+    """Return benchmark/source provenance ref when present without inventing one."""
+    refs = _coerce_refs_dict(refs)
+    bridge_refs = refs.get("longmemeval_bridge")
+    if isinstance(bridge_refs, dict) and bridge_refs.get("source_ref"):
+        return str(bridge_refs["source_ref"])
+    if refs.get("source_ref"):
+        return str(refs["source_ref"])
+    return None
+
+
+def _memory_refs_and_source_ref(memory: dict) -> tuple[dict, Optional[str]]:
+    """Normalize evidence refs and derive an explicit source_ref when present."""
+    refs = _coerce_refs_dict(memory.get("refs", {}))
+    source_ref = memory.get("source_ref") or _extract_source_ref_from_refs(refs)
+    return refs, str(source_ref) if source_ref else None
+
+
 def _normalize_evidence_memory(memory: dict) -> dict:
     mid = memory.get("memory_id") or memory.get("id")
-    return {
+    refs, source_ref = _memory_refs_and_source_ref(memory)
+    normalized = {
         "memory_id": mid,
         "content": memory.get("content", ""),
         "source": memory.get("source"),
@@ -494,22 +522,29 @@ def _normalize_evidence_memory(memory: dict) -> dict:
         "state": memory.get("state"),
         "score": memory.get("combined_score", memory.get("cosine_score", memory.get("score"))),
         "created_at": memory.get("created_at"),
-        "refs": memory.get("refs", {}),
+        "refs": refs,
     }
+    if source_ref:
+        normalized["source_ref"] = source_ref
+    return normalized
 
 
 def _context_packet_evidence_source_projection(memory: dict, rank: int) -> dict:
     content = str(memory.get("content") or memory.get("text") or "")
-    return {
+    refs, source_ref = _memory_refs_and_source_ref(memory)
+    projection = {
         "rank": rank,
         "id": memory.get("memory_id") or memory.get("id"),
         "stage": "context_packet_episodic_evidence",
-        "refs": memory.get("refs", {}),
+        "refs": refs,
         "score": memory.get("combined_score", memory.get("cosine_score", memory.get("score"))),
         "created_at": memory.get("created_at"),
         "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
         "snippet": content[:160],
     }
+    if source_ref:
+        projection["source_ref"] = source_ref
+    return projection
 
 
 def build_context_packet_source_attribution(
@@ -3069,7 +3104,9 @@ async def handle_context_packet(request: Request) -> JSONResponse:
         return JSONResponse({"error": "query required"}, status_code=400)
 
     include_source_attribution = bool(body.get("include_source_attribution", False))
+    include_recall_telemetry = bool(body.get("include_recall_telemetry", False))
     source_attribution = None
+    recall_telemetry = None
     top_k = int(body.get("top_k", 8))
     domain = body.get("domain")
     episodic_evidence = body.get("episodic_evidence")
@@ -3082,8 +3119,11 @@ async def handle_context_packet(request: Request) -> JSONResponse:
                 expand=body.get("expand", True),
                 graph_walk=body.get("graph_walk", True),
                 ranking_mode=body.get("ranking_mode", "general"),
+                include_telemetry=include_recall_telemetry,
             )
             episodic_evidence = recall.get("results", [])
+            if include_recall_telemetry and isinstance(recall.get("telemetry"), dict):
+                recall_telemetry = recall["telemetry"]
             if include_source_attribution:
                 source_attribution = build_context_packet_source_attribution(
                     query=query,
@@ -3143,6 +3183,8 @@ async def handle_context_packet(request: Request) -> JSONResponse:
     )
     if source_attribution is not None:
         packet["source_attribution"] = source_attribution
+    if recall_telemetry is not None:
+        packet["recall_telemetry"] = recall_telemetry
     return JSONResponse(_serialize_result(packet))
 
 
