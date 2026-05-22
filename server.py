@@ -488,7 +488,7 @@ def _coerce_refs_dict(refs: Any) -> dict:
     if isinstance(refs, str):
         try:
             refs = json.loads(refs)
-        except Exception:
+        except json.JSONDecodeError:
             refs = {}
     return refs if isinstance(refs, dict) else {}
 
@@ -504,9 +504,16 @@ def _extract_source_ref_from_refs(refs: Any) -> Optional[str]:
     return None
 
 
+def _memory_refs_and_source_ref(memory: dict) -> tuple[dict, Optional[str]]:
+    """Normalize evidence refs and derive an explicit source_ref when present."""
+    refs = _coerce_refs_dict(memory.get("refs", {}))
+    source_ref = memory.get("source_ref") or _extract_source_ref_from_refs(refs)
+    return refs, str(source_ref) if source_ref else None
+
+
 def _normalize_evidence_memory(memory: dict) -> dict:
     mid = memory.get("memory_id") or memory.get("id")
-    refs = _coerce_refs_dict(memory.get("refs", {}))
+    refs, source_ref = _memory_refs_and_source_ref(memory)
     normalized = {
         "memory_id": mid,
         "content": memory.get("content", ""),
@@ -517,7 +524,6 @@ def _normalize_evidence_memory(memory: dict) -> dict:
         "created_at": memory.get("created_at"),
         "refs": refs,
     }
-    source_ref = memory.get("source_ref") or _extract_source_ref_from_refs(refs)
     if source_ref:
         normalized["source_ref"] = source_ref
     return normalized
@@ -525,7 +531,7 @@ def _normalize_evidence_memory(memory: dict) -> dict:
 
 def _context_packet_evidence_source_projection(memory: dict, rank: int) -> dict:
     content = str(memory.get("content") or memory.get("text") or "")
-    refs = _coerce_refs_dict(memory.get("refs", {}))
+    refs, source_ref = _memory_refs_and_source_ref(memory)
     projection = {
         "rank": rank,
         "id": memory.get("memory_id") or memory.get("id"),
@@ -536,7 +542,6 @@ def _context_packet_evidence_source_projection(memory: dict, rank: int) -> dict:
         "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
         "snippet": content[:160],
     }
-    source_ref = memory.get("source_ref") or _extract_source_ref_from_refs(refs)
     if source_ref:
         projection["source_ref"] = source_ref
     return projection

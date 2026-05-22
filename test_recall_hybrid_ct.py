@@ -296,6 +296,39 @@ class RecallHybridCTTests(unittest.TestCase):
         self.assertIn("timings_ms", payload["recall_telemetry"]["server"])
         self.assertIn("ranking", payload["recall_telemetry"])
 
+    def test_context_packet_preserves_source_ref_when_refs_are_json_string(self):
+        class JsonStringRefsHybridRetriever(FakeHybridRetriever):
+            async def search(self, **kwargs):
+                result = await super().search(**kwargs)
+                result[1]["refs"] = json.dumps(result[1]["refs"])
+                return result
+
+        fake_store = FakeStore()
+        with patch.object(server, "store", fake_store), patch.object(server, "embedder", FakeEmbedder()), patch.object(
+            server, "chat", FakeChat()
+        ), patch.object(server, "leann_tier", FakeLeann()), patch.object(
+            server, "hybrid_retriever", JsonStringRefsHybridRetriever()
+        ), patch.object(server, "hierarchy_manager", None):
+            response = self.run_async(server.handle_context_packet(FakeRequest({
+                "query": "q",
+                "top_k": 2,
+                "expand": False,
+                "graph_walk": False,
+                "include_source_attribution": True,
+            })))
+
+        payload = self.decode_response(response)
+        evidence = payload["episodic_evidence"][0]
+        self.assertEqual(evidence["source_ref"], "sess_1:turn_2:assistant")
+        self.assertEqual(
+            evidence["refs"],
+            {"longmemeval_bridge": {"source_ref": "sess_1:turn_2:assistant"}},
+        )
+        self.assertEqual(
+            payload["source_attribution"]["evidence"][0]["source_ref"],
+            "sess_1:turn_2:assistant",
+        )
+
     def test_leann_candidates_apply_domain_state_and_shed_filters(self):
         with patch.object(server, "store", FakeStore()), patch.object(server, "leann_tier", FakeAvailableLeann()):
             candidates = self.run_async(
