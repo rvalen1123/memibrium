@@ -2017,7 +2017,8 @@ class IngestAgent:
                      domain: str = "default", event_at: Optional[str] = None,
                      refs: Optional[dict] = None,
                      diagnostics: Optional[dict[str, Any]] = None,
-                     stage_callback: Optional[Callable[[str], Any]] = None) -> dict:
+                     stage_callback: Optional[Callable[[str], Any]] = None,
+                     benchmark_fast_path: bool = False) -> dict:
         async def mark_stage(stage: str) -> None:
             if diagnostics is not None:
                 diagnostics.setdefault("stage_order", []).append(stage)
@@ -2065,10 +2066,12 @@ class IngestAgent:
 
         queue_start = time.perf_counter()
         await mark_stage("background_score_queue")
-        # BACKGROUND: add to batch scoring queue
-        if ENABLE_BACKGROUND_SCORING:
+        # BACKGROUND: add to batch scoring queue unless a benchmark runner requests deterministic fast ingest.
+        background_scoring_queued = False
+        if ENABLE_BACKGROUND_SCORING and not benchmark_fast_path:
             async with self._queue_lock:
                 self._score_queue.append((mid, content, source, domain, embedding, now))
+                background_scoring_queued = True
                 if len(self._score_queue) >= self.BATCH_SIZE:
                     self._flush_event.set()
         if timings is not None:
@@ -2083,11 +2086,13 @@ class IngestAgent:
         contradiction_start = time.perf_counter()
         await mark_stage("contradiction_task_schedule")
         # BACKGROUND: contradiction detection for semantic memories
-        if ENABLE_CONTRADICTION_DETECTION and memory_type == "semantic":
+        contradiction_detection_scheduled = False
+        if ENABLE_CONTRADICTION_DETECTION and memory_type == "semantic" and not benchmark_fast_path:
             task = asyncio.create_task(
                 self._async_detect_contradictions(mid, content, embedding)
             )
             self._background_tasks.add(task)
+            contradiction_detection_scheduled = True
             task.add_done_callback(self._background_tasks.discard)
         if timings is not None:
             timings["contradiction_task_schedule_ms"] = _monotonic_ms(contradiction_start)
@@ -2095,7 +2100,8 @@ class IngestAgent:
         hierarchy_start = time.perf_counter()
         await mark_stage("hierarchy_task_schedule")
         # HIERARCHY: async entity extraction + graph building (non-blocking)
-        if ENABLE_HIERARCHY_PROCESSING and hierarchy_manager:
+        hierarchy_processing_scheduled = False
+        if ENABLE_HIERARCHY_PROCESSING and hierarchy_manager and not benchmark_fast_path:
             async def _hierarchy_background(mid, content, event_at):
                 async with self._hierarchy_sem:
                     try:
@@ -2108,6 +2114,7 @@ class IngestAgent:
                         log.warning(f"Hierarchy processing failed for {mid}: {e}")
             task = asyncio.create_task(_hierarchy_background(mid, content, event_at))
             self._background_tasks.add(task)
+            hierarchy_processing_scheduled = True
             task.add_done_callback(self._background_tasks.discard)
         if timings is not None:
             timings["hierarchy_task_schedule_ms"] = _monotonic_ms(hierarchy_start)
@@ -2116,6 +2123,10 @@ class IngestAgent:
                 "background_scoring_enabled": ENABLE_BACKGROUND_SCORING,
                 "contradiction_detection_enabled": ENABLE_CONTRADICTION_DETECTION,
                 "hierarchy_processing_enabled": ENABLE_HIERARCHY_PROCESSING,
+                "benchmark_fast_path": benchmark_fast_path,
+                "background_scoring_queued": background_scoring_queued,
+                "contradiction_detection_scheduled": contradiction_detection_scheduled,
+                "hierarchy_processing_scheduled": hierarchy_processing_scheduled,
                 "background_task_count": len(self._background_tasks),
                 "score_queue_depth": len(self._score_queue),
             }
@@ -2847,6 +2858,7 @@ async def handle_retain(request: Request) -> JSONResponse:
     source = body.get("source", "conversation")
     domain = body.get("domain", "default")
     include_diagnostics = bool(body.get("include_diagnostics", False))
+    benchmark_fast_path = bool(body.get("benchmark_fast_path", False))
     request_id = f"retain_{uuid.uuid4().hex[:12]}"
     await _start_retain_diagnostic(request_id, content=content, source=source, domain=domain)
     diagnostics: dict[str, Any] = {}
@@ -2860,6 +2872,7 @@ async def handle_retain(request: Request) -> JSONResponse:
             refs=body.get("refs"),
             diagnostics=diagnostics if include_diagnostics else None,
             stage_callback=lambda stage: _set_retain_diagnostic_stage(request_id, stage),
+            benchmark_fast_path=benchmark_fast_path,
         )
         result.setdefault("source", source)
         result.setdefault("domain", domain)

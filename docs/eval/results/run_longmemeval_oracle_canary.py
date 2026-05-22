@@ -1361,6 +1361,7 @@ def make_memibrium_ingest_fn(
     post_fn: Callable[..., dict[str, Any]] = memibrium_http_post,
     timeout: int = 30,
     include_diagnostics: bool = False,
+    benchmark_fast_path: bool = False,
 ) -> Callable[..., list[str]]:
     retain_diagnostics: list[dict[str, Any]] = []
 
@@ -1387,6 +1388,8 @@ def make_memibrium_ingest_fn(
             }
             if include_diagnostics:
                 payload["include_diagnostics"] = True
+            if benchmark_fast_path:
+                payload["benchmark_fast_path"] = True
             try:
                 response = post_fn("/mcp/retain", payload, base_url=base_url, timeout=timeout)
                 memory_id = response.get("id") or response.get("memory_id")
@@ -2067,6 +2070,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--memibrium-server-container", default=os.environ.get("MEMIBRIUM_SERVER_CONTAINER", "memibrium-server"), help="Container name used only for DSN derivation when enabled.")
     parser.add_argument("--memibrium-http-timeout", type=int, default=int(os.environ.get("MEMIBRIUM_HTTP_TIMEOUT", "180")), help="HTTP timeout in seconds for Memibrium Phase A retain/context calls.")
     parser.add_argument("--memibrium-retain-diagnostics", action="store_true", help="Request redacted per-retain timing diagnostics during live Phase A ingest; no content, refs, DSNs, answers, or judge calls are written.")
+    parser.add_argument("--memibrium-benchmark-fast-path", action="store_true", help="Request deterministic benchmark ingest: store memories but skip background scoring, contradiction, and hierarchy tasks for this run only.")
     parser.add_argument("--retrieval-bridge-smoke-max-questions", type=int, help="Limit live Phase A to the first N selected questions for a no-answer/no-judge smoke rung.")
     args = parser.parse_args(argv)
     if args.run_retrieval_bridge_phase_a and args.selection == DEFAULT_SELECTION_PATH:
@@ -2170,6 +2174,7 @@ def main() -> None:
                 base_url=args.memibrium_base_url,
                 timeout=args.memibrium_http_timeout,
                 include_diagnostics=args.memibrium_retain_diagnostics,
+                benchmark_fast_path=args.memibrium_benchmark_fast_path,
             ),
             retrieval_fn=make_memibrium_retrieval_fn(base_url=args.memibrium_base_url, timeout=args.memibrium_http_timeout),
             cleanup_fn=make_memibrium_cleanup_fn(db_dsn=cleanup_dsn),
