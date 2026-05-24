@@ -2131,7 +2131,8 @@ class IngestAgent:
                 "score_queue_depth": len(self._score_queue),
             }
 
-        log.info(f"Ingested {mid} → {final_state} (type={memory_type}) [batch queued]")
+        queue_state = "batch queued" if background_scoring_queued else "batch not queued"
+        log.info(f"Ingested {mid} → {final_state} (type={memory_type}) [{queue_state}]")
         return {
             "id": mid, "state": final_state, "importance": importance,
             "source": source,

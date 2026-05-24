@@ -66,14 +66,6 @@ class SlowFakeIngestAgent:
         }
 
 
-class CountingEmbedder:
-    def __init__(self):
-        self._executor = ThreadPoolExecutor(max_workers=1)
-
-    def embed(self, content):
-        return [0.1, 0.2, 0.3]
-
-
 class FakeRetainChat:
     pass
 
@@ -166,8 +158,13 @@ class RetainDiagnosticTelemetryTests(unittest.TestCase):
 
     def test_ingest_benchmark_fast_path_skips_background_queue_and_tasks(self):
         async def scenario():
-            agent = server.IngestAgent(FakeStore(), CountingEmbedder(), FakeRetainChat())
-            with patch.object(server, "ENABLE_BACKGROUND_SCORING", True),                  patch.object(server, "ENABLE_CONTRADICTION_DETECTION", True),                  patch.object(server, "ENABLE_HIERARCHY_PROCESSING", True),                  patch.object(server, "hierarchy_manager", object()):
+            agent = server.IngestAgent(FakeStore(), FakeEmbedder(), FakeRetainChat())
+            with (
+                patch.object(server, "ENABLE_BACKGROUND_SCORING", True),
+                patch.object(server, "ENABLE_CONTRADICTION_DETECTION", True),
+                patch.object(server, "ENABLE_HIERARCHY_PROCESSING", True),
+                patch.object(server, "hierarchy_manager", object()),
+            ):
                 diagnostics = {}
                 result = await agent.ingest(
                     "semantic fact means something",
