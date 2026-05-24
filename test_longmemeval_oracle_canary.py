@@ -975,6 +975,26 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 longmem_canary.run_retrieval_bridge_phase_a(rows, selection, out_dir)
             self.assertEqual(list(out_dir.iterdir()), [])
 
+    def test_memibrium_http_ingest_adapter_requests_benchmark_fast_path_when_enabled(self):
+        planned = [{
+            'source_ref': 'sess_1:turn_1:user',
+            'content': 'Preference text.',
+            'metadata': {'question_ids': ['pref_1']},
+        }]
+        seen_payloads = []
+
+        def fake_post(path, payload, *, base_url, timeout=30):
+            seen_payloads.append(payload)
+            return {'id': 'mem_fast'}
+
+        adapter = longmem_canary.make_memibrium_ingest_fn(
+            base_url='http://localhost:9999',
+            post_fn=fake_post,
+            benchmark_fast_path=True,
+        )
+        self.assertEqual(adapter(planned, domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN), ['mem_fast'])
+        self.assertEqual(seen_payloads[0]['benchmark_fast_path'], True)
+
     def test_memibrium_http_ingest_adapter_posts_retain_with_namespaced_refs_and_redacted_endpoint_metadata(self):
         planned = [{
             'source_ref': 'sess_1:turn_1:user',
@@ -1494,8 +1514,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 'phase_a_report_file': str(out_dir / 'longmemeval_retrieval_bridge_phase_a_gate_report.json'),
             }
 
-        def fake_ingest_factory(*, base_url, timeout, include_diagnostics=False):
-            factory_calls.append(('ingest', base_url, timeout, include_diagnostics))
+        def fake_ingest_factory(*, base_url, timeout, include_diagnostics=False, benchmark_fast_path=False):
+            factory_calls.append(('ingest', base_url, timeout, include_diagnostics, benchmark_fast_path))
             return lambda planned_memories, *, domain: ['mem_1']
 
         def fake_retrieval_factory(*, base_url, timeout):
@@ -1526,6 +1546,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 '--memibrium-db-dsn', 'postgresql://localhost:5432/memory',
                 '--memibrium-http-timeout', '180',
                 '--memibrium-retain-diagnostics',
+                '--memibrium-benchmark-fast-path',
                 '--retrieval-bridge-smoke-max-questions', '1',
             ]
             stdout = io.StringIO()
@@ -1555,7 +1576,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertFalse(printed['overall_pass'])
         self.assertNotIn('postgresql://', stdout.getvalue())
         self.assertNotIn('memory:memory', stdout.getvalue())
-        self.assertIn(('ingest', 'http://localhost:9999', 180, True), factory_calls)
+        self.assertIn(('ingest', 'http://localhost:9999', 180, True, True), factory_calls)
         self.assertIn(('retrieval', 'http://localhost:9999', 180), factory_calls)
         self.assertIn(('cleanup', 'postgresql://localhost:5432/memory'), factory_calls)
 
@@ -1573,6 +1594,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(args.memibrium_db_dsn_source, 'env-or-container')
         self.assertEqual(args.memibrium_server_container, 'memibrium-server')
         self.assertFalse(args.memibrium_retain_diagnostics)
+        self.assertFalse(args.memibrium_benchmark_fast_path)
 
     def test_resolve_memibrium_cleanup_dsn_can_derive_from_container_env_without_printing_secret(self):
         docker_payload = json.dumps([{

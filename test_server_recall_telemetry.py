@@ -32,7 +32,7 @@ class FakeEmbedder:
 
 
 class FakeIngestAgent:
-    async def ingest(self, content, source="conversation", domain="default", event_at=None, refs=None, diagnostics=None, stage_callback=None):
+    async def ingest(self, content, source="conversation", domain="default", event_at=None, refs=None, diagnostics=None, stage_callback=None, **kwargs):
         if stage_callback is not None:
             await stage_callback("fake_ingest")
         if diagnostics is not None:
@@ -52,7 +52,7 @@ class SlowFakeIngestAgent:
     def __init__(self):
         self.release = asyncio.Event()
 
-    async def ingest(self, content, source="conversation", domain="default", event_at=None, refs=None, diagnostics=None, stage_callback=None):
+    async def ingest(self, content, source="conversation", domain="default", event_at=None, refs=None, diagnostics=None, stage_callback=None, **kwargs):
         if stage_callback is not None:
             await stage_callback("slow_fake_wait")
         await self.release.wait()
@@ -64,6 +64,10 @@ class SlowFakeIngestAgent:
             "event_at": event_at,
             "refs": refs or {},
         }
+
+
+class FakeRetainChat:
+    pass
 
 
 class FakeHybridRetriever:
@@ -118,6 +122,9 @@ class FakeHybridRetriever:
 
 
 class FakeStore:
+    async def insert_memory(self, *args, **kwargs):
+        return None
+
     async def get_memory_feedback_score(self, _mid):
         return 0.0
 
@@ -147,6 +154,35 @@ class RetainDiagnosticTelemetryTests(unittest.TestCase):
 
     def decode_response(self, response):
         return json.loads(response.body.decode("utf-8"))
+
+
+    def test_ingest_benchmark_fast_path_skips_background_queue_and_tasks(self):
+        async def scenario():
+            agent = server.IngestAgent(FakeStore(), FakeEmbedder(), FakeRetainChat())
+            with (
+                patch.object(server, "ENABLE_BACKGROUND_SCORING", True),
+                patch.object(server, "ENABLE_CONTRADICTION_DETECTION", True),
+                patch.object(server, "ENABLE_HIERARCHY_PROCESSING", True),
+                patch.object(server, "hierarchy_manager", object()),
+            ):
+                diagnostics = {}
+                result = await agent.ingest(
+                    "semantic fact means something",
+                    source="longmemeval_bridge_phase_a",
+                    domain="longmemeval-bridge-v1-20260508-second-slice",
+                    refs={"longmemeval_bridge": {"source_ref": "s:turn_1:user"}},
+                    diagnostics=diagnostics,
+                    benchmark_fast_path=True,
+                )
+            self.assertEqual(result["id"][:4], "mem_")
+            self.assertEqual(agent._score_queue, [])
+            self.assertEqual(len(agent._background_tasks), 0)
+            self.assertEqual(diagnostics["background"]["benchmark_fast_path"], True)
+            self.assertFalse(diagnostics["background"]["background_scoring_queued"])
+            self.assertFalse(diagnostics["background"]["contradiction_detection_scheduled"])
+            self.assertFalse(diagnostics["background"]["hierarchy_processing_scheduled"])
+
+        self.run_async(scenario())
 
     def test_handle_retain_omits_diagnostics_unless_requested(self):
         with patch.object(server, "ingest_agent", FakeIngestAgent()):
