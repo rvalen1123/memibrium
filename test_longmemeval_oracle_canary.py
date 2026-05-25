@@ -692,6 +692,25 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 'retrieved_memory_ids': memory_ids,
                 'source_refs': source_refs,
                 'fallback_error_flags': error_flags,
+                'timestamp_source_metadata': [{
+                    'recall_telemetry_present': bool(memory_ids),
+                    'substrate_readiness_present': False,
+                }],
+                'candidate_pool': {
+                    'schema': 'memibrium.recall.candidate_pool.v1',
+                    'candidate_group_count': 1 if memory_ids else 0,
+                    'groups': [{'source': 'test', 'count': len(memory_ids), 'top_ids': memory_ids[:10]}] if memory_ids else [],
+                    'total_candidates_before_merge': len(memory_ids),
+                    'total_merged_candidates': len(memory_ids),
+                    'ranked_returned_count': len(memory_ids),
+                    'top_ranked_ids': memory_ids[:10],
+                },
+                'score_components': [
+                    {'id': memory_id, 'final_score': 1.0, 'retrieval_sources': ['test']}
+                    for memory_id in memory_ids
+                ],
+                'source_ref_analysis': {'supporting_source_refs': source_refs},
+                'coverage_rationale': 'test_fixture_coverage',
             }
             for question_id, question_type, coverage_class, retrieval_status, memory_ids, source_refs, error_flags in statuses
         ]
@@ -761,6 +780,27 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         invalid = [dict(retrieval_rows[0], coverage_class='made_up_class')]
         with self.assertRaisesRegex(ValueError, 'invalid_coverage_class:ku_abs'):
             longmem_canary.evaluate_retrieval_bridge_phase_a_gates(rows[:1], invalid)
+
+    def test_retrieval_bridge_phase_a_evaluator_fails_incomplete_runtime_diagnostics(self):
+        rows = self.sample_rows()[:1]
+        retrieval_rows = self.make_retrieval_rows([
+            ('ku_abs', 'knowledge-update', 'gold_supported', 'ok', ['m1'], ['s1:t1'], []),
+        ])
+        retrieval_rows[0]['timestamp_source_metadata'] = [{'recall_telemetry_present': True}]
+        retrieval_rows[0]['candidate_pool'] = {}
+        retrieval_rows[0]['score_components'] = []
+        retrieval_rows[0].pop('coverage_rationale')
+
+        report = longmem_canary.evaluate_retrieval_bridge_phase_a_gates(rows, retrieval_rows)
+
+        self.assertFalse(report['gates']['diagnostics_completeness']['pass'])
+        self.assertFalse(report['gates']['overall']['pass'])
+        issue_row = report['gates']['diagnostics_completeness']['issue_rows'][0]
+        self.assertEqual(issue_row['question_id'], 'ku_abs')
+        self.assertIn('candidate_pool_missing_or_incomplete', issue_row['issues'])
+        self.assertIn('score_components_missing', issue_row['issues'])
+        self.assertIn('substrate_readiness_not_explicit', issue_row['issues'])
+        self.assertIn('coverage_rationale_missing', issue_row['issues'])
 
     def test_retrieval_bridge_phase_a_evaluator_allows_not_run_placeholders_as_failed_gate(self):
         rows = self.sample_rows()[:2]
@@ -905,12 +945,34 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                     'source_refs': [],
                     'evidence_snippets': [],
                     'coverage_class': coverage_class,
+                    'candidate_pool': {
+                        'schema': 'memibrium.recall.candidate_pool.v1',
+                        'candidate_group_count': 0,
+                        'groups': [],
+                        'total_merged_candidates': 0,
+                        'ranked_returned_count': 0,
+                        'top_ranked_ids': [],
+                    },
+                    'score_components': [],
+                    'source_ref_analysis': {},
+                    'coverage_rationale': 'artifact unsupported for test fixture',
                 }
             return {
                 'retrieved_memory_ids': [memory_ids[0]],
                 'source_refs': [f"{row['question_id']}:source"],
                 'evidence_snippets': [f"evidence for {row['question_id']}"],
                 'coverage_class': coverage_class,
+                'candidate_pool': {
+                    'schema': 'memibrium.recall.candidate_pool.v1',
+                    'candidate_group_count': 1,
+                    'total_merged_candidates': len(memory_ids),
+                    'ranked_returned_count': len(memory_ids),
+                    'top_ranked_ids': memory_ids[:10],
+                    'groups': [{'source': 'fake', 'count': len(memory_ids), 'top_ids': memory_ids[:10]}],
+                },
+                'score_components': [{'id': memory_ids[0], 'final_score': 0.9, 'retrieval_sources': ['fake']}],
+                'source_ref_analysis': {'supporting_source_refs': [f"{row['question_id']}:source"]},
+                'coverage_rationale': f'artifact support for {row["question_id"]}',
             }
 
         def fake_cleanup(*, domain, memory_ids):
@@ -951,6 +1013,10 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertTrue(all(row['retrieval_status'] == 'ok' for row in retrieval_rows))
         self.assertEqual(coverage_audit['coverage_status'], 'evaluated_artifact_only')
         self.assertEqual(coverage_audit['rows'][0]['coverage_class'], 'gold_supported')
+        self.assertEqual(retrieval_rows[0]['candidate_pool']['total_merged_candidates'], manifest['planned_memory_count'])
+        self.assertEqual(retrieval_rows[0]['score_components'][0]['id'], 'mem_1')
+        self.assertEqual(coverage_audit['rows'][0]['source_ref_analysis']['supporting_source_refs'], ['ku_1:source'])
+        self.assertIn('artifact support for ku_1', coverage_audit['rows'][0]['classification_notes'])
         self.assertTrue(report['gates']['overall']['pass'])
         self.assertEqual(cleanup['cleanup_status'], 'complete')
         self.assertEqual(cleanup['final_domain_count_verified'], 0)
@@ -1223,6 +1289,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             calls.append((path, payload, base_url, timeout))
             self.assertEqual(path, '/mcp/context_packet')
             self.assertEqual(payload['domain'], longmem_canary.RETRIEVAL_BRIDGE_DOMAIN)
+            self.assertIn('Preference retrieval', payload['query'])
+            self.assertIn('Can you recommend weekend events?', payload['query'])
             self.assertTrue(payload['include_source_attribution'])
             self.assertTrue(payload['include_recall_telemetry'])
             self.assertFalse(payload['include_decision_traces'])
@@ -1243,10 +1311,32 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                     ],
                 },
                 'recall_telemetry': {
+                    'streams': {
+                        'semantic': {'returned_count': 1, 'items': [{'id': 'mem_1', 'cosine_score': 0.91}]},
+                        'lexical': {'returned_count': 0, 'items': []},
+                    },
+                    'fusion': {'fused_count_before_cap': 1, 'items_before_cap': [{'id': 'mem_1'}]},
+                    'final': {'returned_count': 1, 'items': [{'id': 'mem_1'}]},
+                    'ranking': {
+                        'top_ranked_ids': ['mem_1'],
+                        'score_components': [{
+                            'id': 'mem_1',
+                            'retrieval_score': 0.91,
+                            'ct_score': 0.72,
+                            'final_score': 0.8245,
+                            'retrieval_sources': ['semantic'],
+                        }],
+                    },
                     'server': {
                         'timings_ms': {'total_ms': 12.5},
                         'hybrid_succeeded': True,
                         'extra_vector_candidates_executed': False,
+                        'candidate_pool': {
+                            'candidate_group_count': 1,
+                            'total_candidates_before_merge': 1,
+                            'total_merged_candidates': 1,
+                            'groups': [{'source': 'hybrid', 'count': 1}],
+                        },
                     }
                 },
             }
@@ -1259,7 +1349,8 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         retrieved = adapter(self.sample_rows()[2], domain=longmem_canary.RETRIEVAL_BRIDGE_DOMAIN, memory_ids=['mem_1'])
 
         self.assertEqual(retrieved['retrieval_status'], 'ok')
-        self.assertEqual(retrieved['query_variants'], ['Can you recommend weekend events?'])
+        self.assertEqual(retrieved['query_variants'][0], 'Can you recommend weekend events?')
+        self.assertIn('Preference retrieval', retrieved['query_variants'][1])
         self.assertEqual(retrieved['retrieved_memory_ids'], ['mem_1'])
         self.assertEqual(retrieved['scores'], [0.91])
         self.assertEqual(retrieved['source_refs'], ['sess_pref_1:turn_1:user'])
@@ -1270,8 +1361,80 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(metadata['recall_timings_ms']['total_ms'], 12.5)
         self.assertTrue(metadata['hybrid_succeeded'])
         self.assertFalse(metadata['extra_vector_candidates_executed'])
-        self.assertEqual(retrieved['coverage_class'], 'partial_support')
+        self.assertFalse(metadata['substrate_readiness_present'])
+        self.assertIsNone(metadata['substrate_readiness'])
+        self.assertEqual(retrieved['coverage_class'], 'gold_supported')
+        self.assertEqual(retrieved['candidate_pool']['schema'], 'memibrium.recall.candidate_pool.v1')
+        self.assertEqual(retrieved['candidate_pool']['total_merged_candidates'], 1)
+        self.assertEqual(retrieved['candidate_pool']['ranked_returned_count'], 1)
+        self.assertEqual(retrieved['score_components'][0]['id'], 'mem_1')
+        self.assertEqual(retrieved['source_ref_analysis']['supporting_source_refs'], ['sess_pref_1:turn_1:user'])
+        self.assertIn('preference_session_support', retrieved['coverage_rationale'])
         self.assertEqual(calls[0][2], 'http://localhost:9999')
+
+    def test_phase_a_coverage_heuristic_treats_preference_session_support_as_gold(self):
+        row = self.sample_rows()[2]
+        evidence = [{
+            'memory_id': 'mem_pref',
+            'content': 'I like cultural events where I can practice Spanish and French.',
+            'refs': {'longmemeval_bridge': {'source_ref': 'sess_pref_1:turn_1:user'}},
+        }]
+
+        self.assertEqual(
+            longmem_canary._heuristic_coverage_class(row, evidence, ['sess_pref_1:turn_1:user']),
+            'gold_supported',
+        )
+
+    def test_phase_a_coverage_heuristic_abstention_is_not_contaminated_by_irrelevant_sources(self):
+        row = self.sample_rows()[0]
+        evidence = [{
+            'memory_id': 'mem_abs',
+            'content': 'I collected a signed baseball, but there was no football detail.',
+            'refs': {'longmemeval_bridge': {'source_ref': 'sess_abs_1:turn_1:user'}},
+        }]
+
+        self.assertEqual(
+            longmem_canary._heuristic_coverage_class(row, evidence, ['sess_abs_1:turn_1:user']),
+            'unanswerable_supported',
+        )
+
+    def test_phase_a_coverage_heuristic_abstention_near_miss_context_is_supported(self):
+        row = {
+            'question_id': 'manager_abs',
+            'question_type': 'knowledge-update',
+            'question': 'How many engineers do I lead when I just started my new role as Software Engineer Manager?',
+            'answer': 'The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.',
+            'answer_session_ids': ['sess_manager'],
+        }
+        evidence = [{
+            'memory_id': 'mem_manager',
+            'content': 'I now lead a team of five engineers in my role as Senior Software Engineer.',
+            'refs': {'longmemeval_bridge': {'source_ref': 'sess_manager:turn_1:user'}},
+        }]
+
+        self.assertEqual(
+            longmem_canary._heuristic_coverage_class(row, evidence, ['sess_manager:turn_1:user']),
+            'unanswerable_supported',
+        )
+
+    def test_phase_a_coverage_heuristic_abstention_direct_missing_target_leak_is_contaminated(self):
+        row = {
+            'question_id': 'manager_abs',
+            'question_type': 'knowledge-update',
+            'question': 'How many engineers do I lead when I just started my new role as Software Engineer Manager?',
+            'answer': 'The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.',
+            'answer_session_ids': ['sess_manager'],
+        }
+        evidence = [{
+            'memory_id': 'mem_manager',
+            'content': 'I just started as Software Engineer Manager and lead seven engineers.',
+            'refs': {'longmemeval_bridge': {'source_ref': 'sess_manager:turn_2:user'}},
+        }]
+
+        self.assertEqual(
+            longmem_canary._heuristic_coverage_class(row, evidence, ['sess_manager:turn_2:user']),
+            'unanswerable_contaminated',
+        )
 
     def test_memibrium_http_cleanup_adapter_deletes_only_namespaced_domain_and_verifies_zero_count(self):
         class FakeConn:
@@ -1604,7 +1767,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                     'DB_PORT=5432',
                     'DB_NAME=memory',
                     'DB_USER=memory',
-                    'DB_PASSWORD=super secret/pw',
+                    'DB_PASSWORD=[REDACTED]',
                 ]
             }
         }])
@@ -1627,8 +1790,9 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         )
 
         self.assertEqual(calls, [['docker', 'inspect', 'memibrium-server']])
-        self.assertEqual(dsn, 'postgresql://memory:super%20secret%2Fpw@localhost:5432/memory')
-        self.assertNotIn('super secret/pw', repr(calls))
+        expected_dsn = 'postgresql://memory:%5BREDACTED%5D@localhost:5432/memory'
+        self.assertEqual(dsn, expected_dsn)
+        self.assertNotIn('[REDACTED]', repr(calls))
 
     def test_redacted_memibrium_runtime_metadata_empty_and_none_urls(self):
         for url in ('', None):
