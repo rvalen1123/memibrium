@@ -583,6 +583,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(gates['knowledge_update_coverage'], 'at least 3/5 knowledge-update rows are gold_supported, gold_supported_with_conflict, or partial_support; stale_only counted separately')
         self.assertEqual(gates['abstention_contamination'], 'no more than 1/4 abstention rows may be unanswerable_contaminated')
         self.assertEqual(gates['evidence_identity'], 'every answerable row preserves source refs sufficient for artifact-only review')
+        self.assertEqual(gates['substrate_comparability'], 'pre-answer substrate comparability met per launch plan: all answerable rows have a substrate-comparable retrieval result')
         self.assertNotIn('answer generation', json.dumps(gates).lower())
         self.assertNotIn('judge', json.dumps(gates).lower())
 
@@ -693,8 +694,9 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 'source_refs': source_refs,
                 'fallback_error_flags': error_flags,
                 'timestamp_source_metadata': [{
-                    'recall_telemetry_present': bool(memory_ids),
-                    'substrate_readiness_present': False,
+                    'recall_telemetry_present': retrieval_status == 'ok',
+                    'substrate_readiness_present': retrieval_status == 'ok',
+                    'substrate_readiness': {'schema': 'memibrium.substrate_readiness.v1'} if retrieval_status == 'ok' else None,
                 }],
                 'candidate_pool': {
                     'schema': 'memibrium.recall.candidate_pool.v1',
@@ -756,6 +758,23 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         self.assertEqual(report['abstention']['unanswerable_contaminated'], 1)
         self.assertEqual(report['stale_only_question_ids'], ['ku_4'])
         self.assertEqual(report['phase_b_recommendation'], 'phase_a_passed_answer_generation_still_requires_explicit_approval')
+
+    def test_retrieval_bridge_phase_a_evaluator_fails_non_comparable_answerable_rows(self):
+        rows = self.sample_rows()[:2]
+        retrieval_rows = self.make_retrieval_rows([
+            ('ku_abs', 'knowledge-update', 'unanswerable_supported', 'ok', ['m1'], ['s1:t1'], []),
+            ('multi_1', 'multi-session', 'gold_supported', 'ok', ['m2'], ['s2:t1'], []),
+        ])
+        retrieval_rows[1]['timestamp_source_metadata'] = [{
+            'recall_telemetry_present': True,
+            'substrate_readiness_present': False,
+        }]
+
+        report = longmem_canary.evaluate_retrieval_bridge_phase_a_gates(rows, retrieval_rows)
+
+        self.assertFalse(report['gates']['substrate_comparability']['pass'])
+        self.assertIn('multi_1', report['gates']['substrate_comparability']['non_comparable_question_ids'])
+        self.assertFalse(report['gates']['overall']['pass'])
 
     def test_retrieval_bridge_phase_a_evaluator_fails_missing_rows_errors_and_identity(self):
         rows = self.sample_rows()[:3]
@@ -931,6 +950,11 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
             'abs_3_abs': 'unanswerable_supported',
             'abs_4_abs': 'unanswerable_supported',
         }
+        substrate_metadata = [{
+            'recall_telemetry_present': True,
+            'substrate_readiness_present': True,
+            'substrate_readiness': {'schema': 'memibrium.substrate_readiness.v1'},
+        }]
 
         def fake_ingest(planned_memories, *, domain):
             calls.append(('ingest', len(planned_memories), domain))
@@ -944,6 +968,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                     'retrieved_memory_ids': [],
                     'source_refs': [],
                     'evidence_snippets': [],
+                    'timestamp_source_metadata': substrate_metadata,
                     'coverage_class': coverage_class,
                     'candidate_pool': {
                         'schema': 'memibrium.recall.candidate_pool.v1',
@@ -961,6 +986,7 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
                 'retrieved_memory_ids': [memory_ids[0]],
                 'source_refs': [f"{row['question_id']}:source"],
                 'evidence_snippets': [f"evidence for {row['question_id']}"],
+                'timestamp_source_metadata': substrate_metadata,
                 'coverage_class': coverage_class,
                 'candidate_pool': {
                     'schema': 'memibrium.recall.candidate_pool.v1',
@@ -1428,6 +1454,25 @@ class LongMemEvalOracleCanaryTests(unittest.TestCase):
         evidence = [{
             'memory_id': 'mem_manager',
             'content': 'I just started as Software Engineer Manager and lead seven engineers.',
+            'refs': {'longmemeval_bridge': {'source_ref': 'sess_manager:turn_2:user'}},
+        }]
+
+        self.assertEqual(
+            longmem_canary._heuristic_coverage_class(row, evidence, ['sess_manager:turn_2:user']),
+            'unanswerable_contaminated',
+        )
+
+    def test_phase_a_coverage_heuristic_abstention_mixed_negative_and_target_leak_is_contaminated(self):
+        row = {
+            'question_id': 'manager_abs',
+            'question_type': 'knowledge-update',
+            'question': 'How many engineers do I lead when I just started my new role as Software Engineer Manager?',
+            'answer': 'The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.',
+            'answer_session_ids': ['sess_manager'],
+        }
+        evidence = [{
+            'memory_id': 'mem_manager',
+            'content': 'There was no hiring-plan detail, but I just started as Software Engineer Manager and lead seven engineers.',
             'refs': {'longmemeval_bridge': {'source_ref': 'sess_manager:turn_2:user'}},
         }]
 

@@ -170,7 +170,7 @@ The live server can expose `telemetry.server.substrate_readiness` with non-secre
 - `embedding.endpoint_host` may be recorded, but secrets, tokens, passwords, DSNs, and full credential-bearing URLs must be redacted.
 - `leann.cold_tier_status=leann_ready` means `USE_LEANN=true`, LEANN is available, and a searcher/index is loaded.
 - `leann.cold_tier_status=leann_installed_index_not_loaded` means LEANN code is available/requested but the cold-tier index/searcher is not ready.
-- `leann.cold_tier_status=ruvector_candidates_leann_not_installed_or_disabled` means cold-tier diagnostics are still RuVector-candidate based and must not be interpreted as LEANN compression results.
+- `leann.cold_tier_status=candidates_leann_not_installed_or_disabled` means cold-tier diagnostics are still vector-engine candidate based and must not be interpreted as LEANN compression results.
 
 ## Task 1: Preflight and runtime identity capture
 
@@ -193,7 +193,7 @@ python3 -m unittest test_longmemeval_oracle_canary
 
 Expected:
 
-- Branch is `query-expansion`.
+- Branch is the current diagnostics/launch branch for this runbook (for example, `diagnostics/longmemeval-retrieval-quality`) or a documented successor.
 - Tracked files clean before launch, except known untracked `docs/reference/` and older LOCOMO canary noise.
 - Tests pass.
 

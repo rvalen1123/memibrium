@@ -88,7 +88,7 @@ class StartupVectorConfigTests(unittest.TestCase):
         self.assertFalse(readiness["embedding"]["azure_embedding_configured"])
         self.assertEqual(
             readiness["leann"]["cold_tier_status"],
-            "ruvector_candidates_leann_not_installed_or_disabled",
+            "candidates_leann_not_installed_or_disabled",
         )
 
     def test_substrate_readiness_reports_api_embedding_and_leann_ready(self):

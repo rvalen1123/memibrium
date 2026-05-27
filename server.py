@@ -2692,7 +2692,7 @@ def _leann_substrate_readiness() -> dict:
     elif USE_LEANN and tier_available:
         cold_tier_status = "leann_installed_index_not_loaded"
     else:
-        cold_tier_status = "ruvector_candidates_leann_not_installed_or_disabled"
+        cold_tier_status = "candidates_leann_not_installed_or_disabled"
     return {
         "requested": USE_LEANN,
         "available": tier_available,

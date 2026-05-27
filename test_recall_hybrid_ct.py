@@ -212,7 +212,7 @@ class RecallHybridCTTests(unittest.TestCase):
         substrate = payload["telemetry"]["server"]["substrate_readiness"]
         self.assertIn("embedding", substrate)
         self.assertIn("leann", substrate)
-        self.assertEqual(substrate["leann"]["cold_tier_status"], "ruvector_candidates_leann_not_installed_or_disabled")
+        self.assertEqual(substrate["leann"]["cold_tier_status"], "candidates_leann_not_installed_or_disabled")
         self.assertFalse(payload["telemetry"]["server"]["legacy_fallback_executed"])
 
     def test_hybrid_failure_fallback_still_returns_ct_ranked_results(self):

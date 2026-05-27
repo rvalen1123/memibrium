@@ -57,6 +57,7 @@ RETRIEVAL_BRIDGE_PHASE_A_GATES = {
     "knowledge_update_coverage": "at least 3/5 knowledge-update rows are gold_supported, gold_supported_with_conflict, or partial_support; stale_only counted separately",
     "abstention_contamination": "no more than 1/4 abstention rows may be unanswerable_contaminated",
     "evidence_identity": "every answerable row preserves source refs sufficient for artifact-only review",
+    "substrate_comparability": "pre-answer substrate comparability met per launch plan: all answerable rows have a substrate-comparable retrieval result",
     "diagnostics_completeness": "live rows preserve candidate-pool, score-component, source-ref, coverage-rationale, and explicit substrate-readiness telemetry",
 }
 RETRIEVAL_COVERAGE_CLASSES = {
@@ -877,6 +878,18 @@ def _row_has_explicit_substrate_readiness(row: dict[str, Any]) -> bool:
     return False
 
 
+def _row_has_substrate_comparable_retrieval(row: dict[str, Any]) -> bool:
+    if str(row.get("retrieval_status", "")) != "ok":
+        return False
+    metadata = row.get("timestamp_source_metadata") or []
+    for item in metadata:
+        if not isinstance(item, dict) or not item.get("recall_telemetry_present"):
+            continue
+        if item.get("substrate_readiness_present") is True and isinstance(item.get("substrate_readiness"), dict):
+            return True
+    return False
+
+
 def _candidate_pool_has_core_fields(candidate_pool: Any) -> bool:
     if not isinstance(candidate_pool, dict):
         return False
@@ -1033,6 +1046,10 @@ def evaluate_retrieval_bridge_phase_a_gates(
             and not retrieval_by_id[qid].get("source_refs")
         )
     )
+    substrate_non_comparable = sorted(
+        qid for qid in [row["question_id"] for row in answerable_rows]
+        if qid not in retrieval_by_id or not _row_has_substrate_comparable_retrieval(retrieval_by_id[qid])
+    )
     retrieval_artifact_missing = sorted(
         row["question_id"]
         for row in present_rows
@@ -1079,6 +1096,13 @@ def evaluate_retrieval_bridge_phase_a_gates(
             "pass": not evidence_identity_missing and not retrieval_artifact_missing,
             "missing_source_ref_question_ids": evidence_identity_missing,
             "missing_retrieved_memory_id_question_ids": retrieval_artifact_missing,
+        },
+        "substrate_comparability": {
+            "pass": not substrate_non_comparable,
+            "target": "all_answerable_rows",
+            "comparable_answerable_rows": len(answerable_rows) - len(substrate_non_comparable),
+            "total_answerable_rows": len(answerable_rows),
+            "non_comparable_question_ids": substrate_non_comparable,
         },
         "diagnostics_completeness": diagnostics_completeness,
     }
@@ -1648,8 +1672,7 @@ def _unanswerable_evidence_contaminates(row: dict[str, Any], evidence: list[dict
     text = _evidence_text(evidence).lower()
     if not text:
         return False
-    if any(marker in text for marker in _NEGATIVE_EVIDENCE_MARKERS):
-        return False
+    negative_marker_present = any(marker in text for marker in _NEGATIVE_EVIDENCE_MARKERS)
     text_tokens = _coverage_tokens(text)
     missing_target_tokens = _unanswerable_missing_target_tokens(row)
     if missing_target_tokens:
@@ -1661,7 +1684,11 @@ def _unanswerable_evidence_contaminates(row: dict[str, Any], evidence: list[dict
     # For abstention rows, ordinary question-token overlap is expected: the
     # correct evidence is often a near-miss source that explains why the answer
     # is insufficient. Do not count that overlap as affirmative leakage.
-    return bool(answer_tokens and answer_tokens <= text_tokens)
+    if answer_tokens and answer_tokens <= text_tokens:
+        return True
+    if negative_marker_present:
+        return False
+    return False
 
 
 def _coverage_diagnostics(row: dict[str, Any], evidence: list[dict[str, Any]], source_refs: list[str]) -> dict[str, Any]:
