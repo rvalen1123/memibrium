@@ -110,6 +110,25 @@ Each line in `retrieval_results.jsonl` must contain at least the fields required
   "evidence_snippets": [],
   "timestamp_source_metadata": [],
   "fallback_error_flags": [],
+  "candidate_pool": {
+    "schema": "memibrium.recall.candidate_pool.v1",
+    "candidate_group_count": 0,
+    "groups": [],
+    "total_candidates_before_merge": 0,
+    "total_merged_candidates": 0,
+    "ranked_returned_count": 0,
+    "top_ranked_ids": []
+  },
+  "score_components": [],
+  "source_ref_analysis": {
+    "answer_session_ids": [],
+    "retrieved_session_ids": [],
+    "supporting_source_refs": [],
+    "retrieved_answer_session_ids": [],
+    "missing_answer_session_ids": [],
+    "retrieved_non_answer_session_ids": []
+  },
+  "coverage_rationale": "...",
   "coverage_class": "gold_supported",
   "retrieval_status": "ok"
 }
@@ -136,10 +155,22 @@ Evaluate these before any answer generation:
 2. Retrieval operational success: no uncaught 500s, serialization errors, missing JSON fields, or non-`ok` retrieval statuses.
 3. Preference coverage: at least `3/4` single-session-preference rows are `gold_supported` or `gold_supported_with_conflict`.
 4. Knowledge-update coverage: at least `3/5` knowledge-update rows are `gold_supported`, `gold_supported_with_conflict`, or `partial_support`; `stale_only` counted separately.
-5. Abstention contamination: no more than `1/4` abstention rows may be `unanswerable_contaminated`.
+5. Abstention contamination: no more than `1/4` abstention rows may be `unanswerable_contaminated`; contamination means affirmative answer leakage, not mere source presence. Negative, contrastive, or insufficiency-supporting context should classify as `unanswerable_supported`.
 6. Evidence identity: every answerable row with non-`unsupported` coverage preserves source refs sufficient for artifact-only review.
+7. Diagnostics completeness: live Phase A rows preserve candidate-pool and score-component telemetry when the server exposes recall telemetry; missing telemetry must be explicit in `timestamp_source_metadata` rather than silently omitted.
+8. Substrate comparability: `telemetry.server.substrate_readiness` must be captured when available. Do not compare a run against the 84%/canonical substrate unless embedding provider/model/dim and LEANN cold-tier status match the preregistered substrate.
 
 If any Phase A gate fails, stop before answer generation. The output is a retrieval coverage diagnostic only.
+
+## Substrate readiness interpretation
+
+The live server can expose `telemetry.server.substrate_readiness` with non-secret runtime identities:
+
+- `embedding.provider`, `embedding.model`, `embedding.expected_dim`, and `embedding.actual_dim` distinguish local Ollama-compatible embeddings such as `nomic-embed-text` from API/Azure embeddings such as `text-embedding-3-small`.
+- `embedding.endpoint_host` may be recorded, but secrets, tokens, passwords, DSNs, and full credential-bearing URLs must be redacted.
+- `leann.cold_tier_status=leann_ready` means `USE_LEANN=true`, LEANN is available, and a searcher/index is loaded.
+- `leann.cold_tier_status=leann_installed_index_not_loaded` means LEANN code is available/requested but the cold-tier index/searcher is not ready.
+- `leann.cold_tier_status=candidates_leann_not_installed_or_disabled` means cold-tier diagnostics are still vector-engine candidate based and must not be interpreted as LEANN compression results.
 
 ## Task 1: Preflight and runtime identity capture
 
@@ -162,7 +193,7 @@ python3 -m unittest test_longmemeval_oracle_canary
 
 Expected:
 
-- Branch is `query-expansion`.
+- Branch is the current diagnostics/launch branch for this runbook (for example, `diagnostics/longmemeval-retrieval-quality`) or a documented successor.
 - Tracked files clean before launch, except known untracked `docs/reference/` and older LOCOMO canary noise.
 - Tests pass.
 

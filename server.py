@@ -2606,6 +2606,113 @@ def _merge_candidates(candidate_groups: list[list[dict]]) -> list[dict]:
     return list(merged_by_id.values())
 
 
+def _candidate_sources(candidate: dict) -> list[str]:
+    sources = candidate.get("retrieval_sources") or []
+    if isinstance(sources, str):
+        sources = [sources]
+    else:
+        sources = list(sources)
+    source = candidate.get("retrieval_source")
+    if source and source not in sources:
+        sources.insert(0, source)
+    return [str(src) for src in sources if src]
+
+
+def _candidate_group_summary(group: list[dict], index: int) -> dict:
+    source_counts: dict[str, int] = {}
+    top_ids = []
+    for candidate in group or []:
+        if len(top_ids) < 10 and candidate.get("id"):
+            top_ids.append(candidate.get("id"))
+        sources = _candidate_sources(candidate) or [f"group_{index}"]
+        for source in sources:
+            source_counts[source] = source_counts.get(source, 0) + 1
+    if len(source_counts) == 1:
+        source = next(iter(source_counts))
+    elif source_counts:
+        source = "mixed"
+    else:
+        source = f"group_{index}"
+    return {
+        "source": source,
+        "count": len(group or []),
+        "source_counts": source_counts,
+        "top_ids": top_ids,
+    }
+
+
+def _candidate_pool_summary(candidate_groups: list[list[dict]], merged: list[dict], ranked: Optional[list[dict]] = None) -> dict:
+    groups = [_candidate_group_summary(group, idx) for idx, group in enumerate(candidate_groups, start=1)]
+    merged_source_counts: dict[str, int] = {}
+    for candidate in merged or []:
+        for source in _candidate_sources(candidate) or ["unknown"]:
+            merged_source_counts[source] = merged_source_counts.get(source, 0) + 1
+    return {
+        "schema": "memibrium.recall.candidate_pool.v1",
+        "candidate_group_count": len(groups),
+        "groups": groups,
+        "total_candidates_before_merge": sum(group["count"] for group in groups),
+        "total_merged_candidates": len(merged or []),
+        "merged_source_counts": merged_source_counts,
+        "ranked_returned_count": len(ranked or []),
+        "top_ranked_ids": [item.get("id") for item in (ranked or []) if item.get("id")],
+    }
+
+
+def _embedding_substrate_readiness() -> dict:
+    azure_configured = bool(AZURE_EMBEDDING_ENDPOINT and AZURE_EMBEDDING_DEPLOYMENT and AZURE_EMBEDDING_API_KEY)
+    if azure_configured:
+        provider = "azure_openai"
+        model = AZURE_EMBEDDING_DEPLOYMENT
+        endpoint = AZURE_EMBEDDING_ENDPOINT
+    else:
+        parsed = urlparse(EMBED_BASE or "")
+        host = parsed.hostname or ""
+        provider = "ollama_openai_compatible" if "ollama" in host or host in {"localhost", "127.0.0.1"} else "openai_compatible"
+        model = EMBED_MODEL
+        endpoint = EMBED_BASE
+    parsed_endpoint = urlparse(endpoint or "")
+    return {
+        "provider": provider,
+        "model": model,
+        "expected_dim": EMBEDDING_DIM,
+        "actual_dim": getattr(store, "embedding_dim_actual", None),
+        "api_embeddings_configured": azure_configured or bool(EMBED_BASE and EMBED_MODEL),
+        "endpoint_host": parsed_endpoint.netloc,
+        "endpoint_configured": bool(endpoint),
+        "azure_embedding_configured": azure_configured,
+    }
+
+
+def _leann_substrate_readiness() -> dict:
+    tier_available = bool(leann_tier and getattr(leann_tier, "available", False))
+    searcher_loaded = bool(leann_tier and getattr(leann_tier, "searcher", None))
+    if USE_LEANN and tier_available and searcher_loaded:
+        cold_tier_status = "leann_ready"
+    elif USE_LEANN and tier_available:
+        cold_tier_status = "leann_installed_index_not_loaded"
+    else:
+        cold_tier_status = "candidates_leann_not_installed_or_disabled"
+    return {
+        "requested": USE_LEANN,
+        "available": tier_available,
+        "searcher_loaded": searcher_loaded,
+        "cold_tier_status": cold_tier_status,
+        "backend": LEANN_BACKEND,
+        "index_dir": LEANN_INDEX_DIR,
+        "embedding_mode": LEANN_EMBEDDING_MODE,
+        "embedding_model": LEANN_EMBEDDING_MODEL,
+    }
+
+
+def _substrate_readiness() -> dict:
+    return {
+        "schema": "memibrium.substrate_readiness.v1",
+        "embedding": _embedding_substrate_readiness(),
+        "leann": _leann_substrate_readiness(),
+    }
+
+
 async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = None,
                           state_filter: Optional[list] = None, expand: bool = True,
                           graph_walk: bool = True, include_telemetry: bool = False,
@@ -2801,6 +2908,8 @@ async def recall_memories(query: str, top_k: int = 5, domain: Optional[str] = No
     if include_telemetry:
         timings_ms["total_ms"] = _monotonic_ms(recall_start)
         server_telemetry["response_result_count"] = len(ranked)
+        server_telemetry["candidate_pool"] = _candidate_pool_summary(candidate_groups, merged, ranked)
+        server_telemetry["substrate_readiness"] = _substrate_readiness()
         server_telemetry["timings_ms"] = timings_ms
         response["telemetry"] = retrieval_telemetry or {
             "schema": "memibrium.recall.telemetry.v1",

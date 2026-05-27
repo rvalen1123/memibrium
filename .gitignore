@@ -16,3 +16,23 @@ __pycache__/
 .hermes/
 wiki/
 data/
+
+# Windows alternate data stream artifacts from copied reference files
+*:Zone.Identifier
+
+# Local/generated evaluation artifacts. Curated summaries and pinned selections
+# should be committed explicitly outside these raw runtime directories.
+docs/eval/results/longmemeval_retrieval_bridge_phase_a_*/
+docs/eval/results/longmemeval_retrieval_bridge_phase_a_live_*/
+docs/eval/results/longmemeval_retrieval_bridge_phase_a_live_*_failure.md
+docs/eval/results/longmemeval_retrieval_bridge_phase_a_smoke_*/
+docs/eval/results/longmemeval_retrieval_bridge_phase_a_smoke_*_failure.md
+docs/eval/results/longmemeval_oracle_canary_prepare_*/
+docs/eval/results/locomo_context_packet_canary_baseline_*.json
+docs/eval/results/locomo_context_packet_canary_treatment_*.json
+docs/eval/results/locomo_context_packet_canary_summary_*.json
+docs/eval/results/locomo_context_packet_canary_result_*.md
+docs/eval/results/longmemeval_retrieval_quality_diagnostic_from_*.md
+
+# Local reference/archive imports; keep source-backed curated docs in tracked paths.
+docs/reference/

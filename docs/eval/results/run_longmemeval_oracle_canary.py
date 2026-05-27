@@ -16,6 +16,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import subprocess
 import time
 import urllib.error
@@ -56,6 +57,8 @@ RETRIEVAL_BRIDGE_PHASE_A_GATES = {
     "knowledge_update_coverage": "at least 3/5 knowledge-update rows are gold_supported, gold_supported_with_conflict, or partial_support; stale_only counted separately",
     "abstention_contamination": "no more than 1/4 abstention rows may be unanswerable_contaminated",
     "evidence_identity": "every answerable row preserves source refs sufficient for artifact-only review",
+    "substrate_comparability": "pre-answer substrate comparability met per launch plan: all answerable rows have a substrate-comparable retrieval result",
+    "diagnostics_completeness": "live rows preserve candidate-pool, score-component, source-ref, coverage-rationale, and explicit substrate-readiness telemetry",
 }
 RETRIEVAL_COVERAGE_CLASSES = {
     "gold_supported",
@@ -860,6 +863,85 @@ def _required_retrieval_fields_missing(row: dict[str, Any]) -> list[str]:
     return sorted(field for field in RETRIEVAL_ROW_REQUIRED_FIELDS if field not in row)
 
 
+def _row_has_recall_telemetry(row: dict[str, Any]) -> bool:
+    metadata = row.get("timestamp_source_metadata") or []
+    return any(isinstance(item, dict) and item.get("recall_telemetry_present") for item in metadata)
+
+
+def _row_has_explicit_substrate_readiness(row: dict[str, Any]) -> bool:
+    metadata = row.get("timestamp_source_metadata") or []
+    for item in metadata:
+        if not isinstance(item, dict) or not item.get("recall_telemetry_present"):
+            continue
+        if "substrate_readiness" in item or "substrate_readiness_present" in item:
+            return True
+    return False
+
+
+def _row_has_substrate_comparable_retrieval(row: dict[str, Any]) -> bool:
+    if str(row.get("retrieval_status", "")) != "ok":
+        return False
+    metadata = row.get("timestamp_source_metadata") or []
+    for item in metadata:
+        if not isinstance(item, dict) or not item.get("recall_telemetry_present"):
+            continue
+        if item.get("substrate_readiness_present") is True and isinstance(item.get("substrate_readiness"), dict):
+            return True
+    return False
+
+
+def _candidate_pool_has_core_fields(candidate_pool: Any) -> bool:
+    if not isinstance(candidate_pool, dict):
+        return False
+    if not isinstance(candidate_pool.get("groups"), list):
+        return False
+    merged_count_present = any(
+        field in candidate_pool
+        for field in ("total_merged_candidates", "ranked_returned_count", "final_returned_count")
+    )
+    return merged_count_present and "candidate_group_count" in candidate_pool
+
+
+def _diagnostic_completeness_issues(row: dict[str, Any]) -> list[str]:
+    if str(row.get("retrieval_status", "")) != "ok":
+        return []
+
+    issues: list[str] = []
+    has_recall_telemetry = _row_has_recall_telemetry(row)
+    retrieved_ids = row.get("retrieved_memory_ids") or []
+
+    if has_recall_telemetry and not _candidate_pool_has_core_fields(row.get("candidate_pool")):
+        issues.append("candidate_pool_missing_or_incomplete")
+    if has_recall_telemetry and retrieved_ids and not row.get("score_components"):
+        issues.append("score_components_missing")
+    if has_recall_telemetry and not _row_has_explicit_substrate_readiness(row):
+        issues.append("substrate_readiness_not_explicit")
+    if row.get("coverage_class") is not None and not isinstance(row.get("source_ref_analysis"), dict):
+        issues.append("source_ref_analysis_missing")
+    if row.get("coverage_class") is not None and not row.get("coverage_rationale"):
+        issues.append("coverage_rationale_missing")
+    return issues
+
+
+def _diagnostics_completeness_summary(retrieval_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    issue_rows = []
+    for row in retrieval_rows:
+        issues = _diagnostic_completeness_issues(row)
+        if issues:
+            issue_rows.append({"question_id": row.get("question_id"), "issues": issues})
+    recall_rows = [row for row in retrieval_rows if _row_has_recall_telemetry(row)]
+    return {
+        "pass": not issue_rows,
+        "issue_rows": issue_rows,
+        "rows_with_recall_telemetry": len(recall_rows),
+        "rows_with_candidate_pool": sum(1 for row in retrieval_rows if _candidate_pool_has_core_fields(row.get("candidate_pool"))),
+        "rows_with_score_components": sum(1 for row in retrieval_rows if row.get("score_components")),
+        "rows_with_source_ref_analysis": sum(1 for row in retrieval_rows if isinstance(row.get("source_ref_analysis"), dict)),
+        "rows_with_coverage_rationale": sum(1 for row in retrieval_rows if row.get("coverage_rationale")),
+        "rows_with_explicit_substrate_readiness": sum(1 for row in retrieval_rows if _row_has_explicit_substrate_readiness(row)),
+    }
+
+
 def validate_retrieval_rows_for_selection(
     selected_rows: list[dict[str, Any]],
     retrieval_rows: list[dict[str, Any]],
@@ -964,11 +1046,16 @@ def evaluate_retrieval_bridge_phase_a_gates(
             and not retrieval_by_id[qid].get("source_refs")
         )
     )
+    substrate_non_comparable = sorted(
+        qid for qid in [row["question_id"] for row in answerable_rows]
+        if qid not in retrieval_by_id or not _row_has_substrate_comparable_retrieval(retrieval_by_id[qid])
+    )
     retrieval_artifact_missing = sorted(
         row["question_id"]
         for row in present_rows
         if not row.get("retrieved_memory_ids") and row.get("coverage_class") not in {"unsupported"}
     )
+    diagnostics_completeness = _diagnostics_completeness_summary(present_rows)
 
     gates = {
         "coverage_audit_completeness": {
@@ -1010,6 +1097,14 @@ def evaluate_retrieval_bridge_phase_a_gates(
             "missing_source_ref_question_ids": evidence_identity_missing,
             "missing_retrieved_memory_id_question_ids": retrieval_artifact_missing,
         },
+        "substrate_comparability": {
+            "pass": not substrate_non_comparable,
+            "target": "all_answerable_rows",
+            "comparable_answerable_rows": len(answerable_rows) - len(substrate_non_comparable),
+            "total_answerable_rows": len(answerable_rows),
+            "non_comparable_question_ids": substrate_non_comparable,
+        },
+        "diagnostics_completeness": diagnostics_completeness,
     }
     gates["overall"] = {"pass": all(gate["pass"] for gate in gates.values())}
 
@@ -1036,6 +1131,7 @@ def evaluate_retrieval_bridge_phase_a_gates(
             "target_max": 1,
             "total": len(abstention_rows),
         },
+        "diagnostics_completeness": diagnostics_completeness,
         "stale_only_question_ids": stale_only_question_ids,
         "preregistered_gates": RETRIEVAL_BRIDGE_PHASE_A_GATES,
         "phase_b_recommendation": (
@@ -1143,6 +1239,10 @@ def prepare_retrieval_bridge_canary(
             "evidence_snippets": [],
             "timestamp_source_metadata": [],
             "fallback_error_flags": [],
+            "candidate_pool": {},
+            "score_components": [],
+            "source_ref_analysis": {},
+            "coverage_rationale": None,
             "coverage_class": None,
             "retrieval_status": "not_run_runtime_not_authorized",
         })
@@ -1153,6 +1253,8 @@ def prepare_retrieval_bridge_canary(
             "gold_supporting_evidence_present": [],
             "gold_supporting_evidence_missing": [],
             "stale_conflicting_evidence_present": [],
+            "source_ref_analysis": {},
+            "classification_notes": "retrieval_not_run_runtime_not_authorized",
             "proceed_to_answer_score": False,
             "stop_reason": "retrieval_not_run_runtime_not_authorized",
         })
@@ -1454,18 +1556,264 @@ def _extract_context_packet_evidence(packet: dict[str, Any]) -> list[dict[str, A
     return []
 
 
-def _heuristic_coverage_class(row: dict[str, Any], evidence: list[dict[str, Any]], source_refs: list[str]) -> str:
-    if not evidence:
-        return "unsupported"
+_COVERAGE_STOPWORDS = {
+    "the", "and", "or", "but", "with", "where", "what", "which", "when", "who", "whom",
+    "whose", "why", "how", "did", "does", "can", "you", "your", "user", "users", "recommend",
+    "provided", "information", "enough", "not", "is", "are", "was", "were", "for", "from",
+    "that", "this", "these", "those", "about", "after", "before", "prefer", "prefers",
+}
+
+_INSUFFICIENT_ANSWER_MARKERS = (
+    "not enough",
+    "information provided is not enough",
+    "unknown",
+    "cannot be determined",
+    "can't be determined",
+    "not provided",
+    "not mentioned",
+    "no information",
+    "insufficient information",
+)
+
+_NEGATIVE_EVIDENCE_MARKERS = (
+    "not enough",
+    "not provided",
+    "not mentioned",
+    "no information",
+    "no detail",
+    "no details",
+    "there was no",
+    "there were no",
+    "without",
+    "unknown",
+)
+
+_UNANSWERABLE_MISSING_TARGET_PATTERNS = (
+    re.compile(r"\bbut\s+(?:you\s+)?(?:did\s+)?not\s+(?:mention|mentioned)\s+(?P<target>[^.;]+)"),
+    re.compile(r"\bbut\s+not\s+(?P<target>[^.;]+)"),
+)
+
+
+def _coverage_tokens(text: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9]+", str(text).lower())
+        if len(token) > 2 and token not in _COVERAGE_STOPWORDS
+    }
+
+
+def _evidence_text(evidence: list[dict[str, Any]]) -> str:
+    return "\n".join(
+        str(item.get("content") or item.get("text") or "")
+        for item in evidence
+        if item.get("content") or item.get("text")
+    )
+
+
+def _is_unanswerable_row(row: dict[str, Any]) -> bool:
     question_id = str(row.get("question_id", ""))
-    if question_id.endswith("_abs"):
-        return "unanswerable_supported" if not source_refs else "unanswerable_contaminated"
     answer = str(row.get("answer", "")).lower()
-    if answer and any(answer in str(item.get("content") or item.get("text") or "").lower() for item in evidence):
-        return "gold_supported"
+    return question_id.endswith("_abs") or any(marker in answer for marker in _INSUFFICIENT_ANSWER_MARKERS)
+
+
+def _unanswerable_missing_target_tokens(row: dict[str, Any]) -> set[str]:
+    """Extract the withheld target from oracle insufficiency rationales.
+
+    Abstention answers often say "you mentioned X, but not Y". Evidence for X
+    is not contamination; contamination requires leaking Y. Keep this heuristic
+    conservative so Phase A does not mislabel contrast/near-miss context as an
+    affirmative answer.
+    """
+    answer = str(row.get("answer", "")).lower()
+    tokens: set[str] = set()
+    for pattern in _UNANSWERABLE_MISSING_TARGET_PATTERNS:
+        for match in pattern.finditer(answer):
+            target = match.group("target")
+            target = re.split(r"\b(?:although|because|instead|rather|while)\b", target, maxsplit=1)[0]
+            tokens.update(_coverage_tokens(target))
+    return tokens
+
+
+def _session_id_from_source_ref(source_ref: str) -> str:
+    ref = str(source_ref)
+    if ":turn_" in ref:
+        return ref.split(":turn_", 1)[0]
+    return ref.split(":", 1)[0]
+
+
+def _source_ref_analysis(row: dict[str, Any], source_refs: list[str]) -> dict[str, Any]:
+    answer_session_ids = [str(value) for value in (row.get("answer_session_ids") or [])]
+    retrieved_session_ids = unique_ordered([
+        _session_id_from_source_ref(ref)
+        for ref in source_refs
+        if ref
+    ])
+    supporting_source_refs = [
+        ref for ref in source_refs
+        if not answer_session_ids or _session_id_from_source_ref(ref) in answer_session_ids
+    ]
+    return {
+        "answer_session_ids": answer_session_ids,
+        "retrieved_session_ids": retrieved_session_ids,
+        "supporting_source_refs": supporting_source_refs,
+        "retrieved_answer_session_ids": [sid for sid in retrieved_session_ids if sid in answer_session_ids],
+        "missing_answer_session_ids": [sid for sid in answer_session_ids if sid not in retrieved_session_ids],
+        "retrieved_non_answer_session_ids": [sid for sid in retrieved_session_ids if answer_session_ids and sid not in answer_session_ids],
+    }
+
+
+def _unanswerable_evidence_contaminates(row: dict[str, Any], evidence: list[dict[str, Any]]) -> bool:
+    """Return true only for affirmative answer leakage, not mere source presence.
+
+    Phase A abstention rows need evidence that the context is insufficient. Older
+    diagnostics treated any retrieved source as contamination, which hid whether
+    retrieval had found the right negative/insufficiency context.
+    """
+    text = _evidence_text(evidence).lower()
+    if not text:
+        return False
+    negative_marker_present = any(marker in text for marker in _NEGATIVE_EVIDENCE_MARKERS)
+    text_tokens = _coverage_tokens(text)
+    missing_target_tokens = _unanswerable_missing_target_tokens(row)
+    if missing_target_tokens:
+        return missing_target_tokens <= text_tokens
+    answer_tokens = _coverage_tokens(row.get("answer", ""))
+    # Generic insufficiency answers contribute no positive-answer keywords.
+    if _is_unanswerable_row(row):
+        answer_tokens.clear()
+    # For abstention rows, ordinary question-token overlap is expected: the
+    # correct evidence is often a near-miss source that explains why the answer
+    # is insufficient. Do not count that overlap as affirmative leakage.
+    if answer_tokens and answer_tokens <= text_tokens:
+        return True
+    if negative_marker_present:
+        return False
+    return False
+
+
+def _coverage_diagnostics(row: dict[str, Any], evidence: list[dict[str, Any]], source_refs: list[str]) -> dict[str, Any]:
+    analysis = _source_ref_analysis(row, source_refs)
+    text = _evidence_text(evidence)
+    text_tokens = _coverage_tokens(text)
+    answer_tokens = _coverage_tokens(row.get("answer", ""))
+    qtype = str(row.get("question_type", ""))
+
+    if not evidence:
+        return {
+            "coverage_class": "unsupported",
+            "coverage_rationale": "no_evidence_returned",
+            "source_ref_analysis": analysis,
+        }
+
+    if _is_unanswerable_row(row):
+        contaminated = _unanswerable_evidence_contaminates(row, evidence)
+        return {
+            "coverage_class": "unanswerable_contaminated" if contaminated else "unanswerable_supported",
+            "coverage_rationale": "affirmative_answer_leakage" if contaminated else "insufficiency_or_negative_context_supported",
+            "source_ref_analysis": analysis,
+        }
+
+    answer = str(row.get("answer", "")).lower()
+    if answer and answer in text.lower():
+        return {
+            "coverage_class": "gold_supported",
+            "coverage_rationale": "answer_text_exact_match",
+            "source_ref_analysis": analysis,
+        }
+
+    if "preference" in qtype and analysis["supporting_source_refs"]:
+        overlap = answer_tokens & text_tokens
+        if len(overlap) >= 2 or not answer_tokens:
+            return {
+                "coverage_class": "gold_supported",
+                "coverage_rationale": "preference_session_support; answer_keyword_overlap=" + ",".join(sorted(overlap)),
+                "source_ref_analysis": analysis,
+            }
+
+    if answer_tokens and len(answer_tokens & text_tokens) >= max(2, min(4, len(answer_tokens))):
+        return {
+            "coverage_class": "gold_supported",
+            "coverage_rationale": "answer_keyword_overlap=" + ",".join(sorted(answer_tokens & text_tokens)),
+            "source_ref_analysis": analysis,
+        }
+
     if source_refs:
-        return "partial_support"
-    return "adjacent_entity_only"
+        return {
+            "coverage_class": "partial_support",
+            "coverage_rationale": "source_refs_present_without_sufficient_answer_support",
+            "source_ref_analysis": analysis,
+        }
+    return {
+        "coverage_class": "adjacent_entity_only",
+        "coverage_rationale": "evidence_without_source_refs",
+        "source_ref_analysis": analysis,
+    }
+
+
+def _heuristic_coverage_class(row: dict[str, Any], evidence: list[dict[str, Any]], source_refs: list[str]) -> str:
+    return _coverage_diagnostics(row, evidence, source_refs)["coverage_class"]
+
+
+def _query_variants_for_row(row: dict[str, Any]) -> list[str]:
+    query = str(row.get("question", ""))
+    qtype = str(row.get("question_type", ""))
+    variants = [query]
+    if "preference" in qtype:
+        sessions = ", ".join(str(sid) for sid in (row.get("answer_session_ids") or row.get("haystack_session_ids") or []))
+        preference_query = (
+            "Preference retrieval: find first-person preference statements and recommendation constraints.\n"
+            f"Question: {query}"
+        )
+        if sessions:
+            preference_query += f"\nTarget sessions: {sessions}"
+        variants.append(preference_query)
+    return variants
+
+
+def _candidate_pool_from_recall_telemetry(recall_telemetry: dict[str, Any], fallback_candidate_count: int) -> dict[str, Any]:
+    server_value = recall_telemetry.get("server")
+    server = server_value if isinstance(server_value, dict) else {}
+    server_candidate_pool = server.get("candidate_pool")
+    if isinstance(server_candidate_pool, dict):
+        pool = dict(server_candidate_pool)
+        pool.setdefault("schema", "memibrium.recall.candidate_pool.v1")
+        if "ranked_returned_count" not in pool:
+            pool["ranked_returned_count"] = pool.get("final_returned_count", pool.get("total_merged_candidates"))
+        pool.setdefault("top_ranked_ids", [])
+        return pool
+    groups = []
+    streams_value = recall_telemetry.get("streams")
+    streams = streams_value if isinstance(streams_value, dict) else {}
+    for source, stream in streams.items():
+        if not isinstance(stream, dict):
+            continue
+        groups.append({
+            "source": source,
+            "count": int(stream.get("returned_count") or len(stream.get("items") or [])),
+            "top_ids": [item.get("id") for item in (stream.get("items") or [])[:10] if isinstance(item, dict)],
+        })
+    fusion_value = recall_telemetry.get("fusion")
+    fusion = fusion_value if isinstance(fusion_value, dict) else {}
+    final_value = recall_telemetry.get("final")
+    final = final_value if isinstance(final_value, dict) else {}
+    ranked_ids = [item.get("id") for item in (final.get("items") or [])[:10] if isinstance(item, dict)]
+    final_returned_count = final.get("returned_count")
+    return {
+        "schema": "memibrium.recall.candidate_pool.v1",
+        "candidate_group_count": len(groups),
+        "groups": groups,
+        "total_candidates_before_merge": sum(group["count"] for group in groups) if groups else fallback_candidate_count,
+        "total_merged_candidates": fusion.get("fused_count_before_cap", final_returned_count or fallback_candidate_count),
+        "ranked_returned_count": final_returned_count,
+        "final_returned_count": final_returned_count,
+        "top_ranked_ids": ranked_ids,
+    }
+
+
+def _score_components_from_recall_telemetry(recall_telemetry: dict[str, Any]) -> list[dict[str, Any]]:
+    ranking = recall_telemetry.get("ranking") if isinstance(recall_telemetry.get("ranking"), dict) else {}
+    components = ranking.get("score_components") if isinstance(ranking.get("score_components"), list) else []
+    return [component for component in components if isinstance(component, dict)]
 
 
 def make_memibrium_retrieval_fn(
@@ -1476,7 +1824,8 @@ def make_memibrium_retrieval_fn(
     timeout: int = 30,
 ) -> Callable[..., dict[str, Any]]:
     def retrieve(row: dict[str, Any], *, domain: str, memory_ids: list[str]) -> dict[str, Any]:
-        query = row.get("question", "")
+        query_variants = _query_variants_for_row(row)
+        query = query_variants[-1]
         payload = {
             "query": query,
             "domain": domain,
@@ -1492,13 +1841,18 @@ def make_memibrium_retrieval_fn(
         scores = [score for score in (_score_from_evidence(item) for item in evidence) if score is not None]
         source_refs = [ref for ref in (_source_ref_from_evidence(item) for item in evidence) if ref]
         snippets = [str(item.get("content") or item.get("text") or "") for item in evidence if item.get("content") or item.get("text")]
-        source_attribution = packet.get("source_attribution") if isinstance(packet.get("source_attribution"), dict) else {}
-        recall_telemetry = packet.get("recall_telemetry") if isinstance(packet.get("recall_telemetry"), dict) else {}
-        recall_server = recall_telemetry.get("server") if isinstance(recall_telemetry.get("server"), dict) else {}
+        source_attribution_value = packet.get("source_attribution")
+        source_attribution = source_attribution_value if isinstance(source_attribution_value, dict) else {}
+        recall_telemetry_value = packet.get("recall_telemetry")
+        recall_telemetry = recall_telemetry_value if isinstance(recall_telemetry_value, dict) else {}
+        recall_server_value = recall_telemetry.get("server")
+        recall_server = recall_server_value if isinstance(recall_server_value, dict) else {}
         retrieval_path = source_attribution.get("retrieval_path", "unknown")
+        coverage = _coverage_diagnostics(row, evidence, source_refs)
+        substrate_readiness = recall_server.get("substrate_readiness")
         return {
             "retrieval_status": "ok",
-            "query_variants": [query],
+            "query_variants": query_variants,
             "retrieved_memory_ids": retrieved_ids,
             "scores": scores,
             "source_refs": source_refs,
@@ -1511,9 +1865,15 @@ def make_memibrium_retrieval_fn(
                 "recall_timings_ms": recall_server.get("timings_ms", {}),
                 "hybrid_succeeded": recall_server.get("hybrid_succeeded"),
                 "extra_vector_candidates_executed": recall_server.get("extra_vector_candidates_executed"),
+                "substrate_readiness_present": isinstance(substrate_readiness, dict),
+                "substrate_readiness": substrate_readiness if isinstance(substrate_readiness, dict) else None,
             }],
             "fallback_error_flags": [],
-            "coverage_class": _heuristic_coverage_class(row, evidence, source_refs),
+            "coverage_class": coverage["coverage_class"],
+            "coverage_rationale": coverage["coverage_rationale"],
+            "source_ref_analysis": coverage["source_ref_analysis"],
+            "candidate_pool": _candidate_pool_from_recall_telemetry(recall_telemetry, len(memory_ids)),
+            "score_components": _score_components_from_recall_telemetry(recall_telemetry),
         }
     return retrieve
 
@@ -1896,6 +2256,10 @@ def run_retrieval_bridge_phase_a(
                     "evidence_snippets": retrieved.get("evidence_snippets", []),
                     "timestamp_source_metadata": retrieved.get("timestamp_source_metadata", []),
                     "fallback_error_flags": retrieved.get("fallback_error_flags", []),
+                    "candidate_pool": retrieved.get("candidate_pool", {}),
+                    "score_components": retrieved.get("score_components", []),
+                    "source_ref_analysis": retrieved.get("source_ref_analysis", {}),
+                    "coverage_rationale": retrieved.get("coverage_rationale"),
                     "coverage_class": coverage_class,
                     "retrieval_status": retrieved.get("retrieval_status", "ok"),
                 }
@@ -1911,6 +2275,10 @@ def run_retrieval_bridge_phase_a(
                     "evidence_snippets": [],
                     "timestamp_source_metadata": [],
                     "fallback_error_flags": [str(exc)],
+                    "candidate_pool": {},
+                    "score_components": [],
+                    "source_ref_analysis": {},
+                    "coverage_rationale": f"runtime_exception:{type(exc).__name__}",
                     "coverage_class": "unsupported",
                     "retrieval_status": "runtime_exception",
                 }
@@ -1933,7 +2301,10 @@ def run_retrieval_bridge_phase_a(
                 "gold_supporting_evidence_missing": [],
                 "stale_conflicting_evidence_present": [],
                 "source_refs": retrieval_row.get("source_refs", []),
-                "classification_notes": "coverage supplied by injected retrieval function for Phase A scaffold",
+                "source_ref_analysis": retrieval_row.get("source_ref_analysis", {}),
+                "candidate_pool": retrieval_row.get("candidate_pool", {}),
+                "score_components": retrieval_row.get("score_components", []),
+                "classification_notes": retrieval_row.get("coverage_rationale") or "coverage supplied by injected retrieval function for Phase A scaffold",
             })
 
         write_jsonl(out_dir / "retrieval_results.jsonl", retrieval_rows)

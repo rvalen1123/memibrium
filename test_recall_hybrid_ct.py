@@ -206,6 +206,13 @@ class RecallHybridCTTests(unittest.TestCase):
         self.assertEqual(ranking["schema"], "memibrium.ct_ranking.telemetry.v1")
         self.assertEqual(ranking["top_ranked_ids"][0], "ct_high")
         self.assertIn("score_components", ranking)
+        candidate_pool = payload["telemetry"]["server"]["candidate_pool"]
+        self.assertEqual(candidate_pool["total_merged_candidates"], 2)
+        self.assertEqual(candidate_pool["groups"][0]["source"], "hybrid")
+        substrate = payload["telemetry"]["server"]["substrate_readiness"]
+        self.assertIn("embedding", substrate)
+        self.assertIn("leann", substrate)
+        self.assertEqual(substrate["leann"]["cold_tier_status"], "candidates_leann_not_installed_or_disabled")
         self.assertFalse(payload["telemetry"]["server"]["legacy_fallback_executed"])
 
     def test_hybrid_failure_fallback_still_returns_ct_ranked_results(self):
