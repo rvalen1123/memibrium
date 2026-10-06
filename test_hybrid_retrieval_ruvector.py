@@ -2,6 +2,7 @@
 """Regression tests for hybrid retrieval SQL in ruvector mode."""
 
 import asyncio
+import re
 import unittest
 from datetime import datetime, timezone
 
@@ -371,6 +372,47 @@ class HybridRetrievalRuvectorTests(unittest.TestCase):
         )
 
         self.assertIn("adjacent", [item["id"] for item in result])
+
+    def assertOrderBy(self, sql, expected):
+        """The query's ORDER BY clause, whitespace-normalised, is exactly `expected`."""
+        match = re.search(r"ORDER BY\s+(.*?)\s+LIMIT\b", sql, re.S)
+        self.assertIsNotNone(match, sql)
+        self.assertEqual(" ".join(match.group(1).split()), expected)
+
+    def test_lexical_tsvector_order_breaks_score_ties_by_id(self):
+        for vtype in ("ruvector", "pgvector"):
+            pool = FakePool()
+            retriever = HybridRetriever(pool=pool, vtype=vtype)
+
+            self.run_async(retriever._lexical_search("alice cobalt", top_k=3))
+
+            sql, _params = pool.conn.calls[0]
+            self.assertOrderBy(sql, "bm25_score DESC, id")
+
+    def test_lexical_ilike_fallback_orders_by_id(self):
+        for vtype in ("ruvector", "pgvector"):
+            pool = FakePool(fail_first_fetch=True)
+            retriever = HybridRetriever(pool=pool, vtype=vtype)
+
+            self.run_async(retriever._lexical_search("alice cobalt", top_k=3, domain="locomo-test"))
+
+            sql, _params = pool.conn.calls[1]
+            self.assertIn("ILIKE", sql)
+            self.assertOrderBy(sql, "id")
+
+    def test_temporal_order_breaks_created_at_ties_by_id(self):
+        for vtype in ("ruvector", "pgvector"):
+            pool = FakePool()
+            retriever = HybridRetriever(pool=pool, vtype=vtype)
+
+            self.run_async(retriever._temporal_search(
+                start=server_datetime(2026, 5, 1),
+                end=server_datetime(2026, 5, 2),
+                top_k=3,
+            ))
+
+            sql, _params = pool.conn.calls[0]
+            self.assertOrderBy(sql, "created_at, id")
 
 
 if __name__ == "__main__":

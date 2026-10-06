@@ -556,10 +556,11 @@ class HybridRetriever:
                 )
                 where_clauses.append("to_tsvector('english', content) @@ to_tsquery('english', $1)")
                 params.extend(extra_params)
+                # ts_rank ties are common; id breaks them so LIMIT never cuts in physical row order.
                 query_sql = f"""
                     {self._candidate_select("ts_rank(to_tsvector('english', content), to_tsquery('english', $1)) AS bm25_score")}
                     WHERE {" AND ".join(where_clauses)}
-                    ORDER BY bm25_score DESC
+                    ORDER BY bm25_score DESC, id
                     LIMIT $2
                     """
                 rows = await conn.fetch(query_sql, *params)
@@ -588,9 +589,11 @@ class HybridRetriever:
             params.extend(extra_params)
             params.extend(patterns)
             
+            # Every fallback row scores the same, so without an ORDER BY, LIMIT kept whichever rows the scan met first.
             query_sql = f"""
                 {self._candidate_select("0.5 AS bm25_score")}
                 WHERE {" AND ".join(where_clauses)}
+                ORDER BY id
                 LIMIT $1
             """
             rows = await conn.fetch(query_sql, *params)
@@ -623,10 +626,11 @@ class HybridRetriever:
             params = [start, end, top_k]
             params.extend(extra_params)
             
+            # id breaks ties between rows created at the same instant (for example, one batch insert).
             query = f"""
                 {self._candidate_select("1.0 AS temporal_score")}
                 WHERE {" AND ".join(where_clauses)}
-                ORDER BY created_at
+                ORDER BY created_at, id
                 LIMIT $3
             """
             rows = await conn.fetch(query, *params)
