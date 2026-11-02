@@ -32,3 +32,5 @@ jobs:
 
       - name: Ingest unit tests (34 tests)
         run: python test_ingest_unit.py
+      - name: Idempotent retain (no DB)
+        run: python test_retain_idempotency.py
