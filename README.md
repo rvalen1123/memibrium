@@ -408,6 +408,10 @@ python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
 
 ---
 
+## Idempotent retain
+
+`POST /mcp/retain` accepts `refs.idempotency_key` (or `refs.event_id`, treated the same). Re-sending an observation with a key already present in that `domain` returns the existing memory with `"duplicate": true` and performs no embedding, insert or background scoring. Two partial indexes (`memories_domain_idempotency_idx`, `memories_domain_event_id_idx`) back the lookup. Without a key, behaviour is unchanged.
+
 ## Benchmark Notes
 
 **Current status (April 2026):** `hybrid_retrieval.py` is a reconstruction from pyc metadata + test contracts, on branch `reconstruction-backup`. It passes all tests but is not bit-identical to the historical code state that produced earlier benchmark numbers.

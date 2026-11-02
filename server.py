@@ -484,6 +484,19 @@ def infer_context_query_type(query: str) -> str:
     return "general_recall"
 
 
+def _idempotency_key_from_refs(refs: Any) -> Optional[str]:
+    """`refs.idempotency_key` wins; `refs.event_id` is accepted as the same thing."""
+    refs = _coerce_refs_dict(refs)
+    for field in ("idempotency_key", "event_id"):
+        value = refs.get(field)
+        if value is None:
+            continue
+        value = str(value).strip()
+        if value:
+            return value
+    return None
+
+
 def _coerce_refs_dict(refs: Any) -> dict:
     if isinstance(refs, str):
         try:
@@ -760,6 +773,18 @@ class ColdStore:
             await conn.execute(
                 "CREATE INDEX IF NOT EXISTS memories_type_idx ON memories (memory_type);"
             )
+            # Idempotent retain: callers may pass refs.idempotency_key (or refs.event_id)
+            # and re-retaining the same key within a domain returns the existing memory.
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS memories_domain_idempotency_idx
+                ON memories (domain, (refs->>'idempotency_key'))
+                WHERE refs ? 'idempotency_key';
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS memories_domain_event_id_idx
+                ON memories (domain, (refs->>'event_id'))
+                WHERE refs ? 'event_id';
+            """)
             # BM25 full-text search support (hybrid retrieval)
             await conn.execute("""
                 ALTER TABLE memories
@@ -933,6 +958,24 @@ class ColdStore:
                 ON context_graph_edges (target_kind, target_id);
             """)
             log.info("Schema initialized: memories, snapshots, entities, feedback, contradictions, edges, self_model, decision_traces, context_graph")
+
+    async def find_by_idempotency_key(self, domain: str, key: str) -> Optional[dict]:
+        """Return the existing memory in `domain` whose refs carry this idempotency key, if any.
+
+        Both `refs.idempotency_key` and `refs.event_id` are honoured so adapters that already
+        stamp an event id (e.g. Listnr) get dedupe without a second field."""
+        if not key:
+            return None
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("""
+                SELECT id, state, source, domain, created_at
+                FROM memories
+                WHERE domain = $1
+                  AND (refs->>'idempotency_key' = $2 OR refs->>'event_id' = $2)
+                ORDER BY created_at ASC
+                LIMIT 1
+            """, domain, key)
+        return dict(row) if row else None
 
     async def insert_memory(self, mid: str, content: str, embedding: list,
                             state: str, source: str, domain: str,
@@ -2028,10 +2071,32 @@ class IngestAgent:
         ingest_start = time.perf_counter()
         timings = diagnostics.setdefault("timings_ms", {}) if diagnostics is not None else None
         await mark_stage("ingest.start")
+        refs = refs or {}
+
+        # Idempotent retain. A caller that stamps refs.idempotency_key (or refs.event_id) can
+        # safely re-send the same observation: the first memory in this domain carrying the
+        # key is returned, nothing is embedded or inserted, and no background scoring is queued.
+        idem_key = _idempotency_key_from_refs(refs)
+        if idem_key:
+            await mark_stage("idempotency.lookup")
+            existing = await self.store.find_by_idempotency_key(domain, idem_key)
+            if existing:
+                if timings is not None:
+                    timings["total_ms"] = _monotonic_ms(ingest_start)
+                return {
+                    "id": existing["id"],
+                    "memory_id": existing["id"],
+                    "state": existing.get("state"),
+                    "source": existing.get("source"),
+                    "domain": existing.get("domain", domain),
+                    "duplicate": True,
+                    "idempotency_key": idem_key,
+                    "background_scoring_queued": False,
+                }
+
         mid = f"mem_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc)
         memory_type = self._auto_classify_memory_type(content)
-        refs = refs or {}
 
         # FAST PATH: embed + store immediately with defaults (no blocking LLM call)
         importance = 0.5

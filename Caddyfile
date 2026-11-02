@@ -1,3 +1,5 @@
+# AZURE_GATEWAY_API_KEY must be set in Caddy's environment (e.g. /etc/caddy/caddy.env, EnvironmentFile=
+# in the systemd unit). It was previously committed here in plain text; that key must be rotated.
 leann-memory-prod.southcentralus.cloudapp.azure.com {
   handle /mcp* {
     reverse_proxy 127.0.0.1:8787
@@ -12,7 +14,7 @@ leann-memory-prod.southcentralus.cloudapp.azure.com {
 
 http://:9999 {
   reverse_proxy https://azuregateway.azure-api.net {
-    header_up api-key f7bde2a1985d4e8d95c22f4eef1874ab
+    header_up api-key {$AZURE_GATEWAY_API_KEY}
     header_up Host azuregateway.azure-api.net
     transport http {
       tls
