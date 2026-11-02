@@ -410,7 +410,7 @@ python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
 
 ## Idempotent retain
 
-`POST /mcp/retain` accepts `refs.idempotency_key` (or `refs.event_id`, treated the same). Re-sending an observation with a key already present in that `domain` returns the existing memory with `"duplicate": true` and performs no embedding, insert or background scoring. Two partial indexes (`memories_domain_idempotency_idx`, `memories_domain_event_id_idx`) back the lookup. Without a key, behaviour is unchanged.
+`POST /mcp/retain` accepts `refs.idempotency_key`; `refs.event_id` is used as the key only when no explicit `idempotency_key` is given. The chosen key is trimmed, bounded to 256 chars (longer → HTTP 400), and materialized into the stored `refs.idempotency_key`, so a retry with the same key in the same `domain` returns the existing memory with `"duplicate": true` and performs no embedding, insert or background scoring. A UNIQUE partial index on `(domain, refs->>'idempotency_key')` makes this atomic: two concurrent identical retains yield one memory, and the loser returns it as a duplicate. Without a key, behaviour is unchanged.
 
 ## Benchmark Notes
 

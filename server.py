@@ -484,8 +484,19 @@ def infer_context_query_type(query: str) -> str:
     return "general_recall"
 
 
+IDEMPOTENCY_KEY_MAX_CHARS = 256
+
+
+class IdempotencyKeyError(ValueError):
+    """The supplied idempotency key cannot be stored (too long)."""
+
+
 def _idempotency_key_from_refs(refs: Any) -> Optional[str]:
-    """`refs.idempotency_key` wins; `refs.event_id` is accepted as the same thing."""
+    """`refs.idempotency_key` wins; `refs.event_id` is accepted as the same thing.
+
+    Returns the trimmed key or None. Raises IdempotencyKeyError when the chosen key is
+    longer than IDEMPOTENCY_KEY_MAX_CHARS, so an oversized value is a 400 rather than a
+    B-tree tuple-size failure on insert."""
     refs = _coerce_refs_dict(refs)
     for field in ("idempotency_key", "event_id"):
         value = refs.get(field)
@@ -493,8 +504,25 @@ def _idempotency_key_from_refs(refs: Any) -> Optional[str]:
             continue
         value = str(value).strip()
         if value:
+            if len(value) > IDEMPOTENCY_KEY_MAX_CHARS:
+                raise IdempotencyKeyError(
+                    f"refs.{field} is {len(value)} chars; max is {IDEMPOTENCY_KEY_MAX_CHARS}"
+                )
             return value
     return None
+
+
+def _normalize_refs(refs: Any) -> tuple[dict, Optional[str]]:
+    """Coerce refs to a dict and materialize the idempotency key.
+
+    Whatever the caller sent (dict, JSON text, padded values), the dict that gets
+    persisted carries `idempotency_key` = the trimmed key when one exists, so the lookup
+    and the unique index see exactly what was stored."""
+    out = dict(_coerce_refs_dict(refs))
+    key = _idempotency_key_from_refs(out)
+    if key is not None:
+        out["idempotency_key"] = key
+    return out, key
 
 
 def _coerce_refs_dict(refs: Any) -> dict:
@@ -773,17 +801,16 @@ class ColdStore:
             await conn.execute(
                 "CREATE INDEX IF NOT EXISTS memories_type_idx ON memories (memory_type);"
             )
-            # Idempotent retain: callers may pass refs.idempotency_key (or refs.event_id)
-            # and re-retaining the same key within a domain returns the existing memory.
+            # Idempotent retain. ingest() materializes refs.idempotency_key (from an explicit
+            # key or, failing that, refs.event_id) before insert, so one UNIQUE partial index on
+            # that field is both the lookup path and the atomicity guarantee: a concurrent
+            # duplicate hits the constraint and is resolved by re-reading the winner.
+            await conn.execute("DROP INDEX IF EXISTS memories_domain_event_id_idx;")
+            await conn.execute("DROP INDEX IF EXISTS memories_domain_idempotency_idx;")
             await conn.execute("""
-                CREATE INDEX IF NOT EXISTS memories_domain_idempotency_idx
+                CREATE UNIQUE INDEX IF NOT EXISTS memories_domain_idempotency_uidx
                 ON memories (domain, (refs->>'idempotency_key'))
                 WHERE refs ? 'idempotency_key';
-            """)
-            await conn.execute("""
-                CREATE INDEX IF NOT EXISTS memories_domain_event_id_idx
-                ON memories (domain, (refs->>'event_id'))
-                WHERE refs ? 'event_id';
             """)
             # BM25 full-text search support (hybrid retrieval)
             await conn.execute("""
@@ -959,22 +986,25 @@ class ColdStore:
             """)
             log.info("Schema initialized: memories, snapshots, entities, feedback, contradictions, edges, self_model, decision_traces, context_graph")
 
-    async def find_by_idempotency_key(self, domain: str, key: str) -> Optional[dict]:
-        """Return the existing memory in `domain` whose refs carry this idempotency key, if any.
-
-        Both `refs.idempotency_key` and `refs.event_id` are honoured so adapters that already
-        stamp an event id (e.g. Listnr) get dedupe without a second field."""
-        if not key:
-            return None
-        async with self.pool.acquire() as conn:
-            row = await conn.fetchrow("""
+    IDEMPOTENCY_LOOKUP_SQL = """
                 SELECT id, state, source, domain, created_at
                 FROM memories
                 WHERE domain = $1
-                  AND (refs->>'idempotency_key' = $2 OR refs->>'event_id' = $2)
-                ORDER BY created_at ASC
+                  AND refs ? 'idempotency_key'
+                  AND refs->>'idempotency_key' = $2
                 LIMIT 1
-            """, domain, key)
+            """
+
+    async def find_by_idempotency_key(self, domain: str, key: str) -> Optional[dict]:
+        """Return the memory in `domain` whose refs.idempotency_key equals `key`, if any.
+
+        Only the materialized `idempotency_key` field is consulted (ingest() copies
+        `event_id` into it when no explicit key was given), and the predicate repeats the
+        partial index's `refs ? 'idempotency_key'` so the planner can use it."""
+        if not key:
+            return None
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(self.IDEMPOTENCY_LOOKUP_SQL, domain, key)
         return dict(row) if row else None
 
     async def insert_memory(self, mid: str, content: str, embedding: list,
@@ -2071,28 +2101,31 @@ class IngestAgent:
         ingest_start = time.perf_counter()
         timings = diagnostics.setdefault("timings_ms", {}) if diagnostics is not None else None
         await mark_stage("ingest.start")
-        refs = refs or {}
-
         # Idempotent retain. A caller that stamps refs.idempotency_key (or refs.event_id) can
         # safely re-send the same observation: the first memory in this domain carrying the
         # key is returned, nothing is embedded or inserted, and no background scoring is queued.
-        idem_key = _idempotency_key_from_refs(refs)
+        # refs is normalized (dict, trimmed key materialized) before both lookup and persistence.
+        refs, idem_key = _normalize_refs(refs)
+
+        def _duplicate_response(existing: dict) -> dict:
+            if timings is not None:
+                timings["total_ms"] = _monotonic_ms(ingest_start)
+            return {
+                "id": existing["id"],
+                "memory_id": existing["id"],
+                "state": existing.get("state"),
+                "source": existing.get("source"),
+                "domain": existing.get("domain", domain),
+                "duplicate": True,
+                "idempotency_key": idem_key,
+                "background_scoring_queued": False,
+            }
+
         if idem_key:
             await mark_stage("idempotency.lookup")
             existing = await self.store.find_by_idempotency_key(domain, idem_key)
             if existing:
-                if timings is not None:
-                    timings["total_ms"] = _monotonic_ms(ingest_start)
-                return {
-                    "id": existing["id"],
-                    "memory_id": existing["id"],
-                    "state": existing.get("state"),
-                    "source": existing.get("source"),
-                    "domain": existing.get("domain", domain),
-                    "duplicate": True,
-                    "idempotency_key": idem_key,
-                    "background_scoring_queued": False,
-                }
+                return _duplicate_response(existing)
 
         mid = f"mem_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc)
@@ -2121,11 +2154,22 @@ class IngestAgent:
             timings["embedding_ms"] = _monotonic_ms(embed_start)
         store_insert_start = time.perf_counter()
         await mark_stage("store.insert_memory")
-        await self.store.insert_memory(
-            mid, content, embedding, final_state, source, domain,
-            importance, entities, topics, [witness_1, witness_2],
-            memory_type=memory_type, event_at=event_at, refs=refs,
-        )
+        try:
+            await self.store.insert_memory(
+                mid, content, embedding, final_state, source, domain,
+                importance, entities, topics, [witness_1, witness_2],
+                memory_type=memory_type, event_at=event_at, refs=refs,
+            )
+        except asyncpg.UniqueViolationError:
+            # Two retains with the same key raced past the lookup; the unique partial index
+            # let exactly one in. Return the winner instead of failing the loser.
+            if not idem_key:
+                raise
+            await mark_stage("idempotency.race_resolved")
+            existing = await self.store.find_by_idempotency_key(domain, idem_key)
+            if existing is None:
+                raise
+            return _duplicate_response(existing)
         if timings is not None:
             timings["store_insert_ms"] = _monotonic_ms(store_insert_start)
 
@@ -3034,6 +3078,10 @@ async def handle_retain(request: Request) -> JSONResponse:
     domain = body.get("domain", "default")
     include_diagnostics = bool(body.get("include_diagnostics", False))
     benchmark_fast_path = bool(body.get("benchmark_fast_path", False))
+    try:
+        _idempotency_key_from_refs(body.get("refs"))
+    except IdempotencyKeyError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
     request_id = f"retain_{uuid.uuid4().hex[:12]}"
     await _start_retain_diagnostic(request_id, content=content, source=source, domain=domain)
     diagnostics: dict[str, Any] = {}
