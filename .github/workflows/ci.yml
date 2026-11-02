@@ -15,6 +15,17 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: memibrium
+          POSTGRES_PASSWORD: memibrium
+          POSTGRES_DB: memibrium_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U memibrium"
+          --health-interval 5s --health-timeout 5s --health-retries 10
 
     steps:
       - uses: actions/checkout@v4
@@ -32,5 +43,7 @@ jobs:
 
       - name: Ingest unit tests (34 tests)
         run: python test_ingest_unit.py
-      - name: Idempotent retain (no DB)
+      - name: Idempotent retain (unit + migration against Postgres)
+        env:
+          MEMIBRIUM_TEST_DSN: postgresql://memibrium:memibrium@localhost:5432/memibrium_test
         run: python test_retain_idempotency.py
