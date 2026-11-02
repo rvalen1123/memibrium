@@ -412,6 +412,17 @@ python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
 
 `POST /mcp/retain` accepts `refs.idempotency_key`; `refs.event_id` is used as the key only when no explicit `idempotency_key` is given. The chosen key is trimmed, bounded to 256 chars (longer → HTTP 400), and materialized into the stored `refs.idempotency_key`, so a retry with the same key in the same `domain` returns the existing memory with `"duplicate": true` and performs no embedding, insert or background scoring. A UNIQUE partial index on `(domain, refs->>'idempotency_key')` makes this atomic: two concurrent identical retains yield one memory, and the loser returns it as a duplicate. Without a key, behaviour is unchanged.
 
+Rows written before the unique index existed are migrated at startup, once, inside one transaction, before the index is built (`migrate_idempotency_keys` in `server.py`): stored keys are trimmed and blank/null keys dropped; rows carrying only `refs.event_id` get `refs.idempotency_key = trim(event_id)`; and where more than one row in a domain holds the same key, the earliest row keeps it and the others lose the key and record `refs.idempotency_duplicate_of = <winner id>` plus `refs.idempotency_key_retired`. Nothing is deleted. Rows whose `refs` is not a JSON object are left alone. To preview what the dedupe step would touch on a database:
+
+```sql
+SELECT domain, refs->>'idempotency_key' AS key, count(*)
+FROM memories
+WHERE jsonb_typeof(refs) = 'object' AND refs ? 'idempotency_key'
+GROUP BY 1, 2 HAVING count(*) > 1;
+```
+
+`python test_retain_idempotency.py` covers the request path and the migration's statement order without a database; set `MEMIBRIUM_TEST_DSN` to a disposable Postgres to also run the migration for real (CI does this with a `postgres:16` service).
+
 ## Benchmark Notes
 
 **Current status (April 2026):** `hybrid_retrieval.py` is a reconstruction from pyc metadata + test contracts, on branch `reconstruction-backup`. It passes all tests but is not bit-identical to the historical code state that produced earlier benchmark numbers.

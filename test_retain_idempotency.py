@@ -6,6 +6,7 @@ memory and performs no embedding, insert or background scoring.
 Runs without Postgres: the store and embedder are fakes that record calls."""
 
 import asyncio
+import os
 import json
 import unittest
 
@@ -94,6 +95,16 @@ class IdempotencyKeyTests(unittest.TestCase):
         self.assertEqual(_normalize_refs(None), ({}, None))
         self.assertEqual(_normalize_refs({"scan_id": "s"}), ({"scan_id": "s"}, None))
 
+    def test_normalize_refs_never_persists_a_blank_key(self):
+        # The partial unique index keys on the field's presence, so a stored "" would make
+        # every keyless retain in a domain collide with the next one.
+        for blank in ("", "   ", None):
+            refs, key = _normalize_refs({"idempotency_key": blank, "scan_id": "s"})
+            self.assertIsNone(key)
+            self.assertEqual(refs, {"scan_id": "s"})
+        refs, key = _normalize_refs({"idempotency_key": "", "event_id": "e-1"})
+        self.assertEqual((key, refs["idempotency_key"]), ("e-1", "e-1"))
+
 
 class IdempotentRetainTests(unittest.TestCase):
     def setUp(self):
@@ -177,6 +188,14 @@ class IdempotentRetainTests(unittest.TestCase):
         self.assertEqual(self.store.lookups, [])
         self.assertEqual(len(self.store.rows), 2)
 
+    def test_two_retains_with_a_blank_key_both_succeed(self):
+        a = run(self.agent.ingest("first", domain="d", refs={"idempotency_key": ""}))
+        b = run(self.agent.ingest("second", domain="d", refs={"idempotency_key": "  "}))
+        self.assertNotEqual(a["id"], b["id"])
+        self.assertFalse(a.get("duplicate") or b.get("duplicate"))
+        self.assertEqual(self.store.lookups, [])
+        self.assertEqual([r["refs"] for r in self.store.rows], [{}, {}])
+
     def test_diagnostics_record_the_lookup_stage(self):
         run(self.agent.ingest("x", domain="d", refs={"event_id": "e"}))
         diag: dict = {}
@@ -240,6 +259,143 @@ class ColdStoreLookupSQLTests(unittest.TestCase):
         self.assertEqual(len(conn.calls), 1)
         self.assertIsNone(run(store.find_by_idempotency_key("d", "")))
         self.assertEqual(len(conn.calls), 1)
+
+
+class _MigrationConn:
+    """Records the migration's statements; `has_index` drives the existence probe."""
+
+    def __init__(self, has_index):
+        self.has_index = has_index
+        self.calls: list[tuple[str, tuple]] = []
+        self.in_tx = False
+        self.tx_calls = 0
+
+    async def fetchval(self, sql, *args):
+        self.calls.append(("fetchval", sql, args))
+        return 1 if self.has_index else None
+
+    async def execute(self, sql, *args):
+        assert self.in_tx, "migration statements must run inside the transaction"
+        self.calls.append(("execute", sql, args))
+        return "UPDATE 2"
+
+    def transaction(self):
+        conn = self
+
+        class _Tx:
+            async def __aenter__(self_inner):
+                conn.in_tx = True
+                conn.tx_calls += 1
+
+            async def __aexit__(self_inner, *exc):
+                conn.in_tx = False
+                return False
+
+        return _Tx()
+
+
+class IdempotencyMigrationTests(unittest.TestCase):
+    """Startup must make a pre-#12 database indexable: normalize, backfill, dedupe, then
+    build the unique index, all in one transaction, and only when the index is absent."""
+
+    def test_skips_entirely_when_the_index_exists(self):
+        conn = _MigrationConn(has_index=True)
+        self.assertIsNone(run(server.migrate_idempotency_keys(conn)))
+        self.assertEqual([c[0] for c in conn.calls], ["fetchval"])
+        self.assertEqual(conn.calls[0][2], (server.IDEMPOTENCY_INDEX_NAME,))
+
+    def test_runs_steps_in_order_inside_one_transaction(self):
+        conn = _MigrationConn(has_index=False)
+        counts = run(server.migrate_idempotency_keys(conn))
+        self.assertEqual(counts, {"normalized": 2, "backfilled": 2, "deduped": 2})
+        self.assertEqual(conn.tx_calls, 1)
+        executed = [sql for kind, sql, _ in conn.calls if kind == "execute"]
+        self.assertEqual(executed[:3], [
+            server.IDEMPOTENCY_MIGRATION_SQL["normalize"],
+            server.IDEMPOTENCY_MIGRATION_SQL["backfill"],
+            server.IDEMPOTENCY_MIGRATION_SQL["dedupe"],
+        ])
+        # backfill is bounded by the same limit the request path enforces
+        backfill_args = [a for kind, sql, a in conn.calls if sql == server.IDEMPOTENCY_MIGRATION_SQL["backfill"]]
+        self.assertEqual(backfill_args, [(IDEMPOTENCY_KEY_MAX_CHARS,)])
+        self.assertIn("DROP INDEX IF EXISTS memories_domain_event_id_idx", executed[3])
+        self.assertIn("DROP INDEX IF EXISTS memories_domain_idempotency_idx", executed[4])
+        self.assertIn(f"CREATE UNIQUE INDEX {server.IDEMPOTENCY_INDEX_NAME}", executed[5])
+        self.assertIn("WHERE refs ? 'idempotency_key'", executed[5])
+        self.assertEqual(len(executed), 6)
+
+    def test_migration_sql_guards_non_object_refs_and_dedupes_without_deleting(self):
+        for sql in server.IDEMPOTENCY_MIGRATION_SQL.values():
+            self.assertIn("jsonb_typeof(refs) = 'object'", sql)
+            self.assertNotIn("DELETE", sql.upper())
+        self.assertIn("ORDER BY created_at, id", server.IDEMPOTENCY_MIGRATION_SQL["dedupe"])
+        self.assertIn("idempotency_duplicate_of", server.IDEMPOTENCY_MIGRATION_SQL["dedupe"])
+
+
+@unittest.skipUnless(os.environ.get("MEMIBRIUM_TEST_DSN"), "set MEMIBRIUM_TEST_DSN to a disposable Postgres")
+class IdempotencyMigrationPostgresTests(unittest.TestCase):
+    """The migration against a real Postgres (needs only the refs/domain/created_at columns),
+    seeded with every shape a PR #11 database can hold."""
+
+    ROWS = [
+        ("a1", "d1", {"idempotency_key": "k1", "event_id": "e1"}, "2026-01-01"),
+        ("a2", "d1", {"idempotency_key": "k1 ", "event_id": "e1"}, "2026-01-02"),  # padded dup of a1
+        ("a3", "d1", {"event_id": "e1"}, "2026-01-03"),                               # event_id only
+        ("a4", "d2", {"event_id": "e1"}, "2026-01-01"),                               # other domain
+        ("a5", "d1", {"idempotency_key": ""}, "2026-01-01"),                          # blank
+        ("a6", "d1", {"idempotency_key": "  ", "event_id": "e6"}, "2026-01-01"),      # blank + event_id
+        ("a7", "d1", {"idempotency_key": None, "event_id": "e7"}, "2026-01-01"),      # json null
+        ("a8", "d1", {"idempotency_key": 123}, "2026-01-01"),                         # number
+        ("a9", "d1", {"event_id": "x" * 300}, "2026-01-01"),                          # too long
+        ("b1", "d1", [], "2026-01-01"),                                               # array refs
+        ("b2", "d1", {"other": 1}, "2026-01-01"),
+    ]
+
+    def test_against_postgres(self):
+        from datetime import date
+
+        async def go():
+            conn = await asyncpg.connect(os.environ["MEMIBRIUM_TEST_DSN"])
+            try:
+                await conn.execute("DROP TABLE IF EXISTS memories")
+                await conn.execute("""CREATE TABLE memories (id TEXT PRIMARY KEY,
+                    domain TEXT NOT NULL DEFAULT 'default', refs JSONB NOT NULL DEFAULT '{}',
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())""")
+                for id_, dom, refs, ts in self.ROWS:
+                    await conn.execute(
+                        "INSERT INTO memories (id, domain, refs, created_at) VALUES ($1,$2,$3::jsonb,$4::date)",
+                        id_, dom, json.dumps(refs), date.fromisoformat(ts))
+                await conn.execute("CREATE INDEX memories_domain_event_id_idx ON memories (domain, (refs->>'event_id'))")
+                counts = await server.migrate_idempotency_keys(conn)
+                rows = {r["id"]: json.loads(r["refs"]) for r in await conn.fetch("SELECT id, refs FROM memories")}
+                idx = {r["indexname"] for r in await conn.fetch("SELECT indexname FROM pg_indexes WHERE tablename='memories'")}
+                again = await server.migrate_idempotency_keys(conn)
+                try:
+                    await conn.execute("""INSERT INTO memories (id, domain, refs) VALUES ('zz','d1','{"idempotency_key":"k1"}')""")
+                    rejected = False
+                except asyncpg.UniqueViolationError:
+                    rejected = True
+                return counts, rows, idx, again, rejected
+            finally:
+                await conn.close()
+
+        counts, rows, idx, again, rejected = run(go())
+        self.assertEqual(counts, {"normalized": 5, "backfilled": 4, "deduped": 1})
+        self.assertEqual(rows["a1"]["idempotency_key"], "k1")
+        self.assertEqual(rows["a2"], {"event_id": "e1", "idempotency_key_retired": "k1", "idempotency_duplicate_of": "a1"})
+        self.assertEqual(rows["a3"]["idempotency_key"], "e1")
+        self.assertEqual(rows["a4"]["idempotency_key"], "e1")
+        self.assertEqual(rows["a5"], {})
+        self.assertEqual(rows["a6"]["idempotency_key"], "e6")
+        self.assertEqual(rows["a7"]["idempotency_key"], "e7")
+        self.assertEqual(rows["a8"], {"idempotency_key": "123"})
+        self.assertNotIn("idempotency_key", rows["a9"])
+        self.assertEqual(rows["b1"], [])
+        self.assertEqual(rows["b2"], {"other": 1})
+        self.assertIn(server.IDEMPOTENCY_INDEX_NAME, idx)
+        self.assertNotIn("memories_domain_event_id_idx", idx)
+        self.assertIsNone(again)
+        self.assertTrue(rejected)
 
 
 if __name__ == "__main__":

@@ -522,7 +522,101 @@ def _normalize_refs(refs: Any) -> tuple[dict, Optional[str]]:
     key = _idempotency_key_from_refs(out)
     if key is not None:
         out["idempotency_key"] = key
+    else:
+        # A blank/None key must not be persisted: the partial unique index keys on the
+        # field's *presence*, so storing "" would make every keyless retain in a domain
+        # collide with the next one.
+        out.pop("idempotency_key", None)
     return out, key
+
+
+# Migration for rows written before the unique index existed (PR #11 and earlier).
+# Runs inside one transaction, in this order, and only while the index is absent:
+#   1. normalize  — trim stored keys; drop keys that are blank or JSON null
+#   2. backfill   — rows that carry only refs.event_id get idempotency_key = trim(event_id)
+#   3. dedupe     — for each (domain, key) held by >1 row keep the earliest row; the others
+#                   lose the key (so the index can build) and record which row they
+#                   duplicate. Nothing is deleted.
+# Rows whose refs is not a JSON object (the pre-refs default was '[]') are left alone.
+IDEMPOTENCY_INDEX_NAME = "memories_domain_idempotency_uidx"
+
+IDEMPOTENCY_MIGRATION_SQL = {
+    "normalize": """
+        UPDATE memories
+        SET refs = CASE
+            WHEN COALESCE(btrim(refs->>'idempotency_key'), '') = ''
+                THEN refs - 'idempotency_key'
+            ELSE jsonb_set(refs, '{idempotency_key}', to_jsonb(btrim(refs->>'idempotency_key')))
+        END
+        WHERE jsonb_typeof(refs) = 'object'
+          AND refs ? 'idempotency_key'
+          AND (refs->'idempotency_key')
+              IS DISTINCT FROM to_jsonb(NULLIF(btrim(refs->>'idempotency_key'), ''))
+    """,
+    "backfill": """
+        UPDATE memories
+        SET refs = jsonb_set(refs, '{idempotency_key}', to_jsonb(btrim(refs->>'event_id')))
+        WHERE jsonb_typeof(refs) = 'object'
+          AND NOT (refs ? 'idempotency_key')
+          AND COALESCE(btrim(refs->>'event_id'), '') <> ''
+          AND length(btrim(refs->>'event_id')) <= $1
+    """,
+    "dedupe": """
+        WITH ranked AS (
+            SELECT id,
+                   refs->>'idempotency_key' AS key,
+                   row_number() OVER w AS rn,
+                   first_value(id) OVER w AS winner
+            FROM memories
+            WHERE jsonb_typeof(refs) = 'object' AND refs ? 'idempotency_key'
+            WINDOW w AS (PARTITION BY domain, refs->>'idempotency_key'
+                         ORDER BY created_at, id
+                         ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+        )
+        UPDATE memories m
+        SET refs = (m.refs - 'idempotency_key')
+                   || jsonb_build_object('idempotency_duplicate_of', r.winner,
+                                         'idempotency_key_retired', r.key)
+        FROM ranked r
+        WHERE m.id = r.id AND r.rn > 1
+    """,
+}
+
+
+async def migrate_idempotency_keys(conn) -> Optional[dict]:
+    """Prepare `memories.refs` for the unique idempotency index, then create it.
+
+    Returns per-step row counts when the migration ran, or None when the index already
+    existed (nothing to do). Safe to re-run: every step is a no-op on migrated data."""
+    exists = await conn.fetchval(
+        "SELECT 1 FROM pg_indexes WHERE tablename = 'memories' AND indexname = $1",
+        IDEMPOTENCY_INDEX_NAME,
+    )
+    if exists:
+        return None
+    counts: dict = {}
+    async with conn.transaction():
+        counts["normalized"] = _rowcount(await conn.execute(IDEMPOTENCY_MIGRATION_SQL["normalize"]))
+        counts["backfilled"] = _rowcount(
+            await conn.execute(IDEMPOTENCY_MIGRATION_SQL["backfill"], IDEMPOTENCY_KEY_MAX_CHARS)
+        )
+        counts["deduped"] = _rowcount(await conn.execute(IDEMPOTENCY_MIGRATION_SQL["dedupe"]))
+        await conn.execute("DROP INDEX IF EXISTS memories_domain_event_id_idx;")
+        await conn.execute("DROP INDEX IF EXISTS memories_domain_idempotency_idx;")
+        await conn.execute(f"""
+            CREATE UNIQUE INDEX {IDEMPOTENCY_INDEX_NAME}
+            ON memories (domain, (refs->>'idempotency_key'))
+            WHERE refs ? 'idempotency_key';
+        """)
+    return counts
+
+
+def _rowcount(status: Any) -> int:
+    """asyncpg returns the command tag ('UPDATE 3'); take its trailing integer."""
+    try:
+        return int(str(status).rsplit(" ", 1)[-1])
+    except (ValueError, IndexError):
+        return 0
 
 
 def _coerce_refs_dict(refs: Any) -> dict:
@@ -805,13 +899,11 @@ class ColdStore:
             # key or, failing that, refs.event_id) before insert, so one UNIQUE partial index on
             # that field is both the lookup path and the atomicity guarantee: a concurrent
             # duplicate hits the constraint and is resolved by re-reading the winner.
-            await conn.execute("DROP INDEX IF EXISTS memories_domain_event_id_idx;")
-            await conn.execute("DROP INDEX IF EXISTS memories_domain_idempotency_idx;")
-            await conn.execute("""
-                CREATE UNIQUE INDEX IF NOT EXISTS memories_domain_idempotency_uidx
-                ON memories (domain, (refs->>'idempotency_key'))
-                WHERE refs ? 'idempotency_key';
-            """)
+            # Pre-index rows are normalized, backfilled and deduped first (see
+            # migrate_idempotency_keys) so the index can build on an existing database.
+            migrated = await migrate_idempotency_keys(conn)
+            if migrated is not None:
+                log.info(f"Idempotency index created; migrated rows: {migrated}")
             # BM25 full-text search support (hybrid retrieval)
             await conn.execute("""
                 ALTER TABLE memories
