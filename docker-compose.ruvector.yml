@@ -14,7 +14,14 @@
 #
 # Embedding width: nomic-embed-text returns 768 dimensions, so EMBEDDING_DIM defaults to 768 here. It fixes the
 # width of memories.embedding when the table is created; switching models later needs a new database (or
-# reembed.py), not just a new value.
+# reembed.py), not just a new value. A ruvector_data volume created by an older version of this file (1536-wide)
+# fails the startup dimension check: set EMBEDDING_DIM=1536 with a 1536-wide model, or start a fresh volume.
+#
+# Ports are published on 127.0.0.1 only. /mcp/* has no inbound authentication yet (MED-234), so do not publish
+# them on other interfaces. MEMIBRIUM_BIND changes the host address for all three.
+#
+# The image is used as built: the repository is not mounted over /app. For live code editing, add a
+# docker-compose.override.yml that mounts the repo (volumes: [".:/app"]) under the memibrium service.
 
 services:
   ruvector-db:
@@ -25,7 +32,7 @@ services:
       POSTGRES_USER: memory
       POSTGRES_PASSWORD: memory
     ports:
-      - "5432:5432"
+      - "${MEMIBRIUM_BIND:-127.0.0.1}:5432:5432"
     volumes:
       - ruvector_data:/var/lib/postgresql/data
     healthcheck:
@@ -41,7 +48,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     ports:
-      - "11434:11434"
+      - "${MEMIBRIUM_BIND:-127.0.0.1}:11434:11434"
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 5s
@@ -49,7 +56,8 @@ services:
       retries: 30
     restart: unless-stopped
 
-  # One-shot: pulls every model the server is configured to call, then exits 0. Re-running is cheap: models
+  # One-shot: pulls every model the server is configured to call (EMBEDDING_MODEL, CHAT_MODEL and SLM_MODEL, so
+  # an override is pulled too), or exactly the space-separated OLLAMA_MODELS when that is set, then exits 0. Re-running is cheap: models
   # already in the ollama_data volume are verified, not downloaded again.
   ollama-pull:
     image: ollama/ollama:0.40.13
@@ -59,16 +67,20 @@ services:
         condition: service_healthy
     environment:
       OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODELS_TO_PULL: ${OLLAMA_MODELS:-nomic-embed-text gemma4:e4b phi3:mini}
+      OLLAMA_MODELS_TO_PULL: ${OLLAMA_MODELS:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      CHAT_MODEL: ${CHAT_MODEL:-gemma4:e4b}
+      SLM_MODEL: ${SLM_MODEL:-phi3:mini}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         set -e
-        for m in $$OLLAMA_MODELS_TO_PULL; do
+        models="$${OLLAMA_MODELS_TO_PULL:-$$EMBEDDING_MODEL $$CHAT_MODEL $$SLM_MODEL}"
+        for m in $$models; do
           echo "pulling $$m"
           ollama pull "$$m"
         done
-        echo "models ready: $$OLLAMA_MODELS_TO_PULL"
+        echo "models ready: $$models"
     restart: "no"
 
   memibrium:
@@ -99,10 +111,8 @@ services:
       ENABLE_BACKGROUND_SCORING: ${ENABLE_BACKGROUND_SCORING:-true}
       ENABLE_CONTRADICTION_DETECTION: ${ENABLE_CONTRADICTION_DETECTION:-true}
       ENABLE_HIERARCHY_PROCESSING: ${ENABLE_HIERARCHY_PROCESSING:-true}
-    volumes:
-      - .:/app
     ports:
-      - "9999:9999"
+      - "${MEMIBRIUM_BIND:-127.0.0.1}:9999:9999"
     restart: unless-stopped
 
 volumes:

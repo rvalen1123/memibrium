@@ -4,7 +4,8 @@ name: Compose smoke
 # Dockerfile), embeddings only, and prove the vector path end to end: the model pull completes, RuVector loads,
 # embeddings are 768-wide, retain stores, a duplicate retain dedupes, and recall finds what was stored.
 # The chat models are not pulled (several GB); chat-backed background work is off and recall runs with
-# expand=false, so no chat call is made.
+# expand=false, so no chat call is made. The compose file mounts nothing over /app, so this tests the image as
+# built: a module missing from the Dockerfile fails here.
 
 on:
   pull_request:
@@ -20,6 +21,7 @@ on:
       - memory_hierarchy.py
       - ingest_engine.py
       - knowledge_taxonomy.py
+      - skills/**
       - .github/workflows/compose-smoke.yml
   push:
     branches: [main]
@@ -28,6 +30,14 @@ on:
       - docker-compose.ruvector.yml
       - requirements.txt
       - server.py
+      - ct_ranker.py
+      - ct_scoring.py
+      - hybrid_retrieval.py
+      - memory_hierarchy.py
+      - ingest_engine.py
+      - knowledge_taxonomy.py
+      - skills/**
+      - .github/workflows/compose-smoke.yml
   schedule:
     - cron: "17 9 * * 1"   # weekly, Monday 09:17 UTC: catches drift in pinned images or the model registry
   workflow_dispatch:

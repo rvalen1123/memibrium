@@ -127,7 +127,7 @@ The routes not listed above, with a one-line description taken from each handler
 
 Request bodies are JSON. Handlers return HTTP 400 with `{"error": ...}` when a required field is missing (`content`, `query`, `topic`, `memory_id`). This page has no per-route field tables; the manifest served at `GET /mcp/tools` is the authoritative list of tool names and input schemas.
 
-**Inbound authentication:** none of these routes check a credential today; the server trusts the network it is bound to (`0.0.0.0:9999` when started with `python server.py`). Tracked as MED-234.
+**Inbound authentication:** none of these routes check a credential today; the server trusts the network it is bound to (`0.0.0.0:9999` when started with `python server.py`; `127.0.0.1:9999` from the compose stack unless `MEMIBRIUM_BIND` is set). Tracked as MED-234.
 
 ---
 

@@ -72,8 +72,10 @@ This starts four services:
 |---|---|
 | `ruvector-db` | `ruvnet/ruvector-postgres:2.0.5` on 5432, with a `pg_isready` healthcheck |
 | `ollama` | `ollama/ollama:0.40.13` on 11434 |
-| `ollama-pull` | One-shot: pulls every model in `OLLAMA_MODELS`, then exits. The default is `nomic-embed-text gemma4:e4b phi3:mini`, several GB on the first run. |
-| `memibrium` | The server on 9999, built from the `Dockerfile` with the repo mounted at `/app` |
+| `ollama-pull` | One-shot: pulls the models the server is configured to call (`EMBEDDING_MODEL`, `CHAT_MODEL`, `SLM_MODEL`; by default `nomic-embed-text gemma4:e4b phi3:mini`, several GB on the first run), then exits. If `OLLAMA_MODELS` is set, it pulls exactly that space-separated list instead. |
+| `memibrium` | The server on 9999, built from the `Dockerfile` and run as built (nothing is mounted over `/app`) |
+
+All three ports are published on `127.0.0.1` only, because `/mcp/*` has no inbound authentication yet (MED-234). `MEMIBRIUM_BIND` changes the host address for all of them; publish on another interface only behind an authenticating proxy. For live code editing, add a `docker-compose.override.yml` that mounts the repo at `/app` under the `memibrium` service.
 
 The server starts only once the database is healthy and `ollama-pull` has exited successfully, because its startup check embeds a probe string. Follow the first-run download with `docker compose -f docker-compose.ruvector.yml logs -f ollama-pull`. Later runs reuse the `ollama_data` volume, and the pull only re-verifies.
 
@@ -85,6 +87,11 @@ The server starts only once the database is healthy and `ollama-pull` has exited
 
 `EMBEDDING_DIM` fixes the width of `memories.embedding` when the table is first created. If you change the embedding model, start against a fresh `ruvector_data` volume (or run `reembed.py`); changing the variable alone isn't enough. Only the variables listed in the compose file's `environment:` block reach the server.
 
+**Upgrading an existing stack.** Before MED-252 the compose file left `EMBEDDING_DIM` at the server default of 1536. A `ruvector_data` volume from then has a 1536-wide column. The new 768 default makes the startup dimension check refuse to start on it. Pick one:
+- Keep the data: set `EMBEDDING_DIM=1536` together with a 1536-wide `EMBEDDING_MODEL`.
+- Re-embed into a 768-wide store with `reembed.py`.
+- Start over: `docker compose -f docker-compose.ruvector.yml down -v` deletes the volumes and every stored memory.
+
 **Embeddings-only setup** (for example a retrieval benchmark): pull just nomic and turn off the chat-backed background work.
 
 ```bash
@@ -92,9 +99,11 @@ OLLAMA_MODELS=nomic-embed-text ENABLE_BACKGROUND_SCORING=false ENABLE_CONTRADICT
 ENABLE_HIERARCHY_PROCESSING=false docker compose -f docker-compose.ruvector.yml up -d --build
 ```
 
-`/mcp/reflect` and recall with `expand: true` call the chat model, so leave the chat model in `OLLAMA_MODELS` if you need those.
+`/mcp/reflect` and recall with `expand: true` call the chat model, so leave the chat model in `OLLAMA_MODELS` if you need those (or leave `OLLAMA_MODELS` unset to pull all three configured models).
 
-Check `docker compose -f docker-compose.ruvector.yml logs memibrium` for `Vector extension loaded` and no dimension error, then `curl http://localhost:9999/health`. CI runs this stack end to end in `.github/workflows/compose-smoke.yml`: health, retain, recall.
+Check `docker compose -f docker-compose.ruvector.yml logs memibrium` for `Vector extension loaded` and no dimension error, then `curl http://127.0.0.1:9999/health`. CI runs this stack end to end, against the image as built, in `.github/workflows/compose-smoke.yml`. The run checks the model pull, health, the RuVector extension, 768-wide embeddings, retain, a deduplicated duplicate retain, and recall.
+
+Compose-only variables (not read by `server.py`): `OLLAMA_MODELS` (pull list override) and `MEMIBRIUM_BIND` (host address for the published ports, default `127.0.0.1`).
 
 ## Install the plugin
 
@@ -181,7 +190,7 @@ python test_leann_e2e.py         # needs pip install leann
 
 ## Network exposure
 
-`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234). Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
+`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234). The compose stack publishes its ports on `127.0.0.1` for the same reason. Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
 
 ---
 
