@@ -84,7 +84,7 @@ jobs:
 
       - name: Embeddings are 768-wide
         run: |
-          out=$(curl -fsS "$BASE/mcp/test_embeddings")
+          out=$(curl -fsS -X POST -H 'Content-Type: application/json' -d '{"text": "compose smoke"}' "$BASE/mcp/test_embeddings")
           echo "$out"
           python3 -c 'import json,sys; d=json.loads(sys.argv[1]); dims=[v.get("dimensions") for v in d.values() if isinstance(v,dict) and v.get("success")]; print("dims:", dims); sys.exit(0 if 768 in dims else 1)' "$out"
 
