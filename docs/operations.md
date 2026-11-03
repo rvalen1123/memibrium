@@ -66,37 +66,44 @@ Startup migrates whatever database the `DB_*` variables point at. Never point a 
 docker compose -f docker-compose.ruvector.yml up -d
 ```
 
-This starts `ruvector-db` (ruvector-postgres on 5432), `ollama` (11434, empty model volume on first run) and `memibrium` (9999, built from the `Dockerfile`, with the repo mounted at `/app`). The compose file sets `EMBEDDING_MODEL=nomic-embed-text`, `CHAT_MODEL=gemma4:e4b` (fixed, not overridable from the shell) and `SLM_MODEL=phi3:mini`, all pointed at the `ollama` service. Compose substitutes `${...}` from your shell or a `.env` next to the compose file; only the variables listed in its `environment:` block reach the server.
+This starts four services:
 
-Two steps before the server is usable:
+| Service | What it does |
+|---|---|
+| `ruvector-db` | `ruvnet/ruvector-postgres:2.0.5` on 5432, with a `pg_isready` healthcheck |
+| `ollama` | `ollama/ollama:0.40.13` on 11434 |
+| `ollama-pull` | One-shot: pulls the models the server is configured to call (`EMBEDDING_MODEL`, `CHAT_MODEL`, `SLM_MODEL`; by default `nomic-embed-text gemma4:e4b phi3:mini`, several GB on the first run), then exits. If `OLLAMA_MODELS` is set, it pulls exactly that space-separated list instead. |
+| `memibrium` | The server on 9999, built from the `Dockerfile` and run as built (nothing is mounted over `/app`) |
 
-1. **Pull the models** into the Ollama volume (once per volume):
+All three ports are published on `127.0.0.1` only, because `/mcp/*` has no inbound authentication yet (MED-234). `MEMIBRIUM_BIND` changes the host address for all of them; publish on another interface only behind an authenticating proxy. For live code editing, add a `docker-compose.override.yml` that mounts the repo at `/app` under the `memibrium` service.
 
-   ```bash
-   docker compose -f docker-compose.ruvector.yml exec ollama ollama pull nomic-embed-text
-   docker compose -f docker-compose.ruvector.yml exec ollama ollama pull gemma4:e4b
-   docker compose -f docker-compose.ruvector.yml exec ollama ollama pull phi3:mini
-   ```
+The server starts only once the database is healthy and `ollama-pull` has exited successfully, because its startup check embeds a probe string. Follow the first-run download with `docker compose -f docker-compose.ruvector.yml logs -f ollama-pull`. Later runs reuse the `ollama_data` volume, and the pull only re-verifies.
 
-   Until the embedding model is present the startup embedding probe fails and the server container exits (it is restarted by `restart: unless-stopped`); after the pulls, `docker compose -f docker-compose.ruvector.yml restart memibrium`.
+**Defaults the compose file sets** (each one overridable from your shell or a `.env` next to the compose file):
+- `EMBEDDING_MODEL=nomic-embed-text` with `EMBEDDING_DIM=768`, the width nomic returns.
+- `CHAT_MODEL=gemma4:e4b`.
+- `SLM_MODEL=phi3:mini`.
+- All three point at the `ollama` service.
 
-2. **Match `EMBEDDING_DIM` to the model.** The compose file does not pass `EMBEDDING_DIM`, so the server uses `1536` while `nomic-embed-text` returns 768 dimensions, and startup stops with `Embedding dimension mismatch`. Without editing the tracked compose file, add a local override (do not commit it) and start with both files:
+`EMBEDDING_DIM` fixes the width of `memories.embedding` when the table is first created. If you change the embedding model, start against a fresh `ruvector_data` volume (or run `reembed.py`); changing the variable alone isn't enough. Only the variables listed in the compose file's `environment:` block reach the server.
 
-   ```yaml
-   # compose.local.yml
-   services:
-     memibrium:
-       environment:
-         EMBEDDING_DIM: "768"
-   ```
+**Upgrading an existing stack.** Before MED-252 the compose file left `EMBEDDING_DIM` at the server default of 1536. A `ruvector_data` volume from then has a 1536-wide column. The new 768 default makes the startup dimension check refuse to start on it. Pick one:
+- Keep the data: set `EMBEDDING_DIM=1536` together with a 1536-wide `EMBEDDING_MODEL`.
+- Re-embed into a 768-wide store with `reembed.py`.
+- Start over: `docker compose -f docker-compose.ruvector.yml down -v` deletes the volumes and every stored memory.
 
-   ```bash
-   docker compose -f docker-compose.ruvector.yml -f compose.local.yml up -d
-   ```
+**Embeddings-only setup** (for example a retrieval benchmark): pull just nomic and turn off the chat-backed background work.
 
-   Do this before the first start against a fresh `ruvector_data` volume; the column width is fixed when the table is created.
+```bash
+OLLAMA_MODELS=nomic-embed-text ENABLE_BACKGROUND_SCORING=false ENABLE_CONTRADICTION_DETECTION=false \
+ENABLE_HIERARCHY_PROCESSING=false docker compose -f docker-compose.ruvector.yml up -d --build
+```
 
-Check `docker compose -f docker-compose.ruvector.yml logs memibrium` for `ChatClient: Ollama (...)` and no dimension error, then `curl http://localhost:9999/health`.
+`/mcp/reflect` and recall with `expand: true` call the chat model, so leave the chat model in `OLLAMA_MODELS` if you need those (or leave `OLLAMA_MODELS` unset to pull all three configured models).
+
+Check `docker compose -f docker-compose.ruvector.yml logs memibrium` for `Vector extension loaded` and no dimension error, then `curl http://127.0.0.1:9999/health`. CI runs this stack end to end, against the image as built, in `.github/workflows/compose-smoke.yml`. The run checks the model pull, health, the RuVector extension, 768-wide embeddings, retain, a deduplicated duplicate retain, and recall.
+
+Compose-only variables (not read by `server.py`): `OLLAMA_MODELS` (pull list override) and `MEMIBRIUM_BIND` (host address for the published ports, default `127.0.0.1`).
 
 ## Install the plugin
 
@@ -183,7 +190,7 @@ python test_leann_e2e.py         # needs pip install leann
 
 ## Network exposure
 
-`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234). Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
+`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234). The compose stack publishes its ports on `127.0.0.1` for the same reason. Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
 
 ---
 
@@ -193,6 +200,6 @@ The Azure subscription this configuration targeted was closed on 2026-11-02. Not
 
 - **Terraform:** two trees for an Azure VM bootstrapped by cloud-init (Python, Caddy, PostgreSQL + pgvector, Memibrium): the older root tree (`main.tf`, `variables.tf`, `outputs.tf`, `modules/`) and the newer `deploy/` tree (with its own `deploy/terraform.tfvars.example`). The older VM layout ran the server on `127.0.0.1:8787`, the newer one on `127.0.0.1:9999`.
 - **`Caddyfile`:** a TLS block for an `*.cloudapp.azure.com` host proxying `/mcp*` and `/health` to `127.0.0.1:8787`, and an `http://:9999` block forwarding to an Azure API Management gateway with `header_up api-key {$AZURE_GATEWAY_API_KEY}`. The gateway key that was once committed in plain text is dead with the subscription.
-- **Azure OpenAI / Foundry variables** (still read by `server.py` and passed through by the compose file; set none of them): `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_API_VERSION`, `AZURE_EMBEDDING_ENDPOINT`, `AZURE_EMBEDDING_DEPLOYMENT`, `AZURE_EMBEDDING_API_KEY`, `AZURE_CHAT_ENDPOINT`, `AZURE_CHAT_DEPLOYMENT`, `AZURE_CHAT_API_KEY`, and the Terraform input `TF_VAR_foundry_api_key`. When `AZURE_EMBEDDING_ENDPOINT` + key or `AZURE_CHAT_ENDPOINT` + key are set, `EmbedClient` / `ChatClient` switch to the Azure branch.
+- **Azure OpenAI / Foundry variables** (still read by `server.py`, no longer passed through by the compose file since MED-252; set none of them): `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_API_VERSION`, `AZURE_EMBEDDING_ENDPOINT`, `AZURE_EMBEDDING_DEPLOYMENT`, `AZURE_EMBEDDING_API_KEY`, `AZURE_CHAT_ENDPOINT`, `AZURE_CHAT_DEPLOYMENT`, `AZURE_CHAT_API_KEY`, and the Terraform input `TF_VAR_foundry_api_key`. When `AZURE_EMBEDDING_ENDPOINT` + key or `AZURE_CHAT_ENDPOINT` + key are set, `EmbedClient` / `ChatClient` switch to the Azure branch.
 - **`/mcp/test_embeddings`** compares the Ollama embedder with an Azure deployment; the Azure half returns an error without the variables above.
 - `deploy.ps1`, `debug_azure.py` and `debug_env.py` belong to the same era.

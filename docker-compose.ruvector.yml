@@ -2,77 +2,117 @@
 # Memibrium with RuVector-postgres (Phase 2.5)
 # Usage: docker compose -f docker-compose.ruvector.yml up -d
 #
+# First `up` pulls the Ollama models listed in OLLAMA_MODELS (one-shot `ollama-pull` service); the server
+# starts only after that pull succeeds, because its startup check embeds a probe string.
+# Watch progress with: docker compose -f docker-compose.ruvector.yml logs -f ollama-pull
+#
 # RuVector-postgres is a drop-in pgvector replacement with:
 #   - GNN re-ranking (attention over HNSW candidates, <1ms)
 #   - SONA self-learning (query patterns improve results over time)
 #   - Same SQL operators, same vector(N) type, same index syntax
 #   - https://github.com/ruvnet/ruvector
+#
+# Embedding width: nomic-embed-text returns 768 dimensions, so EMBEDDING_DIM defaults to 768 here. It fixes the
+# width of memories.embedding when the table is created; switching models later needs a new database (or
+# reembed.py), not just a new value. A ruvector_data volume created by an older version of this file (1536-wide)
+# fails the startup dimension check: set EMBEDDING_DIM=1536 with a 1536-wide model, or start a fresh volume.
+#
+# Ports are published on 127.0.0.1 only. /mcp/* has no inbound authentication yet (MED-234), so do not publish
+# them on other interfaces. MEMIBRIUM_BIND changes the host address for all three.
+#
+# The image is used as built: the repository is not mounted over /app. For live code editing, add a
+# docker-compose.override.yml that mounts the repo (volumes: [".:/app"]) under the memibrium service.
 
 services:
   ruvector-db:
-    image: ruvnet/ruvector-postgres:latest
+    image: ruvnet/ruvector-postgres:2.0.5
     container_name: memibrium-ruvector-db
     environment:
       POSTGRES_DB: memory
       POSTGRES_USER: memory
       POSTGRES_PASSWORD: memory
     ports:
-      - "5432:5432"
+      - "${MEMIBRIUM_BIND:-127.0.0.1}:5432:5432"
     volumes:
       - ruvector_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U memory -d memory"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
     restart: unless-stopped
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.40.13
     container_name: memibrium-ollama
     volumes:
       - ollama_data:/root/.ollama
     ports:
-      - "11434:11434"
+      - "${MEMIBRIUM_BIND:-127.0.0.1}:11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
     restart: unless-stopped
+
+  # One-shot: pulls every model the server is configured to call (EMBEDDING_MODEL, CHAT_MODEL and SLM_MODEL, so
+  # an override is pulled too), or exactly the space-separated OLLAMA_MODELS when that is set, then exits 0. Re-running is cheap: models
+  # already in the ollama_data volume are verified, not downloaded again.
+  ollama-pull:
+    image: ollama/ollama:0.40.13
+    container_name: memibrium-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODELS_TO_PULL: ${OLLAMA_MODELS:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      CHAT_MODEL: ${CHAT_MODEL:-gemma4:e4b}
+      SLM_MODEL: ${SLM_MODEL:-phi3:mini}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        models="$${OLLAMA_MODELS_TO_PULL:-$$EMBEDDING_MODEL $$CHAT_MODEL $$SLM_MODEL}"
+        for m in $$models; do
+          echo "pulling $$m"
+          ollama pull "$$m"
+        done
+        echo "models ready: $$models"
+    restart: "no"
 
   memibrium:
     build: .
     container_name: memibrium-server
     depends_on:
-      - ruvector-db
-      - ollama
+      ruvector-db:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
-      # Azure OpenAI (optional — set these to use your hosted Azure models)
-      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
-      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
-      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-}
-      AZURE_API_VERSION: ${AZURE_API_VERSION:-2024-12-01-preview}
-      # Azure Embeddings (optional — separate from chat endpoint)
-      AZURE_EMBEDDING_ENDPOINT: ${AZURE_EMBEDDING_ENDPOINT:-}
-      AZURE_EMBEDDING_DEPLOYMENT: ${AZURE_EMBEDDING_DEPLOYMENT:-}
-      AZURE_EMBEDDING_API_KEY: ${AZURE_EMBEDDING_API_KEY:-${AZURE_OPENAI_API_KEY:-}}
-      AZURE_CHAT_ENDPOINT: ${AZURE_CHAT_ENDPOINT:-}
-      AZURE_CHAT_DEPLOYMENT: ${AZURE_CHAT_DEPLOYMENT:-}
-      AZURE_CHAT_API_KEY: ${AZURE_CHAT_API_KEY:-${AZURE_OPENAI_API_KEY:-}}
-      # Sovereign local embeddings via Ollama (default)
+      # Local embeddings and chat via Ollama. The clients send no real API key (MED-253), so these must be
+      # keyless OpenAI-compatible endpoints.
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://ollama:11434/v1}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-768}
+      OLLAMA_CHAT_BASE: ${OLLAMA_CHAT_BASE:-http://ollama:11434/v1}
+      CHAT_MODEL: ${CHAT_MODEL:-gemma4:e4b}
       SLM_MODEL: ${SLM_MODEL:-phi3:mini}
       SLM_BASE_URL: ${SLM_BASE_URL:-http://ollama:11434/v1}
-      # Sovereign local chat via Ollama (hardcoded — override .env to force local)
-      CHAT_MODEL: gemma4:e4b
       DB_HOST: ruvector-db
       DB_PORT: "5432"
       DB_NAME: memory
       DB_USER: memory
       DB_PASSWORD: memory
-      USE_RUVECTOR: "true"
-      RUVECTOR_GNN: "true"
+      USE_RUVECTOR: ${USE_RUVECTOR:-true}
+      RUVECTOR_GNN: ${RUVECTOR_GNN:-true}
       ENABLE_BACKGROUND_SCORING: ${ENABLE_BACKGROUND_SCORING:-true}
       ENABLE_CONTRADICTION_DETECTION: ${ENABLE_CONTRADICTION_DETECTION:-true}
       ENABLE_HIERARCHY_PROCESSING: ${ENABLE_HIERARCHY_PROCESSING:-true}
-    volumes:
-      - .:/app
     ports:
-      - "9999:9999"
+      - "${MEMIBRIUM_BIND:-127.0.0.1}:9999:9999"
     restart: unless-stopped
 
 volumes:

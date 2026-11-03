@@ -10,11 +10,15 @@ RUN apt-get update && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Every module server.py imports at startup. ct_ranker.py and ct_scoring.py were missing, so the image only
+# worked when docker-compose bind-mounted the repo over /app (MED-252).
 COPY server.py .
 COPY ingest_engine.py .
 COPY knowledge_taxonomy.py .
 COPY hybrid_retrieval.py .
 COPY memory_hierarchy.py .
+COPY ct_ranker.py .
+COPY ct_scoring.py .
 COPY skills/ ./skills/
 
 EXPOSE 9999
