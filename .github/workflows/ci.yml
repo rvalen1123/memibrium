@@ -12,19 +12,27 @@ permissions:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
+    # Explicit `shell: bash` runs every step with `-eo pipefail`; the GitHub default (`bash -e`)
+    # would let `python test.py | tee log` pass when the test fails.
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     services:
       postgres:
-        image: postgres:16
+        # pgvector/pgvector:pg16 resolved to 0.8.7-pg16 on 2026-10-31 (Docker Hub index digest).
+        # Pinned by digest so a retag cannot change the test substrate; bump tag and digest together.
+        image: pgvector/pgvector:0.8.7-pg16@sha256:0dd3149a06e4579a0d70d8fef9945636cd514005e7237deb27f9b67886f8dc4f
         env:
+          # POSTGRES_USER is created as a superuser, so it may CREATE DATABASE and CREATE EXTENSION.
           POSTGRES_USER: memibrium
           POSTGRES_PASSWORD: memibrium
           POSTGRES_DB: memibrium_test
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U memibrium"
+          --health-cmd "pg_isready -U memibrium -d memibrium_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
 
     steps:
@@ -43,7 +51,68 @@ jobs:
 
       - name: Ingest unit tests (34 tests)
         run: python test_ingest_unit.py
-      - name: Idempotent retain (unit + migration against Postgres)
+
+      - name: Unit tests that need no database, server, LLM or network
+        run: |
+          for t in \
+            test_coldstore_vector_candidates.py \
+            test_context_graph_v0.py \
+            test_ct_ranker.py \
+            test_hybrid_retrieval_ruvector.py \
+            test_recall_hybrid_ct.py \
+            test_server_recall_telemetry.py \
+            test_startup_vector_config.py \
+            test_temporal_memory.py \
+            test_locomo_context_packet_canary.py \
+            test_locomo_query_expansion.py \
+            test_longmemeval_oracle_canary.py
+          do
+            echo "::group::$t"
+            python "$t"
+            echo "::endgroup::"
+          done
+
+      - name: Check the database service (pgvector loads, user may create databases)
         env:
           MEMIBRIUM_TEST_DSN: postgresql://memibrium:memibrium@localhost:5432/memibrium_test
-        run: python test_retain_idempotency.py
+        run: |
+          python - <<'EOF'
+          import asyncio, os
+          import asyncpg
+
+          async def main():
+              conn = await asyncpg.connect(os.environ["MEMIBRIUM_TEST_DSN"])
+              try:
+                  await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                  version = await conn.fetchval("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
+                  distance = await conn.fetchval("SELECT '[1,0,0]'::vector <=> '[0,1,0]'::vector")
+                  can_create = await conn.fetchval(
+                      "SELECT rolsuper OR rolcreatedb FROM pg_roles WHERE rolname = current_user")
+                  print(f"server={conn.get_server_version()} pgvector={version} cosine_distance={distance} "
+                        f"can_create_database={can_create}")
+                  assert version, "pgvector extension did not load"
+                  assert abs(distance - 1.0) < 1e-9, distance
+                  assert can_create, "test user cannot CREATE DATABASE"
+              finally:
+                  await conn.close()
+
+          asyncio.run(main())
+          EOF
+
+      - name: Database-backed tests against Postgres + pgvector (fail on any skip)
+        env:
+          MEMIBRIUM_TEST_DSN: postgresql://memibrium:memibrium@localhost:5432/memibrium_test
+        run: |
+          for t in \
+            test_retain_idempotency.py \
+            test_hybrid_retrieval_tiebreak_db.py
+          do
+            echo "::group::$t"
+            python "$t" -v 2>&1 | tee "$RUNNER_TEMP/$t.log"
+            echo "::endgroup::"
+            # With MEMIBRIUM_TEST_DSN set nothing may skip; a skip here means the database tests did not run.
+            if grep -E '\.\.\. skipped|skipped=' "$RUNNER_TEMP/$t.log"; then
+              echo "::error::$t skipped tests although MEMIBRIUM_TEST_DSN is set"
+              exit 1
+            fi
+          done
