@@ -1,0 +1,135 @@
+name: Compose smoke
+
+# MED-252: bring up docker-compose.ruvector.yml as shipped (ruvector-postgres + Ollama + server built from the
+# Dockerfile), embeddings only, and prove the vector path end to end: the model pull completes, RuVector loads,
+# embeddings are 768-wide, retain stores, a duplicate retain dedupes, and recall finds what was stored.
+# The chat models are not pulled (several GB); chat-backed background work is off and recall runs with
+# expand=false, so no chat call is made.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - docker-compose.ruvector.yml
+      - requirements.txt
+      - server.py
+      - ct_ranker.py
+      - ct_scoring.py
+      - hybrid_retrieval.py
+      - memory_hierarchy.py
+      - ingest_engine.py
+      - knowledge_taxonomy.py
+      - .github/workflows/compose-smoke.yml
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - docker-compose.ruvector.yml
+      - requirements.txt
+      - server.py
+  schedule:
+    - cron: "17 9 * * 1"   # weekly, Monday 09:17 UTC: catches drift in pinned images or the model registry
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compose-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash   # -eo pipefail
+    env:
+      COMPOSE: docker compose -f docker-compose.ruvector.yml
+      OLLAMA_MODELS: nomic-embed-text
+      ENABLE_BACKGROUND_SCORING: "false"
+      ENABLE_CONTRADICTION_DETECTION: "false"
+      ENABLE_HIERARCHY_PROCESSING: "false"
+      BASE: http://127.0.0.1:9999
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and start the stack
+        run: $COMPOSE up -d --build
+
+      - name: Model pull finishes successfully
+        run: |
+          code=$(timeout 900 docker wait memibrium-ollama-pull)
+          docker logs memibrium-ollama-pull | tail -n 5
+          test "$code" = "0" || { echo "::error::ollama-pull exited $code"; exit 1; }
+
+      - name: Server becomes healthy
+        run: |
+          for i in $(seq 1 90); do
+            if curl -fsS "$BASE/health" >/dev/null 2>&1; then curl -fsS "$BASE/health"; echo; exit 0; fi
+            sleep 2
+          done
+          echo "::error::server did not become healthy within 3 minutes"
+          exit 1
+
+      - name: RuVector extension loaded, no dimension mismatch
+        run: |
+          logs=$(docker logs memibrium-server 2>&1)
+          echo "$logs" | grep -E "Vector extension loaded|dimension" || true
+          echo "$logs" | grep -q "Vector extension loaded: ruvector" \
+            || { echo "::error::server did not load the ruvector extension"; exit 1; }
+          if echo "$logs" | grep -qi "dimension mismatch"; then echo "::error::embedding dimension mismatch"; exit 1; fi
+
+      - name: Embeddings are 768-wide
+        run: |
+          out=$(curl -fsS "$BASE/mcp/test_embeddings")
+          echo "$out"
+          python3 -c 'import json,sys; d=json.loads(sys.argv[1]); dims=[v.get("dimensions") for v in d.values() if isinstance(v,dict) and v.get("success")]; print("dims:", dims); sys.exit(0 if 768 in dims else 1)' "$out"
+
+      - name: Retain, dedupe, recall
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+
+          BASE = os.environ["BASE"]
+
+          def post(path, body):
+              req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(),
+                                           headers={"Content-Type": "application/json"})
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  return json.loads(r.read())
+
+          domain = "ci-compose-smoke"
+          a = post("/mcp/retain", {"content": "The smoke-test lighthouse on Pelican Point is painted red and white.",
+                                   "domain": domain, "source": "ci", "refs": {"event_id": "smoke-1"}})
+          b = post("/mcp/retain", {"content": "Quarterly invoices are filed in the accounting drive under 2026.",
+                                   "domain": domain, "source": "ci", "refs": {"event_id": "smoke-2"}})
+          dup = post("/mcp/retain", {"content": "The smoke-test lighthouse on Pelican Point is painted red and white.",
+                                     "domain": domain, "source": "ci", "refs": {"event_id": "smoke-1"}})
+          print("retain:", a.get("id") or a.get("memory_id"), b.get("id") or b.get("memory_id"), "dup:", dup)
+          assert dup.get("duplicate") is True, f"duplicate retain was not deduped: {dup}"
+          assert (dup.get("id") or dup.get("memory_id")) == (a.get("id") or a.get("memory_id")), "duplicate returned a different memory"
+
+          hits = post("/mcp/recall", {"query": "what colour is the lighthouse", "domain": domain,
+                                      "top_k": 5, "expand": False})
+          if isinstance(hits, dict):
+              hits = hits.get("results", [])
+          print("recall:", [(h.get("content", "")[:40], h.get("score")) for h in hits])
+          assert hits, "recall returned nothing"
+          assert "lighthouse" in hits[0].get("content", ""), f"top hit is not the lighthouse memory: {hits[0]}"
+          print("smoke ok")
+          PY
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          $COMPOSE ps -a || true
+          for c in memibrium-server memibrium-ollama-pull memibrium-ollama memibrium-ruvector-db; do
+            echo "::group::$c"; docker logs --tail 200 "$c" 2>&1 || true; echo "::endgroup::"
+          done
+
+      - name: Tear down
+        if: always()
+        run: $COMPOSE down -v
