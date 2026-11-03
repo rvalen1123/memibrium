@@ -91,13 +91,14 @@ End-to-end tests that need the running server: `python test_production_e2e.py`, 
 - Changes to `Caddyfile`, `Dockerfile`, `docker-compose.ruvector.yml` or anything under `deploy/` or `modules/`.
 - Adding inbound authentication to `/mcp/*` (wanted, tracked as MED-234, but it changes every client).
 - Moving or deleting anything under `docs/eval/`.
+- Merging your own PR: only with Ricky's explicit go-ahead, and only once its required checks are green.
 
 **Never**
 - Commit secrets, keys, DSNs with passwords or `.env` files. Name environment variables; never write their values into code, docs, tests or commit messages. (The Azure gateway key once committed in `Caddyfile` is dead with the closed subscription; the config itself goes under MED-233.)
 - Weaken CT authority: no code path other than human confirmation may crystallize, and `confirm` must never be invoked automatically.
 - Run `python server.py`, a test with `MEMIBRIUM_TEST_DSN`, `reembed.py` or `scripts/clear_locomo_domains.sh` against a production database without explicit confirmation. Startup migrates whatever database it is pointed at.
 - Edit the contents of `docs/eval/**` records (preregistrations, results, handoffs). Add a new dated file instead; `docs/eval/locked_plan.md` is also read by `test_locomo_query_expansion.py`.
-- Rewrite history on `main` or merge your own PR.
+- Rewrite history on `main`.
 
 ## Before you finish
 
