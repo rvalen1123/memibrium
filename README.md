@@ -2,10 +2,6 @@
 
 > **"It gets smarter without getting wiser."** — That's the problem this stack is built to solve.
 
-Sovereign, self-hosted memory infrastructure implementing **Crystallization Theory** as a knowledge governance layer over tiered vector search. Ships as a plugin: one skill + one MCP server = governed memory for any agent.
-
-**Patent POC:** CT #63/953,509 · KEOS #63/962,609 · STG (pending)
-
 [![Status](https://img.shields.io/badge/status-production-green)]()
 [![Plugin](https://img.shields.io/badge/distribution-plugin-purple)]()
 [![MCP](https://img.shields.io/badge/protocol-MCP-blue)]()
@@ -13,519 +9,85 @@ Sovereign, self-hosted memory infrastructure implementing **Crystallization Theo
 [![Sovereign](https://img.shields.io/badge/sovereignty-full-darkgreen)]()
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18150324.svg)](https://doi.org/10.5281/zenodo.18150324)
 
----
+Memibrium is a self-hosted memory server for AI agents. It is a single Python/Starlette process (`server.py`) over PostgreSQL + pgvector that implements **Crystallization Theory (CT)** as a governance layer above vector search: every memory enters as an untrusted *observation*, is ranked and decayed by the weight function W(k,t), and can only become *crystallized* through human confirmation. Lifecycle state doubles as the storage tier (hot = observation/consideration/accepted, cold = crystallized/shed). It ships as a plugin: one governance skill plus one MCP server. Patent POC: CT #63/953,509 · KEOS #63/962,609 · STG (pending).
 
-## Install in 60 Seconds
+## Run it
 
-### Prerequisites
-
-- Python 3.11+, PostgreSQL with pgvector extension
-- Any OpenAI-compatible LLM provider (OpenAI, Azure, Ollama, etc.)
-- Node.js 18+ (for plugin hosts that use npx)
-
-### 1. Start the server
+Prerequisites: Python 3.11+, PostgreSQL with the `vector` extension (or [ruvector-postgres](https://github.com/ruvnet/ruvector)), and a keyless OpenAI-compatible endpoint for embeddings and chat (Ollama by default; the clients send the fixed key `ollama`, so hosted providers that need a real key do not work without a code change — see [docs/operations.md](docs/operations.md#how-the-llm-clients-pick-an-endpoint)). PDF ingestion additionally needs `pip install pymupdf` (or `pypdf`).
 
 ```bash
-pip install asyncpg openai starlette uvicorn
-
-export OPENAI_API_KEY="your-key"
-export OPENAI_BASE_URL="https://api.openai.com/v1"
-export DB_HOST=localhost DB_NAME=memory DB_USER=memory DB_PASSWORD=memory
-
-python server.py
+pip install -r requirements.txt
+cp .env.example .env            # then edit the values
+set -a; . ./.env; set +a        # server.py does not load .env itself; export it first
+python server.py                # listens on 0.0.0.0:9999
+curl http://localhost:9999/health
 ```
 
-### 2. Install the plugin
+Configuration is read from the environment (names, not values — see [docs/operations.md](docs/operations.md#environment-variables) for the full list with defaults):
 
-**Claude Code:**
-```bash
-claude plugin marketplace add rvalen1123/memibrium
-claude plugin install memibrium@memibrium
-```
+- Embeddings: `EMBEDDING_BASE_URL`, `EMBEDDING_MODEL`, `EMBEDDING_DIM` (must match the model's output width; checked at startup)
+- Chat and scoring: `OLLAMA_CHAT_BASE`, `CHAT_MODEL`, `SLM_BASE_URL`, `SLM_MODEL`
+- Database: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- Engines: `USE_RUVECTOR`, `USE_LEANN`; CT tuning: `IMPORTANCE_THRESHOLD`, `SHEDDING_THRESHOLD`, `CONSOLIDATE_INTERVAL_MIN`, `DECAY_RATE`, `CRYSTALLIZE_CONFIRMATIONS`; ranking: `CT_RANKER_*` (read in `ct_ranker.py`)
 
-**Copilot CLI:**
-```bash
-/plugin marketplace add rvalen1123/memibrium
-/plugin install memibrium@memibrium
-```
+Schema is created and migrated at startup (`ColdStore.initialize`: additive `IF NOT EXISTS` statements plus the one-shot `migrate_idempotency_keys`). Pointing the server at a database is itself a migration.
 
-**Cursor / other MCP clients:** See [DISTRIBUTION.md](DISTRIBUTION.md)
+The other supported way to run it is the compose stack, `docker compose -f docker-compose.ruvector.yml up -d` (ruvector-postgres + Ollama + server). It needs the Ollama models pulled and `EMBEDDING_DIM` matched to the embedding model before it serves requests; both steps are in [docs/operations.md](docs/operations.md#run-with-the-ruvector-compose-stack). The Terraform trees (`main.tf` + `modules/`, `deploy/`) and the `Caddyfile` are legacy Azure configuration and are not a way to run Memibrium ([Legacy: Azure](docs/operations.md#legacy-azure-subscription-closed-not-maintained)).
 
-### 3. Verify
+Install the agent plugin (skill + MCP wiring): `claude plugin marketplace add rvalen1123/memibrium && claude plugin install memibrium@memibrium`. Other hosts: [DISTRIBUTION.md](DISTRIBUTION.md).
 
-Ask your agent: *"What do you know about my project?"*
+## API at a glance
 
-You should get a governed memory response with lifecycle states — not a generic "I don't have memory" answer.
+All routes take and return JSON. [docs/api.md](docs/api.md) lists all 26 routes and the 18 tools in the `GET /mcp/tools` manifest with one line each; it gives request fields only for idempotent retain and the list routes. For per-tool input schemas, read the manifest.
 
----
+| Route | What it does |
+|---|---|
+| `POST /mcp/retain` | Store content: score → embed → insert as `observation`. Idempotent when `refs.idempotency_key` (or `refs.event_id`) is set. |
+| `POST /mcp/recall` | Dual-tier search (hot first, cold fallback) ranked by cosine × W(k,t). |
+| `POST /mcp/reflect` | Synthesize what is known about a topic; crystallized memories weighted highest. |
+| `POST /mcp/confirm` | Human validation. **The only path to `crystallized`.** |
+| `POST /mcp/freeze` / `POST /mcp/revert` | Snapshot a memory and exempt it from decay / restore a snapshot. |
+| `POST /mcp/consolidate` | Run one δ-decay + shed + crystallize cycle now (also runs every `CONSOLIDATE_INTERVAL_MIN`). |
+| `GET /mcp/dashboard` · `GET /mcp/graph` | Lifecycle counts and CT parameters · memory graph topology. |
+| `POST /mcp/context_packet` · `POST /mcp/prefetch` | Grounded context packet from episodic, graph and self-model evidence · predictive pre-fetch. |
+| `POST /mcp/ingest/{file,directory,jsonl}` · `POST /mcp/ingest/compile` · `GET /mcp/wiki` | Bulk ingestion with a 30-category taxonomy; compile a wiki from memory. |
+| `GET /mcp/tools` · `GET /health` | MCP tool manifest · liveness. |
 
-## One Install, Two Layers
+## Status and caveats
 
-### The skill: the brain
+- **No inbound authentication on `/mcp/*`.** The server trusts whatever network it is bound to; Caddy only terminates TLS. Tracked as **MED-234**. Do not expose port 9999 publicly.
+- **Azure is gone.** The Azure subscription was closed on 2026-11-02, so the gateway key once committed in `Caddyfile` is dead and needs no rotation. The leftover Azure config (Caddy gateway header, both Terraform trees) is unmaintained and slated for removal under **MED-233**.
+- Idempotent retain (PR #11, hardened in PR #12): keys are trimmed, bounded to 256 chars, materialized into `refs.idempotency_key`, and enforced by the unique partial index `memories_domain_idempotency_uidx`. Details and the pre-index migration: [docs/api.md](docs/api.md#idempotent-retain).
+- The `consideration` state exists in the schema and transition table but is not yet used by `IngestAgent`.
+- Benchmark numbers in older notes were measured against a degraded database and are flagged as such; see [docs/benchmarks.md](docs/benchmarks.md) and the dated records under [docs/eval/](docs/eval/README.md).
 
-The plugin ships **one governance skill** (`crystallization-memory`) that teaches agents how memory works in this system. It provides 8 behavioral rules, anti-patterns, and interaction patterns:
-
-- All knowledge enters as untrusted (OBSERVATION state)
-- Check lifecycle state before citing any memory
-- Human confirmation is the ONLY crystallization path
-- Contradictions trigger investigation, not overwrites
-- Freeze before destructive changes; revert if wrong
-
-### The MCP server: the hands
-
-The plugin wires in the **Memibrium MCP Server**, which gives your agent **8 tools** for governed memory operations. That is the execution layer for storing, retrieving, confirming, freezing, and reverting knowledge.
-
-### Why this plugin is different
-
-This is not a prompt pack. It is a packaged knowledge governance layer:
-
-- **The skill** teaches the agent when to store, when to cite, and what to avoid.
-- **The MCP tools** let the agent act on live memory with lifecycle guarantees.
-- **The plugin** keeps the guidance layer and execution layer aligned in one install.
-- **Multi-host support** lets you use the same governed memory across Claude Code, Copilot CLI, Cursor, and other compatible hosts.
-
----
-
-## Architecture
-
-![Technical Architecture](assets/technical-architecture.png)
-
-```
-Plugin Install
-  ├─ Skill (SKILL.md) → loaded into agent system prompt
-  │   "How the agent should think about memory"
-  │
-  └─ MCP Server (.mcp.json → server.py on :9999)
-      └─ CT Lifecycle Engine (the patent layer)
-          └─ pgvector dual-tier (hot=working, cold=crystallized)
-              └─ Any OpenAI-compatible LLM provider
-```
-
-**Tiering policy = lifecycle state.** That's the paper.
-
-| Tier | States | Engine | Latency |
-|---|---|---|---|
-| **Hot** | observation, consideration, accepted | [RuVector](https://github.com/ruvnet/ruvector) HNSW + GNN (or pgvector fallback) | <1ms |
-| **Cold** | crystallized, shed | [LEANN](https://github.com/yichuan-w/LEANN) graph recomputation (or pgvector fallback) | ~250ms |
-
----
-
-## What You Get
-
-| Component | What it adds | Examples |
-|---|---|---|
-| **Crystallization skill** | Memory governance, behavioral rules, guardrails | 8 rules: cite by state, never auto-crystallize, freeze before destructive changes |
-| **Memibrium MCP** | Live memory tooling with lifecycle guarantees | retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard |
-| **Ingestion engine** | Bulk document/conversation ingest with classification | File/directory/JSONL ingest, 30-category taxonomy, wiki compilation, provenance tracking |
-| **RuVector engine** | GNN re-ranking + SONA self-learning on hot tier | Sub-millisecond HNSW, results improve over time, drop-in pgvector replacement |
-| **LEANN cold tier** | 97% storage compression on crystallized memories | Graph-based recomputation, no stored embeddings, ~250ms search |
-
----
-
-## MCP Tools (16 endpoints)
-
-### Core Memory (8 tools)
-
-| Endpoint | Method | What | Patent |
-|---|---|---|---|
-| `/mcp/retain` | POST | Ingest → score → embed → store in hot tier | CT lifecycle |
-| `/mcp/recall` | POST | Dual-tier search: hot first, cold fallback, topic expansion | CT W(k,t) |
-| `/mcp/reflect` | POST | Synthesize memories, crystallized weighted highest | — |
-| `/mcp/confirm` | POST | **Human validation — ONLY path to crystallization** | STG Claim 1 |
-| `/mcp/freeze` | POST | Snapshot + exempt from decay | STG Claim 7 |
-| `/mcp/revert` | POST | Restore from snapshot | STG Claim 7 |
-| `/mcp/consolidate` | POST | Manual trigger: δ-decay + shed + auto-promote | CT δ-decay |
-| `/mcp/dashboard` | GET | Lifecycle counts, CT parameters, architecture | — |
-| `/mcp/tools` | GET | MCP tool manifest for auto-discovery | — |
-
-### Ingestion Engine (8 tools)
-
-| Endpoint | Method | What |
-|---|---|---|
-| `/mcp/ingest/file` | POST | Ingest a single file: read → chunk → classify → embed → CT lifecycle |
-| `/mcp/ingest/directory` | POST | Scan directory, ingest all supported files (.md, .txt, .json, .csv, .pdf) |
-| `/mcp/ingest/jsonl` | POST | Ingest Claude conversation JSONL with auto-classification into 30 knowledge categories |
-| `/mcp/ingest/status` | GET | Ingestion engine stats: hashes seen, taxonomy breakdown, config |
-| `/mcp/ingest/compile` | POST | Compile wiki index from ingested memories — generates topic articles + backlinks |
-| `/mcp/ingest/taxonomy` | GET | View the 30-category knowledge taxonomy with CT tier assignments |
-| `/mcp/ingest/taxonomy` | POST | Update taxonomy categories at runtime |
-| `/mcp/wiki` | GET | List compiled wiki files or read a specific file's content |
-
-#### Ingestion Pipeline
-
-```
-Raw Sources
-  │
-  ├─ Files (.md, .txt, .json, .csv, .pdf)
-  │   └─ /mcp/ingest/file or /mcp/ingest/directory
-  │       ├─ Semantic chunking (by headers for .md, paragraphs for .txt, rows for .csv)
-  │       ├─ Provenance hash per chunk (STG Claim 6 alignment)
-  │       ├─ Content dedup (SHA-256, skip already-seen hashes)
-  │       └─ Each chunk → IngestAgent → CT lifecycle
-  │
-  ├─ Claude Conversations (.jsonl)
-  │   └─ /mcp/ingest/jsonl
-  │       ├─ Parse {"messages": [...]} format
-  │       ├─ 30-category keyword classifier → domain assignment
-  │       ├─ CT tier mapping (crystallize | hot | archive)
-  │       ├─ Skip list (dead projects filtered out)
-  │       ├─ Length + dedup filters
-  │       └─ Each conversation → IngestAgent → CT lifecycle
-  │
-  └─ Wiki Compilation
-      └─ /mcp/ingest/compile
-          ├─ Query all active memories by domain
-          ├─ Group by topic → generate topic articles (.md)
-          ├─ Generate index.md with backlinks
-          └─ Output to configurable directory (Obsidian-compatible)
-              └─ /mcp/wiki?file=index.md → read compiled articles via MCP
-```
-
-#### Knowledge Taxonomy (30 categories)
-
-The ingestion engine ships with a 30-category taxonomy that maps content to CT lifecycle tiers:
-
-| Tier | Count | Examples |
-|---|---|---|
-| **crystallize** | 16 | Patents (CT/KEOS/STG, Forward Design, Visiting AI), Architecture (Memibrium, Azure, WordPress), IP Deals, Legal/Compliance |
-| **hot** | 13 | Business (Medvinci, LRS, Peptide Ops), Projects (Music, WhaleWatch), Strategy, Fine-Tuning |
-| **archive** | 1 | General Coding / Debugging |
-
-Taxonomy is configurable at runtime via `/mcp/ingest/taxonomy` (GET/POST) or by editing `knowledge_taxonomy.py`.
-
-### Lifecycle Flow
-
-![Lifecycle Flow](assets/lifecycle-flow.png)
-
-```
-Content arrives
-  │
-  ├─ IngestAgent: score importance (LLM, informational only)
-  ├─ Embed via configured LLM provider (OpenAI-compatible)
-  ├─ Store as OBSERVATION → gate → ACCEPTED (or stay in observation)
-  ├─ Extract entities → update world-state graph
-  │
-  ▼ (every 30 minutes)
-ConsolidateAgent:
-  ├─ Apply δ-decay: R(t+1) = R(t) × (1 - δ)
-  ├─ W(k,t) < 0.15 → SHED (archived, removed from hot)
-  ├─ confirmation_count ≥ 3 AND validation ≥ 0.5 → CRYSTALLIZED
-  └─ All transitions recorded in witness chain
-  │
-  ▼ (on query)
-QueryAgent:
-  ├─ Tier 1: Hot search (observation/consideration/accepted)
-  │   Score = cosine × (1 + log(1 + W(k,t)))
-  │   ≥ 2 results > 0.6? → return
-  └─ Tier 2: Cold search (crystallized/shed) + topic expansion
-```
-
----
-
-## The CT Distinction
-
-Every other memory system stores everything and hopes retrieval sorts it out. This stack implements **principled pruning** via Crystallization Theory:
-
-- **W(k,t) = (C × R × V) / A** — mathematical weight function drives ranking AND shedding
-- **δ-decay** — recency degrades every 30 minutes. Memories must earn survival through human confirmation.
-- **Human-gated crystallization** — `confirm` is the ONLY path from `accepted` → `crystallized`. No ML confidence score can crystallize a memory. (STG Claim 1: negative limitation)
-- **Witness chains** — every state transition is hash-linked, append-only, tamper-evident. (STG Claim 6)
-- **Freeze/revert** — COW snapshots let you freeze a memory (exempt from decay) and revert to any prior state. (STG Claim 7)
-
-> *"Pruning is where most memory systems fall apart. Without decay or relevance scoring, you end up with a dense context of outdated state that can mislead the model worse than no memory at all."*
-
----
-
-## Competitive Landscape (April 2026)
-
-| Capability | mem0 | supermemory | Google Agent | Hindsight | memU | **This** |
-|---|---|---|---|---|---|---|
-| Importance scoring (LLM-gated writes) | ❌ | ❌ | ✅ | ❌ | ⚠️¹ | ✅ |
-| Entity extraction + world state | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Background consolidation (δ-decay) | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ |
-| Vector search (real cosine scores) | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Hot/cold tiered storage | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| MCP endpoint | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
-| Sovereign (self-hosted, no cloud deps) | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Multi-model routing | ❌ | ❌ | ❌ | ❌ | ✅² | ✅ |
-| One-command deploy | ❌ | ✅ | ❌ | ✅ | ⚠️³ | ✅ |
-| LLM-generated summaries | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ |
-| Topic expansion | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Bulk document/conversation ingestion | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Knowledge taxonomy + auto-classification | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Wiki compilation from memory | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Proactive intent prediction | ❌ | ❌ | ❌ | ❌ | ✅ | ❌⁴ |
-| Hierarchical memory (3-layer) | ❌ | ❌ | ❌ | ❌ | ✅ | ❌⁴ |
-| Multimodal ingestion | ❌ | ❌ | ❌ | ❌ | ✅ | ⚠️⁵ |
-| Benchmark published (Locomo) | ❌ | ❌ | ❌ | ❌ | ✅ | ❌⁴ |
-| **Human-gated crystallization** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Witness chain provenance** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Freeze / revert (COW snapshots)** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **W(k,t) mathematical scoring** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Plugin distribution (skill + MCP)** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-
-**Score** | 4/23 | 4/23 | 5/23 | 5/23 | 10/23 | **19/23** |
-
-> ¹ memU stores everything then auto-organizes — no LLM gate on ingest.
-> ² memU supports `llm_profiles` for provider switching, not per-operation model routing.
-> ³ memU self-hosted requires Python 3.13+, PostgreSQL + pgvector.
-> ⁴ Roadmap. Proactive prediction = Phase 4. Hierarchical memory = Phase 5.
-> ⁵ Text-based formats (MD, TXT, JSON, CSV, PDF text extraction). Image/audio ingestion planned.
-
----
-
-## Deploy
-
-### Local (any machine)
+## Tests
 
 ```bash
-pip install asyncpg openai starlette uvicorn
-
-export OPENAI_API_KEY="your-key"
-export OPENAI_BASE_URL="https://api.openai.com/v1"  # or your provider
-export EMBEDDING_MODEL="text-embedding-3-small"
-export CHAT_MODEL="gpt-4.1-mini"
-export DB_HOST=localhost DB_NAME=memory DB_USER=memory DB_PASSWORD=memory
-
-# Optional: enable RuVector (GNN re-ranking + SONA self-learning)
-# Requires ruvnet/ruvector-postgres instead of standard PostgreSQL
-export USE_RUVECTOR=true
-
-python server.py
+python test_taxonomy.py              # 40 tests, no DB or LLM
+python test_ingest_unit.py           # 34 tests, no DB or LLM
+# + 11 more dependency-free test files (list in docs/operations.md#testing)
+MEMIBRIUM_TEST_DSN=postgresql://memibrium:memibrium@localhost:5432/memibrium_test \
+  python test_retain_idempotency.py -v          # 18 tests
+MEMIBRIUM_TEST_DSN=... python test_hybrid_retrieval_tiebreak_db.py -v   # 4 tests
 ```
 
-### With RuVector (Docker — recommended)
-
-```bash
-# One command — spins up ruvector-postgres + memibrium
-docker compose -f docker-compose.ruvector.yml up -d
-
-# Enable LEANN cold tier (optional, 97% storage savings)
-pip install leann sentence-transformers
-export USE_LEANN=true
-export LEANN_EMBEDDING_MODE=sentence-transformers  # or openai
-export LEANN_EMBEDDING_MODEL=facebook/contriever    # fast, local, no API key
-```
-
-RuVector-postgres is a drop-in pgvector replacement with GNN re-ranking and SONA self-learning. LEANN stores a pruned graph and recomputes embeddings on-demand for crystallized/shed memories. Both fall back to pgvector automatically if not available.
-
-### Cloud (Terraform + Azure VM)
-
-```bash
-cd memibrium
-cp terraform.tfvars.example terraform.tfvars
-# Edit: subscription_id, resource_group, allowed_ssh_cidrs
-
-export TF_VAR_foundry_api_key="your-key-here"
-terraform init && terraform plan && terraform apply
-```
-
-The VM bootstraps via cloud-init: Python, Caddy, PostgreSQL + pgvector, Memibrium.
-
-### Supported LLM Providers
-
-Any OpenAI-compatible API works out of the box:
-
-| Provider | `OPENAI_BASE_URL` | Notes |
-|---|---|---|
-| OpenAI | `https://api.openai.com/v1` | Default |
-| Azure OpenAI / Foundry | `https://your-resource.openai.azure.com/` | Auto-detected |
-| Ollama | `http://localhost:11434/v1` | Local, no API key needed |
-| OpenRouter | `https://openrouter.ai/api/v1` | Multi-model access |
-| vLLM / TGI | `http://localhost:8000/v1` | Self-hosted inference |
-
----
-
-## Repository Layout
-
-```
-memibrium/
-├── server.py                               # CT memory server (15 MCP endpoints)
-├── ingest_engine.py                        # Document/JSONL ingestion + wiki compiler
-├── knowledge_taxonomy.py                   # 30-category classifier with CT tier mapping
-├── plugins/
-│   └── memibrium/
-│       ├── .mcp.json                       # MCP config (auto-wired on install)
-│       └── skills/
-│           └── crystallization-memory/
-│               └── SKILL.md                # Governance skill (8 rules)
-├── test_taxonomy.py                        # 40/40 taxonomy classifier tests
-├── test_ingest_unit.py                     # 34/34 chunking + provenance tests
-├── test_ingest_e2e.py                      # Ingestion endpoint E2E tests
-├── test_production_e2e.py                  # Core endpoint E2E tests
-├── test_ruvector_e2e.py                    # RuVector integration tests
-├── test_leann_e2e.py                       # LEANN cold tier tests
-├── docker-compose.ruvector.yml             # One-command RuVector + Memibrium setup
-├── Caddyfile                               # TLS termination + reverse proxy
-├── deploy/                                 # Terraform (Azure VM)
-├── assets/                                 # Architecture diagrams
-├── DISTRIBUTION.md                         # Plugin architecture + install paths
-└── SECURITY.md
-```
-
----
-
-## Testing
-
-### Unit tests (no DB, no LLM)
-
-```bash
-python test_taxonomy.py       # 40/40 — classifier accuracy, tier priority, skip list, export/import
-python test_ingest_unit.py    # 34/34 — markdown/JSON/CSV chunking, provenance, dedup, edge cases
-```
-
-### E2E tests (requires running server)
-
-```bash
-python server.py &
-
-python test_production_e2e.py    # Core 8 endpoints: retain → recall → confirm → crystallize → freeze → revert
-python test_ingest_e2e.py        # Ingestion 6 endpoints: file, directory, JSONL, taxonomy, compile, cross-check recall
-python test_ruvector_e2e.py      # RuVector DB layer (requires ruvector-postgres docker)
-python test_leann_e2e.py         # LEANN cold tier (requires pip install leann)
-```
-
----
-
-## Design Decisions
-
-1. **Plugin-first distribution.** The skill teaches the agent *how to think about memory*. The MCP handles execution. The plugin keeps both aligned in one install. Follows the [microsoft/azure-skills](https://github.com/microsoft/azure-skills) pattern.
-
-2. **Crystallization Theory as governance.** The CT lifecycle engine sits ABOVE the vector store. The innovation is in the governance — W(k,t), δ-decay, human-gated crystallization — not the storage engine. Swap pgvector for RuVector, the claims still hold.
-
-3. **Human consensus, not ML confidence.** STG Claim 1 negative limitation: `confirm` is the ONLY path to crystallization. The LLM importance score is informational, not authoritative.
-
-4. **Tiering = lifecycle state.** Observation/consideration/accepted → hot tier. Crystallized/shed → cold tier. The state machine IS the tiering policy.
-
-    > **Note:** The `consideration` state is defined in the schema and transition table but currently unused in code — `IngestAgent` gates directly from `observation` → `accepted`. This state is reserved for the patent's 5-stage lifecycle claims (CT §4) and will be activated when multi-reviewer confirmation workflows ship in Phase 4.
-
-5. **Entity graph as world state.** "I moved to Berlin" updates a Location entity, doesn't just store a new vector.
-
-6. **Fully sovereign.** No cloud memory services. Everything runs on your infrastructure.
-
-7. **Witness chains everywhere.** Every state transition produces a hash-linked provenance entry. Tamper-evident. Append-only.
-8. **Benchmark discipline over feature churn.** For LOCOMO-style temporal and multi-hop regressions, prefer overlap analysis and failure-mode classification before adding broader retrieval or prompt complexity.
-
----
-
-## Idempotent retain
-
-`POST /mcp/retain` accepts `refs.idempotency_key`; `refs.event_id` is used as the key only when no explicit `idempotency_key` is given. The chosen key is trimmed, bounded to 256 chars (longer → HTTP 400), and materialized into the stored `refs.idempotency_key`, so a retry with the same key in the same `domain` returns the existing memory with `"duplicate": true` and performs no embedding, insert or background scoring. A UNIQUE partial index on `(domain, refs->>'idempotency_key')` makes this atomic: two concurrent identical retains yield one memory, and the loser returns it as a duplicate. Without a key, behaviour is unchanged.
-
-Rows written before the unique index existed are migrated at startup, once, inside one transaction, before the index is built (`migrate_idempotency_keys` in `server.py`): stored keys are trimmed and blank/null keys dropped; rows carrying only `refs.event_id` get `refs.idempotency_key = trim(event_id)`; and where more than one row in a domain holds the same key, the earliest row keeps it and the others lose the key and record `refs.idempotency_duplicate_of = <winner id>` plus `refs.idempotency_key_retired`. Nothing is deleted. Rows whose `refs` is not a JSON object are left alone. To preview what the dedupe step would touch on a database:
-
-```sql
-SELECT domain, refs->>'idempotency_key' AS key, count(*)
-FROM memories
-WHERE jsonb_typeof(refs) = 'object' AND refs ? 'idempotency_key'
-GROUP BY 1, 2 HAVING count(*) > 1;
-```
-
-`python test_retain_idempotency.py` covers the request path and the migration's statement order without a database; set `MEMIBRIUM_TEST_DSN` to a disposable Postgres to also run the migration for real (CI does this with a `postgres:16` service).
-
-## Benchmark Notes
-
-**Current status (April 2026):** `hybrid_retrieval.py` is a reconstruction from pyc metadata + test contracts, on branch `reconstruction-backup`. It passes all tests but is not bit-identical to the historical code state that produced earlier benchmark numbers.
-
-**Reconstructed-baseline temporal accuracy:** 37.7% (n=321, 95% CI ±5.3%) at chunk_size=10, full 10 conversations, gpt-4.1-mini judge/answer. The historical 29.6% baseline is not directly comparable because the codebase changed.
-
-**⚠️ CRITICAL CORRECTION (April 2026):** All baseline measurements from the reconstruction period (29.6% historical, 37.7% reconstructed) were taken against a corrupted database. The `entity_relationships` table had a foreign-key reference to `entities(entity_id)` but `entities` was created *after* `entity_relationships` in the schema initialization, causing fresh database builds to silently degrade. A full database rebuild (commit `747ace7`) moved the baseline to ~62% on barely-cleaned data, no normalization. **All prior failure-mode analyses, prediction calibrations, and intervention rationales should be treated as measurements of a degraded system, not the actual Memibrium pipeline.**
-
-**Post-rebuild baseline (healthy DB):** ~62% temporal accuracy (4/10 conversations, in progress). This is the new ground truth. A fresh failure-mode analysis on the rebuilt system is required before any intervention predictions are valid.
-
-**Failure-mode analysis (condition 4, n=193 failures) — ⚠️ SUPERCEDED:**
-
-| Category | Count | % of failures |
-|----------|-------|---------------|
-| retrieval-missing | 107 | 55.4% |
-| relative-date-resolution | 69 | 35.8% |
-| composition | 13 | 6.7% |
-| gold-label-error | 4 | 2.1% |
-
-> **Note:** The above breakdown was produced on a corrupted database where retrieval was silently degraded. The "retrieval-missing" bucket was massively inflated. A new breakdown on the healthy DB will look different.
-
-The dominant failure mode was **retrieval-missing at 55.4%**, followed by relative-date-resolution at 35.8%. The smoke-test hypothesis that "relative-date dominates" was directionally correct for *reasoning* failures, but retrieval-missing is the overall largest category and has the higher ceiling (71.0% vs 59.2% if perfectly fixed).
-
-> **Note:** The "higher ceiling" claim above is also suspect — it was derived from the broken-DB failure distribution.
-
-**Why date normalization is still the right #1 intervention:** It is a prerequisite substrate cleanup, not the biggest bucket. Normalizing relative dates at ingest directly addresses the 35.8% relative-date failures, likely reduces retrieval-missing as a side effect, and creates a cleaner substrate for subsequent retrieval-precision work.
-
-> **Note:** The "right #1 intervention" claim requires re-validation on the healthy DB. The failure-mode distribution has changed.
-
-**Eval limitation:** 13.4% of temporal questions have suspicious gold labels, and 2.1% are confirmed contradictions. Any benchmark delta under ~3 points should be treated as noise until labels are cleaned.
-
-> **Note:** The 13.4% suspicious-label rate is independent of the DB state and likely still valid. The 2.1% confirmed contradictions were manually verified and also remain valid.
-
-Historical focused LOCOMO experiments produced two practical takeaways:
-
-1. Temporal QA improved meaningfully only after preserving source chronology explicitly:
-   - ingest original `event_at` timestamps
-   - store chronology metadata in `refs` (`session_index`, `chunk_index`, `turn_start`, `turn_end`)
-   - sort temporal recall results chronologically
-   - use smaller chunks (~3 turns) for temporal evaluation
-
-2. Multi-hop retrieval is currently safest with adjacency-only expansion:
-   - session-adjacent chunk expansion was mildly helpful
-   - broad second-hop retrieval using bridge terms consistently reduced focused multi-hop accuracy
-   - constrained second-hop variants also remained worse than adjacency-only
-   - current evidence supports treating retrieval precision loss as the primary observed failure, while answer-composition bottlenecks remain unproven
-
-Practical guidance: keep adjacency-only as the active multi-hop baseline, and do overlap / failure-mode analysis before adding more retrieval breadth.
-
----
-
-## Roadmap
-
-| Phase | What | Status |
-|---|---|---|
-| **1** | LEANN + Foundry + MCP (v1) | ✅ Shipped |
-| **2** | CT lifecycle engine + pgvector dual-tier + entity graph | ✅ Shipped |
-| **2.5** | Plugin architecture (azure-skills pattern) | ✅ Shipped |
-| **2.5** | RuVector hot tier (GNN re-ranking, SONA self-learning) | ✅ Shipped |
-| **3** | [LEANN](https://github.com/yichuan-w/LEANN) cold tier compression (97% storage savings) | ✅ Shipped |
-| **3.5** | Ingestion engine: bulk file/JSONL ingest, 30-category taxonomy, wiki compiler | ✅ Shipped |
-| **3.5** | Docker container, CI/CD, `.env.example` | ✅ Shipped |
-| **4** | Proactive intent prediction | Planned |
-| **5** | Hierarchical memory with CT crystallization layers | Planned |
-| **6** | Full multimodal ingestion (images, audio, video transcripts) | Planned |
-| **7** | [Cognitum](https://cognitum.ai) edge deploy — sovereign, <15W | Waiting on hardware |
-
----
-
-## Patent ↔ Code Map
-
-| Patent Claim | Implementation | Section |
-|---|---|---|
-| CT: 5-stage lifecycle | `LifecycleState` enum, `VALID_TRANSITIONS`, state machine | §1 |
-| CT: W(k,t) = (C×R×V)/A | `compute_weight()` — drives ranking AND shedding | §1 |
-| CT: δ-decay | `ConsolidateAgent.run_cycle()` — R(t+1) = R(t)×(1-δ) | §4 |
-| STG Claim 1: negative limitation | `confirm` is ONLY crystallization path, NOT ML confidence | §5 |
-| STG Claim 6: witness chains | `make_witness_entry()` — hash-linked, append-only | §1 |
-| STG Claim 7: freeze/revert | `ColdStore.freeze()` / `revert()` — COW snapshots | §2 |
-| Entity graph | `entities` table + `upsert_entity()` — world state management | §2 |
-| **Skill governance** | `SKILL.md` — behavioral rules enforced at agent level | Plugin |
-| **LEANN cold tier** | `LEANNColdTier` — graph recomputation, 97% compression | §2b |
-
----
-
-## Prompts to Try
-
-Once the plugin is installed, try prompts like these:
-
-- `Remember that our API rate limit is 1000 req/min.`
-- `What do you know about the deployment architecture?`
-- `Confirm that the rate limit information is correct.`
-- `Freeze the deployment architecture memories before we change things.`
-- `Show me the memory dashboard.`
-- `What's the lifecycle state of what you know about our auth system?`
-
----
-
-## Learn More
-
-- [DISTRIBUTION.md](DISTRIBUTION.md) — Plugin architecture, all install paths, MemSkill comparison
-- [SECURITY.md](SECURITY.md) — Security policy
-- [Crystallization Theory paper](https://doi.org/10.5281/zenodo.18150324)
+CI (`.github/workflows/ci.yml`, Python 3.11–3.13, `shell: bash` with pipefail) runs all of these against a digest-pinned `pgvector/pgvector:0.8.7-pg16` service and fails if a DB-backed test skips. The `docker run` line for a local test database and the end-to-end tests that need a running server are in [docs/operations.md](docs/operations.md#testing).
+
+## Where the docs are
+
+| Path | Contents |
+|---|---|
+| [AGENTS.md](AGENTS.md) | Working instructions for coding agents (commands, conventions, boundaries). `CLAUDE.md` points here. |
+| [docs/README.md](docs/README.md) | Index of every document in `docs/` with its status. |
+| [docs/architecture.md](docs/architecture.md) | Skill + MCP layering, tiering, lifecycle flow, design decisions, patent ↔ code map, repo layout. |
+| [docs/api.md](docs/api.md) | Every route and manifest tool (one line each), the ingestion pipeline and taxonomy, idempotent retain, example prompts. |
+| [docs/operations.md](docs/operations.md) | Running locally and with the compose stack, how the LLM clients pick endpoints, env vars, tests, and a short legacy-Azure section. |
+| [docs/benchmarks.md](docs/benchmarks.md) | LOCOMO benchmark notes and corrections. |
+| [docs/roadmap.md](docs/roadmap.md) | Roadmap and competitive landscape. |
+| [docs/eval/README.md](docs/eval/README.md) | Index of the dated LOCOMO / LongMemEval preregistrations, results and handoffs. |
+| [DISTRIBUTION.md](DISTRIBUTION.md) · [SECURITY.md](SECURITY.md) · [LICENSE.md](LICENSE.md) | Plugin architecture and install paths · security policy · Business Source License 1.1 with patent notice. |
+| [Crystallization Theory paper](https://doi.org/10.5281/zenodo.18150324) | The theory this implements. |
 
 ---
 
