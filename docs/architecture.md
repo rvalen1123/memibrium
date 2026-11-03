@@ -1,6 +1,6 @@
 # Memibrium architecture
 
-> Relocated verbatim from the root `README.md` in the MED-242 docs pass (2026-11-02). The [README](../README.md) is now the short entry point; this file keeps the full text.
+> Relocated from the root `README.md` in the MED-242 docs pass (2026-11-02); counts, thresholds and the repository layout corrected against the code. The [README](../README.md) is the short entry point.
 
 Sovereign, self-hosted memory infrastructure implementing **Crystallization Theory** as a knowledge governance layer over tiered vector search. Ships as a plugin: one skill + one MCP server = governed memory for any agent.
 
@@ -24,7 +24,7 @@ The plugin ships **one governance skill** (`crystallization-memory`) that teache
 
 ### The MCP server: the hands
 
-The plugin wires in the **Memibrium MCP Server**, which gives your agent **8 tools** for governed memory operations. That is the execution layer for storing, retrieving, confirming, freezing, and reverting knowledge.
+The plugin wires in the **Memibrium MCP Server**. Its manifest (`GET /mcp/tools`) lists **18 tools**: the 8 core governance tools (retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard), 4 context tools (prefetch, self_model_observe, context_packet, decision_trace) and 6 ingestion tools. The server registers 26 HTTP routes in all; [api.md](api.md#counts) maps each tool to its route. That is the execution layer for storing, retrieving, confirming, freezing, and reverting knowledge.
 
 ### Why this plugin is different
 
@@ -49,7 +49,7 @@ Plugin Install
   └─ MCP Server (.mcp.json → server.py on :9999)
       └─ CT Lifecycle Engine (the patent layer)
           └─ pgvector dual-tier (hot=working, cold=crystallized)
-              └─ Any OpenAI-compatible LLM provider
+              └─ Keyless OpenAI-compatible endpoints (Ollama by default)
 ```
 
 **Tiering policy = lifecycle state.** That's the paper.
@@ -85,11 +85,11 @@ Content arrives
   ├─ Store as OBSERVATION → gate → ACCEPTED (or stay in observation)
   ├─ Extract entities → update world-state graph
   │
-  ▼ (every 30 minutes)
+  ▼ (every CONSOLIDATE_INTERVAL_MIN, default 30 minutes)
 ConsolidateAgent:
-  ├─ Apply δ-decay: R(t+1) = R(t) × (1 - δ)
-  ├─ W(k,t) < 0.15 → SHED (archived, removed from hot)
-  ├─ confirmation_count ≥ 3 AND validation ≥ 0.5 → CRYSTALLIZED
+  ├─ Apply δ-decay: R(t+1) = R(t) × (1 - δ)   (δ = DECAY_RATE, default 0.02, scaled per memory type)
+  ├─ W(k,t) < SHEDDING_THRESHOLD (default 0.05), state ≠ observation → SHED (archived, removed from hot)
+  ├─ confirmation_count ≥ CRYSTALLIZE_CONFIRMATIONS (default 3) AND validation ≥ 0.5 → CRYSTALLIZED
   └─ All transitions recorded in witness chain
   │
   ▼ (on query)
@@ -157,7 +157,7 @@ Every other memory system stores everything and hopes retrieval sorts it out. Th
 
 ```
 memibrium/
-├── server.py                               # CT memory server (15 MCP endpoints)
+├── server.py                               # CT memory server (26 routes, 18 manifest tools)
 ├── ingest_engine.py                        # Document/JSONL ingestion + wiki compiler
 ├── knowledge_taxonomy.py                   # 30-category classifier with CT tier mapping
 ├── plugins/
@@ -173,8 +173,8 @@ memibrium/
 ├── test_ruvector_e2e.py                    # RuVector integration tests
 ├── test_leann_e2e.py                       # LEANN cold tier tests
 ├── docker-compose.ruvector.yml             # One-command RuVector + Memibrium setup
-├── Caddyfile                               # TLS termination + reverse proxy
-├── deploy/                                 # Terraform (Azure VM)
+├── Caddyfile                               # legacy Azure edge config (MED-233)
+├── deploy/                                 # legacy Azure Terraform (MED-233)
 ├── assets/                                 # Architecture diagrams
 ├── DISTRIBUTION.md                         # Plugin architecture + install paths
 └── SECURITY.md

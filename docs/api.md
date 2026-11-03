@@ -1,14 +1,23 @@
 # Memibrium HTTP / MCP API
 
-> Relocated verbatim from the root `README.md` in the MED-242 docs pass (2026-11-02). The [README](../README.md) is now the short entry point; this file keeps the full text.
+> Relocated from the root `README.md` in the MED-242 docs pass (2026-11-02) and corrected against `server.py`. The [README](../README.md) is the short entry point.
 
-Sections: MCP Tools (the README tables) · Idempotent retain · Additional routes present in `server.py` · Prompts to Try.
+Sections: Counts · Core memory routes · Ingestion routes · Idempotent retain · Other routes · Prompts to Try.
+
+This page gives one line per route. It documents request fields only for idempotent retain and the two list routes; for every tool's input fields, read the `inputSchema` entries served by `GET /mcp/tools` (`handle_mcp_manifest` in `server.py`).
 
 ---
 
-## MCP Tools (16 endpoints)
+## Counts
 
-### Core Memory (8 tools)
+- **26 HTTP routes** are registered in `app = Starlette(routes=[...])` (one route, `/mcp/ingest/taxonomy`, accepts both GET and POST).
+- **18 MCP tools** are listed by `GET /mcp/tools`. Each maps to one route: `retain`, `recall`, `reflect`, `confirm`, `freeze`, `revert`, `consolidate`, `dashboard` (the eight core governance tools), `prefetch` → `/mcp/prefetch`, `self_model_observe` → `/mcp/self_model/observe`, `context_packet` → `/mcp/context_packet`, `decision_trace` → `/mcp/decision_trace`, `ingest_file`, `ingest_directory`, `ingest_jsonl`, `ingest_status` → `/mcp/ingest/{file,directory,jsonl,status}`, `compile_wiki` → `/mcp/ingest/compile`, `wiki_read` → `/mcp/wiki`.
+- The other 8 routes have no manifest entry: `/health`, `/mcp/tools`, `/mcp/test_embeddings`, `/mcp/retain/diagnostics`, `/mcp/graph`, `/mcp/self_model/observations`, `/mcp/decision_traces`, `/mcp/ingest/taxonomy`.
+- The plugin's `plugins/memibrium/.mcp.json` describes the server as "8 tools"; that is the core set, not the whole manifest.
+
+---
+
+## Core memory routes
 
 | Endpoint | Method | What | Patent |
 |---|---|---|---|
@@ -20,20 +29,23 @@ Sections: MCP Tools (the README tables) · Idempotent retain · Additional route
 | `/mcp/revert` | POST | Restore from snapshot | STG Claim 7 |
 | `/mcp/consolidate` | POST | Manual trigger: δ-decay + shed + auto-promote | CT δ-decay |
 | `/mcp/dashboard` | GET | Lifecycle counts, CT parameters, architecture | — |
-| `/mcp/tools` | GET | MCP tool manifest for auto-discovery | — |
+| `/mcp/tools` | GET | MCP tool manifest for auto-discovery (not itself a tool) | — |
 
-### Ingestion Engine (8 tools)
+## Ingestion routes
+
+Seven routes, six of them manifest tools (`/mcp/ingest/taxonomy` is not).
 
 | Endpoint | Method | What |
 |---|---|---|
 | `/mcp/ingest/file` | POST | Ingest a single file: read → chunk → classify → embed → CT lifecycle |
-| `/mcp/ingest/directory` | POST | Scan directory, ingest all supported files (.md, .txt, .json, .csv, .pdf) |
+| `/mcp/ingest/directory` | POST | Scan directory, ingest all supported files (.md, .txt, .json, .csv, .pdf; PDF needs the optional library below) |
 | `/mcp/ingest/jsonl` | POST | Ingest Claude conversation JSONL with auto-classification into 30 knowledge categories |
 | `/mcp/ingest/status` | GET | Ingestion engine stats: hashes seen, taxonomy breakdown, config |
 | `/mcp/ingest/compile` | POST | Compile wiki index from ingested memories — generates topic articles + backlinks |
-| `/mcp/ingest/taxonomy` | GET | View the 30-category knowledge taxonomy with CT tier assignments |
-| `/mcp/ingest/taxonomy` | POST | Update taxonomy categories at runtime |
+| `/mcp/ingest/taxonomy` | GET, POST | GET: view the 30-category knowledge taxonomy with CT tier assignments. POST: update taxonomy categories at runtime. |
 | `/mcp/wiki` | GET | List compiled wiki files or read a specific file's content |
+
+**PDF files need an optional dependency.** `requirements.txt` does not install a PDF library. `ingest_engine._extract_pdf_text` tries PyMuPDF (`import fitz`), then `pypdf`; with neither it logs `No PDF library available. Install PyMuPDF or pypdf.` and returns empty text, so the PDF produces zero chunks rather than an error. Install one with `pip install pymupdf` or `pip install pypdf` (the Docker image installs neither).
 
 #### Ingestion Pipeline
 
@@ -92,28 +104,28 @@ WHERE jsonb_typeof(refs) = 'object' AND refs ? 'idempotency_key'
 GROUP BY 1, 2 HAVING count(*) > 1;
 ```
 
-`python test_retain_idempotency.py` covers the request path and the migration's statement order without a database; set `MEMIBRIUM_TEST_DSN` to a disposable Postgres to also run the migration for real (CI does this with a `postgres:16` service).
+`python test_retain_idempotency.py` covers the request path and the migration's statement order without a database; set `MEMIBRIUM_TEST_DSN` to a disposable Postgres to also run the migration for real (CI does this against a digest-pinned `pgvector/pgvector:0.8.7-pg16` service and fails on any skip; local recipe in [operations.md](operations.md#testing)).
 
 ---
 
-## Additional routes in `server.py`
+## Other routes
 
-The tables above are the README's view (16 MCP tools). `server.py` registers 26 routes in total. The ones not listed above, with a one-line description taken from each handler's docstring or body (`server.py`, `app = Starlette(routes=[...])`):
+The routes not listed above, with a one-line description taken from each handler's docstring or body. Four of them are also manifest tools, marked "(tool)".
 
 | Endpoint | Method | What |
 |---|---|---|
 | `/health` | GET | Liveness probe; returns `{"status": "ok", "engine": "memibrium"}`. Used by the Dockerfile `HEALTHCHECK` and the Caddy `/health` handle. |
-| `/mcp/test_embeddings` | POST | Test both the Ollama and Azure embedding endpoints on one text and compare (diagnostic). |
+| `/mcp/test_embeddings` | POST | Diagnostic: embed one text with the configured embedder and with an Azure deployment, and compare. The Azure half is legacy and returns an error now that the subscription is closed ([operations](operations.md#legacy-azure-subscription-closed-not-maintained)). |
 | `/mcp/retain/diagnostics` | GET, POST | Snapshot of retain requests still in flight (`memibrium.retain.pending_diagnostics.v1`). |
 | `/mcp/graph` | GET | Memory graph topology: nodes, edges, analytics (from `memory_edges`). |
-| `/mcp/prefetch` | POST | Predictive memory pre-fetching from a recent `context_query`. |
-| `/mcp/self_model/observe` | POST | Create a source-backed Ethos/Disposition/DNA self-model observation. |
-| `/mcp/self_model/observations` | GET, POST | List self-model observations (`engine`, `entity_ids`, `include_rejected`, `limit`). |
-| `/mcp/decision_trace` | POST | Persist an auditable decision/evidence trace for reward-aware memory. |
-| `/mcp/decision_traces` | GET, POST | List decision traces (`status`, `limit`). |
-| `/mcp/context_packet` | POST | Compose a grounded context packet from episodic, graph and self-model evidence (`query`, `top_k`, `include_source_attribution`, `include_recall_telemetry`). Used by the LongMemEval retrieval bridge (see `docs/eval/`). |
+| `/mcp/prefetch` | POST | (tool) Predictive memory pre-fetching from a recent `context_query`. |
+| `/mcp/self_model/observe` | POST | (tool) Create a source-backed Ethos/Disposition/DNA self-model observation. |
+| `/mcp/self_model/observations` | GET, POST | List self-model observations. Filters (`engine`, `entity_ids`, `include_rejected`, `limit`) are read only from a POST JSON body; GET ignores query parameters and returns the unfiltered default (top 20 by confidence, then recency; rejected excluded). |
+| `/mcp/decision_trace` | POST | (tool) Persist an auditable decision/evidence trace for reward-aware memory. |
+| `/mcp/decision_traces` | GET, POST | List decision traces. Filters (`status`, `limit`) are read only from a POST JSON body; GET ignores query parameters and returns the unfiltered default (newest 10 traces, any status). |
+| `/mcp/context_packet` | POST | (tool) Compose a grounded context packet from episodic, graph and self-model evidence (`query`, `top_k`, `include_source_attribution`, `include_recall_telemetry`). Used by the LongMemEval retrieval bridge (see `docs/eval/`). |
 
-Request bodies are JSON. Handlers return HTTP 400 with `{"error": ...}` when a required field is missing (`content`, `query`, `topic`, `memory_id`). The MCP tool manifest served at `GET /mcp/tools` is the authoritative list of tool names and input schemas for MCP clients.
+Request bodies are JSON. Handlers return HTTP 400 with `{"error": ...}` when a required field is missing (`content`, `query`, `topic`, `memory_id`). This page has no per-route field tables; the manifest served at `GET /mcp/tools` is the authoritative list of tool names and input schemas.
 
 **Inbound authentication:** none of these routes check a credential today; the server trusts the network it is bound to (`0.0.0.0:9999` when started with `python server.py`). Tracked as MED-234.
 

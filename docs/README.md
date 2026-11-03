@@ -1,6 +1,6 @@
 # docs/ — index
 
-Last confirmed against: aaa5660 (2026-11-02)
+Last confirmed against: 6f10406 (2026-11-02)
 
 The root [README](../README.md) is the short entry point. The files here hold the full text that used to live in it (relocated verbatim in the MED-242 docs pass), plus the evaluation records under `eval/`. Status values: `current` (describes `main` as it is) · `historical` (kept for the record; some content is known to be out of date and says so) · `archived` (in `archive/`).
 
@@ -10,7 +10,7 @@ The root [README](../README.md) is the short entry point. The files here hold th
 
 | File | Answers | Status |
 |---|---|---|
-| [`../README.md`](../README.md) | What Memibrium is, how to run it, the API at a glance, open caveats (MED-233, MED-234), where the docs are. | current |
+| [`../README.md`](../README.md) | What Memibrium is, how to run it, the API at a glance, open caveats (MED-234; legacy Azure config under MED-233), where the docs are. | current |
 | [`../AGENTS.md`](../AGENTS.md) | How a coding agent should work in this repo: repo map, exact commands, behaviour-changing conventions (CT lifecycle, additive migrations, idempotency key rules, embedding dimension), Always / Ask first / Never boundaries, done-gate. | current |
 | [`../CLAUDE.md`](../CLAUDE.md) | `@AGENTS.md` — Claude Code reads the same instructions. | current |
 | [`../DISTRIBUTION.md`](../DISTRIBUTION.md) | The skill-over-MCP distribution pattern, every install path (Claude Code, Copilot CLI, Cursor, any MCP client), plugin layout, MemSkill comparison. | current |
@@ -24,8 +24,8 @@ The root [README](../README.md) is the short entry point. The files here hold th
 | File | Answers | Status |
 |---|---|---|
 | [`architecture.md`](architecture.md) | How the skill and MCP server layer, tiering = lifecycle state, what each component adds, the lifecycle flow (IngestAgent → ConsolidateAgent → QueryAgent), the CT distinction, design decisions, patent ↔ code map, repository layout. | current |
-| [`api.md`](api.md) | Every HTTP/MCP route with one line each (README tables plus the 10 routes they omitted), the ingestion pipeline and 30-category taxonomy, idempotent retain semantics and the startup migration, example prompts. | current |
-| [`operations.md`](operations.md) | Install in 60 seconds, deploy locally / with RuVector via Docker / on Azure via Terraform, supported LLM providers, the full environment-variable list by name, Caddy edge (and the 8787 vs 9999 port difference between the two Terraform trees), unit and E2E test commands. | current |
+| [`api.md`](api.md) | Counts (26 routes, 18 manifest tools) and the tool → route map, every route with one line each, GET-vs-POST filter behaviour on the list routes, the optional PDF dependency, the ingestion pipeline and 30-category taxonomy, idempotent retain semantics and the startup migration, example prompts. No per-route field tables; the `GET /mcp/tools` manifest has the input schemas. | current |
+| [`operations.md`](operations.md) | The two supported run paths (local Python with `.env` exported; the RuVector compose stack with its model-pull and `EMBEDDING_DIM` steps), which variables each LLM client reads (fixed `ollama` key), the full environment-variable list with defaults (incl. `CT_RANKER_*`), the CI test commands and a local pgvector container for the DB tests, network exposure, and a short "Legacy: Azure (subscription closed, not maintained)" section. | current |
 | [`benchmarks.md`](benchmarks.md) | The April-2026 LOCOMO benchmark narrative: reconstructed baseline, the corrupted-database correction, the superseded failure-mode table, and the two practical takeaways. The numbers are as of April 2026 and flagged inline; later evidence is in `eval/`. | historical |
 | [`roadmap.md`](roadmap.md) | Phase roadmap (what shipped, what is planned) and the April-2026 competitive landscape table. | current |
 | [`eval/README.md`](eval/README.md) | Index of all 122 evaluation records grouped by study (LongMemEval, LoCoMo, phase_b_artifacts), newest first. | current |

@@ -13,30 +13,32 @@ Memibrium is a self-hosted memory server for AI agents. It is a single Python/St
 
 ## Run it
 
-Prerequisites: Python 3.11+, PostgreSQL with the `vector` extension (or [ruvector-postgres](https://github.com/ruvnet/ruvector)), any OpenAI-compatible LLM endpoint for embeddings and chat.
+Prerequisites: Python 3.11+, PostgreSQL with the `vector` extension (or [ruvector-postgres](https://github.com/ruvnet/ruvector)), and a keyless OpenAI-compatible endpoint for embeddings and chat (Ollama by default; the clients send the fixed key `ollama`, so hosted providers that need a real key do not work without a code change — see [docs/operations.md](docs/operations.md#how-the-llm-clients-pick-an-endpoint)). PDF ingestion additionally needs `pip install pymupdf` (or `pypdf`).
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env            # fill in values, or export the variables directly
+cp .env.example .env            # then edit the values
+set -a; . ./.env; set +a        # server.py does not load .env itself; export it first
 python server.py                # listens on 0.0.0.0:9999
 curl http://localhost:9999/health
 ```
 
-Configuration is read from the environment (names, not values — see [docs/operations.md](docs/operations.md) for the full list):
+Configuration is read from the environment (names, not values — see [docs/operations.md](docs/operations.md#environment-variables) for the full list with defaults):
 
-- LLM: `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `CHAT_MODEL`, `EMBEDDING_MODEL`, `EMBEDDING_BASE_URL`, `EMBEDDING_DIM`
+- Embeddings: `EMBEDDING_BASE_URL`, `EMBEDDING_MODEL`, `EMBEDDING_DIM` (must match the model's output width; checked at startup)
+- Chat and scoring: `OLLAMA_CHAT_BASE`, `CHAT_MODEL`, `SLM_BASE_URL`, `SLM_MODEL`
 - Database: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
-- Engines: `USE_RUVECTOR`, `USE_LEANN`; CT tuning: `IMPORTANCE_THRESHOLD`, `SHEDDING_THRESHOLD`, `CONSOLIDATE_INTERVAL_MIN`, `DECAY_RATE`, `CRYSTALLIZE_CONFIRMATIONS`
+- Engines: `USE_RUVECTOR`, `USE_LEANN`; CT tuning: `IMPORTANCE_THRESHOLD`, `SHEDDING_THRESHOLD`, `CONSOLIDATE_INTERVAL_MIN`, `DECAY_RATE`, `CRYSTALLIZE_CONFIRMATIONS`; ranking: `CT_RANKER_*` (read in `ct_ranker.py`)
 
 Schema is created and migrated at startup (`ColdStore.initialize`: additive `IF NOT EXISTS` statements plus the one-shot `migrate_idempotency_keys`). Pointing the server at a database is itself a migration.
 
-Other ways to run: `docker compose -f docker-compose.ruvector.yml up -d` (ruvector-postgres + Ollama + server), Terraform for an Azure VM under `deploy/`, and `Caddyfile` for the TLS edge. All in [docs/operations.md](docs/operations.md).
+The other supported way to run it is the compose stack, `docker compose -f docker-compose.ruvector.yml up -d` (ruvector-postgres + Ollama + server). It needs the Ollama models pulled and `EMBEDDING_DIM` matched to the embedding model before it serves requests; both steps are in [docs/operations.md](docs/operations.md#run-with-the-ruvector-compose-stack). The Terraform trees (`main.tf` + `modules/`, `deploy/`) and the `Caddyfile` are legacy Azure configuration and are not a way to run Memibrium ([Legacy: Azure](docs/operations.md#legacy-azure-subscription-closed-not-maintained)).
 
 Install the agent plugin (skill + MCP wiring): `claude plugin marketplace add rvalen1123/memibrium && claude plugin install memibrium@memibrium`. Other hosts: [DISTRIBUTION.md](DISTRIBUTION.md).
 
 ## API at a glance
 
-All routes take and return JSON. Full reference, including request fields and the routes not listed here: [docs/api.md](docs/api.md).
+All routes take and return JSON. [docs/api.md](docs/api.md) lists all 26 routes and the 18 tools in the `GET /mcp/tools` manifest with one line each; it gives request fields only for idempotent retain and the list routes. For per-tool input schemas, read the manifest.
 
 | Route | What it does |
 |---|---|
@@ -54,7 +56,7 @@ All routes take and return JSON. Full reference, including request fields and th
 ## Status and caveats
 
 - **No inbound authentication on `/mcp/*`.** The server trusts whatever network it is bound to; Caddy only terminates TLS. Tracked as **MED-234**. Do not expose port 9999 publicly.
-- **Gateway key rotation pending.** `Caddyfile` now reads the Azure gateway key from the environment variable `AZURE_GATEWAY_API_KEY`; the value that was previously committed must be rotated. Tracked as **MED-233**.
+- **Azure is gone.** The Azure subscription was closed on 2026-11-02, so the gateway key once committed in `Caddyfile` is dead and needs no rotation. The leftover Azure config (Caddy gateway header, both Terraform trees) is unmaintained and slated for removal under **MED-233**.
 - Idempotent retain (PR #11, hardened in PR #12): keys are trimmed, bounded to 256 chars, materialized into `refs.idempotency_key`, and enforced by the unique partial index `memories_domain_idempotency_uidx`. Details and the pre-index migration: [docs/api.md](docs/api.md#idempotent-retain).
 - The `consideration` state exists in the schema and transition table but is not yet used by `IngestAgent`.
 - Benchmark numbers in older notes were measured against a degraded database and are flagged as such; see [docs/benchmarks.md](docs/benchmarks.md) and the dated records under [docs/eval/](docs/eval/README.md).
@@ -64,10 +66,13 @@ All routes take and return JSON. Full reference, including request fields and th
 ```bash
 python test_taxonomy.py              # 40 tests, no DB or LLM
 python test_ingest_unit.py           # 34 tests, no DB or LLM
-python test_retain_idempotency.py    # 18 tests; one is skipped unless MEMIBRIUM_TEST_DSN points at a disposable Postgres
+# + 11 more dependency-free test files (list in docs/operations.md#testing)
+MEMIBRIUM_TEST_DSN=postgresql://memibrium:memibrium@localhost:5432/memibrium_test \
+  python test_retain_idempotency.py -v          # 18 tests
+MEMIBRIUM_TEST_DSN=... python test_hybrid_retrieval_tiebreak_db.py -v   # 4 tests
 ```
 
-These three are what CI runs (`.github/workflows/ci.yml`, Python 3.11–3.13, with a `postgres:16` service for the DSN-backed case). End-to-end tests that need a running server are listed in [docs/operations.md](docs/operations.md#testing).
+CI (`.github/workflows/ci.yml`, Python 3.11–3.13, `shell: bash` with pipefail) runs all of these against a digest-pinned `pgvector/pgvector:0.8.7-pg16` service and fails if a DB-backed test skips. The `docker run` line for a local test database and the end-to-end tests that need a running server are in [docs/operations.md](docs/operations.md#testing).
 
 ## Where the docs are
 
@@ -76,8 +81,8 @@ These three are what CI runs (`.github/workflows/ci.yml`, Python 3.11–3.13, wi
 | [AGENTS.md](AGENTS.md) | Working instructions for coding agents (commands, conventions, boundaries). `CLAUDE.md` points here. |
 | [docs/README.md](docs/README.md) | Index of every document in `docs/` with its status. |
 | [docs/architecture.md](docs/architecture.md) | Skill + MCP layering, tiering, lifecycle flow, design decisions, patent ↔ code map, repo layout. |
-| [docs/api.md](docs/api.md) | Every route, the ingestion pipeline and taxonomy, idempotent retain, example prompts. |
-| [docs/operations.md](docs/operations.md) | Install, deploy (local, Docker, Terraform), LLM providers, env vars, Caddy, tests. |
+| [docs/api.md](docs/api.md) | Every route and manifest tool (one line each), the ingestion pipeline and taxonomy, idempotent retain, example prompts. |
+| [docs/operations.md](docs/operations.md) | Running locally and with the compose stack, how the LLM clients pick endpoints, env vars, tests, and a short legacy-Azure section. |
 | [docs/benchmarks.md](docs/benchmarks.md) | LOCOMO benchmark notes and corrections. |
 | [docs/roadmap.md](docs/roadmap.md) | Roadmap and competitive landscape. |
 | [docs/eval/README.md](docs/eval/README.md) | Index of the dated LOCOMO / LongMemEval preregistrations, results and handoffs. |
