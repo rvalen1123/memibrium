@@ -63,7 +63,8 @@ def twins(content, extra=()):
     return [{"id": i, "content": content, "created_at": AT} for i in TWINS] + list(extra)
 
 
-@unittest.skipUnless(DSN, "MEMIBRIUM_TEST_DSN is not set")
+@unittest.skipUnless(DSN, "needs MEMIBRIUM_TEST_DSN: a disposable Postgres (pgvector not required) "
+                           "whose user may CREATE DATABASE; MEMIBRIUM_TEST_DSN is not set")
 class TieBreakDatabaseTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

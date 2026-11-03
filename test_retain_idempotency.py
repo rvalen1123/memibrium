@@ -332,7 +332,9 @@ class IdempotencyMigrationTests(unittest.TestCase):
         self.assertIn("idempotency_duplicate_of", server.IDEMPOTENCY_MIGRATION_SQL["dedupe"])
 
 
-@unittest.skipUnless(os.environ.get("MEMIBRIUM_TEST_DSN"), "set MEMIBRIUM_TEST_DSN to a disposable Postgres")
+@unittest.skipUnless(os.environ.get("MEMIBRIUM_TEST_DSN"),
+                     "needs MEMIBRIUM_TEST_DSN: a disposable Postgres (pgvector not required) whose user may "
+                     "DROP and CREATE TABLE memories in that database; MEMIBRIUM_TEST_DSN is not set")
 class IdempotencyMigrationPostgresTests(unittest.TestCase):
     """The migration against a real Postgres (needs only the refs/domain/created_at columns),
     seeded with every shape a PR #11 database can hold."""
