@@ -12,6 +12,11 @@ permissions:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
+    # Explicit `shell: bash` runs every step with `-eo pipefail`; the GitHub default (`bash -e`)
+    # would let `python test.py | tee log` pass when the test fails.
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
