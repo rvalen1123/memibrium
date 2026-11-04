@@ -56,7 +56,7 @@ All routes take and return JSON. [docs/api.md](docs/api.md) lists all 27 routes 
 
 ## Status and caveats
 
-- **No inbound authentication on `/mcp` or `/mcp/*`.** The server trusts whatever network it is bound to; Caddy only terminates TLS. Tracked as **MED-234**. Do not expose port 9999 publicly. Browser pages are refused: every state-changing route returns 403 to a request with an `Origin` header (unless listed in `MEMIBRIUM_ALLOWED_ORIGINS`) and 415 to a body that is not `application/json` (MED-271, [docs/api.md](docs/api.md#cross-site-request-refusal)); that is not authentication, and any local process can still call every route.
+- **No inbound authentication on `/mcp` or `/mcp/*`.** The server trusts whatever network it is bound to; Caddy only terminates TLS. Tracked as **MED-234**. Do not expose port 9999 publicly. Browser pages are refused: every state-changing route returns 403 to a request with an `Origin` header (unless listed in `MEMIBRIUM_ALLOWED_ORIGINS`) and 415 to a body that is not `application/json` (MED-271, [docs/api.md](docs/api.md#cross-site-request-refusal)); every route also answers 421 to a `Host` other than loopback or a name in `MEMIBRIUM_ALLOWED_HOSTS`, which stops DNS rebinding (MED-276). Neither is authentication: any local process can still call every route.
 - **Azure is gone.** The Azure subscription was closed on 2026-11-02, so the gateway key once committed in `Caddyfile` is dead and needs no rotation. The leftover Azure config (Caddy gateway header, both Terraform trees) is unmaintained and slated for removal under **MED-233**.
 - Idempotent retain (PR #11, hardened in PR #12): keys are trimmed, bounded to 256 chars, materialized into `refs.idempotency_key`, and enforced by the unique partial index `memories_domain_idempotency_uidx`. Details and the pre-index migration: [docs/api.md](docs/api.md#idempotent-retain).
 - The `consideration` state exists in the schema and transition table but is not yet used by `IngestAgent`.
@@ -67,7 +67,7 @@ All routes take and return JSON. [docs/api.md](docs/api.md) lists all 27 routes 
 ```bash
 python test_taxonomy.py              # 40 tests, no DB or LLM
 python test_ingest_unit.py           # 34 tests, no DB or LLM
-# + 13 more dependency-free test files, including test_mcp_endpoint.py and test_cross_site_guard.py (list in docs/operations.md#testing)
+# + 14 more dependency-free test files, including test_mcp_endpoint.py, test_cross_site_guard.py, test_host_allowlist.py (list in docs/operations.md#testing)
 MEMIBRIUM_TEST_DSN=postgresql://memibrium:memibrium@localhost:5432/memibrium_test \
   python test_retain_idempotency.py -v          # 18 tests
 MEMIBRIUM_TEST_DSN=... python test_hybrid_retrieval_tiebreak_db.py -v   # 4 tests

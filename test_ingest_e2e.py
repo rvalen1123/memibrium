@@ -7,7 +7,7 @@ Creates temp files, ingests them, verifies classification and wiki compilation.
 
 Usage:
   python test_ingest_e2e.py                     # default: localhost:9999
-  python test_ingest_e2e.py http://server:9999  # remote
+  python test_ingest_e2e.py http://server:9999  # remote (the server needs MEMIBRIUM_ALLOWED_HOSTS=server)
 
 Requires: httpx (pip install httpx)
 """

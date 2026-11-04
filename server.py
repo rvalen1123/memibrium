@@ -43,6 +43,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 import hashlib
+import ipaddress
 import json
 import logging
 import math
@@ -207,22 +208,44 @@ MCP_INGEST_ROOTS: tuple[str, ...] = _parse_mcp_ingest_roots(os.environ.get("MCP_
 # is ignored with a warning that names the reason, never the entry (it could hold credentials). Never applied to
 # the MCP endpoint POST /mcp, which refuses every Origin. This is cross-site request refusal, not
 # authentication (MED-234).
-def _origin_entry_problem(candidate: str) -> Optional[str]:
-    """None when `candidate` (lowercased, trailing '/' dropped) is a serialized http(s) origin; else the reason."""
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _normalize_origin_entry(candidate: str) -> tuple[Optional[str], Optional[str]]:
+    """(origin, None) with `candidate` serialized the way a browser sends Origin; (None, reason) when it is not one.
+
+    Browsers send the scheme and host in lowercase, the host in punycode (IDNA), IPv6 in brackets, and the port
+    only when it is not the scheme's default, so "https://Bücher.example:443/" becomes "https://xn--bcher-kva.example".
+    """
+    if "#" in candidate or "?" in candidate:
+        return None, "a query or fragment is not allowed"
     try:
         parsed = urlparse(candidate)
-        parsed.port  # raises ValueError for a non-numeric or out-of-range port
+        port = parsed.port  # ValueError for a non-numeric or out-of-range port
     except ValueError:
-        return "not a parseable URL"
-    if parsed.scheme not in ("http", "https"):
-        return "scheme must be http or https"
+        return None, "not a parseable URL or an invalid port"
+    if parsed.scheme not in _DEFAULT_PORTS:
+        return None, "scheme must be http or https"
     if parsed.username is not None or parsed.password is not None:
-        return "credentials are not allowed"
-    if not parsed.hostname:
-        return "no host"
-    if parsed.path or parsed.params or parsed.query or parsed.fragment:
-        return "a path, query or fragment is not allowed"
-    return None
+        return None, "credentials are not allowed"
+    host = parsed.hostname
+    if not host:
+        return None, "no host"
+    if parsed.path or parsed.params:
+        return None, "a path is not allowed"
+    if port == 0:
+        return None, "invalid port"
+    if ":" in host:  # an IPv6 literal; urlparse drops the brackets
+        host = f"[{host}]"
+    else:
+        try:
+            host = host.encode("idna").decode("ascii")
+        except UnicodeError:
+            return None, "host is not a valid domain name"
+    origin = f"{parsed.scheme}://{host}"
+    if port is not None and port != _DEFAULT_PORTS[parsed.scheme]:
+        origin += f":{port}"
+    return origin, None
 
 
 def _parse_allowed_origins(raw: str) -> tuple[str, ...]:
@@ -230,16 +253,71 @@ def _parse_allowed_origins(raw: str) -> tuple[str, ...]:
     for position, entry in enumerate((p.strip() for p in raw.split(",")), start=1):
         if not entry:
             continue
-        candidate = entry.rstrip("/").lower()
-        problem = _origin_entry_problem(candidate)
-        if problem is not None:
+        origin, problem = _normalize_origin_entry(entry.rstrip("/").lower())
+        if origin is None:
             log.warning("MEMIBRIUM_ALLOWED_ORIGINS: ignoring entry %d (%s); use scheme://host[:port]", position, problem)
             continue
-        origins.append(candidate)
+        if origin not in origins:
+            origins.append(origin)
     return tuple(origins)
 
 
 MEMIBRIUM_ALLOWED_ORIGINS: tuple[str, ...] = _parse_allowed_origins(os.environ.get("MEMIBRIUM_ALLOWED_ORIGINS", ""))
+
+
+# Host names (comma-separated, no port) that requests may carry in their Host header, on every route, GETs
+# included (MED-276). This refuses DNS rebinding: a page whose own host name re-resolves to this machine is
+# same-origin to the browser and could read GET replies, but its requests still carry its own host name.
+# The loopback names localhost, 127.0.0.1 and ::1 are always accepted, on any port. Add here the names other
+# clients really use: the compose service name for another container (memibrium), a LAN or Tailscale name, or
+# the public name a reverse proxy forwards. Entries are lowercased; IPv6 may be given with or without
+# brackets; an entry with a port, a scheme, a path, credentials or a wildcard is ignored with a warning that
+# names the reason, never the entry. This is not authentication (MED-234).
+DEFAULT_ALLOWED_HOSTS: tuple[str, ...] = ("localhost", "127.0.0.1", "::1")
+
+
+def _host_entry_problem(host: str) -> Optional[str]:
+    """None when `host` (lowercased, brackets stripped) is a bare host name or IP literal; otherwise the reason."""
+    if not host:
+        return "empty"
+    if "*" in host:
+        return "wildcards are not supported"
+    if any(c in host for c in "/@?#[] \t"):
+        return "not a bare host name (no scheme, path or credentials)"
+    if ":" in host:
+        try:
+            ipaddress.IPv6Address(host)
+        except ValueError:
+            return "a port is not allowed (any port is accepted)"
+    return None
+
+
+def _parse_allowed_hosts(raw: str) -> tuple[str, ...]:
+    hosts = list(DEFAULT_ALLOWED_HOSTS)
+    for position, entry in enumerate((p.strip() for p in raw.split(",")), start=1):
+        if not entry:
+            continue
+        host = entry.lower().rstrip(".")
+        if host.startswith("[") and host.endswith("]"):
+            host = host[1:-1]
+        problem = _host_entry_problem(host)
+        if problem is not None:
+            log.warning("MEMIBRIUM_ALLOWED_HOSTS: ignoring entry %d (%s); use a bare host name", position, problem)
+            continue
+        if ":" in host:
+            host = ipaddress.IPv6Address(host).compressed
+        else:
+            try:
+                host = host.encode("idna").decode("ascii")  # browsers send IDN host names in punycode
+            except UnicodeError:
+                log.warning("MEMIBRIUM_ALLOWED_HOSTS: ignoring entry %d (not a valid domain name)", position)
+                continue
+        if host not in hosts:
+            hosts.append(host)
+    return tuple(hosts)
+
+
+MEMIBRIUM_ALLOWED_HOSTS: tuple[str, ...] = _parse_allowed_hosts(os.environ.get("MEMIBRIUM_ALLOWED_HOSTS", ""))
 _retain_diagnostics_pending: dict[str, dict[str, Any]] = {}
 _retain_diagnostics_lock = asyncio.Lock()
 
@@ -4304,10 +4382,71 @@ def cross_site_refusal(headers: Headers, allowed_origins: tuple[str, ...]) -> Op
     fetch_site = headers.get("sec-fetch-site", "").strip().lower()
     if fetch_site in _CROSS_SITE_FETCH_SITES and not allowed:
         return JSONResponse({"error": f"cross-site request refused (Sec-Fetch-Site: {fetch_site})"}, status_code=403)
-    media_type = headers.get("content-type", "").split(";", 1)[0].strip().lower()
-    if media_type != "application/json":
+    content_types = headers.getlist("content-type")
+    media_type = content_types[0].split(";", 1)[0].strip().lower() if len(content_types) == 1 else ""
+    if media_type != "application/json":  # also refuses a missing or repeated Content-Type
         return JSONResponse({"error": "POST bodies must be application/json"}, status_code=415)
     return None
+
+
+def _request_host(value: str) -> Optional[str]:
+    """The host part of a Host header value ("name", "name:port", "[v6]", "[v6]:port"), lowercased; None if malformed."""
+    value = value.strip().lower()
+    if value.startswith("["):
+        end = value.find("]")
+        if end < 0:
+            return None
+        host, rest = value[1:end], value[end + 1:]
+        try:
+            host = ipaddress.IPv6Address(host).compressed  # [0:0:0:0:0:0:0:1] and [::1] are the same host
+        except ValueError:
+            return None
+    else:
+        host, sep, port = value.partition(":")
+        rest = sep + port
+        if ":" in port:  # a bare IPv6 literal is not a valid Host
+            return None
+    # ASCII digits only: header values decode as latin-1, and '²'.isdigit() is True while int('²') raises.
+    if rest and not (rest.startswith(":") and rest[1:].isascii() and rest[1:].isdigit() and 0 < int(rest[1:]) < 65536):
+        return None
+    host = host.rstrip(".")
+    return host or None
+
+
+def host_refusal(headers: Headers, allowed_hosts: tuple[str, ...]) -> Optional[JSONResponse]:
+    """None when the request's Host is allowlisted; otherwise a 421 Misdirected Request (MED-276)."""
+    values = headers.getlist("host")
+    host = _request_host(values[0]) if len(values) == 1 else None
+    if host is not None and host in allowed_hosts:
+        return None
+    if len(values) != 1:
+        reason = f"a request must carry exactly one Host header, not {len(values)}"
+    else:
+        reason = f"host {values[0][:200]!r} is not served here (set MEMIBRIUM_ALLOWED_HOSTS to add a name)"
+    return JSONResponse({"error": f"misdirected request: {reason}"}, status_code=421)
+
+
+class HostAllowlistGuard:
+    """ASGI middleware: refuses every HTTP request whose Host header is not allowlisted, on every route (MED-276).
+
+    It runs before routing and before CrossSiteRequestGuard, so GETs, unknown paths and wrong methods are covered
+    too. The answer is 421 Misdirected Request: the request reached a server that does not serve that name. A
+    DNS-rebinding page's requests carry the page's own host name, so they are refused before any reply is
+    readable. MEMIBRIUM_ALLOWED_HOSTS is read on each request (tests patch the module attribute)."""
+
+    def __init__(self, app: Callable) -> None:
+        self.app = app
+
+    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+        if scope["type"] in ("http", "websocket"):
+            refusal = host_refusal(Headers(scope=scope), MEMIBRIUM_ALLOWED_HOSTS)
+            if refusal is not None:
+                if scope["type"] == "websocket":
+                    await send({"type": "websocket.close", "code": 1008})
+                    return
+                await refusal(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
 
 
 class CrossSiteRequestGuard:
@@ -4396,8 +4535,9 @@ app = Starlette(
         Route("/mcp/ingest/taxonomy", handle_taxonomy, methods=["GET", "POST"]),
         Route("/mcp/wiki", handle_wiki_read, methods=["GET"]),
     ],
-    # Refuses cross-site and non-JSON requests to every state-changing route (MED-271).
-    middleware=[Middleware(CrossSiteRequestGuard)],
+    # Outermost first: refuse an unknown Host on every route (MED-276), then cross-site and non-JSON requests
+    # to every state-changing route (MED-271).
+    middleware=[Middleware(HostAllowlistGuard), Middleware(CrossSiteRequestGuard)],
 )
 
 

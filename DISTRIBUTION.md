@@ -44,7 +44,10 @@
    (unless `MEMIBRIUM_ALLOWED_ORIGINS` lists it) or a cross-site
    `Sec-Fetch-Site`, and refuses a body that is not `application/json`, so a
    plain `fetch` from another site to `http://localhost:9999/mcp/confirm`
-   gets 403 or 415 and the handler never runs. That is cross-site request
+   gets 403 or 415 and the handler never runs. Since MED-276 every route,
+   reads included, also refuses a `Host` that is not loopback or listed in
+   `MEMIBRIUM_ALLOWED_HOSTS` (421), so a DNS-rebinding page cannot read
+   memory content either. That is cross-site request
    refusal, not authentication: any local process, script or proxy that does
    not behave like a browser can still call every route until MED-234 lands.
    Run the server on loopback or a private network, or put an authenticating
