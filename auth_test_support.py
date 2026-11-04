@@ -5,7 +5,6 @@ with one configured human token (accepted on every route) and send it on every r
 covers the authentication itself.
 """
 
-import hashlib
 from unittest.mock import patch
 
 import server
@@ -16,8 +15,7 @@ AUTH = {"authorization": f"Bearer {TEST_TOKEN}"}
 
 def install_test_token(testcase) -> None:
     """Configure TEST_TOKEN as the only (human) token for the duration of `testcase`."""
-    digest = hashlib.sha256(TEST_TOKEN.encode("utf-8")).digest()
-    for name, value in (("MEMIBRIUM_API_TOKENS", ()), ("MEMIBRIUM_HUMAN_TOKENS", (digest,))):
+    for name, value in (("MEMIBRIUM_API_TOKENS", ()), ("MEMIBRIUM_HUMAN_TOKENS", (TEST_TOKEN.encode("utf-8"),))):
         p = patch.object(server, name, value)
         p.start()
         testcase.addCleanup(p.stop)

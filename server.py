@@ -328,24 +328,26 @@ MEMIBRIUM_ALLOWED_HOSTS: tuple[str, ...] = _parse_allowed_hosts(os.environ.get("
 #                           and every other route too. An API token on a human-only route gets 403.
 # Fails closed: with no token of the required kind configured, the route answers 503, never "allow". Tokens
 # shorter than MIN_AUTH_TOKEN_CHARS are ignored with a warning that gives the entry's position, never its text.
-# Only SHA-256 digests are kept in memory, and comparison is constant-time over every configured digest.
+# Tokens are compared with hmac.compare_digest against every configured token, so timing does not reveal which
+# one matched. They are not hashed: they are high-entropy secrets that already sit in the process environment,
+# and nothing derived from them is persisted, so a password hash would add no protection.
 MIN_AUTH_TOKEN_CHARS = 32
 AUTH_EXEMPT_PATHS = frozenset({"/health"})
 HUMAN_ONLY_PATHS = frozenset({"/mcp/confirm", "/mcp/freeze", "/mcp/revert", "/mcp/consolidate"})
 
 
 def _parse_auth_tokens(raw: str, variable: str) -> tuple[bytes, ...]:
-    digests: list[bytes] = []
+    tokens: list[bytes] = []
     for position, entry in enumerate((p.strip() for p in raw.split(",")), start=1):
         if not entry:
             continue
         if len(entry) < MIN_AUTH_TOKEN_CHARS:
             log.warning("%s: ignoring entry %d (shorter than %d characters)", variable, position, MIN_AUTH_TOKEN_CHARS)
             continue
-        digest = hashlib.sha256(entry.encode("utf-8")).digest()
-        if digest not in digests:
-            digests.append(digest)
-    return tuple(digests)
+        token = entry.encode("utf-8")
+        if token not in tokens:
+            tokens.append(token)
+    return tuple(tokens)
 
 
 MEMIBRIUM_API_TOKENS: tuple[bytes, ...] = _parse_auth_tokens(os.environ.get("MEMIBRIUM_API_TOKENS", ""),
@@ -4483,11 +4485,11 @@ class HostAllowlistGuard:
         await self.app(scope, receive, send)
 
 
-def _digest_matches(candidate: bytes, digests: tuple[bytes, ...]) -> bool:
-    """Constant-time membership: compares against every digest, so timing does not reveal which one matched."""
+def _token_matches(candidate: bytes, tokens: tuple[bytes, ...]) -> bool:
+    """Constant-time membership: compares against every token, so timing does not reveal which one matched."""
     found = False
-    for digest in digests:
-        found |= hmac.compare_digest(candidate, digest)
+    for token in tokens:
+        found |= hmac.compare_digest(candidate, token)
     return found
 
 
@@ -4508,10 +4510,10 @@ def auth_refusal(method: str, path: str, headers: Headers,
     if scheme.lower() != "bearer" or not token:
         return JSONResponse({"error": "authentication required: send Authorization: Bearer <token>"},
                             status_code=401, headers={"WWW-Authenticate": 'Bearer realm="memibrium"'})
-    candidate = hashlib.sha256(token.encode("utf-8")).digest()
-    if _digest_matches(candidate, accepted):
+    candidate = token.encode("utf-8")
+    if _token_matches(candidate, accepted):
         return None
-    if human_only and _digest_matches(candidate, api_tokens):
+    if human_only and _token_matches(candidate, api_tokens):
         return JSONResponse({"error": "this route is human-only: an API token cannot call it"}, status_code=403)
     return JSONResponse({"error": "invalid token"}, status_code=403)
 

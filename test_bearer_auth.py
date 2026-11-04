@@ -9,7 +9,6 @@ Runs in-process with no database, server, LLM or network (the TestClient is not 
 Handlers are spies behind the real middleware stack, so "the handler never ran" is checked directly.
 """
 
-import hashlib
 import unittest
 from unittest.mock import patch
 
@@ -25,8 +24,8 @@ HUMAN_TOKEN = "human-token-" + "h" * 32
 JSON = {"content-type": "application/json"}
 
 
-def digest(token: str) -> bytes:
-    return hashlib.sha256(token.encode("utf-8")).digest()
+def encoded(token: str) -> bytes:
+    return token.encode("utf-8")
 
 
 def bearer(token: str) -> dict:
@@ -36,7 +35,7 @@ def bearer(token: str) -> dict:
 class BearerAuthTest(unittest.TestCase):
     def configure(self, api=(API_TOKEN,), human=(HUMAN_TOKEN,)):
         for name, tokens in (("MEMIBRIUM_API_TOKENS", api), ("MEMIBRIUM_HUMAN_TOKENS", human)):
-            p = patch.object(server, name, tuple(digest(t) for t in tokens))
+            p = patch.object(server, name, tuple(encoded(t) for t in tokens))
             p.start()
             self.addCleanup(p.stop)
 
@@ -179,14 +178,21 @@ class BearerAuthTest(unittest.TestCase):
     def test_parse_ignores_short_and_blank_entries_and_dedupes(self):
         with self.assertLogs(server.log, level="WARNING") as logs:
             parsed = server._parse_auth_tokens(f" {API_TOKEN} ,, tinytok , {API_TOKEN},{HUMAN_TOKEN}", "VAR")
-        self.assertEqual(parsed, (digest(API_TOKEN), digest(HUMAN_TOKEN)))
+        self.assertEqual(parsed, (encoded(API_TOKEN), encoded(HUMAN_TOKEN)))
         self.assertTrue(any("entry 3" in line for line in logs.output))
         self.assertFalse(any("tinytok" in line for line in logs.output), "the log must never echo a token entry")
 
-    def test_only_digests_are_kept(self):
-        parsed = server._parse_auth_tokens(API_TOKEN, "VAR")
-        self.assertNotIn(API_TOKEN.encode(), parsed)
-        self.assertEqual(len(parsed[0]), 32)
+    def test_comparison_is_constant_time_over_every_token(self):
+        calls = []
+        real = server.hmac.compare_digest
+
+        def spy(a, b):
+            calls.append(b)
+            return real(a, b)
+
+        with patch.object(server.hmac, "compare_digest", spy):
+            server._token_matches(encoded(API_TOKEN), (encoded(API_TOKEN), encoded(HUMAN_TOKEN)))
+        self.assertEqual(calls, [encoded(API_TOKEN), encoded(HUMAN_TOKEN)], "no early exit on the first match")
 
     def test_real_app_refuses_without_token(self):
         client = TestClient(server.app, base_url="http://localhost:9999")

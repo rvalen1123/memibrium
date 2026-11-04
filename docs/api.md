@@ -183,7 +183,7 @@ Two token sets, each a comma-separated list (several entries allow rotation; ent
 - `MEMIBRIUM_API_TOKENS`: clients and agents. Every route except the human-only ones.
 - `MEMIBRIUM_HUMAN_TOKENS`: the process that represents a person's decision (for example an approval console behind a passkey). The human-only routes `POST /mcp/confirm`, `/mcp/freeze`, `/mcp/revert` and `/mcp/consolidate`, and every other route.
 
-The server keeps only SHA-256 digests of the tokens and compares them in constant time. Tokens are sent in clear over plain HTTP, so keep the server on loopback or a private network, or put a TLS-terminating proxy in front.
+The server compares a presented token with `hmac.compare_digest` against every configured token, without an early exit. Tokens are not hashed: they are high-entropy secrets that already sit in the process environment, and nothing derived from them is written anywhere. Tokens are sent in clear over plain HTTP, so keep the server on loopback or a private network, or put a TLS-terminating proxy in front.
 
 `test_bearer_auth.py` (in CI, no database) covers missing, malformed, repeated and wrong tokens with the handler never called, API and human tokens on agent and human-only routes, a trailing slash on a human-only path, fail-closed 503s, the `/health` exemption, unknown paths, the order against the other two guards, and the parsing of the settings.
 
