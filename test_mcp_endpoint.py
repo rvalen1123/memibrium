@@ -8,12 +8,16 @@ embedding probe) never runs. Tool calls that would touch the database use patche
 
 import base64
 import json
+import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from starlette.testclient import TestClient
 
 import server
+from ingest_engine import DirectoryIngestResult, IngestResult
 
 LEGACY = "2025-06-18"
 MODERN = "2026-07-28"
@@ -23,11 +27,22 @@ META = {
     "io.modelcontextprotocol/clientCapabilities": {},
 }
 WITHHELD = {"confirm", "consolidate", "revert", "freeze"}
+PATH_TOOLS = {"ingest_file", "ingest_directory", "ingest_jsonl", "compile_wiki"}
+DEFAULT_SERVED = {"retain", "recall", "reflect", "dashboard", "prefetch", "self_model_observe", "context_packet",
+                  "decision_trace", "ingest_status", "wiki_read"}
 
 
 class McpEndpointTest(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(server.app)  # no `with`: startup (DB, embedder) does not run
+        # Every test starts with MCP_INGEST_ROOTS unset (the default), whatever the environment says.
+        roots = patch.object(server, "MCP_INGEST_ROOTS", ())
+        roots.start()
+        self.addCleanup(roots.stop)
+
+    def tools_list(self):
+        r = self.rpc({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+        return {t["name"]: t for t in r.json()["result"]["tools"]}
 
     def rpc(self, body, headers=None):
         h = {"content-type": "application/json", "accept": "application/json, text/event-stream"}
@@ -61,7 +76,7 @@ class McpEndpointTest(unittest.TestCase):
         self.assertEqual(listed.status_code, 200)
         tools = listed.json()["result"]["tools"]
         names = [t["name"] for t in tools]
-        self.assertEqual(len(names), 14)
+        self.assertEqual(set(names), DEFAULT_SERVED)
         self.assertIn("recall", names)
         self.assertIn("retain", names)
 
@@ -100,7 +115,8 @@ class McpEndpointTest(unittest.TestCase):
         self.assertNotIn("structuredContent", result)  # a list is not a structuredContent object
 
     def test_handler_error_status_becomes_a_tool_error(self):
-        r = self.call("ingest_file", {"filepath": "/nonexistent/memibrium-mcp-test.md"})
+        root, _ = self._roots()
+        r = self.call("ingest_file", {"filepath": str(root / "missing.md")})
         self.assertEqual(r.status_code, 200)
         result = r.json()["result"]
         self.assertTrue(result["isError"])
@@ -171,6 +187,152 @@ class McpEndpointTest(unittest.TestCase):
         self.assertIn("user_state", err["message"])
         err = self.call("retain", {"content": "x", "benchmark_fast_path": True}).json()["error"]
         self.assertIn("benchmark_fast_path", err["message"])
+
+    # ── argument values are checked against the schema before dispatch ──
+
+    def test_argument_values_are_validated(self):
+        obs = {"engine": "manual", "observation_type": "x", "claim_text": "y"}
+        cases = [
+            ("recall", {"query": "q", "top_k": 51}, "top_k must be <= 50"),
+            ("recall", {"query": "q", "top_k": 0}, "top_k must be >= 1"),
+            ("recall", {"query": "q", "top_k": "5"}, "top_k must be of type integer"),
+            ("recall", {"query": "q", "top_k": True}, "top_k must be of type integer"),
+            ("recall", {"query": "q", "expand": "false"}, "expand must be of type boolean"),
+            ("recall", {"query": ["q"]}, "query must be of type string"),
+            ("reflect", {"topic": "t", "top_k": 1000}, "top_k must be <= 50"),
+            ("context_packet", {"query": "q", "top_k": 99}, "top_k must be <= 50"),
+            ("prefetch", {"top_k": -1}, "top_k must be >= 1"),
+            ("retain", {"content": "x", "refs": "not-an-object"}, "refs must be of type object"),
+            ("self_model_observe", {**obs, "engine": "astrology"}, "engine must be one of"),
+            ("self_model_observe", {**obs, "evidence_memory_ids": ["m1", 2]}, "evidence_memory_ids[1] must be of type string"),
+            ("self_model_observe", {**obs, "confidence": 2}, "confidence must be <= 1"),
+            ("self_model_observe", {**obs, "sensitivity": "public"}, "sensitivity must be one of"),
+            ("decision_trace", {"query": "q", "answer": "a", "status": "confirmed"}, "status must be one of"),
+        ]
+        for name, args, expected in cases:
+            err = self.call(name, args).json()["error"]
+            self.assertEqual(err["code"], -32602, (name, args))
+            self.assertIn(expected, err["message"], (name, args))
+
+    def test_valid_values_still_dispatch(self):
+        async def fake_recall(query, **kwargs):
+            return {"results": []}
+
+        with patch.object(server, "recall_memories", fake_recall):
+            result = self.call("recall", {"query": "q", "top_k": 50, "expand": False}).json()["result"]
+        self.assertNotIn("isError", result)
+
+    # ── path tools: default-deny, then confined to MCP_INGEST_ROOTS ──
+
+    def _roots(self):
+        base = tempfile.TemporaryDirectory()
+        self.addCleanup(base.cleanup)
+        root, outside = Path(base.name, "allowed"), Path(base.name, "outside")
+        root.mkdir()
+        outside.mkdir()
+        (root / "notes.md").write_text("# notes\nfine to ingest\n")
+        (root / "chat.jsonl").write_text("{}\n")
+        (outside / "secret.md").write_text("SECRET\n")
+        p = patch.object(server, "MCP_INGEST_ROOTS", (os.path.realpath(root),))
+        p.start()
+        self.addCleanup(p.stop)
+        return root, outside
+
+    def _fake_ingest(self):
+        calls = []
+
+        def result(path):
+            return IngestResult(source_file=path, chunks_total=1, chunks_ingested=1, chunks_skipped=0)
+
+        async def ingest_file(filepath, **kwargs):
+            calls.append("file")
+            return result(filepath)
+
+        async def ingest_jsonl(filepath, **kwargs):
+            calls.append("jsonl")
+            return result(filepath)
+
+        async def ingest_directory(dirpath, **kwargs):
+            calls.append("directory")
+            return DirectoryIngestResult(directory=dirpath, files_scanned=1, files_ingested=1, files_skipped=0,
+                                         total_chunks=1, total_memories=1)
+
+        for name, fn in (("ingest_file", ingest_file), ("ingest_jsonl", ingest_jsonl),
+                         ("ingest_directory", ingest_directory)):
+            p = patch.object(server.doc_engine, name, fn)
+            p.start()
+            self.addCleanup(p.stop)
+        return calls
+
+    def test_path_tools_are_withheld_when_roots_are_unset(self):
+        self.assertFalse(set(self.tools_list()) & PATH_TOOLS)
+        for name, args in (("ingest_file", {"filepath": "/etc/hostname"}), ("ingest_directory", {"directory": "/etc"}),
+                           ("ingest_jsonl", {"filepath": "/etc/hostname"}), ("compile_wiki", {})):
+            err = self.call(name, args).json()["error"]
+            self.assertEqual(err["code"], -32602, name)
+            self.assertIn("not available over MCP", err["message"], name)
+            self.assertIn("MCP_INGEST_ROOTS", err["data"]["reason"], name)
+
+    def test_path_tools_listed_when_roots_are_set(self):
+        self._roots()
+        tools = self.tools_list()
+        self.assertEqual(set(tools), DEFAULT_SERVED | PATH_TOOLS)
+        self.assertNotIn("output_dir", tools["compile_wiki"]["inputSchema"]["properties"])
+
+    def test_in_root_paths_work(self):
+        root, _ = self._roots()
+        calls = self._fake_ingest()
+        for name, args in (("ingest_file", {"filepath": str(root / "notes.md"), "skip_duplicates": False}),
+                           ("ingest_jsonl", {"filepath": str(root / "chat.jsonl")}),
+                           ("ingest_directory", {"directory": str(root), "recursive": True})):
+            self.assertNotIn("isError", self.call(name, args).json()["result"], name)
+        self.assertEqual(calls, ["file", "jsonl", "directory"])
+
+    def test_out_of_root_and_dotdot_paths_are_refused(self):
+        root, outside = self._roots()
+        calls = self._fake_ingest()
+        for name, args in (("ingest_file", {"filepath": str(outside / "secret.md")}),
+                           ("ingest_file", {"filepath": str(root / ".." / "outside" / "secret.md")}),
+                           ("ingest_jsonl", {"filepath": "/etc/hostname"}),
+                           ("ingest_directory", {"directory": str(outside)}),
+                           ("ingest_directory", {"directory": str(root) + "-sibling"})):
+            err = self.call(name, args).json()["error"]
+            self.assertEqual(err["code"], -32602, (name, args))
+            self.assertIn("outside MCP_INGEST_ROOTS", err["message"], (name, args))
+        self.assertEqual(calls, [])
+
+    def test_symlink_escapes_are_refused(self):
+        root, outside = self._roots()
+        calls = self._fake_ingest()
+        (root / "link.md").symlink_to(outside / "secret.md")
+        (root / "linkdir").symlink_to(outside, target_is_directory=True)
+        for name, args in (("ingest_file", {"filepath": str(root / "link.md")}),
+                           ("ingest_directory", {"directory": str(root / "linkdir")})):
+            err = self.call(name, args).json()["error"]
+            self.assertEqual(err["code"], -32602, name)
+            self.assertIn("outside MCP_INGEST_ROOTS", err["message"], name)
+        # A directory inside the roots that holds a symlink to a file outside them is refused as a whole.
+        (root / "linkdir").unlink()
+        err = self.call("ingest_directory", {"directory": str(root)}).json()["error"]
+        self.assertIn("resolves outside MCP_INGEST_ROOTS", err["message"])
+        self.assertIn("link.md", err["message"])
+        self.assertEqual(calls, [])
+
+    def test_skip_duplicates_string_is_refused_not_truthy(self):
+        root, _ = self._roots()
+        calls = self._fake_ingest()
+        err = self.call("ingest_file", {"filepath": str(root / "notes.md"), "skip_duplicates": "false"}).json()["error"]
+        self.assertIn("skip_duplicates must be of type boolean", err["message"])
+        self.assertEqual(calls, [])
+
+    def test_compile_wiki_cannot_repoint_the_shared_output_dir(self):
+        self._roots()
+        before = server.wiki_compiler.output_dir
+        with tempfile.TemporaryDirectory() as elsewhere:
+            err = self.call("compile_wiki", {"output_dir": elsewhere}).json()["error"]
+        self.assertEqual(err["code"], -32602)
+        self.assertIn("not accepted over MCP", err["message"])
+        self.assertEqual(server.wiki_compiler.output_dir, before)
 
     def test_missing_required_argument_and_unknown_tool(self):
         self.assertIn("query", self.call("recall", {}).json()["error"]["message"])

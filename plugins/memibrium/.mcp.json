@@ -1,10 +1,10 @@
 {
   "mcpServers": {
     "memibrium": {
-      "type": "url",
+      "type": "http",
       "url": "http://localhost:9999/mcp",
       "name": "memibrium",
-      "description": "Sovereign AI memory server with Crystallization Theory lifecycle. MCP endpoint (POST /mcp) with 14 tools; confirm, freeze, revert and consolidate are human-only and not offered to agents."
+      "description": "Sovereign AI memory server with Crystallization Theory lifecycle. MCP endpoint (POST /mcp) with 10 tools by default; confirm, freeze, revert and consolidate are human-only, and the file-ingest tools need MCP_INGEST_ROOTS."
     }
   }
 }

@@ -38,7 +38,7 @@ Install the agent plugin (skill + MCP wiring): `claude plugin marketplace add rv
 
 ## API at a glance
 
-All routes take and return JSON. [docs/api.md](docs/api.md) lists all 27 routes and the 18 tools in the `GET /mcp/tools` manifest with one line each, and describes the MCP endpoint `POST /mcp` that the plugin connects to (14 of the 18 tools; `confirm`, `revert`, `consolidate` and `freeze` are human-only and not offered to agents); it gives request fields only for idempotent retain and the list routes. For per-tool input schemas, read the manifest.
+All routes take and return JSON. [docs/api.md](docs/api.md) lists all 27 routes and the 18 tools in the `GET /mcp/tools` manifest with one line each, and describes the MCP endpoint `POST /mcp` that the plugin connects to (10 of the 18 tools by default; `confirm`, `revert`, `consolidate` and `freeze` are human-only and never offered to agents, and the four path tools need `MCP_INGEST_ROOTS`); it gives request fields only for idempotent retain and the list routes. For per-tool input schemas, read the manifest.
 
 | Route | What it does |
 |---|---|
@@ -51,7 +51,7 @@ All routes take and return JSON. [docs/api.md](docs/api.md) lists all 27 routes 
 | `GET /mcp/dashboard` · `GET /mcp/graph` | Lifecycle counts and CT parameters · memory graph topology. |
 | `POST /mcp/context_packet` · `POST /mcp/prefetch` | Grounded context packet from episodic, graph and self-model evidence · predictive pre-fetch. |
 | `POST /mcp/ingest/{file,directory,jsonl}` · `POST /mcp/ingest/compile` · `GET /mcp/wiki` | Bulk ingestion with a 30-category taxonomy; compile a wiki from memory. |
-| `POST /mcp` | MCP protocol endpoint (stateless streamable HTTP, JSON replies) the plugin's `.mcp.json` points at. Serves 14 tools; never `confirm`, `revert`, `consolidate` or `freeze`. |
+| `POST /mcp` | MCP protocol endpoint (stateless streamable HTTP, JSON replies) the plugin's `.mcp.json` points at. Serves 10 tools by default (14 with `MCP_INGEST_ROOTS` set); never `confirm`, `revert`, `consolidate` or `freeze`. |
 | `GET /mcp/tools` · `GET /health` | REST tool manifest (all 18) · liveness. |
 
 ## Status and caveats

@@ -121,7 +121,7 @@ claude plugin install memibrium@memibrium
 
 **Cursor / other MCP clients:** see [DISTRIBUTION.md](../DISTRIBUTION.md).
 
-The plugin's `.mcp.json` points the client at `http://localhost:9999/mcp`, the MCP endpoint (`POST /mcp`, stateless streamable HTTP with JSON replies; protocol versions and tools in [api.md](api.md#mcp-endpoint)). The server must already be running there. It serves 14 tools; `confirm`, `revert`, `consolidate` and `freeze` are not offered to agents, so confirming, freezing or reverting a memory stays a human call to its REST route.
+The plugin's `.mcp.json` points the client at `http://localhost:9999/mcp`, the MCP endpoint (`POST /mcp`, stateless streamable HTTP with JSON replies; protocol versions and tools in [api.md](api.md#mcp-endpoint)). The server must already be running there. It serves 10 tools by default; `confirm`, `revert`, `consolidate` and `freeze` are never offered to agents, so confirming, freezing or reverting a memory stays a human call to its REST route. The four path tools (`ingest_file`, `ingest_directory`, `ingest_jsonl`, `compile_wiki`) are served over MCP only when `MCP_INGEST_ROOTS` lists the directories agents may ingest from (see [Environment variables](#environment-variables)).
 
 To check the endpoint without a client:
 
@@ -150,6 +150,7 @@ Names only; never commit values. Most settings are module-level constants read a
 | CT parameters | `IMPORTANCE_THRESHOLD` (`0.4`), `SHEDDING_THRESHOLD` (`0.05`), `CONSOLIDATE_INTERVAL_MIN` (`30`), `DECAY_RATE` (`0.02`), `CRYSTALLIZE_CONFIRMATIONS` (`3`) | `server.py` |
 | CT ranker | `CT_RANKER_RETRIEVAL_WEIGHT` (`0.55`), `CT_RANKER_CT_WEIGHT` (`0.45`), `CT_RANKER_CT_HEAVY_RETRIEVAL_WEIGHT` (`0.40`), `CT_RANKER_CT_HEAVY_CT_WEIGHT` (`0.60`), `CT_RANKER_SHED_PENALTY` (`0.20`), `CT_RANKER_FROZEN_BONUS` (`0.05`), `CT_RANKER_FEEDBACK_SCALE` (`0.05`), `CT_RANKER_MAX_FEEDBACK_BONUS` (`0.30`); parsed by `parse_env_float`, which falls back to the default on an unparsable value | `ct_ranker.py` |
 | Background work | `ENABLE_BACKGROUND_SCORING`, `ENABLE_CONTRADICTION_DETECTION`, `ENABLE_HIERARCHY_PROCESSING` (all `true`), `SCORE_BATCH_SIZE` (`5`), `SCORE_BATCH_TIMEOUT` (`1.0`), `RETAIN_DIAGNOSTICS_MAX_PENDING` (`50`) | `server.py` |
+| MCP endpoint | `MCP_INGEST_ROOTS` (unset): `os.pathsep`-separated directories that the path tools may use over `POST /mcp`, canonicalised with `realpath` at import. Unset or empty: `ingest_file`, `ingest_directory`, `ingest_jsonl` and `compile_wiki` are not served over MCP. Does not affect the REST routes. | `server.py` |
 | Ingestion | `INGEST_MAX_CHUNK_CHARS` (`2000`), `INGEST_MIN_CHUNK_CHARS` (`100`), `INGEST_OVERLAP_CHARS` (`200`) | `ingest_engine.py` |
 | Tests only | `MEMIBRIUM_TEST_DSN` (a disposable Postgres; see [Testing](#testing)) | the DB-backed test files |
 
@@ -199,7 +200,7 @@ python test_leann_e2e.py         # needs pip install leann
 
 ## Network exposure
 
-`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234), including the MCP endpoint `POST /mcp`, whose served tools include file ingestion (reads any path the process can read) and `compile_wiki` (writes to any `output_dir`). `POST /mcp` refuses requests that carry an `Origin` header, which stops browser pages, not other clients. The compose stack publishes its ports on `127.0.0.1` for the same reason. Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
+`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234), including the MCP endpoint `POST /mcp`. Over MCP the file-ingest tools are off unless `MCP_INGEST_ROOTS` is set and then confined to those roots, but the REST ingest routes still read any path the process can read, and the REST governance routes (`/mcp/confirm`, `/mcp/freeze`, `/mcp/revert`, `/mcp/consolidate`) check no caller. `POST /mcp` refuses requests that carry an `Origin` header, which stops browser pages, not other clients. The compose stack publishes its ports on `127.0.0.1` for the same reason. Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
 
 ---
 

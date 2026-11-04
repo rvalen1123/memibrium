@@ -33,7 +33,8 @@ Agent (any: Claude Code, Cursor, Copilot, etc.)
   ├─ This skill (SKILL.md) — behavioral rules, loaded into system prompt
   │   "How to think about memory"
   │
-  └─ Memibrium MCP Server — 14 tools at POST /mcp, via .mcp.json bundled with this plugin
+  └─ Memibrium MCP Server — 10 tools at POST /mcp by default, via .mcp.json bundled with this plugin
+      (the file-ingest tools appear only if the operator sets MCP_INGEST_ROOTS)
       "How to store/retrieve/govern memory"
       core: retain, recall, reflect, dashboard
       (confirm, freeze, revert and consolidate are human-only and not offered over MCP)
@@ -69,6 +70,10 @@ When retrieving knowledge via `recall`:
   give them the memory_id and ask them to confirm it themselves. `confirm` is
   the human's signal: the MCP server does not offer it to agents, and you must
   never call `POST /mcp/confirm` on the user's behalf
+- A confirmation does not by itself crystallize anything: the memory must be
+  ACCEPTED, reach the required number of confirmations, and have a validation
+  score of at least 0.5. Never tell the user a memory is crystallized until
+  `recall` shows its state as CRYSTALLIZED
 - NEVER assume knowledge is crystallized because it "seems right" or has been
   repeated — only `confirm` can crystallize
 - This is the architectural distinction: ML confidence ≠ human consensus
@@ -140,7 +145,8 @@ If running standalone, the server exposes tools at:
 ```
 MCP endpoint:  POST http://localhost:9999/mcp  (what .mcp.json points at)
 Tool manifest: GET /mcp/tools                  (REST; lists all 18, including the human-only ones)
-REST routes:   POST /mcp/{tool_name}
+REST routes:   per tool; paths and HTTP methods vary (e.g. GET /mcp/dashboard,
+               POST /mcp/self_model/observe). See the route map in docs/api.md.
 ```
 
 ## Anti-Patterns (Never Do These)
@@ -179,9 +185,11 @@ Agent: [synthesizes results, flagging lifecycle states]
 ```
 User: "Yes, that rate limit is correct."
 Agent: [does NOT call confirm; confirm is not an MCP tool]
-Agent: "Thanks. To make it validated knowledge, confirm memory_id mem_…
-        yourself (POST /mcp/confirm). It crystallizes after enough
-        human confirmations."
+Agent: "Thanks. To record that, confirm memory_id mem_… yourself
+        (POST /mcp/confirm). Each confirmation counts; the memory
+        crystallizes only once it is ACCEPTED, has enough confirmations
+        and its validation score is at least 0.5, so it may stay
+        unconfirmed-but-believed for now."
 ```
 
 **Contradiction detected:**

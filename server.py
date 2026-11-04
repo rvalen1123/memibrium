@@ -176,6 +176,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("memibrium")
 
 RETAIN_DIAGNOSTICS_MAX_PENDING = int(os.environ.get("RETAIN_DIAGNOSTICS_MAX_PENDING", "50"))
+# Directories the MCP endpoint (POST /mcp) may read files from (os.pathsep-separated). Unset or empty:
+# the path tools (ingest_file, ingest_directory, ingest_jsonl, compile_wiki) are not served over MCP.
+# Canonicalised with realpath here, at import; REST routes are not affected.
+MCP_INGEST_ROOTS: tuple[str, ...] = tuple(
+    os.path.realpath(p) for p in os.environ.get("MCP_INGEST_ROOTS", "").split(os.pathsep) if p.strip()
+)
 _retain_diagnostics_pending: dict[str, dict[str, Any]] = {}
 _retain_diagnostics_lock = asyncio.Lock()
 
@@ -3772,6 +3778,10 @@ async def handle_wiki_read(request: Request) -> JSONResponse:
     return JSONResponse({"wiki_dir": str(wiki_dir), "files": files})
 
 
+# Upper bound on top_k advertised in the manifest schemas and enforced by POST /mcp (REST routes do not enforce it).
+TOOL_TOP_K_MAX = 50
+
+
 def mcp_manifest_tools() -> list[dict]:
     """The REST tool manifest: every tool route with its name and inputSchema (served by GET /mcp/tools)."""
     return [
@@ -3783,11 +3793,11 @@ def mcp_manifest_tools() -> list[dict]:
                 "refs": {"type": "object", "description": "Optional chronology metadata like session_index, chunk_index, turn_start, turn_end"}}, "required": ["content"]}},
             {"name": "recall", "description": "Hybrid memory search. Retrieves semantic, lexical, temporal, graph, and cold-tier candidates, then applies CT ranking using W(k,t), lifecycle state, confirmations, validation, recency, feedback, and provenance.",
              "inputSchema": {"type": "object", "properties": {
-                 "query": {"type": "string"}, "top_k": {"type": "integer", "default": 5},
+                 "query": {"type": "string"}, "top_k": {"type": "integer", "default": 5, "minimum": 1, "maximum": TOOL_TOP_K_MAX},
                  "domain": {"type": "string"}, "expand": {"type": "boolean", "default": True}}, "required": ["query"]}},
             {"name": "reflect", "description": "Synthesize memories about a topic. Crystallized weighted highest.",
              "inputSchema": {"type": "object", "properties": {
-                 "topic": {"type": "string"}, "top_k": {"type": "integer", "default": 10},
+                 "topic": {"type": "string"}, "top_k": {"type": "integer", "default": 10, "minimum": 1, "maximum": TOOL_TOP_K_MAX},
                  "domain": {"type": "string"}}, "required": ["topic"]}},
             {"name": "confirm", "description": "Human validation — ONLY path to crystallization.",
              "inputSchema": {"type": "object", "properties": {
@@ -3805,7 +3815,7 @@ def mcp_manifest_tools() -> list[dict]:
             {"name": "prefetch", "description": "Predictive memory pre-fetching based on recent conversation context.",
              "inputSchema": {"type": "object", "properties": {
                  "context_query": {"type": "string", "description": "Recent conversation context to base predictions on"},
-                 "top_k": {"type": "integer", "default": 5}}, "required": []}},
+                 "top_k": {"type": "integer", "default": 5, "minimum": 1, "maximum": TOOL_TOP_K_MAX}}, "required": []}},
             {"name": "self_model_observe", "description": "Create a source-backed Ethos/Disposition/DNA self-model observation hypothesis.",
              "inputSchema": {"type": "object", "properties": {
                  "engine": {"type": "string", "enum": sorted(SELF_MODEL_ENGINES)},
@@ -3814,13 +3824,13 @@ def mcp_manifest_tools() -> list[dict]:
                  "evidence_memory_ids": {"type": "array", "items": {"type": "string"}},
                  "evidence_artifact_ids": {"type": "array", "items": {"type": "string"}},
                  "entity_ids": {"type": "array", "items": {"type": "string"}},
-                 "confidence": {"type": "number", "default": 0.5},
-                 "sensitivity": {"type": "string", "default": "low"}},
+                 "confidence": {"type": "number", "default": 0.5, "minimum": 0, "maximum": 1},
+                 "sensitivity": {"type": "string", "enum": sorted(SELF_MODEL_SENSITIVITY), "default": "low"}},
                  "required": ["engine", "observation_type", "claim_text"]}},
             {"name": "context_packet", "description": "Compose a grounded context packet from episodic evidence, graph facts, self-model observations, and decision traces.",
              "inputSchema": {"type": "object", "properties": {
                  "query": {"type": "string"},
-                 "top_k": {"type": "integer", "default": 8},
+                 "top_k": {"type": "integer", "default": 8, "minimum": 1, "maximum": TOOL_TOP_K_MAX},
                  "domain": {"type": "string"},
                  "include_decision_traces": {"type": "boolean", "default": False}},
                  "required": ["query"]}},
@@ -3832,7 +3842,7 @@ def mcp_manifest_tools() -> list[dict]:
                  "self_model_observation_ids": {"type": "array", "items": {"type": "string"}},
                  "entity_ids": {"type": "array", "items": {"type": "string"}},
                  "values_invoked": {"type": "array", "items": {"type": "string"}},
-                 "status": {"type": "string", "default": "proposed"}},
+                 "status": {"type": "string", "enum": sorted(DECISION_TRACE_STATUSES), "default": "proposed"}},
                  "required": ["query", "answer"]}},
             {"name": "ingest_file", "description": "Ingest a file: read, chunk, classify, embed, store through CT lifecycle.",
              "inputSchema": {"type": "object", "properties": {
@@ -3903,6 +3913,20 @@ MCP_WITHHELD_TOOLS: dict[str, str] = {
               "protect and boost its own memories; with revert it is a human governance action (POST /mcp/freeze).",
 }
 
+# Tools that take a server-side path: served over MCP only when MCP_INGEST_ROOTS is set, and then only for
+# paths that resolve (realpath: symlinks and ".." followed) inside one of those roots. Value: the path arguments.
+MCP_PATH_TOOLS: dict[str, tuple[str, ...]] = {
+    "ingest_file": ("filepath",),
+    "ingest_directory": ("directory",),
+    "ingest_jsonl": ("filepath",),
+    "compile_wiki": (),
+}
+# Manifest arguments not accepted over MCP. compile_wiki's output_dir would re-point the shared
+# wiki_compiler.output_dir for every later client, so over MCP the wiki is compiled to its configured location.
+MCP_REFUSED_ARGUMENTS: dict[str, tuple[str, ...]] = {"compile_wiki": ("output_dir",)}
+_MCP_PATH_TOOLS_REASON = ("this tool reads or writes server-side paths and is served over MCP only when the "
+                          "operator sets MCP_INGEST_ROOTS to the directories it may use")
+
 # Tool name -> (handler, HTTP method of its REST route, path). Withheld tools have no entry, so no
 # tools/call can reach their handlers even if the withheld check were bypassed.
 _MCP_READ_ONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
@@ -3932,8 +3956,75 @@ def mcp_protocol_tools() -> list[dict]:
         name = tool["name"]
         if name in MCP_WITHHELD_TOOLS or name not in MCP_TOOL_DISPATCH:
             continue
-        tools.append({**tool, "annotations": dict(MCP_TOOL_DISPATCH[name][3])})
+        if name in MCP_PATH_TOOLS and not MCP_INGEST_ROOTS:
+            continue
+        schema = tool["inputSchema"]
+        refused = MCP_REFUSED_ARGUMENTS.get(name, ())
+        if refused:
+            schema = {**schema, "properties": {k: v for k, v in schema.get("properties", {}).items() if k not in refused},
+                      "required": [k for k in schema.get("required", []) if k not in refused]}
+        tools.append({**tool, "inputSchema": schema, "annotations": dict(MCP_TOOL_DISPATCH[name][3])})
     return tools
+
+
+_MCP_JSON_TYPES: dict[str, Callable[[Any], bool]] = {
+    "string": lambda v: isinstance(v, str),
+    "integer": lambda v: isinstance(v, int) and not isinstance(v, bool),
+    "number": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+    "boolean": lambda v: isinstance(v, bool),
+    "object": lambda v: isinstance(v, dict),
+    "array": lambda v: isinstance(v, list),
+}
+
+
+def _mcp_schema_error(schema: dict, value: Any, where: str) -> Optional[str]:
+    """Check one value against the JSON Schema subset the manifest uses: type, enum, items, minimum, maximum."""
+    expected = schema.get("type")
+    if expected and not _MCP_JSON_TYPES[expected](value):
+        return f"{where} must be of type {expected}"
+    if "enum" in schema and value not in schema["enum"]:
+        return f"{where} must be one of {', '.join(map(str, schema['enum']))}"
+    if expected in ("integer", "number"):
+        if "minimum" in schema and value < schema["minimum"]:
+            return f"{where} must be >= {schema['minimum']}"
+        if "maximum" in schema and value > schema["maximum"]:
+            return f"{where} must be <= {schema['maximum']}"
+    if expected == "array" and isinstance(schema.get("items"), dict):
+        for i, item in enumerate(value):
+            err = _mcp_schema_error(schema["items"], item, f"{where}[{i}]")
+            if err:
+                return err
+    return None
+
+
+def _mcp_path_inside_roots(path: str) -> bool:
+    real = os.path.realpath(path)
+    return any(real == root or real.startswith(root.rstrip(os.sep) + os.sep) for root in MCP_INGEST_ROOTS)
+
+
+def _mcp_directory_escapes(directory: str, recursive: bool) -> Optional[str]:
+    """The first file ingest_directory would read that resolves outside MCP_INGEST_ROOTS (e.g. via a symlink)."""
+    from ingest_engine import SUPPORTED_EXTENSIONS
+    base = Path(directory)
+    if not base.is_dir():
+        return None  # the handler reports a missing directory itself
+    candidates = base.rglob("*") if recursive else base.glob("*")
+    for f in candidates:
+        if f.suffix.lower() in SUPPORTED_EXTENSIONS and f.is_file() and not _mcp_path_inside_roots(str(f)):
+            return str(f)
+    return None
+
+
+async def _mcp_path_error(name: str, args: dict) -> Optional[str]:
+    """None when every path argument of a path tool resolves inside MCP_INGEST_ROOTS; otherwise the reason."""
+    for key in MCP_PATH_TOOLS.get(name, ()):
+        if key in args and not _mcp_path_inside_roots(args[key]):
+            return f"{key} is outside MCP_INGEST_ROOTS (after resolving symlinks and '..')"
+    if name == "ingest_directory" and "directory" in args:
+        escaped = await asyncio.to_thread(_mcp_directory_escapes, args["directory"], args.get("recursive", True))
+        if escaped:
+            return f"directory contains a file that resolves outside MCP_INGEST_ROOTS: {escaped[:200]}"
+    return None
 
 
 def _mcp_error(msg_id: Any, code: int, message: str, data: Any = None, status: int = 200) -> tuple[int, Optional[dict]]:
@@ -4064,6 +4155,8 @@ async def mcp_dispatch(msg: Any, version: Optional[str] = None, method_header: O
         name = params.get("name")
         if isinstance(name, str) and name in MCP_WITHHELD_TOOLS:
             return _mcp_error(msg_id, -32602, f"tool {name} is not available over MCP", {"reason": MCP_WITHHELD_TOOLS[name]})
+        if isinstance(name, str) and name in MCP_PATH_TOOLS and not MCP_INGEST_ROOTS:
+            return _mcp_error(msg_id, -32602, f"tool {name} is not available over MCP", {"reason": _MCP_PATH_TOOLS_REASON})
         tool = next((t for t in mcp_protocol_tools() if t["name"] == name), None)
         if tool is None:
             return _mcp_error(msg_id, -32602, f"unknown tool {str(name)[:100]}")
@@ -4073,12 +4166,23 @@ async def mcp_dispatch(msg: Any, version: Optional[str] = None, method_header: O
         if not isinstance(args, dict):
             return _mcp_error(msg_id, -32602, "arguments must be an object")
         schema = tool["inputSchema"]
+        refused = sorted(set(args) & set(MCP_REFUSED_ARGUMENTS.get(name, ())))
+        if refused:
+            return _mcp_error(msg_id, -32602, f"argument(s) not accepted over MCP for {name}: {', '.join(refused)}")
         unknown = sorted(set(args) - set(schema.get("properties", {})))
         if unknown:
             return _mcp_error(msg_id, -32602, f"unknown argument(s) for {name}: {', '.join(unknown)[:200]}")
         missing = [k for k in schema.get("required", []) if k not in args]
         if missing:
             return _mcp_error(msg_id, -32602, f"missing required argument(s) for {name}: {', '.join(missing)}")
+        for key, value in args.items():
+            err = _mcp_schema_error(schema["properties"][key], value, key)
+            if err:
+                return _mcp_error(msg_id, -32602, f"invalid argument for {name}: {err}"[:300])
+        if name in MCP_PATH_TOOLS:
+            err = await _mcp_path_error(name, args)
+            if err:
+                return _mcp_error(msg_id, -32602, f"tool {name} refused: {err}")
         return ok(await _mcp_call_tool(name, args))
     return _mcp_error(msg_id, -32601, f"method not found: {method[:100]}", status=404 if modern else 200)
 
