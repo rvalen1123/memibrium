@@ -36,10 +36,10 @@
    backs the crystallization rule: `POST /mcp` does not offer `confirm`,
    `revert`, `consolidate` or `freeze`, so an agent using only its MCP tools
    cannot crystallize, restore or protect its own output, even without the
-   skill. That guarantee covers the MCP tools only. The REST routes, including
-   `POST /mcp/confirm`, check no caller (no inbound authentication yet,
-   MED-234), so any process with HTTP access to the port can still confirm a
-   memory directly. A web page the user visits cannot: since MED-271 every
+   skill. Since MED-234 the REST routes back it too: `POST /mcp/confirm`,
+   `/mcp/freeze`, `/mcp/revert` and `/mcp/consolidate` accept only a human
+   token (`MEMIBRIUM_HUMAN_TOKENS`), so a process holding an agent's API token
+   cannot confirm a memory directly either. Give agents API tokens only. A web page the user visits cannot: since MED-271 every
    state-changing route refuses a request that carries an `Origin` header
    (unless `MEMIBRIUM_ALLOWED_ORIGINS` lists it) or a cross-site
    `Sec-Fetch-Site`, and refuses a body that is not `application/json`, so a

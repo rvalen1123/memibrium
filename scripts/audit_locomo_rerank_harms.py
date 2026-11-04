@@ -114,7 +114,9 @@ def mcp_post(tool: str, payload: dict[str, Any], retries: int = 3) -> Any:
     last_exc: Exception | None = None
     for attempt in range(retries):
         try:
-            r = requests.post(url, json=payload, timeout=60)
+            token = os.environ.get("MEMIBRIUM_API_TOKEN", "").strip()  # MED-234
+            auth = {"Authorization": f"Bearer {token}"} if token else {}
+            r = requests.post(url, json=payload, timeout=60, headers=auth)
             r.raise_for_status()
             return r.json()
         except Exception as exc:  # noqa: BLE001 - diagnostic retry

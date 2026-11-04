@@ -171,6 +171,10 @@ def should_skip_category(orig_cat, skip_cats):
 CAT_NAMES = CAT_MAP
 
 client = httpx.Client(timeout=120)
+# MED-234: bearer token for Memibrium calls only. `client` also talks to Azure chat, so this is passed per
+# request to MCP URLs and never set as a client default.
+_MEMIBRIUM_TOKEN = os.environ.get("MEMIBRIUM_API_TOKEN", "").strip()
+MEMIBRIUM_AUTH = {"Authorization": f"Bearer {_MEMIBRIUM_TOKEN}"} if _MEMIBRIUM_TOKEN else {}
 
 
 def mcp_post(tool, payload, retries=3):
@@ -179,7 +183,7 @@ def mcp_post(tool, payload, retries=3):
     last_response_text = None
     for attempt in range(retries):
         try:
-            r = client.post(f"{MCP}/{tool}", json=payload)
+            r = client.post(f"{MCP}/{tool}", json=payload, headers=MEMIBRIUM_AUTH)
             last_status = r.status_code
             last_response_text = r.text[:2000]
             if r.status_code == 200 and r.text.strip():
@@ -197,7 +201,7 @@ def mcp_post(tool, payload, retries=3):
 
 
 def mcp_get(tool):
-    r = client.get(f"{MCP}/{tool}")
+    r = client.get(f"{MCP}/{tool}", headers=MEMIBRIUM_AUTH)
     return r.json()
 
 
@@ -206,7 +210,7 @@ def run_preflight_checks():
     print("  Running preflight checks...")
 
     # MCP recall path should respond successfully.
-    recall_resp = client.post(f"{MCP}/recall", json={"query": "test", "top_k": 1})
+    recall_resp = client.post(f"{MCP}/recall", json={"query": "test", "top_k": 1}, headers=MEMIBRIUM_AUTH)
     recall_resp.raise_for_status()
     _ = recall_resp.json()
 

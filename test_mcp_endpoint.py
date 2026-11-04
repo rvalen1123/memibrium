@@ -17,6 +17,7 @@ from unittest.mock import patch
 from starlette.testclient import TestClient
 
 import server
+from auth_test_support import AUTH, install_test_token
 from ingest_engine import DirectoryIngestResult, IngestResult
 
 LEGACY = "2025-06-18"
@@ -35,7 +36,8 @@ DEFAULT_SERVED = {"retain", "recall", "reflect", "dashboard", "prefetch", "self_
 class McpEndpointTest(unittest.TestCase):
     def setUp(self):
         # base_url: TestClient's default Host, "testserver", is refused by HostAllowlistGuard (MED-276).
-        self.client = TestClient(server.app, base_url="http://localhost:9999")  # no `with`: startup does not run
+        install_test_token(self)  # MED-234: these tests are not about authentication
+        self.client = TestClient(server.app, base_url="http://localhost:9999", headers=AUTH)  # no `with`: startup does not run
         # Every test starts with MCP_INGEST_ROOTS unset (the default), whatever the environment says.
         roots = patch.object(server, "MCP_INGEST_ROOTS", ())
         roots.start()

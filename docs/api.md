@@ -50,7 +50,7 @@ Arguments outside a tool's schema are refused rather than passed through. `self_
 
 That alone did not protect a human review: both record ids are content hashes, so an agent re-submitting the same observation or trace hit the upsert, which overwrote `user_state`, `lifecycle_state` and `status` and raised `confidence`. A human's `confirmed` or `rejected` went back to `unreviewed`, and confidence could be pushed to 1.0. The upserts now keep a reviewed row: when the stored observation has a `user_state` other than `unreviewed` and the incoming write is unreviewed, they keep its state, confidence, evidence and metadata (only `last_seen` and `surfaced_count` change). Likewise a trace whose status is not `proposed` keeps its status, `outcome_signal` and metadata against a `proposed` re-submission (`SELF_MODEL_REVIEW_KEPT_SQL`, `DECISION_TRACE_REVIEW_KEPT_SQL`). An explicit review write, which is the REST body with `user_state` or `status` set, still updates the row, so a human can change a review. `test_review_preservation_db.py` checks this against Postgres. `test_mcp_endpoint.py` (in CI, no database) covers the handshake, `tools/list`, a read-only `tools/call`, both eras' header rules, the transport refusals, value validation, the path-tool gate (unset, out-of-root, `..`, symlink escapes, in-root) and the withheld tools in both `tools/list` and `tools/call`.
 
-**No inbound authentication.** `/mcp` inherits the same no-auth exposure as every `/mcp/*` route (MED-234): anyone who can reach the port can call the served tools. Withholding a tool from MCP does not protect its REST route: `POST /mcp/confirm`, `/mcp/freeze`, `/mcp/revert`, `/mcp/consolidate`, the review writes through `/mcp/self_model/observe` and `/mcp/decision_trace`, and the ingest routes check no caller, so any process with HTTP access to the port can still call them directly. A web page the user visits cannot reach them: the cross-site request refusal below (MED-271) refuses a browser's request before the handler runs. That is not authentication; keep the server on loopback or a private network until MED-234 lands.
+**Authentication.** `/mcp` requires a bearer token like every route except `/health` (see [Bearer authentication](#bearer-authentication)). An API token reaches the served tools. The four withheld tools' REST routes (`/mcp/confirm`, `/mcp/freeze`, `/mcp/revert`, `/mcp/consolidate`) accept only a human token, so an agent holding an API token cannot call them either way. The review writes through `/mcp/self_model/observe` and `/mcp/decision_trace` and the REST ingest routes accept an API token.
 
 ---
 
@@ -165,7 +165,27 @@ The routes not listed above, with a one-line description taken from each handler
 
 Request bodies are JSON and must be declared so (see the next section). Handlers return HTTP 400 with `{"error": ...}` when a required field is missing (`content`, `query`, `topic`, `memory_id`). This page has no per-route field tables; the manifest served at `GET /mcp/tools` is the authoritative list of tool names and input schemas.
 
-**Inbound authentication:** none of these routes (nor `POST /mcp`) check a credential today; the server trusts the network it is bound to (`0.0.0.0:9999` when started with `python server.py`; `127.0.0.1:9999` from the compose stack unless `MEMIBRIUM_BIND` is set). Tracked as MED-234.
+**Inbound authentication:** every route here and `POST /mcp` require a bearer token; see the next section.
+
+### Bearer authentication
+
+`BearerAuthGuard` (ASGI middleware, `server.py`, MED-234) runs after the [Host allowlist](#host-allowlist-dns-rebinding) and before routing and the cross-site refusal. Every request needs exactly one `Authorization: Bearer <token>` header, on every route and method, unknown paths included, except `GET` and `HEAD /health`.
+
+| Situation | Answer |
+| --- | --- |
+| No token of the kind the route needs is configured on the server | **503**, naming the variable to set. The server fails closed. |
+| No `Authorization`, more than one, another scheme, or an empty token | **401** with `WWW-Authenticate: Bearer realm="memibrium"` |
+| A token that is not configured | **403** |
+| An API token on a human-only route | **403** (`this route is human-only`) |
+
+Two token sets, each a comma-separated list (several entries allow rotation; entries under 32 characters are ignored with a warning that gives their position, never their text):
+
+- `MEMIBRIUM_API_TOKENS`: clients and agents. Every route except the human-only ones.
+- `MEMIBRIUM_HUMAN_TOKENS`: the process that represents a person's decision (for example an approval console behind a passkey). The human-only routes `POST /mcp/confirm`, `/mcp/freeze`, `/mcp/revert` and `/mcp/consolidate`, and every other route.
+
+The server keeps only SHA-256 digests of the tokens and compares them in constant time. Tokens are sent in clear over plain HTTP, so keep the server on loopback or a private network, or put a TLS-terminating proxy in front.
+
+`test_bearer_auth.py` (in CI, no database) covers missing, malformed, repeated and wrong tokens with the handler never called, API and human tokens on agent and human-only routes, a trailing slash on a human-only path, fail-closed 503s, the `/health` exemption, unknown paths, the order against the other two guards, and the parsing of the settings.
 
 ### Cross-site request refusal
 
@@ -177,7 +197,7 @@ A web page can send a "simple" cross-origin `POST` (for example a `text/plain` `
 
 The refusal is `{"error": ...}` and the handler is not called. A wrong method or an unknown path still gets the router's 405 or 404. `GET`, `HEAD` and `OPTIONS` are not checked.
 
-This is not authentication. Any local process that does not behave like a browser can still call every route; inbound authentication stays open as MED-234. A same-origin `GET` carries no `Origin`, so DNS rebinding against the read-only routes is refused by the [Host allowlist](#host-allowlist-dns-rebinding) instead.
+This is not authentication; it refuses browser-driven requests even when a token would otherwise be accepted. A same-origin `GET` carries no `Origin`, so DNS rebinding against the read-only routes is refused by the [Host allowlist](#host-allowlist-dns-rebinding) instead.
 
 `test_cross_site_guard.py` (in CI, no database) pins the set of non-`GET` routes (function routes, `HTTPEndpoint` classes, and routes inside a `Mount`; an opaque mounted app counts as accepting any method), sends `text/plain`, a foreign `Origin`, an empty `Origin` and a cross-site `Sec-Fetch-Site` to each one and checks that its handler never runs, and checks the allowlist, plain JSON clients, and that `POST /mcp` ignores the allowlist. A new `POST`, `PUT`, `PATCH` or `DELETE` route fails that test until it is added to the pinned list.
 
@@ -190,7 +210,7 @@ So `HostAllowlistGuard` (ASGI middleware, outermost, MED-276) checks the `Host` 
 
 Why 421 and not 403: the request is not forbidden for this caller. It reached a server that does not serve that name, which is what 421 means (RFC 9110, section 15.5.20). A client that uses the right name succeeds, and a rebinding page gets an error reply with nothing from the server's data in it.
 
-Clients that use another name must be listed: another container calling `http://memibrium:9999` (the compose service name), a LAN address or Tailscale name, or a reverse proxy that forwards the public `Host` (Caddy does by default). See [operations.md](operations.md#environment-variables). Like the cross-site refusal, this is not authentication (MED-234). Any client can send `Host: localhost`; only a browser cannot choose it.
+Clients that use another name must be listed: another container calling `http://memibrium:9999` (the compose service name), a LAN address or Tailscale name, or a reverse proxy that forwards the public `Host` (Caddy does by default). See [operations.md](operations.md#environment-variables). Like the cross-site refusal, this is not authentication (that is the [bearer token](#bearer-authentication)). Any client can send `Host: localhost`; only a browser cannot choose it.
 
 `test_host_allowlist.py` (in CI, no database) covers foreign hosts on `GET` and `POST` with the handler never called, the rebinding reads on the real app, the refusal before routing, every loopback form (including IPv6 with a port), configured hosts, malformed, repeated and missing `Host` headers, and the parsing of the setting.
 

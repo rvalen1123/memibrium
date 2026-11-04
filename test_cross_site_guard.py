@@ -21,6 +21,7 @@ from starlette.routing import Mount, Route
 from starlette.testclient import TestClient
 
 import server
+from auth_test_support import AUTH, install_test_token
 
 UNSAFE = ("POST", "PUT", "PATCH", "DELETE")
 JSON = {"content-type": "application/json"}
@@ -105,7 +106,7 @@ class SpyApp:
         routes = [Route(path, spy_for(path), methods=sorted(methods))
                   for path, methods in route_table(server.app.routes) if "*" not in methods]
         self.client = TestClient(Starlette(routes=routes, middleware=server.app.user_middleware),
-                                 base_url=LOCAL)
+                                 base_url=LOCAL, headers=AUTH)
 
 
 class CrossSiteGuardTest(unittest.TestCase):
@@ -113,8 +114,9 @@ class CrossSiteGuardTest(unittest.TestCase):
         allow = patch.object(server, "MEMIBRIUM_ALLOWED_ORIGINS", ())
         allow.start()
         self.addCleanup(allow.stop)
+        install_test_token(self)  # MED-234: these tests are not about authentication
         self.spy = SpyApp()
-        self.client = TestClient(server.app, base_url=LOCAL)  # no `with`: startup (DB, embedder) does not run
+        self.client = TestClient(server.app, base_url=LOCAL, headers=AUTH)  # no `with`: startup (DB, embedder) does not run
 
     def post(self, path, headers, body='{"memory_id": "m1"}'):
         return self.spy.client.post(path, content=body, headers=headers)
@@ -302,7 +304,7 @@ class CrossSiteGuardTest(unittest.TestCase):
             Mount("/raw", app=opaque),
         ], middleware=server.app.user_middleware)
         self.assertEqual(unsafe_routes(app), {("/thing", "POST"), ("/sub/write", "PUT"), ("/raw/{path:path}", "*")})
-        client = TestClient(app, base_url=LOCAL)
+        client = TestClient(app, base_url=LOCAL, headers=AUTH)
         for path, method in sorted(unsafe_routes(app)):
             url, verb = concrete(path, method)
             r = client.request(verb, url, content="{}", headers={"content-type": "text/plain"})

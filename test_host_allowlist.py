@@ -19,6 +19,7 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 
 import server
+from auth_test_support import AUTH, install_test_token
 
 JSON = {"content-type": "application/json"}
 LOOPBACK_HOSTS = ("localhost", "localhost:9999", "LOCALHOST:9999", "localhost.", "127.0.0.1", "127.0.0.1:9999",
@@ -32,6 +33,7 @@ class HostAllowlistTest(unittest.TestCase):
             p = patch.object(server, name, value)
             p.start()
             self.addCleanup(p.stop)
+        install_test_token(self)  # MED-234: these tests are not about authentication
         self.calls = []
 
         async def spy(request):
@@ -41,8 +43,8 @@ class HostAllowlistTest(unittest.TestCase):
         spy_app = Starlette(routes=[Route("/mcp/graph", spy, methods=["GET"]),
                                     Route("/mcp/confirm", spy, methods=["POST"])],
                             middleware=server.app.user_middleware)
-        self.spy = TestClient(spy_app, base_url="http://localhost:9999")
-        self.client = TestClient(server.app, base_url="http://localhost:9999")
+        self.spy = TestClient(spy_app, base_url="http://localhost:9999", headers=AUTH)
+        self.client = TestClient(server.app, base_url="http://localhost:9999", headers=AUTH)
 
     def get(self, host, path="/mcp/graph"):
         return self.spy.get(path, headers={"host": host})
@@ -52,7 +54,7 @@ class HostAllowlistTest(unittest.TestCase):
 
     def test_guard_is_installed_outermost(self):
         self.assertEqual([m.cls for m in server.app.user_middleware],
-                         [server.HostAllowlistGuard, server.CrossSiteRequestGuard])
+                         [server.HostAllowlistGuard, server.BearerAuthGuard, server.CrossSiteRequestGuard])
 
     def test_foreign_host_is_refused_on_get_and_post_without_calling_the_handler(self):
         for host in ("evil.example", "evil.example:9999", "attacker.localhost.evil.example", "127.0.0.1.evil.example",

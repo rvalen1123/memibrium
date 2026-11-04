@@ -2,16 +2,20 @@
 """Benchmark Memibrium memory stack — write latency, recall latency, throughput."""
 
 import json
+import os
 import time
 import urllib.request
 import urllib.error
 
 BASE = "http://localhost:9999"
+# MED-234: the server requires a bearer token. Read it from the environment; never hard-code it.
+_TOKEN = os.environ.get("MEMIBRIUM_API_TOKEN", "").strip()
+AUTH = {"Authorization": f"Bearer {_TOKEN}"} if _TOKEN else {}
 
 def api_call(method, path, payload=None):
     url = f"{BASE}{path}"
     data = json.dumps(payload).encode() if payload else None
-    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method=method)
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", **AUTH}, method=method)
     with urllib.request.urlopen(req, timeout=30) as resp:
         return json.loads(resp.read().decode())
 

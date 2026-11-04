@@ -81,6 +81,9 @@ jobs:
       - name: Host allowlist on every route, DNS-rebinding refusal (MED-276)
         run: python test_host_allowlist.py -v
 
+      - name: Bearer-token authentication on every route, human-only governance routes (MED-234)
+        run: python test_bearer_auth.py -v
+
       - name: Check the database service (pgvector loads, user may create databases)
         env:
           MEMIBRIUM_TEST_DSN: postgresql://memibrium:memibrium@localhost:5432/memibrium_test

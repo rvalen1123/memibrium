@@ -65,6 +65,9 @@ def run(cmd: list[str] | str, timeout: int = 60, check: bool = False) -> dict[st
 def http_json(url: str, payload: dict[str, Any] | None = None, timeout: int = 30) -> dict[str, Any]:
     data = None
     headers = {}
+    token = os.environ.get("MEMIBRIUM_API_TOKEN", "").strip()  # MED-234
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     if payload is not None:
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
