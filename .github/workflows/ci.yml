@@ -108,7 +108,8 @@ jobs:
         run: |
           for t in \
             test_retain_idempotency.py \
-            test_hybrid_retrieval_tiebreak_db.py
+            test_hybrid_retrieval_tiebreak_db.py \
+            test_review_preservation_db.py
           do
             echo "::group::$t"
             python "$t" -v 2>&1 | tee "$RUNNER_TEMP/$t.log"

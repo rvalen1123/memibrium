@@ -83,8 +83,15 @@ class McpEndpointTest(unittest.TestCase):
         # The names and inputSchemas are the REST manifest's own.
         manifest = {t["name"]: t for t in server.mcp_manifest_tools()}
         for tool in tools:
-            self.assertEqual(tool["inputSchema"], manifest[tool["name"]]["inputSchema"], tool["name"])
+            expected = manifest[tool["name"]]["inputSchema"]
+            overrides = server.MCP_SCHEMA_OVERRIDES.get(tool["name"], {})
+            if overrides:
+                expected = {**expected, "properties": {**expected["properties"], **overrides}}
+            self.assertEqual(tool["inputSchema"], expected, tool["name"])
             self.assertEqual(tool["description"], manifest[tool["name"]]["description"], tool["name"])
+        # Over MCP a decision trace can only be proposed.
+        trace = next(t for t in tools if t["name"] == "decision_trace")
+        self.assertEqual(trace["inputSchema"]["properties"]["status"]["enum"], ["proposed"])
 
         status = self.call("ingest_status", {})
         self.assertEqual(status.status_code, 200)
@@ -132,7 +139,9 @@ class McpEndpointTest(unittest.TestCase):
         with patch.object(server, "MCP_TOOL_DISPATCH", dispatch):
             result = self.call("dashboard", {}).json()["result"]
         self.assertTrue(result["isError"])
-        self.assertIn("pool not initialized", result["content"][0]["text"])
+        # The client gets the exception type, not its message (which stays in the server log).
+        self.assertIn("RuntimeError", result["content"][0]["text"])
+        self.assertNotIn("pool not initialized", result["content"][0]["text"])
 
     # ── CT authority: nothing reachable over MCP can confirm or crystallize ──
 
@@ -384,6 +393,139 @@ class McpEndpointTest(unittest.TestCase):
         self.assertIn("not available over MCP", r.json()["error"]["message"])
 
     # ── transport ──
+
+    # ── review follow-ups: S1, S2, N1-N3, N7 ──
+
+    def test_notification_shaped_confirm_executes_nothing(self):
+        async def must_not_run(*a, **k):
+            raise AssertionError("a notification reached the store")
+
+        with patch.object(server.store, "get_memory", must_not_run), \
+                patch.object(server.store, "update_memory", must_not_run), \
+                patch.object(server.store, "add_feedback", must_not_run):
+            for name in ("confirm", "freeze", "recall"):
+                r = self.rpc({"jsonrpc": "2.0", "method": "tools/call",
+                              "params": {"name": name, "arguments": {"memory_id": "m", "query": "q"}}})
+                self.assertEqual(r.status_code, 202, name)
+                self.assertEqual(r.text, "", name)
+
+    def test_withheld_name_variants_are_unknown_tools(self):
+        async def must_not_run(*a, **k):
+            raise AssertionError("a confirm variant reached the store")
+
+        with patch.object(server.store, "get_memory", must_not_run), \
+                patch.object(server.store, "update_memory", must_not_run):
+            for name in ("Confirm", "CONFIRM", "confirm ", " confirm", "confirm\u0000", "mcp__memibrium__confirm",
+                         "memibrium.confirm", "memibrium/confirm", "/mcp/confirm", "Freeze", "REVERT", "consolidate\n"):
+                err = self.call(name, {"memory_id": "m"}).json()["error"]
+                self.assertEqual(err["code"], -32602, repr(name))
+                self.assertIn("unknown tool", err["message"], repr(name))
+            for bad in (None, 1, ["confirm"], {"name": "confirm"}):
+                err = self.call(bad, {"memory_id": "m"}).json()["error"]
+                self.assertEqual(err["code"], -32602, repr(bad))
+
+    def test_decision_trace_status_other_than_proposed_is_refused(self):
+        for status in ("accepted", "rejected", "corrected", "superseded"):
+            err = self.call("decision_trace", {"query": "q", "answer": "a", "status": status}).json()["error"]
+            self.assertEqual(err["code"], -32602, status)
+            self.assertIn("status must be one of proposed", err["message"], status)
+
+    def test_nul_byte_paths_are_refused_not_500(self):
+        root, _ = self._roots()
+        calls = self._fake_ingest()
+        for name, args in (("ingest_file", {"filepath": str(root / "a\x00b.md")}),
+                           ("ingest_jsonl", {"filepath": "\x00"}),
+                           ("ingest_directory", {"directory": str(root) + "\x00"})):
+            r = self.call(name, args)
+            self.assertEqual(r.status_code, 200, name)
+            err = r.json()["error"]
+            self.assertEqual(err["code"], -32602, name)
+            self.assertIn("NUL byte", err["message"], name)
+        self.assertEqual(calls, [])
+        self.assertFalse(server._mcp_path_inside_roots("a\x00b"))
+
+    def test_directory_scan_errors_are_refused_not_500(self):
+        root, _ = self._roots()
+        calls = self._fake_ingest()
+
+        def boom(directory, recursive):
+            raise PermissionError("scan denied")
+
+        with patch.object(server, "_mcp_directory_escapes", boom):
+            err = self.call("ingest_directory", {"directory": str(root)}).json()["error"]
+        self.assertEqual(err["code"], -32602)
+        self.assertIn("could not be scanned (PermissionError)", err["message"])
+        self.assertEqual(calls, [])
+
+    def test_nan_and_infinity_are_refused(self):
+        for literal in ("NaN", "Infinity", "-Infinity"):
+            body = ('{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"self_model_observe",'
+                    '"arguments":{"engine":"manual","observation_type":"x","claim_text":"y","confidence":%s}}}' % literal)
+            r = self.client.post("/mcp", content=body, headers={"content-type": "application/json"})
+            self.assertEqual((r.status_code, r.json()["error"]["code"]), (400, -32700), literal)
+        # The validator refuses them as well, should a non-finite number ever reach it.
+        for value in (float("nan"), float("inf"), float("-inf")):
+            self.assertIn("finite", server._mcp_schema_error({"type": "number", "minimum": 0, "maximum": 1}, value, "c"))
+
+    def test_empty_origin_and_json_lookalike_media_types_are_refused(self):
+        ping = '{"jsonrpc":"2.0","id":1,"method":"ping"}'
+        r = self.client.post("/mcp", content=ping, headers={"content-type": "application/json", "origin": ""})
+        self.assertEqual(r.status_code, 403)
+        for ctype in ("application/json-evil", "application/jsonp", "text/json", "application/json5"):
+            r = self.client.post("/mcp", content=ping, headers={"content-type": ctype})
+            self.assertEqual(r.status_code, 415, ctype)
+        for ctype in ("application/json; charset=utf-8", "Application/JSON"):
+            r = self.client.post("/mcp", content=ping, headers={"content-type": ctype})
+            self.assertEqual(r.status_code, 200, ctype)
+
+    def test_ingest_roots_are_stripped_and_relative_entries_ignored(self):
+        with tempfile.TemporaryDirectory() as d:
+            raw = os.pathsep.join([f"  {d}  ", "relative/notes", "", "   "])
+            self.assertEqual(server._parse_mcp_ingest_roots(raw), (os.path.realpath(d),))
+        self.assertEqual(server._parse_mcp_ingest_roots(""), ())
+
+    def test_dispatch_failure_is_a_generic_internal_error(self):
+        async def broken(*a, **k):
+            raise RuntimeError("secret detail /etc/memibrium.key")
+
+        with patch.object(server, "mcp_dispatch", broken):
+            r = self.rpc({"jsonrpc": "2.0", "id": 7, "method": "tools/list"})
+        self.assertEqual(r.status_code, 500)
+        self.assertEqual(r.json(), {"jsonrpc": "2.0", "id": 7, "error": {"code": -32603, "message": "Internal error"}})
+
+    def test_reviewed_rows_are_kept_by_the_upsert_sql(self):
+        # S1: the ids are content hashes, so a re-submission hits ON CONFLICT; the guards must keep reviewed rows.
+        captured = []
+
+        class Conn:
+            async def execute(self, sql, *args):
+                captured.append(sql)
+
+        class Acquire:
+            async def __aenter__(self):
+                return Conn()
+
+            async def __aexit__(self, *exc):
+                return False
+
+        class Pool:
+            def acquire(self):
+                return Acquire()
+
+        import asyncio
+        store = server.ColdStore.__new__(server.ColdStore)
+        store.pool = Pool()
+        asyncio.run(store.create_self_model_observation(
+            {"engine": "manual", "observation_type": "x", "claim_text": "y", "evidence_memory_ids": ["m1"]}))
+        asyncio.run(store.create_decision_trace({"query": "q", "answer": "a"}))
+        obs_sql, trace_sql = captured
+        kept = server.SELF_MODEL_REVIEW_KEPT_SQL
+        for column in ("confidence", "evidence_memory_ids", "evidence_artifact_ids", "entity_ids",
+                       "lifecycle_state", "user_state", "metadata"):
+            self.assertIn(f"{column} = CASE WHEN {kept} THEN self_model_observations.{column}", obs_sql, column)
+        for column in ("status", "outcome_signal", "metadata"):
+            self.assertIn(f"{column} = CASE WHEN {server.DECISION_TRACE_REVIEW_KEPT_SQL} THEN decision_traces.{column}",
+                          trace_sql, column)
 
     def test_get_and_delete_are_405(self):
         for method in ("GET", "DELETE"):

@@ -45,6 +45,7 @@ from decimal import Decimal
 import hashlib
 import json
 import logging
+import math
 import os
 import uuid
 from datetime import date, datetime, timezone
@@ -179,9 +180,20 @@ RETAIN_DIAGNOSTICS_MAX_PENDING = int(os.environ.get("RETAIN_DIAGNOSTICS_MAX_PEND
 # Directories the MCP endpoint (POST /mcp) may read files from (os.pathsep-separated). Unset or empty:
 # the path tools (ingest_file, ingest_directory, ingest_jsonl, compile_wiki) are not served over MCP.
 # Canonicalised with realpath here, at import; REST routes are not affected.
-MCP_INGEST_ROOTS: tuple[str, ...] = tuple(
-    os.path.realpath(p) for p in os.environ.get("MCP_INGEST_ROOTS", "").split(os.pathsep) if p.strip()
-)
+# Entries are stripped; a relative entry is ignored with a warning (it would depend on the working directory).
+def _parse_mcp_ingest_roots(raw: str) -> tuple[str, ...]:
+    roots = []
+    for entry in (p.strip() for p in raw.split(os.pathsep)):
+        if not entry:
+            continue
+        if not os.path.isabs(entry):
+            log.warning("MCP_INGEST_ROOTS: ignoring relative entry %r; use absolute paths", entry)
+            continue
+        roots.append(os.path.realpath(entry))
+    return tuple(roots)
+
+
+MCP_INGEST_ROOTS: tuple[str, ...] = _parse_mcp_ingest_roots(os.environ.get("MCP_INGEST_ROOTS", ""))
 _retain_diagnostics_pending: dict[str, dict[str, Any]] = {}
 _retain_diagnostics_lock = asyncio.Lock()
 
@@ -302,6 +314,15 @@ SELF_MODEL_LIFECYCLE_STATES = {"observation", "emerging", "accepted", "crystalli
 SELF_MODEL_USER_STATES = {"unreviewed", "confirmed", "rejected", "deleted"}
 SELF_MODEL_SENSITIVITY = {"low", "medium", "high", "sensitive"}
 DECISION_TRACE_STATUSES = {"proposed", "accepted", "rejected", "corrected", "superseded"}
+
+# A human review survives a later unreviewed write. The record ids are content hashes, so re-submitting the same
+# observation or trace hits ON CONFLICT; when the stored row was reviewed (user_state other than 'unreviewed', or a
+# trace status other than 'proposed') and the incoming write is an unreviewed one (what an agent sends, and all the
+# MCP endpoint can send), the upsert keeps the reviewed state, confidence, evidence and metadata. An explicit review
+# write (REST with user_state / status set) still updates the row.
+SELF_MODEL_REVIEW_KEPT_SQL = ("(self_model_observations.user_state <> 'unreviewed' "
+                              "AND EXCLUDED.user_state = 'unreviewed')")
+DECISION_TRACE_REVIEW_KEPT_SQL = "(decision_traces.status <> 'proposed' AND EXCLUDED.status = 'proposed')"
 
 
 def _coerce_list(value) -> list:
@@ -1222,16 +1243,20 @@ class ColdStore:
                 ) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb,
                           $8, $9, $10, $11, $12, $13::jsonb, $14, $15, $16)
                 ON CONFLICT (observation_id) DO UPDATE SET
-                    confidence = GREATEST(self_model_observations.confidence, EXCLUDED.confidence),
-                    evidence_memory_ids = EXCLUDED.evidence_memory_ids,
-                    evidence_artifact_ids = EXCLUDED.evidence_artifact_ids,
-                    entity_ids = EXCLUDED.entity_ids,
-                    lifecycle_state = EXCLUDED.lifecycle_state,
-                    user_state = EXCLUDED.user_state,
-                    metadata = EXCLUDED.metadata,
+                    confidence = CASE WHEN {kept} THEN self_model_observations.confidence
+                        ELSE GREATEST(self_model_observations.confidence, EXCLUDED.confidence) END,
+                    evidence_memory_ids = CASE WHEN {kept} THEN self_model_observations.evidence_memory_ids
+                        ELSE EXCLUDED.evidence_memory_ids END,
+                    evidence_artifact_ids = CASE WHEN {kept} THEN self_model_observations.evidence_artifact_ids
+                        ELSE EXCLUDED.evidence_artifact_ids END,
+                    entity_ids = CASE WHEN {kept} THEN self_model_observations.entity_ids ELSE EXCLUDED.entity_ids END,
+                    lifecycle_state = CASE WHEN {kept} THEN self_model_observations.lifecycle_state
+                        ELSE EXCLUDED.lifecycle_state END,
+                    user_state = CASE WHEN {kept} THEN self_model_observations.user_state ELSE EXCLUDED.user_state END,
+                    metadata = CASE WHEN {kept} THEN self_model_observations.metadata ELSE EXCLUDED.metadata END,
                     last_seen = NOW(),
                     surfaced_count = self_model_observations.surfaced_count + EXCLUDED.surfaced_count
-            """, record["observation_id"], record["engine"], record["observation_type"], record["claim_text"],
+            """.format(kept=SELF_MODEL_REVIEW_KEPT_SQL), record["observation_id"], record["engine"], record["observation_type"], record["claim_text"],
                 json.dumps(record["evidence_memory_ids"]), json.dumps(record["evidence_artifact_ids"]),
                 json.dumps(record["entity_ids"]), record["confidence"], record["sensitivity"],
                 record["lifecycle_state"], record["user_state"], record["decay_rate"],
@@ -1283,11 +1308,11 @@ class ColdStore:
                 ) VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb,
                           $8, $9::jsonb, $10::jsonb, $11, $12)
                 ON CONFLICT (trace_id) DO UPDATE SET
-                    status = EXCLUDED.status,
-                    outcome_signal = EXCLUDED.outcome_signal,
-                    metadata = EXCLUDED.metadata,
+                    status = CASE WHEN {kept} THEN decision_traces.status ELSE EXCLUDED.status END,
+                    outcome_signal = CASE WHEN {kept} THEN decision_traces.outcome_signal ELSE EXCLUDED.outcome_signal END,
+                    metadata = CASE WHEN {kept} THEN decision_traces.metadata ELSE EXCLUDED.metadata END,
                     updated_at = NOW()
-            """, record["trace_id"], record["query"], record["answer"],
+            """.format(kept=DECISION_TRACE_REVIEW_KEPT_SQL), record["trace_id"], record["query"], record["answer"],
                 json.dumps(record["evidence_memory_ids"]), json.dumps(record["self_model_observation_ids"]),
                 json.dumps(record["entity_ids"]), json.dumps(record["values_invoked"]), record["status"],
                 json.dumps(record["outcome_signal"]), json.dumps(record["metadata"]),
@@ -3924,6 +3949,11 @@ MCP_PATH_TOOLS: dict[str, tuple[str, ...]] = {
 # Manifest arguments not accepted over MCP. compile_wiki's output_dir would re-point the shared
 # wiki_compiler.output_dir for every later client, so over MCP the wiki is compiled to its configured location.
 MCP_REFUSED_ARGUMENTS: dict[str, tuple[str, ...]] = {"compile_wiki": ("output_dir",)}
+# Narrower schemas over MCP. An agent may only propose a decision trace; accepting, rejecting or correcting one is a
+# review, and a reviewed trace is kept by the upsert (DECISION_TRACE_REVIEW_KEPT_SQL).
+MCP_SCHEMA_OVERRIDES: dict[str, dict[str, dict]] = {
+    "decision_trace": {"status": {"type": "string", "enum": ["proposed"], "default": "proposed"}},
+}
 _MCP_PATH_TOOLS_REASON = ("this tool reads or writes server-side paths and is served over MCP only when the "
                           "operator sets MCP_INGEST_ROOTS to the directories it may use")
 
@@ -3963,6 +3993,8 @@ def mcp_protocol_tools() -> list[dict]:
         if refused:
             schema = {**schema, "properties": {k: v for k, v in schema.get("properties", {}).items() if k not in refused},
                       "required": [k for k in schema.get("required", []) if k not in refused]}
+        if name in MCP_SCHEMA_OVERRIDES:
+            schema = {**schema, "properties": {**schema.get("properties", {}), **MCP_SCHEMA_OVERRIDES[name]}}
         tools.append({**tool, "inputSchema": schema, "annotations": dict(MCP_TOOL_DISPATCH[name][3])})
     return tools
 
@@ -3985,6 +4017,8 @@ def _mcp_schema_error(schema: dict, value: Any, where: str) -> Optional[str]:
     if "enum" in schema and value not in schema["enum"]:
         return f"{where} must be one of {', '.join(map(str, schema['enum']))}"
     if expected in ("integer", "number"):
+        if not math.isfinite(value):
+            return f"{where} must be a finite number"
         if "minimum" in schema and value < schema["minimum"]:
             return f"{where} must be >= {schema['minimum']}"
         if "maximum" in schema and value > schema["maximum"]:
@@ -3998,7 +4032,10 @@ def _mcp_schema_error(schema: dict, value: Any, where: str) -> Optional[str]:
 
 
 def _mcp_path_inside_roots(path: str) -> bool:
-    real = os.path.realpath(path)
+    try:
+        real = os.path.realpath(path)
+    except (ValueError, OSError):  # e.g. an embedded NUL byte: not a usable path, so not inside any root
+        return False
     return any(real == root or real.startswith(root.rstrip(os.sep) + os.sep) for root in MCP_INGEST_ROOTS)
 
 
@@ -4018,10 +4055,15 @@ def _mcp_directory_escapes(directory: str, recursive: bool) -> Optional[str]:
 async def _mcp_path_error(name: str, args: dict) -> Optional[str]:
     """None when every path argument of a path tool resolves inside MCP_INGEST_ROOTS; otherwise the reason."""
     for key in MCP_PATH_TOOLS.get(name, ()):
+        if key in args and "\x00" in args[key]:
+            return f"{key} contains a NUL byte"
         if key in args and not _mcp_path_inside_roots(args[key]):
             return f"{key} is outside MCP_INGEST_ROOTS (after resolving symlinks and '..')"
     if name == "ingest_directory" and "directory" in args:
-        escaped = await asyncio.to_thread(_mcp_directory_escapes, args["directory"], args.get("recursive", True))
+        try:
+            escaped = await asyncio.to_thread(_mcp_directory_escapes, args["directory"], args.get("recursive", True))
+        except (ValueError, OSError) as e:
+            return f"directory could not be scanned ({type(e).__name__})"
         if escaped:
             return f"directory contains a file that resolves outside MCP_INGEST_ROOTS: {escaped[:200]}"
     return None
@@ -4079,8 +4121,9 @@ async def _mcp_call_tool(name: str, args: dict) -> dict:
         payload = json.loads(bytes(response.body).decode("utf-8")) if response.body else None
         is_error = response.status_code >= 400
     except Exception as e:  # a handler failure is a tool error, not a protocol error
-        log.warning("MCP tool %s failed: %s", name, type(e).__name__)
-        payload, is_error = {"error": f"memibrium error: {e}"}, True
+        # Details stay in the server log; the client gets the exception type only.
+        log.warning("MCP tool %s failed: %s: %s", name, type(e).__name__, str(e)[:300])
+        payload, is_error = {"error": f"memibrium error: {type(e).__name__} (see the server log)"}, True
     result: dict[str, Any] = {"content": [{"type": "text", "text": json.dumps(payload, default=str)}]}
     if isinstance(payload, dict):
         result["structuredContent"] = payload
@@ -4187,27 +4230,39 @@ async def mcp_dispatch(msg: Any, version: Optional[str] = None, method_header: O
     return _mcp_error(msg_id, -32601, f"method not found: {method[:100]}", status=404 if modern else 200)
 
 
+def _mcp_reject_constant(name: str) -> Any:
+    """json.loads hook: NaN, Infinity and -Infinity are not JSON; refuse them as a parse error."""
+    raise ValueError(f"{name} is not valid JSON")
+
+
 async def handle_mcp_protocol(request: Request) -> Response:
     """POST /mcp: the MCP endpoint for plugin clients (stateless streamable HTTP, JSON replies). GET and DELETE: 405."""
     if request.method != "POST":
         return JSONResponse({"error": "the MCP endpoint takes POST only"}, status_code=405, headers={"Allow": "POST"})
     # MCP transport security (DNS rebinding): MCP clients send no Origin; a browser page always does.
-    origin = request.headers.get("origin")
-    if origin:
-        return JSONResponse({"error": f"origin {origin[:200]} may not use the MCP endpoint"}, status_code=403)
-    if not request.headers.get("content-type", "").lower().startswith("application/json"):
+    # A present Origin header, even an empty one, means a browser context.
+    if "origin" in request.headers:
+        origin = request.headers.get("origin", "")
+        return JSONResponse({"error": f"origin {origin[:200]!r} may not use the MCP endpoint"}, status_code=403)
+    media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if media_type != "application/json":
         return JSONResponse({"error": "POST bodies must be application/json"}, status_code=415)
     try:
-        msg = json.loads(await request.body() or b"null")
+        msg = json.loads(await request.body() or b"null", parse_constant=_mcp_reject_constant)
     except (ValueError, UnicodeDecodeError):
         status, body = _mcp_error(None, -32700, "Parse error", status=400)
         return JSONResponse(body, status_code=status)
-    status, body = await mcp_dispatch(
-        msg,
-        version=request.headers.get("mcp-protocol-version"),
-        method_header=request.headers.get("mcp-method"),
-        name_header=request.headers.get("mcp-name"),
-    )
+    try:
+        status, body = await mcp_dispatch(
+            msg,
+            version=request.headers.get("mcp-protocol-version"),
+            method_header=request.headers.get("mcp-method"),
+            name_header=request.headers.get("mcp-name"),
+        )
+    except Exception as e:  # never a 500 with a traceback: a generic JSON-RPC internal error
+        log.warning("MCP dispatch failed: %s: %s", type(e).__name__, str(e)[:300])
+        msg_id = msg.get("id") if isinstance(msg, dict) and isinstance(msg.get("id"), (str, int)) else None
+        status, body = _mcp_error(msg_id, -32603, "Internal error", status=500)
     if body is None:
         return Response(status_code=status)
     return JSONResponse(body, status_code=status)
