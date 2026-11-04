@@ -33,9 +33,10 @@ Agent (any: Claude Code, Cursor, Copilot, etc.)
   ├─ This skill (SKILL.md) — behavioral rules, loaded into system prompt
   │   "How to think about memory"
   │
-  └─ Memibrium MCP Server — 8 tools, via .mcp.json bundled with this plugin
+  └─ Memibrium MCP Server — 15 tools at POST /mcp, via .mcp.json bundled with this plugin
       "How to store/retrieve/govern memory"
-      retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard
+      core: retain, recall, reflect, freeze, dashboard
+      (confirm, revert and consolidate are human-only and not offered over MCP)
 ```
 
 The skill is the **governance layer**. The MCP is the **execution layer**.
@@ -65,7 +66,9 @@ When retrieving knowledge via `recall`:
 ### Rule 3: Human Confirmation is the ONLY Crystallization Path
 
 - When a user validates, corrects, or explicitly confirms a piece of knowledge,
-  call `confirm` with the memory_id
+  give them the memory_id and ask them to confirm it themselves. `confirm` is
+  the human's signal: the MCP server does not offer it to agents, and you must
+  never call `POST /mcp/confirm` on the user's behalf
 - NEVER assume knowledge is crystallized because it "seems right" or has been
   repeated — only `confirm` can crystallize
 - This is the architectural distinction: ML confidence ≠ human consensus
@@ -101,7 +104,7 @@ When `recall` returns knowledge that contradicts new information:
 When the user is about to make a major decision based on stored knowledge:
 - Call `freeze` on the relevant memories before proceeding
 - This creates a snapshot and exempts memories from δ-decay
-- If the decision turns out wrong, `revert` restores the pre-decision state
+- If the decision turns out wrong, the user can `revert` to the snapshot (a human action, not an MCP tool)
 
 ### Rule 8: Proactive Consolidation Awareness
 
@@ -119,10 +122,10 @@ When the user is about to make a major decision based on stored knowledge:
 | `retain` | Storing new information | `content` (required), `source`, `domain` |
 | `recall` | Finding specific memories | `query` (required), `top_k`, `domain` |
 | `reflect` | Synthesizing knowledge about a topic | `topic` (required), `top_k`, `domain` |
-| `confirm` | User validates/confirms knowledge | `memory_id` (required), `weight` |
+| `confirm` | Human only, not an MCP tool: the user confirms knowledge | `memory_id` (required), `weight` |
 | `freeze` | Protecting knowledge from decay | `memory_id` (required), `reason` |
-| `revert` | Restoring from snapshot | `memory_id` (required), `snapshot_id` |
-| `consolidate` | Manual decay/promote cycle | (none) |
+| `revert` | Human only, not an MCP tool: restore from snapshot | `memory_id` (required), `snapshot_id` |
+| `consolidate` | Human only, not an MCP tool; runs on its own every 30 minutes | (none) |
 | `dashboard` | System health/status | (none) |
 
 ## MCP Connection
@@ -134,9 +137,9 @@ bundled with this plugin. When installed, your agent gets both the skill
 If running standalone, the server exposes tools at:
 
 ```
-Base URL: http://localhost:9999/mcp
-Tool manifest: GET /mcp/tools
-Each tool:     POST /mcp/{tool_name}
+MCP endpoint:  POST http://localhost:9999/mcp  (what .mcp.json points at)
+Tool manifest: GET /mcp/tools                  (REST; lists all 18, including the human-only ones)
+REST routes:   POST /mcp/{tool_name}
 ```
 
 ## Anti-Patterns (Never Do These)
@@ -160,7 +163,8 @@ Each tool:     POST /mcp/{tool_name}
 User: "Our API rate limit is 1000 req/min on the Pro plan."
 Agent: [calls retain with content="API rate limit: 1000 req/min on Pro plan",
         source="user_statement", domain="project-api"]
-Agent: "Got it — I've stored that. Want me to confirm it as validated knowledge?"
+Agent: "Got it — I've stored that as an observation (memory_id mem_…).
+        If it's settled, you can confirm it; I can't do that for you."
 ```
 
 **User asks about past context:**
@@ -173,8 +177,10 @@ Agent: [synthesizes results, flagging lifecycle states]
 **User confirms knowledge:**
 ```
 User: "Yes, that rate limit is correct."
-Agent: [calls confirm with memory_id from the recall result]
-Agent: "Confirmed — that's now crystallized knowledge."
+Agent: [does NOT call confirm; confirm is not an MCP tool]
+Agent: "Thanks. To make it validated knowledge, confirm memory_id mem_…
+        yourself (POST /mcp/confirm). It crystallizes after enough
+        human confirmations."
 ```
 
 **Contradiction detected:**

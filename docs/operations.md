@@ -121,6 +121,15 @@ claude plugin install memibrium@memibrium
 
 **Cursor / other MCP clients:** see [DISTRIBUTION.md](../DISTRIBUTION.md).
 
+The plugin's `.mcp.json` points the client at `http://localhost:9999/mcp`, the MCP endpoint (`POST /mcp`, stateless streamable HTTP with JSON replies; protocol versions and tools in [api.md](api.md#mcp-endpoint)). The server must already be running there. It serves 15 tools; `confirm`, `revert` and `consolidate` are not offered to agents, so confirming a memory stays a human call to `POST /mcp/confirm`.
+
+To check the endpoint without a client:
+
+```bash
+curl -s http://localhost:9999/mcp -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
 Then ask your agent something like *"What do you know about my project?"*; a governed memory answer with lifecycle states means the wiring works.
 
 ---
@@ -161,7 +170,7 @@ python test_ingest_unit.py           # 34 tests
 for t in test_coldstore_vector_candidates.py test_context_graph_v0.py test_ct_ranker.py \
          test_hybrid_retrieval_ruvector.py test_recall_hybrid_ct.py test_server_recall_telemetry.py \
          test_startup_vector_config.py test_temporal_memory.py test_locomo_context_packet_canary.py \
-         test_locomo_query_expansion.py test_longmemeval_oracle_canary.py; do
+         test_locomo_query_expansion.py test_longmemeval_oracle_canary.py test_mcp_endpoint.py; do
   python "$t" || break
 done
 
@@ -190,7 +199,7 @@ python test_leann_e2e.py         # needs pip install leann
 
 ## Network exposure
 
-`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234). The compose stack publishes its ports on `127.0.0.1` for the same reason. Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
+`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234), including the MCP endpoint `POST /mcp`, whose served tools include file ingestion (reads any path the process can read) and `compile_wiki` (writes to any `output_dir`). `POST /mcp` refuses requests that carry an `Origin` header, which stops browser pages, not other clients. The compose stack publishes its ports on `127.0.0.1` for the same reason. Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
 
 ---
 

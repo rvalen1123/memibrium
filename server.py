@@ -58,7 +58,7 @@ import asyncpg
 from openai import OpenAI, AzureOpenAI
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 import uvicorn
 
@@ -3772,10 +3772,9 @@ async def handle_wiki_read(request: Request) -> JSONResponse:
     return JSONResponse({"wiki_dir": str(wiki_dir), "files": files})
 
 
-async def handle_mcp_manifest(request: Request) -> JSONResponse:
-    """MCP tool definitions for client auto-discovery."""
-    return JSONResponse({
-        "tools": [
+def mcp_manifest_tools() -> list[dict]:
+    """The REST tool manifest: every tool route with its name and inputSchema (served by GET /mcp/tools)."""
+    return [
             {"name": "retain", "description": "Store a memory through the CT lifecycle.",
              "inputSchema": {"type": "object", "properties": {
                  "content": {"type": "string"}, "source": {"type": "string", "default": "conversation"},
@@ -3860,8 +3859,252 @@ async def handle_mcp_manifest(request: Request) -> JSONResponse:
             {"name": "wiki_read", "description": "List compiled wiki files or read a specific file's content.",
              "inputSchema": {"type": "object", "properties": {
                  "file": {"type": "string", "description": "Filename to read (omit to list all files)"}}, "required": []}},
-        ],
-    })
+    ]
+
+
+async def handle_mcp_manifest(request: Request) -> JSONResponse:
+    """MCP tool definitions for client auto-discovery."""
+    return JSONResponse({"tools": mcp_manifest_tools()})
+
+
+# ── MCP protocol endpoint (POST /mcp) ─────────────────────────────
+#
+# Stateless streamable HTTP with JSON replies (MED-254), matching the protocol handling of
+# orca-memibrium's governance endpoint: MCP 2026-07-28 (per-request _meta, server/discover,
+# MCP-Protocol-Version / Mcp-Method / Mcp-Name headers) plus the legacy initialize handshake
+# for 2025-11-25, 2025-06-18 and 2025-03-26. No sessions, no server-initiated streams.
+# Each tool call is dispatched to the existing REST handler for that tool.
+#
+# CT authority: an agent must never be able to crystallize a memory through this endpoint.
+# The tools in MCP_WITHHELD_TOOLS are left out of tools/list and refused in tools/call.
+
+MCP_MODERN_VERSIONS = ("2026-07-28",)
+MCP_LEGACY_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26")
+MCP_ALL_VERSIONS = MCP_MODERN_VERSIONS + MCP_LEGACY_VERSIONS
+MCP_META_VERSION = "io.modelcontextprotocol/protocolVersion"
+MCP_META_CAPS = "io.modelcontextprotocol/clientCapabilities"
+MCP_SERVER_INFO = {"name": "memibrium", "version": "1.0.0"}
+MCP_INSTRUCTIONS = (
+    "Memibrium governed memory. Everything an agent stores enters as an untrusted observation; check each "
+    "memory's lifecycle state before citing it. Nothing here confirms or crystallizes a memory: confirmation "
+    "is a human action and is not offered over MCP (a human calls POST /mcp/confirm)."
+)
+
+# Tools in the REST manifest that the MCP endpoint never offers, with the reason given to a caller.
+MCP_WITHHELD_TOOLS: dict[str, str] = {
+    "confirm": "confirm is the human validation signal, the only path to crystallization; an agent may not "
+               "call it. Ask the user to confirm the memory themselves (POST /mcp/confirm).",
+    "consolidate": "consolidate runs a cycle that can move accepted memories to crystallized; it runs on its own "
+                   "every CONSOLIDATE_INTERVAL_MIN and is not offered to agents.",
+    "revert": "revert writes a snapshot's lifecycle state back, which can restore crystallized without a "
+              "confirmation or a witness entry; it is a human action (POST /mcp/revert).",
+}
+
+# Tool name -> (handler, HTTP method of its REST route, path). Withheld tools have no entry, so no
+# tools/call can reach their handlers even if the withheld check were bypassed.
+_MCP_READ_ONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
+_MCP_WRITE = {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False}
+MCP_TOOL_DISPATCH: dict[str, tuple[Callable, str, str, dict]] = {
+    "retain": (handle_retain, "POST", "/mcp/retain", _MCP_WRITE),
+    "recall": (handle_recall, "POST", "/mcp/recall", _MCP_READ_ONLY),
+    "reflect": (handle_reflect, "POST", "/mcp/reflect", _MCP_READ_ONLY),
+    "freeze": (handle_freeze, "POST", "/mcp/freeze", _MCP_WRITE),
+    "dashboard": (handle_dashboard, "GET", "/mcp/dashboard", _MCP_READ_ONLY),
+    "prefetch": (handle_prefetch, "POST", "/mcp/prefetch", _MCP_READ_ONLY),
+    "self_model_observe": (handle_self_model_observe, "POST", "/mcp/self_model/observe", _MCP_WRITE),
+    "context_packet": (handle_context_packet, "POST", "/mcp/context_packet", _MCP_READ_ONLY),
+    "decision_trace": (handle_decision_trace, "POST", "/mcp/decision_trace", _MCP_WRITE),
+    "ingest_file": (handle_ingest_file, "POST", "/mcp/ingest/file", _MCP_WRITE),
+    "ingest_directory": (handle_ingest_directory, "POST", "/mcp/ingest/directory", _MCP_WRITE),
+    "ingest_jsonl": (handle_ingest_jsonl, "POST", "/mcp/ingest/jsonl", _MCP_WRITE),
+    "ingest_status": (handle_ingest_status, "GET", "/mcp/ingest/status", _MCP_READ_ONLY),
+    "compile_wiki": (handle_compile, "POST", "/mcp/ingest/compile", _MCP_WRITE),
+    "wiki_read": (handle_wiki_read, "GET", "/mcp/wiki", _MCP_READ_ONLY),
+}
+
+
+def mcp_protocol_tools() -> list[dict]:
+    """The tools served by POST /mcp: the manifest's names and inputSchemas, minus the withheld tools."""
+    tools = []
+    for tool in mcp_manifest_tools():
+        name = tool["name"]
+        if name in MCP_WITHHELD_TOOLS or name not in MCP_TOOL_DISPATCH:
+            continue
+        tools.append({**tool, "annotations": dict(MCP_TOOL_DISPATCH[name][3])})
+    return tools
+
+
+def _mcp_error(msg_id: Any, code: int, message: str, data: Any = None, status: int = 200) -> tuple[int, Optional[dict]]:
+    error: dict[str, Any] = {"code": code, "message": message}
+    if data is not None:
+        error["data"] = data
+    return status, {"jsonrpc": "2.0", "id": msg_id, "error": error}
+
+
+def _mcp_decode_header(value: Optional[str]) -> Optional[str]:
+    """Mcp-Name may arrive base64-encoded as =?base64?...?= (2026-07-28 streamable HTTP)."""
+    if value is None:
+        return None
+    if value.startswith("=?base64?") and value.endswith("?=") and len(value) >= 11:
+        import base64
+        try:
+            return base64.b64decode(value[9:-2]).decode("utf-8")
+        except Exception:
+            return value
+    return value
+
+
+def _mcp_internal_request(method: str, path: str, args: dict) -> Request:
+    """A Starlette Request carrying a tool's arguments: a JSON body for POST, query parameters for GET."""
+    from urllib.parse import urlencode
+    raw = json.dumps(args).encode("utf-8") if method == "POST" else b""
+    query = urlencode({k: v for k, v in args.items() if isinstance(v, (str, int, float))}) if method == "GET" else ""
+    scope = {
+        "type": "http", "http_version": "1.1", "method": method, "scheme": "http",
+        "path": path, "raw_path": path.encode("utf-8"), "root_path": "",
+        "query_string": query.encode("utf-8"),
+        "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(raw)).encode())],
+        "client": None, "server": None,
+    }
+    delivered = False
+
+    async def receive() -> dict:
+        nonlocal delivered
+        if delivered:
+            return {"type": "http.disconnect"}
+        delivered = True
+        return {"type": "http.request", "body": raw, "more_body": False}
+
+    return Request(scope, receive)
+
+
+async def _mcp_call_tool(name: str, args: dict) -> dict:
+    """Run one tool through its REST handler; returns an MCP CallToolResult."""
+    handler, method, path, _ = MCP_TOOL_DISPATCH[name]
+    try:
+        response = await handler(_mcp_internal_request(method, path, args))
+        payload = json.loads(bytes(response.body).decode("utf-8")) if response.body else None
+        is_error = response.status_code >= 400
+    except Exception as e:  # a handler failure is a tool error, not a protocol error
+        log.warning("MCP tool %s failed: %s", name, type(e).__name__)
+        payload, is_error = {"error": f"memibrium error: {e}"}, True
+    result: dict[str, Any] = {"content": [{"type": "text", "text": json.dumps(payload, default=str)}]}
+    if isinstance(payload, dict):
+        result["structuredContent"] = payload
+    if is_error:
+        result["isError"] = True
+    return result
+
+
+async def mcp_dispatch(msg: Any, version: Optional[str] = None, method_header: Optional[str] = None,
+                       name_header: Optional[str] = None) -> tuple[int, Optional[dict]]:
+    """Handle one JSON-RPC message. Returns (HTTP status, body); a None body means 202 with no content."""
+    if version is not None and version not in MCP_ALL_VERSIONS:
+        return _mcp_error(None, -32022, "Unsupported protocol version",
+                          {"supported": list(MCP_ALL_VERSIONS), "requested": version[:40]}, 400)
+    if not isinstance(msg, dict):
+        return _mcp_error(None, -32600, "expected one JSON-RPC message object", status=400)
+    if msg.get("jsonrpc") != "2.0" or not isinstance(msg.get("method"), str):
+        if msg.get("jsonrpc") == "2.0" and "method" not in msg and ("result" in msg or "error" in msg):
+            return 202, None  # a response to nothing we asked
+        return _mcp_error(None, -32600, "not a JSON-RPC 2.0 request", status=400)
+    if "id" not in msg:
+        return 202, None  # a notification (e.g. notifications/initialized): accepted, nothing to answer
+    msg_id = msg["id"]
+    if isinstance(msg_id, bool) or not isinstance(msg_id, (str, int, float)):
+        return _mcp_error(None, -32600, "id must be a string or a number", status=400)
+    method = msg["method"]
+    params = msg.get("params") if isinstance(msg.get("params"), dict) else {}
+    meta = params.get("_meta") if isinstance(params.get("_meta"), dict) else None
+    meta_version = meta.get(MCP_META_VERSION) if meta and isinstance(meta.get(MCP_META_VERSION), str) else None
+    modern = meta_version is not None or (version is not None and version in MCP_MODERN_VERSIONS)
+    if modern:
+        if meta_version is None or not isinstance(meta.get(MCP_META_CAPS), dict):
+            return _mcp_error(msg_id, -32602, f"a 2026-07-28 request carries {MCP_META_VERSION} and "
+                                              f"{MCP_META_CAPS} in params._meta", status=400)
+        if meta_version not in MCP_MODERN_VERSIONS:
+            return _mcp_error(msg_id, -32022, "Unsupported protocol version",
+                              {"supported": list(MCP_ALL_VERSIONS), "requested": meta_version[:40]}, 400)
+        if version != meta_version:
+            return _mcp_error(msg_id, -32020, "Header mismatch: MCP-Protocol-Version", status=400)
+        if method_header != method:
+            return _mcp_error(msg_id, -32020, "Header mismatch: Mcp-Method", status=400)
+        if method == "tools/call" and _mcp_decode_header(name_header) != params.get("name"):
+            return _mcp_error(msg_id, -32020, "Header mismatch: Mcp-Name", status=400)
+
+    def ok(result: dict) -> tuple[int, dict]:
+        if modern:
+            result = {"resultType": "complete", **result, "_meta": {"io.modelcontextprotocol/serverInfo": MCP_SERVER_INFO}}
+        return 200, {"jsonrpc": "2.0", "id": msg_id, "result": result}
+
+    if method == "initialize":
+        if modern:
+            return _mcp_error(msg_id, -32601, "initialize is not part of the 2026-07-28 protocol; use server/discover",
+                              status=404)
+        requested = params.get("protocolVersion") if isinstance(params.get("protocolVersion"), str) else ""
+        protocol_version = requested if requested in MCP_LEGACY_VERSIONS else MCP_LEGACY_VERSIONS[0]
+        return ok({"protocolVersion": protocol_version, "capabilities": {"tools": {"listChanged": False}},
+                   "serverInfo": MCP_SERVER_INFO, "instructions": MCP_INSTRUCTIONS})
+    if method == "server/discover":
+        return 200, {"jsonrpc": "2.0", "id": msg_id, "result": {
+            "resultType": "complete", "supportedVersions": list(MCP_MODERN_VERSIONS), "capabilities": {"tools": {}},
+            "_meta": {"io.modelcontextprotocol/serverInfo": MCP_SERVER_INFO}, "instructions": MCP_INSTRUCTIONS,
+            "ttlMs": 3_600_000, "cacheScope": "public",
+        }}
+    if method == "ping":
+        return ok({})
+    if method == "tools/list":
+        listing: dict[str, Any] = {"tools": mcp_protocol_tools()}
+        if modern:
+            listing.update({"ttlMs": 3_600_000, "cacheScope": "public"})
+        return ok(listing)
+    if method == "tools/call":
+        name = params.get("name")
+        if isinstance(name, str) and name in MCP_WITHHELD_TOOLS:
+            return _mcp_error(msg_id, -32602, f"tool {name} is not available over MCP", {"reason": MCP_WITHHELD_TOOLS[name]})
+        tool = next((t for t in mcp_protocol_tools() if t["name"] == name), None)
+        if tool is None:
+            return _mcp_error(msg_id, -32602, f"unknown tool {str(name)[:100]}")
+        args = params.get("arguments")
+        if args is None:
+            args = {}
+        if not isinstance(args, dict):
+            return _mcp_error(msg_id, -32602, "arguments must be an object")
+        schema = tool["inputSchema"]
+        unknown = sorted(set(args) - set(schema.get("properties", {})))
+        if unknown:
+            return _mcp_error(msg_id, -32602, f"unknown argument(s) for {name}: {', '.join(unknown)[:200]}")
+        missing = [k for k in schema.get("required", []) if k not in args]
+        if missing:
+            return _mcp_error(msg_id, -32602, f"missing required argument(s) for {name}: {', '.join(missing)}")
+        return ok(await _mcp_call_tool(name, args))
+    return _mcp_error(msg_id, -32601, f"method not found: {method[:100]}", status=404 if modern else 200)
+
+
+async def handle_mcp_protocol(request: Request) -> Response:
+    """POST /mcp: the MCP endpoint for plugin clients (stateless streamable HTTP, JSON replies). GET and DELETE: 405."""
+    if request.method != "POST":
+        return JSONResponse({"error": "the MCP endpoint takes POST only"}, status_code=405, headers={"Allow": "POST"})
+    # MCP transport security (DNS rebinding): MCP clients send no Origin; a browser page always does.
+    origin = request.headers.get("origin")
+    if origin:
+        return JSONResponse({"error": f"origin {origin[:200]} may not use the MCP endpoint"}, status_code=403)
+    if not request.headers.get("content-type", "").lower().startswith("application/json"):
+        return JSONResponse({"error": "POST bodies must be application/json"}, status_code=415)
+    try:
+        msg = json.loads(await request.body() or b"null")
+    except (ValueError, UnicodeDecodeError):
+        status, body = _mcp_error(None, -32700, "Parse error", status=400)
+        return JSONResponse(body, status_code=status)
+    status, body = await mcp_dispatch(
+        msg,
+        version=request.headers.get("mcp-protocol-version"),
+        method_header=request.headers.get("mcp-method"),
+        name_header=request.headers.get("mcp-name"),
+    )
+    if body is None:
+        return Response(status_code=status)
+    return JSONResponse(body, status_code=status)
 
 
 # ── App ──────────────────────────────────────────────────────────
@@ -3870,6 +4113,7 @@ app = Starlette(
     routes=[
         Route("/health", handle_health, methods=["GET"]),
         Route("/mcp/test_embeddings", handle_test_embeddings, methods=["POST"]),
+        Route("/mcp", handle_mcp_protocol, methods=["POST", "GET", "DELETE"]),
         Route("/mcp/tools", handle_mcp_manifest, methods=["GET"]),
         Route("/mcp/retain", handle_retain, methods=["POST"]),
         Route("/mcp/retain/diagnostics", handle_retain_diagnostics, methods=["GET", "POST"]),

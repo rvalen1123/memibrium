@@ -6,10 +6,10 @@ Memibrium is a single-process Python/Starlette memory server (`server.py`) over 
 
 | Path | What it is |
 |---|---|
-| `server.py` | The whole server: config from env, `ColdStore` (schema + migrations + queries), `IngestAgent`, `ConsolidateAgent`, recall/ranking, all 26 routes, `app = Starlette(...)`. ~3800 lines. |
+| `server.py` | The whole server: config from env, `ColdStore` (schema + migrations + queries), `IngestAgent`, `ConsolidateAgent`, recall/ranking, all 27 routes (the MCP endpoint `POST /mcp` and 26 REST routes), `app = Starlette(...)`. ~4000 lines. |
 | `hybrid_retrieval.py`, `ct_ranker.py`, `ct_scoring.py`, `memory_hierarchy.py` | Retrieval candidate generation, CT re-ranking, `compute_weight()` (W(k,t)), hierarchy processing. Imported by `server.py`. |
 | `ingest_engine.py`, `knowledge_taxonomy.py` | Bulk file/JSONL ingestion, wiki compiler, 30-category classifier. |
-| `test_*.py` | Tests. CI runs 13 dependency-free files plus 2 against Postgres + pgvector (see Commands); the E2E files need a running server, RuVector or LEANN. |
+| `test_*.py` | Tests. CI runs 14 dependency-free files plus 2 against Postgres + pgvector (see Commands); the E2E files need a running server, RuVector or LEANN. |
 | `benchmark*.py`, `benchmark_scripts/`, `scripts/` | LOCOMO/LongMemEval harnesses and audit scripts. They write under `docs/eval/results/`. |
 | `docs/` | Human docs (`architecture.md`, `api.md`, `operations.md`, `benchmarks.md`, `roadmap.md`), indexed in `docs/README.md`. |
 | `docs/eval/` | Dated preregistrations, results and handoffs for the LOCOMO and LongMemEval studies. Records, not working docs. Indexed in `docs/eval/README.md`. |
@@ -34,7 +34,7 @@ python test_ingest_unit.py
 for t in test_coldstore_vector_candidates.py test_context_graph_v0.py test_ct_ranker.py \
          test_hybrid_retrieval_ruvector.py test_recall_hybrid_ct.py test_server_recall_telemetry.py \
          test_startup_vector_config.py test_temporal_memory.py test_locomo_context_packet_canary.py \
-         test_locomo_query_expansion.py test_longmemeval_oracle_canary.py; do
+         test_locomo_query_expansion.py test_longmemeval_oracle_canary.py test_mcp_endpoint.py; do
   python "$t" || break
 done
 ```
@@ -70,7 +70,7 @@ End-to-end tests that need the running server: `python test_production_e2e.py`, 
 
 ## Conventions that change behaviour
 
-- **CT lifecycle.** States: `observation → accepted → crystallized → shed` (`consideration` is defined but unused). `confirmation_count` is incremented only by `POST /mcp/confirm` (`handle_confirm`). A memory becomes `crystallized` only when that count reaches `CRYSTALLIZE_CONFIRMATIONS` with `validation_score ≥ 0.5`, applied either in `handle_confirm` or in `ConsolidateAgent.run_cycle` on the next cycle. No LLM score, importance value or retrieval signal may set `state = 'crystallized'`. Agents never call `confirm` on their own output; that call represents a human.
+- **CT lifecycle.** States: `observation → accepted → crystallized → shed` (`consideration` is defined but unused). `confirmation_count` is incremented only by `POST /mcp/confirm` (`handle_confirm`). A memory becomes `crystallized` only when that count reaches `CRYSTALLIZE_CONFIRMATIONS` with `validation_score ≥ 0.5`, applied either in `handle_confirm` or in `ConsolidateAgent.run_cycle` on the next cycle. No LLM score, importance value or retrieval signal may set `state = 'crystallized'`. Agents never call `confirm` on their own output; that call represents a human. The MCP endpoint (`POST /mcp`) therefore never offers `confirm`, `revert` or `consolidate` (`MCP_WITHHELD_TOOLS`); a new manifest tool must be classified there or in `MCP_TOOL_DISPATCH` before it is served, and `test_mcp_endpoint.py` fails until it is.
 - **Schema changes.** All DDL lives in `ColdStore.initialize` and is additive: `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`. Append new statements after the existing ones. Do not edit, reorder or remove an existing statement or the semantics of `migrate_idempotency_keys` (its SQL in `IDEMPOTENCY_MIGRATION_SQL` ran once on real databases). A data migration must be idempotent and must run before any index that depends on it, inside one transaction, the way `migrate_idempotency_keys` does.
 - **Idempotent retain.** `refs.idempotency_key` wins; `refs.event_id` is the fallback alias. The key is trimmed, must be ≤ `IDEMPOTENCY_KEY_MAX_CHARS` (256; longer → HTTP 400 via `IdempotencyKeyError`), is materialized into `refs.idempotency_key` by `_normalize_refs` before insert, and is unique per `(domain, key)` through the partial index `memories_domain_idempotency_uidx`. A blank key is never persisted. A duplicate returns the existing memory with `"duplicate": true` and performs no embedding, insert or background scoring. Keep `FakeStore` in `test_retain_idempotency.py` mirroring the real index semantics when you touch this.
 - **Embeddings.** `EMBEDDING_DIM` (default 1536) fixes the width of `memories.embedding` at table creation and is checked at startup by `verify_startup_embedding_dimension`. Changing the model to a different dimension requires a new database or `reembed.py`; `ALLOW_EMBEDDING_DIM_MISMATCH` only downgrades the check, it does not resize the column.
@@ -104,7 +104,7 @@ End-to-end tests that need the running server: `python test_production_e2e.py`, 
 
 1. `python test_taxonomy.py` — passes (40).
 2. `python test_ingest_unit.py` — passes (34).
-3. The 11 dependency-free test files in the loop under Commands — each passes.
+3. The 12 dependency-free test files in the loop under Commands — each passes.
 4. With `MEMIBRIUM_TEST_DSN` set to the disposable pgvector container: `python test_retain_idempotency.py -v` (18) and `python test_hybrid_retrieval_tiebreak_db.py -v` (4) pass with no skips. If you cannot run Postgres locally, say so; CI runs them.
 5. `git status` shows no `.env`, no key material, nothing under `wiki/` or `data/`.
 6. If you added a route, env var or doc: `docs/api.md`, `docs/operations.md` and `docs/README.md` updated.

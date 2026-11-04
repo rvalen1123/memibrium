@@ -21,19 +21,20 @@
 │  │  Execution layer                          │  │
 │  │  CT lifecycle, W(k,t), δ-decay             │  │
 │  │  Hot: ruvector/pgvector  Cold: LEANN       │  │
-│  │  8 tools called via standard MCP protocol  │  │
+│  │  15 tools over MCP at POST /mcp            │  │
 │  └───────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
 
-**Why this is better than exposing 8 raw MCP tools:**
+**Why this is better than exposing raw MCP tools:**
 
 1. **Fewer tokens wasted.** One skill teaches the agent the whole governance
-   model. Without it, the agent sees 8 disconnected tools and has to figure
+   model. Without it, the agent sees a list of disconnected tools and has to figure
    out when/how to use each one every single call.
 2. **Permissions are set.** The skill hardwires rules like "never auto-crystallize"
-   and "contradictions don't overwrite." Without the skill, nothing prevents
-   an agent from calling `confirm` on its own output.
+   and "contradictions don't overwrite." The server backs the crystallization
+   rule: its MCP endpoint does not offer `confirm`, `revert` or `consolidate`,
+   so an agent cannot crystallize its own output even without the skill.
 3. **No RL training needed.** MemSkill (NeurIPS 2024) needs millions of RL
    steps to learn which memory operations to apply. The skill pre-loads the
    governance — the agent just follows instructions.

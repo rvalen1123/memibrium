@@ -38,7 +38,7 @@ Install the agent plugin (skill + MCP wiring): `claude plugin marketplace add rv
 
 ## API at a glance
 
-All routes take and return JSON. [docs/api.md](docs/api.md) lists all 26 routes and the 18 tools in the `GET /mcp/tools` manifest with one line each; it gives request fields only for idempotent retain and the list routes. For per-tool input schemas, read the manifest.
+All routes take and return JSON. [docs/api.md](docs/api.md) lists all 27 routes and the 18 tools in the `GET /mcp/tools` manifest with one line each, and describes the MCP endpoint `POST /mcp` that the plugin connects to (15 of the 18 tools; `confirm`, `revert` and `consolidate` are human-only and not offered to agents); it gives request fields only for idempotent retain and the list routes. For per-tool input schemas, read the manifest.
 
 | Route | What it does |
 |---|---|
@@ -51,11 +51,12 @@ All routes take and return JSON. [docs/api.md](docs/api.md) lists all 26 routes 
 | `GET /mcp/dashboard` · `GET /mcp/graph` | Lifecycle counts and CT parameters · memory graph topology. |
 | `POST /mcp/context_packet` · `POST /mcp/prefetch` | Grounded context packet from episodic, graph and self-model evidence · predictive pre-fetch. |
 | `POST /mcp/ingest/{file,directory,jsonl}` · `POST /mcp/ingest/compile` · `GET /mcp/wiki` | Bulk ingestion with a 30-category taxonomy; compile a wiki from memory. |
-| `GET /mcp/tools` · `GET /health` | MCP tool manifest · liveness. |
+| `POST /mcp` | MCP protocol endpoint (stateless streamable HTTP, JSON replies) the plugin's `.mcp.json` points at. Serves 15 tools; never `confirm`, `revert` or `consolidate`. |
+| `GET /mcp/tools` · `GET /health` | REST tool manifest (all 18) · liveness. |
 
 ## Status and caveats
 
-- **No inbound authentication on `/mcp/*`.** The server trusts whatever network it is bound to; Caddy only terminates TLS. Tracked as **MED-234**. Do not expose port 9999 publicly.
+- **No inbound authentication on `/mcp` or `/mcp/*`.** The server trusts whatever network it is bound to; Caddy only terminates TLS. Tracked as **MED-234**. Do not expose port 9999 publicly.
 - **Azure is gone.** The Azure subscription was closed on 2026-11-02, so the gateway key once committed in `Caddyfile` is dead and needs no rotation. The leftover Azure config (Caddy gateway header, both Terraform trees) is unmaintained and slated for removal under **MED-233**.
 - Idempotent retain (PR #11, hardened in PR #12): keys are trimmed, bounded to 256 chars, materialized into `refs.idempotency_key`, and enforced by the unique partial index `memories_domain_idempotency_uidx`. Details and the pre-index migration: [docs/api.md](docs/api.md#idempotent-retain).
 - The `consideration` state exists in the schema and transition table but is not yet used by `IngestAgent`.
@@ -66,7 +67,7 @@ All routes take and return JSON. [docs/api.md](docs/api.md) lists all 26 routes 
 ```bash
 python test_taxonomy.py              # 40 tests, no DB or LLM
 python test_ingest_unit.py           # 34 tests, no DB or LLM
-# + 11 more dependency-free test files (list in docs/operations.md#testing)
+# + 12 more dependency-free test files, including test_mcp_endpoint.py (list in docs/operations.md#testing)
 MEMIBRIUM_TEST_DSN=postgresql://memibrium:memibrium@localhost:5432/memibrium_test \
   python test_retain_idempotency.py -v          # 18 tests
 MEMIBRIUM_TEST_DSN=... python test_hybrid_retrieval_tiebreak_db.py -v   # 4 tests
