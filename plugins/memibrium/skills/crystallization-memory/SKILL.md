@@ -33,10 +33,10 @@ Agent (any: Claude Code, Cursor, Copilot, etc.)
   ├─ This skill (SKILL.md) — behavioral rules, loaded into system prompt
   │   "How to think about memory"
   │
-  └─ Memibrium MCP Server — 15 tools at POST /mcp, via .mcp.json bundled with this plugin
+  └─ Memibrium MCP Server — 14 tools at POST /mcp, via .mcp.json bundled with this plugin
       "How to store/retrieve/govern memory"
-      core: retain, recall, reflect, freeze, dashboard
-      (confirm, revert and consolidate are human-only and not offered over MCP)
+      core: retain, recall, reflect, dashboard
+      (confirm, freeze, revert and consolidate are human-only and not offered over MCP)
 ```
 
 The skill is the **governance layer**. The MCP is the **execution layer**.
@@ -90,7 +90,7 @@ When `recall` returns knowledge that contradicts new information:
    explicitly confirms the new information
 4. Store the new contradicting information as a new OBSERVATION — let the
    lifecycle engine resolve it through human confirmation
-5. If both are CRYSTALLIZED and contradict, flag for manual review via `freeze`
+5. If both are CRYSTALLIZED and contradict, flag them to the user for manual review (the user can `freeze` them; you cannot)
 
 ### Rule 6: Use Reflect for Synthesis, Not Recall
 
@@ -102,9 +102,10 @@ When `recall` returns knowledge that contradicts new information:
 ### Rule 7: Freeze Before Destructive Changes
 
 When the user is about to make a major decision based on stored knowledge:
-- Call `freeze` on the relevant memories before proceeding
-- This creates a snapshot and exempts memories from δ-decay
-- If the decision turns out wrong, the user can `revert` to the snapshot (a human action, not an MCP tool)
+- Suggest that the user `freeze` the relevant memories before proceeding, and give
+  them the memory_ids. `freeze` is a human action, not an MCP tool: it creates a
+  snapshot and exempts memories from δ-decay, so an agent must not freeze its own memories
+- If the decision turns out wrong, the user can `revert` to the snapshot (also a human action, not an MCP tool)
 
 ### Rule 8: Proactive Consolidation Awareness
 
@@ -123,7 +124,7 @@ When the user is about to make a major decision based on stored knowledge:
 | `recall` | Finding specific memories | `query` (required), `top_k`, `domain` |
 | `reflect` | Synthesizing knowledge about a topic | `topic` (required), `top_k`, `domain` |
 | `confirm` | Human only, not an MCP tool: the user confirms knowledge | `memory_id` (required), `weight` |
-| `freeze` | Protecting knowledge from decay | `memory_id` (required), `reason` |
+| `freeze` | Human only, not an MCP tool: protect knowledge from decay | `memory_id` (required), `reason` |
 | `revert` | Human only, not an MCP tool: restore from snapshot | `memory_id` (required), `snapshot_id` |
 | `consolidate` | Human only, not an MCP tool; runs on its own every 30 minutes | (none) |
 | `dashboard` | System health/status | (none) |

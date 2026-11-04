@@ -13,7 +13,7 @@ This page gives one line per route. It documents request fields only for idempot
 - **27 HTTP routes** are registered in `app = Starlette(routes=[...])`: the MCP protocol endpoint `/mcp` and 26 REST routes (one route, `/mcp/ingest/taxonomy`, accepts both GET and POST).
 - **18 MCP tools** are listed by `GET /mcp/tools`. Each maps to one route: `retain`, `recall`, `reflect`, `confirm`, `freeze`, `revert`, `consolidate`, `dashboard` (the eight core governance tools), `prefetch` → `/mcp/prefetch`, `self_model_observe` → `/mcp/self_model/observe`, `context_packet` → `/mcp/context_packet`, `decision_trace` → `/mcp/decision_trace`, `ingest_file`, `ingest_directory`, `ingest_jsonl`, `ingest_status` → `/mcp/ingest/{file,directory,jsonl,status}`, `compile_wiki` → `/mcp/ingest/compile`, `wiki_read` → `/mcp/wiki`.
 - The other 9 routes have no manifest entry: `/mcp` (the MCP endpoint itself), `/health`, `/mcp/tools`, `/mcp/test_embeddings`, `/mcp/retain/diagnostics`, `/mcp/graph`, `/mcp/self_model/observations`, `/mcp/decision_traces`, `/mcp/ingest/taxonomy`.
-- **15 of the 18 tools are served over MCP** at `POST /mcp`; `confirm`, `revert` and `consolidate` are withheld (see [MCP endpoint](#mcp-endpoint)).
+- **14 of the 18 tools are served over MCP** at `POST /mcp`; `confirm`, `revert`, `consolidate` and `freeze` are withheld (see [MCP endpoint](#mcp-endpoint)).
 
 ---
 
@@ -27,19 +27,20 @@ This page gives one line per route. It documents request fields only for idempot
 - **Transport refusals.** A request with an `Origin` header gets 403 (MCP clients send none; a browser page always does, so this blocks DNS-rebinding pages). A body that is not `application/json` gets 415; invalid JSON gets 400 with JSON-RPC `-32700`; a batch (JSON array) gets 400 with `-32600`; an unsupported `MCP-Protocol-Version` gets 400 with `-32022`.
 - **Tools.** `tools/list` returns the `GET /mcp/tools` manifest entries (same names, descriptions and `inputSchema`s) with MCP `annotations`, minus the withheld tools. `tools/call` checks the arguments against that `inputSchema` (an argument the schema does not declare, or a missing required one, is JSON-RPC `-32602`) and then runs the tool's REST handler with the arguments as its JSON body (or query parameters for the GET routes `dashboard`, `ingest_status`, `wiki_read`). The handler's JSON comes back as a `text` content item, and as `structuredContent` when it is an object; a handler status ≥ 400 or an exception sets `isError: true`.
 
-**Served (15):** `retain`, `recall`, `reflect`, `freeze`, `dashboard`, `prefetch`, `self_model_observe`, `context_packet`, `decision_trace`, `ingest_file`, `ingest_directory`, `ingest_jsonl`, `ingest_status`, `compile_wiki`, `wiki_read`.
+**Served (14):** `retain`, `recall`, `reflect`, `dashboard`, `prefetch`, `self_model_observe`, `context_packet`, `decision_trace`, `ingest_file`, `ingest_directory`, `ingest_jsonl`, `ingest_status`, `compile_wiki`, `wiki_read`.
 
-**Withheld (3), because each can move a memory to `crystallized` without a human:** they are not in `tools/list`, `tools/call` refuses them with `-32602` and the reason, and they have no entry in the dispatch table (`MCP_TOOL_DISPATCH`). Their REST routes are unchanged for humans and human-operated tools.
+**Withheld (4), the human-only governance tools:** three can move a memory to `crystallized` without a human, and `freeze` would let an agent protect and boost its own memories. They are not in `tools/list`, `tools/call` refuses them with `-32602` and the reason, and they have no entry in the dispatch table (`MCP_TOOL_DISPATCH`). Their REST routes are unchanged for humans and human-operated tools.
 
 | Tool | Why it is not offered to agents |
 |---|---|
 | `confirm` | The human validation signal and the only path to crystallization. An agent calling it would be confirming its own output. |
 | `consolidate` | `ConsolidateAgent.run_cycle` moves `accepted` memories that have reached `CRYSTALLIZE_CONFIRMATIONS` to `crystallized`. It already runs every `CONSOLIDATE_INTERVAL_MIN`. |
 | `revert` | `ColdStore.revert` writes the snapshot's `state` back, which can be `crystallized`, without a confirmation and without a witness entry. |
+| `freeze` | `ColdStore.freeze` sets `frozen = TRUE`, which takes the memory out of `get_active_memories` and so out of decay and shedding, and `handle_freeze` records ranking feedback with weight 2.0. An agent could protect and boost its own memories. Freeze and revert are a paired governance action; freeze stays human-only until Ricky decides otherwise. |
 
 Arguments outside a tool's schema are refused rather than passed through. This matters for `self_model_observe`, whose REST body would also accept `lifecycle_state` and `user_state` (for example `user_state: "confirmed"`): over MCP those fields cannot be set. `test_mcp_endpoint.py` (in CI, no database) covers the handshake, `tools/list`, a read-only `tools/call`, both eras' header rules, the transport refusals, and the withheld tools in both `tools/list` and `tools/call`.
 
-**No inbound authentication.** `/mcp` inherits the same no-auth exposure as every `/mcp/*` route (MED-234): anyone who can reach the port can call the 15 served tools, including `ingest_file` / `ingest_directory` / `ingest_jsonl` (read any path the server process can read) and `compile_wiki` (write to any `output_dir` it can write). Keep the server on loopback or a private network.
+**No inbound authentication.** `/mcp` inherits the same no-auth exposure as every `/mcp/*` route (MED-234): anyone who can reach the port can call the 14 served tools, including `ingest_file` / `ingest_directory` / `ingest_jsonl` (read any path the server process can read) and `compile_wiki` (write to any `output_dir` it can write). Keep the server on loopback or a private network.
 
 ---
 
@@ -165,6 +166,6 @@ Once the plugin is installed, try prompts like these:
 - `Remember that our API rate limit is 1000 req/min.`
 - `What do you know about the deployment architecture?`
 - `Is the rate limit information confirmed yet?` (the agent reports the memory's state; confirming it is yours to do with `POST /mcp/confirm`, which is not an MCP tool)
-- `Freeze the deployment architecture memories before we change things.`
+- `Which memories should I freeze before we change the deployment architecture?` (freezing them is yours to do with `POST /mcp/freeze`, which is not an MCP tool)
 - `Show me the memory dashboard.`
 - `What's the lifecycle state of what you know about our auth system?`

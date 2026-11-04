@@ -22,7 +22,7 @@ META = {
     "io.modelcontextprotocol/clientInfo": {"name": "t", "version": "1"},
     "io.modelcontextprotocol/clientCapabilities": {},
 }
-WITHHELD = {"confirm", "consolidate", "revert"}
+WITHHELD = {"confirm", "consolidate", "revert", "freeze"}
 
 
 class McpEndpointTest(unittest.TestCase):
@@ -61,7 +61,7 @@ class McpEndpointTest(unittest.TestCase):
         self.assertEqual(listed.status_code, 200)
         tools = listed.json()["result"]["tools"]
         names = [t["name"] for t in tools]
-        self.assertEqual(len(names), 15)
+        self.assertEqual(len(names), 14)
         self.assertIn("recall", names)
         self.assertIn("retain", names)
 
@@ -141,13 +141,16 @@ class McpEndpointTest(unittest.TestCase):
         self.assertIn("human", err["data"]["reason"])
         self.assertNotIn("result", r.json())
 
-    def test_consolidate_and_revert_are_refused(self):
+    def test_consolidate_revert_and_freeze_are_refused(self):
         async def must_not_run(*a, **k):
             raise AssertionError("withheld tool reached the store through MCP")
 
         with patch.object(server.consolidate_agent, "run_cycle", must_not_run), \
-                patch.object(server.store, "revert", must_not_run):
-            for name, args in (("consolidate", {}), ("revert", {"memory_id": "mem_1"})):
+                patch.object(server.store, "revert", must_not_run), \
+                patch.object(server.store, "freeze", must_not_run), \
+                patch.object(server.store, "add_feedback", must_not_run):
+            for name, args in (("consolidate", {}), ("revert", {"memory_id": "mem_1"}),
+                               ("freeze", {"memory_id": "mem_1", "reason": "agent wants it kept"})):
                 err = self.call(name, args).json()["error"]
                 self.assertEqual(err["code"], -32602, name)
                 self.assertIn("not available over MCP", err["message"], name)

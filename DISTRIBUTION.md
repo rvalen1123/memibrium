@@ -21,7 +21,7 @@
 │  │  Execution layer                          │  │
 │  │  CT lifecycle, W(k,t), δ-decay             │  │
 │  │  Hot: ruvector/pgvector  Cold: LEANN       │  │
-│  │  15 tools over MCP at POST /mcp            │  │
+│  │  14 tools over MCP at POST /mcp            │  │
 │  └───────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
@@ -33,8 +33,9 @@
    out when/how to use each one every single call.
 2. **Permissions are set.** The skill hardwires rules like "never auto-crystallize"
    and "contradictions don't overwrite." The server backs the crystallization
-   rule: its MCP endpoint does not offer `confirm`, `revert` or `consolidate`,
-   so an agent cannot crystallize its own output even without the skill.
+   rule: its MCP endpoint does not offer `confirm`, `revert`, `consolidate` or
+   `freeze`, so an agent cannot crystallize, restore or protect its own output
+   even without the skill.
 3. **No RL training needed.** MemSkill (NeurIPS 2024) needs millions of RL
    steps to learn which memory operations to apply. The skill pre-loads the
    governance — the agent just follows instructions.

@@ -24,7 +24,7 @@ The plugin ships **one governance skill** (`crystallization-memory`) that teache
 
 ### The MCP server: the hands
 
-The plugin wires in the **Memibrium MCP Server**. Its manifest (`GET /mcp/tools`) lists **18 tools**: the 8 core governance tools (retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard), 4 context tools (prefetch, self_model_observe, context_packet, decision_trace) and 6 ingestion tools. The server registers 27 HTTP routes in all; [api.md](api.md#counts) maps each tool to its route. MCP clients connect to `POST /mcp`, which serves 15 of those tools and withholds `confirm`, `revert` and `consolidate`, the three that can crystallize without a human ([api.md](api.md#mcp-endpoint)). That is the execution layer for storing, retrieving, confirming, freezing, and reverting knowledge.
+The plugin wires in the **Memibrium MCP Server**. Its manifest (`GET /mcp/tools`) lists **18 tools**: the 8 core governance tools (retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard), 4 context tools (prefetch, self_model_observe, context_packet, decision_trace) and 6 ingestion tools. The server registers 27 HTTP routes in all; [api.md](api.md#counts) maps each tool to its route. MCP clients connect to `POST /mcp`, which serves 14 of those tools and withholds the human-only governance tools `confirm`, `revert`, `consolidate` and `freeze` ([api.md](api.md#mcp-endpoint)). That is the execution layer for storing, retrieving, confirming, freezing, and reverting knowledge.
 
 ### Why this plugin is different
 

@@ -121,7 +121,7 @@ claude plugin install memibrium@memibrium
 
 **Cursor / other MCP clients:** see [DISTRIBUTION.md](../DISTRIBUTION.md).
 
-The plugin's `.mcp.json` points the client at `http://localhost:9999/mcp`, the MCP endpoint (`POST /mcp`, stateless streamable HTTP with JSON replies; protocol versions and tools in [api.md](api.md#mcp-endpoint)). The server must already be running there. It serves 15 tools; `confirm`, `revert` and `consolidate` are not offered to agents, so confirming a memory stays a human call to `POST /mcp/confirm`.
+The plugin's `.mcp.json` points the client at `http://localhost:9999/mcp`, the MCP endpoint (`POST /mcp`, stateless streamable HTTP with JSON replies; protocol versions and tools in [api.md](api.md#mcp-endpoint)). The server must already be running there. It serves 14 tools; `confirm`, `revert`, `consolidate` and `freeze` are not offered to agents, so confirming, freezing or reverting a memory stays a human call to its REST route.
 
 To check the endpoint without a client:
 

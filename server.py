@@ -3876,7 +3876,8 @@ async def handle_mcp_manifest(request: Request) -> JSONResponse:
 # Each tool call is dispatched to the existing REST handler for that tool.
 #
 # CT authority: an agent must never be able to crystallize a memory through this endpoint.
-# The tools in MCP_WITHHELD_TOOLS are left out of tools/list and refused in tools/call.
+# The tools in MCP_WITHHELD_TOOLS (confirm, consolidate, revert, freeze) are left out of tools/list and
+# refused in tools/call.
 
 MCP_MODERN_VERSIONS = ("2026-07-28",)
 MCP_LEGACY_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26")
@@ -3898,6 +3899,8 @@ MCP_WITHHELD_TOOLS: dict[str, str] = {
                    "every CONSOLIDATE_INTERVAL_MIN and is not offered to agents.",
     "revert": "revert writes a snapshot's lifecycle state back, which can restore crystallized without a "
               "confirmation or a witness entry; it is a human action (POST /mcp/revert).",
+    "freeze": "freeze exempts a memory from decay and records strong positive ranking feedback, so an agent could "
+              "protect and boost its own memories; with revert it is a human governance action (POST /mcp/freeze).",
 }
 
 # Tool name -> (handler, HTTP method of its REST route, path). Withheld tools have no entry, so no
@@ -3908,7 +3911,6 @@ MCP_TOOL_DISPATCH: dict[str, tuple[Callable, str, str, dict]] = {
     "retain": (handle_retain, "POST", "/mcp/retain", _MCP_WRITE),
     "recall": (handle_recall, "POST", "/mcp/recall", _MCP_READ_ONLY),
     "reflect": (handle_reflect, "POST", "/mcp/reflect", _MCP_READ_ONLY),
-    "freeze": (handle_freeze, "POST", "/mcp/freeze", _MCP_WRITE),
     "dashboard": (handle_dashboard, "GET", "/mcp/dashboard", _MCP_READ_ONLY),
     "prefetch": (handle_prefetch, "POST", "/mcp/prefetch", _MCP_READ_ONLY),
     "self_model_observe": (handle_self_model_observe, "POST", "/mcp/self_model/observe", _MCP_WRITE),
