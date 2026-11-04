@@ -58,9 +58,11 @@ from urllib.parse import urlparse
 import asyncpg
 from openai import OpenAI, AzureOpenAI
 from starlette.applications import Starlette
+from starlette.datastructures import Headers
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-from starlette.routing import Route
+from starlette.routing import Match, Route
 import uvicorn
 
 
@@ -194,6 +196,50 @@ def _parse_mcp_ingest_roots(raw: str) -> tuple[str, ...]:
 
 
 MCP_INGEST_ROOTS: tuple[str, ...] = _parse_mcp_ingest_roots(os.environ.get("MCP_INGEST_ROOTS", ""))
+
+
+# Browser origins (comma-separated, e.g. http://localhost:3000) whose state-changing requests are let through
+# when they carry that Origin header (MED-271), for example a console served same-origin through a reverse proxy.
+# This does not enable browser CORS: the server answers no OPTIONS preflight and sends no CORS headers, so a page
+# on another origin still cannot send application/json or read a reply. Unset or empty, the default: any request
+# carrying an Origin header to a state-changing route is refused. Each entry must be a serialized origin,
+# scheme://host[:port] with http or https and no path or credentials; anything else, including "null" and "*",
+# is ignored with a warning that names the reason, never the entry (it could hold credentials). Never applied to
+# the MCP endpoint POST /mcp, which refuses every Origin. This is cross-site request refusal, not
+# authentication (MED-234).
+def _origin_entry_problem(candidate: str) -> Optional[str]:
+    """None when `candidate` (lowercased, trailing '/' dropped) is a serialized http(s) origin; else the reason."""
+    try:
+        parsed = urlparse(candidate)
+        parsed.port  # raises ValueError for a non-numeric or out-of-range port
+    except ValueError:
+        return "not a parseable URL"
+    if parsed.scheme not in ("http", "https"):
+        return "scheme must be http or https"
+    if parsed.username is not None or parsed.password is not None:
+        return "credentials are not allowed"
+    if not parsed.hostname:
+        return "no host"
+    if parsed.path or parsed.params or parsed.query or parsed.fragment:
+        return "a path, query or fragment is not allowed"
+    return None
+
+
+def _parse_allowed_origins(raw: str) -> tuple[str, ...]:
+    origins = []
+    for position, entry in enumerate((p.strip() for p in raw.split(",")), start=1):
+        if not entry:
+            continue
+        candidate = entry.rstrip("/").lower()
+        problem = _origin_entry_problem(candidate)
+        if problem is not None:
+            log.warning("MEMIBRIUM_ALLOWED_ORIGINS: ignoring entry %d (%s); use scheme://host[:port]", position, problem)
+            continue
+        origins.append(candidate)
+    return tuple(origins)
+
+
+MEMIBRIUM_ALLOWED_ORIGINS: tuple[str, ...] = _parse_allowed_origins(os.environ.get("MEMIBRIUM_ALLOWED_ORIGINS", ""))
 _retain_diagnostics_pending: dict[str, dict[str, Any]] = {}
 _retain_diagnostics_lock = asyncio.Lock()
 
@@ -4235,18 +4281,68 @@ def _mcp_reject_constant(name: str) -> Any:
     raise ValueError(f"{name} is not valid JSON")
 
 
-async def handle_mcp_protocol(request: Request) -> Response:
-    """POST /mcp: the MCP endpoint for plugin clients (stateless streamable HTTP, JSON replies). GET and DELETE: 405."""
-    if request.method != "POST":
-        return JSONResponse({"error": "the MCP endpoint takes POST only"}, status_code=405, headers={"Allow": "POST"})
-    # MCP transport security (DNS rebinding): MCP clients send no Origin; a browser page always does.
-    # A present Origin header, even an empty one, means a browser context.
-    if "origin" in request.headers:
-        origin = request.headers.get("origin", "")
-        return JSONResponse({"error": f"origin {origin[:200]!r} may not use the MCP endpoint"}, status_code=403)
-    media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+# ── Cross-site request refusal (PR #17 for POST /mcp, MED-271 for every state-changing route) ──
+# A web page the user visits can POST to localhost:9999 with a `text/plain` body and no CORS preflight. Browsers
+# always attach an Origin header to such a request; MCP clients, scripts and the test harnesses never do. So a
+# state-changing request is refused when it carries an Origin (even an empty one) that is not allowlisted, when
+# its Fetch Metadata says it came from another site, or when its body is not declared application/json (which a
+# cross-site page cannot send without a preflight that this server never answers). This is not authentication:
+# any local process can still call every route (MED-234).
+
+SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+_CROSS_SITE_FETCH_SITES = frozenset({"cross-site", "same-site"})
+
+
+def cross_site_refusal(headers: Headers, allowed_origins: tuple[str, ...]) -> Optional[JSONResponse]:
+    """None when a state-changing request may proceed; otherwise the 403 or 415 response that refuses it."""
+    origins = headers.getlist("origin")
+    allowed = len(origins) == 1 and origins[0].strip().lower() in allowed_origins
+    if origins and not allowed:
+        # A present Origin header, even an empty one, means a browser context.
+        return JSONResponse({"error": f"cross-origin request refused: origin {origins[0][:200]!r} is not allowed"},
+                            status_code=403)
+    fetch_site = headers.get("sec-fetch-site", "").strip().lower()
+    if fetch_site in _CROSS_SITE_FETCH_SITES and not allowed:
+        return JSONResponse({"error": f"cross-site request refused (Sec-Fetch-Site: {fetch_site})"}, status_code=403)
+    media_type = headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if media_type != "application/json":
         return JSONResponse({"error": "POST bodies must be application/json"}, status_code=415)
+    return None
+
+
+class CrossSiteRequestGuard:
+    """ASGI middleware: applies cross_site_refusal to every request whose method is not GET, HEAD or OPTIONS.
+
+    It wraps the whole app, so a route added later is covered without opting in. Only a request that a route
+    would hand to its handler is checked: a wrong method or an unknown path still gets the router's 405 or 404,
+    and no handler runs for those. MEMIBRIUM_ALLOWED_ORIGINS is read on each request (tests patch the module
+    attribute). The allowlist is not a CORS policy: this server answers no OPTIONS preflight and sends no
+    Access-Control-* headers, so an allowlisted origin only lets through unsafe requests that already reach the
+    app (for example same-origin requests from a console behind a reverse proxy); a cross-origin page still
+    cannot send application/json or read the reply."""
+
+    def __init__(self, app: Callable) -> None:
+        self.app = app
+
+    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+        if (scope["type"] == "http" and scope["method"].upper() not in SAFE_METHODS
+                and any(route.matches(scope)[0] == Match.FULL for route in scope["app"].routes)):
+            refusal = cross_site_refusal(Headers(scope=scope), MEMIBRIUM_ALLOWED_ORIGINS)
+            if refusal is not None:
+                await refusal(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
+
+async def handle_mcp_protocol(request: Request) -> Response:
+    """POST /mcp: the MCP endpoint for plugin clients (stateless streamable HTTP, JSON replies).
+
+    The route takes POST only, so the router answers GET and DELETE with 405 (Allow: POST); the transport
+    checks below therefore never see a DELETE."""
+    # MCP transport security (DNS rebinding): the allowlist never applies here; any Origin is refused.
+    refusal = cross_site_refusal(request.headers, allowed_origins=())
+    if refusal is not None:
+        return refusal
     try:
         msg = json.loads(await request.body() or b"null", parse_constant=_mcp_reject_constant)
     except (ValueError, UnicodeDecodeError):
@@ -4274,7 +4370,7 @@ app = Starlette(
     routes=[
         Route("/health", handle_health, methods=["GET"]),
         Route("/mcp/test_embeddings", handle_test_embeddings, methods=["POST"]),
-        Route("/mcp", handle_mcp_protocol, methods=["POST", "GET", "DELETE"]),
+        Route("/mcp", handle_mcp_protocol, methods=["POST"]),
         Route("/mcp/tools", handle_mcp_manifest, methods=["GET"]),
         Route("/mcp/retain", handle_retain, methods=["POST"]),
         Route("/mcp/retain/diagnostics", handle_retain_diagnostics, methods=["GET", "POST"]),
@@ -4300,6 +4396,8 @@ app = Starlette(
         Route("/mcp/ingest/taxonomy", handle_taxonomy, methods=["GET", "POST"]),
         Route("/mcp/wiki", handle_wiki_read, methods=["GET"]),
     ],
+    # Refuses cross-site and non-JSON requests to every state-changing route (MED-271).
+    middleware=[Middleware(CrossSiteRequestGuard)],
 )
 
 
