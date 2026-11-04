@@ -4406,7 +4406,8 @@ def _request_host(value: str) -> Optional[str]:
         rest = sep + port
         if ":" in port:  # a bare IPv6 literal is not a valid Host
             return None
-    if rest and not (rest.startswith(":") and rest[1:].isdigit() and 0 < int(rest[1:]) < 65536):
+    # ASCII digits only: header values decode as latin-1, and '²'.isdigit() is True while int('²') raises.
+    if rest and not (rest.startswith(":") and rest[1:].isascii() and rest[1:].isdigit() and 0 < int(rest[1:]) < 65536):
         return None
     host = host.rstrip(".")
     return host or None

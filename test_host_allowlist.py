@@ -124,6 +124,15 @@ class HostAllowlistTest(unittest.TestCase):
         asyncio.run(server.HostAllowlistGuard(server.app.router)(scope, receive, send))
         self.assertEqual(sent[0]["status"], 421)  # an HTTP/1.0 request with no Host at all
 
+        # Non-ASCII digits in the port (headers decode as latin-1; '²'.isdigit() is True but int('²') raises):
+        # refused with 421, never a 500.
+        for raw in (b"localhost:\xb2", b"[::1]:\xb9\xb2", b"127.0.0.1:9\xb3"):
+            with self.subTest(host=raw):
+                sent.clear()
+                asyncio.run(server.HostAllowlistGuard(server.app.router)(
+                    {**scope, "http_version": "1.1", "headers": [(b"host", raw)]}, receive, send))
+                self.assertEqual(sent[0]["status"], 421)
+
     def test_cross_site_guard_still_applies_behind_an_allowed_host(self):
         r = self.spy.post("/mcp/confirm", content="{}", headers={"content-type": "text/plain", "host": "localhost"})
         self.assertEqual(r.status_code, 415)
