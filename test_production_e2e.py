@@ -16,11 +16,16 @@ Requires: httpx (pip install httpx)
 import asyncio
 import httpx
 import json
+import os
 import sys
 import time
 from datetime import datetime
 
 BASE_URL = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:9999"
+# MED-234: the server requires a bearer token. This suite calls the human-only routes (confirm, consolidate),
+# so it needs a human token; read it from the environment, never hard-code it.
+_TOKEN = os.environ.get("MEMIBRIUM_HUMAN_TOKEN", "").strip()
+AUTH = {"Authorization": f"Bearer {_TOKEN}"} if _TOKEN else {}
 PASS = 0
 FAIL = 0
 MEMORY_IDS = []
@@ -44,7 +49,7 @@ def pp(data):
 async def run_tests():
     global PASS, FAIL, MEMORY_IDS
     timeout = httpx.Timeout(30.0, connect=10.0)
-    async with httpx.AsyncClient(base_url=BASE_URL, timeout=timeout) as c:
+    async with httpx.AsyncClient(base_url=BASE_URL, timeout=timeout, headers=AUTH) as c:
 
         print(f"\nMemibrium Production E2E Test")
         print(f"Target: {BASE_URL}")

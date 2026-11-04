@@ -66,6 +66,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Generate per-run tokens (MED-234)
+        run: |
+          api=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
+          echo "::add-mask::$api"
+          echo "MEMIBRIUM_API_TOKENS=$api" >> "$GITHUB_ENV"
+          echo "MEMIBRIUM_API_TOKEN=$api" >> "$GITHUB_ENV"
+
       - name: Build and start the stack
         run: $COMPOSE up -d --build
 
@@ -94,7 +101,9 @@ jobs:
 
       - name: Embeddings are 768-wide
         run: |
-          out=$(curl -fsS -X POST -H 'Content-Type: application/json' -d '{"text": "compose smoke"}' "$BASE/mcp/test_embeddings")
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$BASE/mcp/recall")
+          test "$code" = "401" || { echo "::error::request without a token got $code, not 401"; exit 1; }
+          out=$(curl -fsS -X POST -H 'Content-Type: application/json' -H "Authorization: Bearer $MEMIBRIUM_API_TOKEN" -d '{"text": "compose smoke"}' "$BASE/mcp/test_embeddings")
           echo "$out"
           python3 -c 'import json,sys; d=json.loads(sys.argv[1]); dims=[v.get("dimensions") for v in d.values() if isinstance(v,dict) and v.get("success")]; print("dims:", dims); sys.exit(0 if 768 in dims else 1)' "$out"
 
@@ -107,7 +116,8 @@ jobs:
 
           def post(path, body):
               req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(),
-                                           headers={"Content-Type": "application/json"})
+                                           headers={"Content-Type": "application/json",
+                                                    "Authorization": "Bearer " + os.environ["MEMIBRIUM_API_TOKEN"]})
               with urllib.request.urlopen(req, timeout=60) as r:
                   return json.loads(r.read())
 

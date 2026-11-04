@@ -4,7 +4,10 @@
       "type": "http",
       "url": "http://localhost:9999/mcp",
       "name": "memibrium",
-      "description": "Sovereign AI memory server with Crystallization Theory lifecycle. MCP endpoint (POST /mcp) with 10 tools by default; confirm, freeze, revert and consolidate are human-only, and the file-ingest tools need MCP_INGEST_ROOTS."
+      "description": "Sovereign AI memory server with Crystallization Theory lifecycle. MCP endpoint (POST /mcp) with 10 tools by default; confirm, freeze, revert and consolidate are human-only, and the file-ingest tools need MCP_INGEST_ROOTS. Requires MEMIBRIUM_API_TOKEN in the client environment (MED-234).",
+      "headers": {
+        "Authorization": "Bearer ${MEMIBRIUM_API_TOKEN}"
+      }
     }
   }
 }

@@ -43,6 +43,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 import hashlib
+import hmac
 import ipaddress
 import json
 import logging
@@ -318,6 +319,41 @@ def _parse_allowed_hosts(raw: str) -> tuple[str, ...]:
 
 
 MEMIBRIUM_ALLOWED_HOSTS: tuple[str, ...] = _parse_allowed_hosts(os.environ.get("MEMIBRIUM_ALLOWED_HOSTS", ""))
+
+
+# Inbound authentication (MED-234). Every route except GET/HEAD /health requires `Authorization: Bearer <token>`.
+# Two token sets, each comma-separated in its variable:
+#   MEMIBRIUM_API_TOKENS    clients and agents: every route except the human-only governance routes.
+#   MEMIBRIUM_HUMAN_TOKENS  the human approval path: the human-only routes (confirm, freeze, revert, consolidate),
+#                           and every other route too. An API token on a human-only route gets 403.
+# Fails closed: with no token of the required kind configured, the route answers 503, never "allow". Tokens
+# shorter than MIN_AUTH_TOKEN_CHARS are ignored with a warning that gives the entry's position, never its text.
+# Tokens are compared with hmac.compare_digest against every configured token, so timing does not reveal which
+# one matched. They are not hashed: they are high-entropy secrets that already sit in the process environment,
+# and nothing derived from them is persisted, so a password hash would add no protection.
+MIN_AUTH_TOKEN_CHARS = 32
+AUTH_EXEMPT_PATHS = frozenset({"/health"})
+HUMAN_ONLY_PATHS = frozenset({"/mcp/confirm", "/mcp/freeze", "/mcp/revert", "/mcp/consolidate"})
+
+
+def _parse_auth_tokens(raw: str, variable: str) -> tuple[bytes, ...]:
+    tokens: list[bytes] = []
+    for position, entry in enumerate((p.strip() for p in raw.split(",")), start=1):
+        if not entry:
+            continue
+        if len(entry) < MIN_AUTH_TOKEN_CHARS:
+            log.warning("%s: ignoring entry %d (shorter than %d characters)", variable, position, MIN_AUTH_TOKEN_CHARS)
+            continue
+        token = entry.encode("utf-8")
+        if token not in tokens:
+            tokens.append(token)
+    return tuple(tokens)
+
+
+MEMIBRIUM_API_TOKENS: tuple[bytes, ...] = _parse_auth_tokens(os.environ.get("MEMIBRIUM_API_TOKENS", ""),
+                                                             "MEMIBRIUM_API_TOKENS")
+MEMIBRIUM_HUMAN_TOKENS: tuple[bytes, ...] = _parse_auth_tokens(os.environ.get("MEMIBRIUM_HUMAN_TOKENS", ""),
+                                                               "MEMIBRIUM_HUMAN_TOKENS")
 _retain_diagnostics_pending: dict[str, dict[str, Any]] = {}
 _retain_diagnostics_lock = asyncio.Lock()
 
@@ -4449,6 +4485,62 @@ class HostAllowlistGuard:
         await self.app(scope, receive, send)
 
 
+def _token_matches(candidate: bytes, tokens: tuple[bytes, ...]) -> bool:
+    """Constant-time membership: compares against every token, so timing does not reveal which one matched."""
+    found = False
+    for token in tokens:
+        found |= hmac.compare_digest(candidate, token)
+    return found
+
+
+def auth_refusal(method: str, path: str, headers: Headers,
+                 api_tokens: tuple[bytes, ...], human_tokens: tuple[bytes, ...]) -> Optional[JSONResponse]:
+    """None when the request may proceed; otherwise the 401, 403 or 503 response that refuses it (MED-234)."""
+    if path in AUTH_EXEMPT_PATHS and method.upper() in ("GET", "HEAD"):
+        return None
+    human_only = path.rstrip("/") in HUMAN_ONLY_PATHS
+    accepted = human_tokens if human_only else api_tokens + human_tokens
+    if not accepted:
+        needed = "MEMIBRIUM_HUMAN_TOKENS" if human_only else "MEMIBRIUM_API_TOKENS or MEMIBRIUM_HUMAN_TOKENS"
+        return JSONResponse({"error": f"authentication is not configured on this server (set {needed})"},
+                            status_code=503)
+    values = headers.getlist("authorization")
+    scheme, _, token = (values[0].strip().partition(" ") if len(values) == 1 else ("", "", ""))
+    token = token.strip()
+    if scheme.lower() != "bearer" or not token:
+        return JSONResponse({"error": "authentication required: send Authorization: Bearer <token>"},
+                            status_code=401, headers={"WWW-Authenticate": 'Bearer realm="memibrium"'})
+    candidate = token.encode("utf-8")
+    if _token_matches(candidate, accepted):
+        return None
+    if human_only and _token_matches(candidate, api_tokens):
+        return JSONResponse({"error": "this route is human-only: an API token cannot call it"}, status_code=403)
+    return JSONResponse({"error": "invalid token"}, status_code=403)
+
+
+class BearerAuthGuard:
+    """ASGI middleware: requires a bearer token on every request except GET/HEAD /health (MED-234).
+
+    It runs after HostAllowlistGuard and before routing, so unknown paths and wrong methods are refused too and
+    route existence is not revealed without a token. Human-only governance routes accept only
+    MEMIBRIUM_HUMAN_TOKENS. The token sets are read on each request (tests patch the module attributes)."""
+
+    def __init__(self, app: Callable) -> None:
+        self.app = app
+
+    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+        if scope["type"] in ("http", "websocket"):
+            refusal = auth_refusal(scope.get("method", "GET"), scope.get("path", ""), Headers(scope=scope),
+                                   MEMIBRIUM_API_TOKENS, MEMIBRIUM_HUMAN_TOKENS)
+            if refusal is not None:
+                if scope["type"] == "websocket":
+                    await send({"type": "websocket.close", "code": 1008})
+                    return
+                await refusal(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
+
 class CrossSiteRequestGuard:
     """ASGI middleware: applies cross_site_refusal to every request whose method is not GET, HEAD or OPTIONS.
 
@@ -4535,9 +4627,9 @@ app = Starlette(
         Route("/mcp/ingest/taxonomy", handle_taxonomy, methods=["GET", "POST"]),
         Route("/mcp/wiki", handle_wiki_read, methods=["GET"]),
     ],
-    # Outermost first: refuse an unknown Host on every route (MED-276), then cross-site and non-JSON requests
-    # to every state-changing route (MED-271).
-    middleware=[Middleware(HostAllowlistGuard), Middleware(CrossSiteRequestGuard)],
+    # Outermost first: refuse an unknown Host on every route (MED-276), then any request without a valid bearer
+    # token (MED-234), then cross-site and non-JSON requests to every state-changing route (MED-271).
+    middleware=[Middleware(HostAllowlistGuard), Middleware(BearerAuthGuard), Middleware(CrossSiteRequestGuard)],
 )
 
 
@@ -4552,6 +4644,11 @@ async def startup():
     ext_label = f"{store.vector_ext} candidate engine"
     leann_label = "LEANN" if leann_tier.available else "pgvector"
     log.info(f"Memibrium started — hot: {ext_label}, cold: {leann_label}, fully sovereign")
+    if not MEMIBRIUM_API_TOKENS and not MEMIBRIUM_HUMAN_TOKENS:
+        log.warning("No MEMIBRIUM_API_TOKENS or MEMIBRIUM_HUMAN_TOKENS configured: every route except /health "
+                    "answers 503 until one is set (MED-234)")
+    elif not MEMIBRIUM_HUMAN_TOKENS:
+        log.warning("No MEMIBRIUM_HUMAN_TOKENS configured: confirm, freeze, revert and consolidate answer 503")
 
 
 @app.on_event("shutdown")

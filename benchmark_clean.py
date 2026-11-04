@@ -2,14 +2,18 @@
 """Clean benchmark — single-threaded, no parallel overload. Tests what matters."""
 
 import json
+import os
 import time
 import urllib.request
 
 BASE = "http://localhost:9999"
+# MED-234: the server requires a bearer token. Read it from the environment; never hard-code it.
+_TOKEN = os.environ.get("MEMIBRIUM_API_TOKEN", "").strip()
+AUTH = {"Authorization": f"Bearer {_TOKEN}"} if _TOKEN else {}
 
 def api(path, payload=None, timeout=30):
     data = json.dumps(payload).encode() if payload else None
-    req = urllib.request.Request(f"{BASE}{path}", data=data, headers={"Content-Type": "application/json"}, method="POST" if payload else "GET")
+    req = urllib.request.Request(f"{BASE}{path}", data=data, headers={"Content-Type": "application/json", **AUTH}, method="POST" if payload else "GET")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode())
