@@ -198,21 +198,42 @@ def _parse_mcp_ingest_roots(raw: str) -> tuple[str, ...]:
 MCP_INGEST_ROOTS: tuple[str, ...] = _parse_mcp_ingest_roots(os.environ.get("MCP_INGEST_ROOTS", ""))
 
 
-# Browser origins (comma-separated, e.g. http://localhost:3000) whose pages may call the state-changing REST
-# routes (MED-271). Unset or empty, the default: any request carrying an Origin header is refused. Each entry
-# must be a serialized origin, scheme://host[:port] with http or https and no path; anything else, including
-# "null" and "*", is ignored with a warning. Never applied to the MCP endpoint POST /mcp, which refuses every
-# Origin. This is cross-site request refusal, not authentication (MED-234).
+# Browser origins (comma-separated, e.g. http://localhost:3000) whose state-changing requests are let through
+# when they carry that Origin header (MED-271), for example a console served same-origin through a reverse proxy.
+# This does not enable browser CORS: the server answers no OPTIONS preflight and sends no CORS headers, so a page
+# on another origin still cannot send application/json or read a reply. Unset or empty, the default: any request
+# carrying an Origin header to a state-changing route is refused. Each entry must be a serialized origin,
+# scheme://host[:port] with http or https and no path or credentials; anything else, including "null" and "*",
+# is ignored with a warning that names the reason, never the entry (it could hold credentials). Never applied to
+# the MCP endpoint POST /mcp, which refuses every Origin. This is cross-site request refusal, not
+# authentication (MED-234).
+def _origin_entry_problem(candidate: str) -> Optional[str]:
+    """None when `candidate` (lowercased, trailing '/' dropped) is a serialized http(s) origin; else the reason."""
+    try:
+        parsed = urlparse(candidate)
+        parsed.port  # raises ValueError for a non-numeric or out-of-range port
+    except ValueError:
+        return "not a parseable URL"
+    if parsed.scheme not in ("http", "https"):
+        return "scheme must be http or https"
+    if parsed.username is not None or parsed.password is not None:
+        return "credentials are not allowed"
+    if not parsed.hostname:
+        return "no host"
+    if parsed.path or parsed.params or parsed.query or parsed.fragment:
+        return "a path, query or fragment is not allowed"
+    return None
+
+
 def _parse_allowed_origins(raw: str) -> tuple[str, ...]:
     origins = []
-    for entry in (p.strip() for p in raw.split(",")):
+    for position, entry in enumerate((p.strip() for p in raw.split(",")), start=1):
         if not entry:
             continue
         candidate = entry.rstrip("/").lower()
-        parsed = urlparse(candidate)
-        if (parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.path or parsed.params
-                or parsed.query or parsed.fragment or parsed.username is not None or parsed.password is not None):
-            log.warning("MEMIBRIUM_ALLOWED_ORIGINS: ignoring %r; use scheme://host[:port]", entry[:200])
+        problem = _origin_entry_problem(candidate)
+        if problem is not None:
+            log.warning("MEMIBRIUM_ALLOWED_ORIGINS: ignoring entry %d (%s); use scheme://host[:port]", position, problem)
             continue
         origins.append(candidate)
     return tuple(origins)
@@ -4295,7 +4316,10 @@ class CrossSiteRequestGuard:
     It wraps the whole app, so a route added later is covered without opting in. Only a request that a route
     would hand to its handler is checked: a wrong method or an unknown path still gets the router's 405 or 404,
     and no handler runs for those. MEMIBRIUM_ALLOWED_ORIGINS is read on each request (tests patch the module
-    attribute)."""
+    attribute). The allowlist is not a CORS policy: this server answers no OPTIONS preflight and sends no
+    Access-Control-* headers, so an allowlisted origin only lets through unsafe requests that already reach the
+    app (for example same-origin requests from a console behind a reverse proxy); a cross-origin page still
+    cannot send application/json or read the reply."""
 
     def __init__(self, app: Callable) -> None:
         self.app = app

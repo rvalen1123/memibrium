@@ -195,6 +195,23 @@ class CrossSiteGuardTest(unittest.TestCase):
             self.assertEqual(parse("null,*,localhost:3000,ftp://x.example,http://x.example/path,http://u@x.example"),
                              ())
 
+    def test_unparseable_allowlist_entries_are_skipped_not_fatal(self):
+        # urlparse raises ValueError on these; one bad entry must not stop the server from importing.
+        with self.assertLogs(server.log, "WARNING") as logs:
+            self.assertEqual(server._parse_allowed_origins("http://[::1, http://x.example:notaport, http://ok.example"),
+                             ("http://ok.example",))
+        self.assertEqual(len(logs.records), 2)
+        self.assertIn("entry 1 (not a parseable URL)", logs.output[0])
+        self.assertIn("entry 2 (not a parseable URL)", logs.output[1])
+
+    def test_rejected_entry_is_never_logged(self):
+        with self.assertLogs(server.log, "WARNING") as logs:
+            self.assertEqual(server._parse_allowed_origins("https://admin:s3cr3t-pa55@console.example"), ())
+        text = "\n".join(logs.output)
+        self.assertIn("credentials are not allowed", text)
+        for secret in ("s3cr3t-pa55", "admin", "console.example"):
+            self.assertNotIn(secret, text)
+
     # ── what the guard leaves alone ──
 
     def test_safe_methods_are_not_checked(self):
