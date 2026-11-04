@@ -21,19 +21,31 @@
 │  │  Execution layer                          │  │
 │  │  CT lifecycle, W(k,t), δ-decay             │  │
 │  │  Hot: ruvector/pgvector  Cold: LEANN       │  │
-│  │  8 tools called via standard MCP protocol  │  │
+│  │  10 tools over MCP at POST /mcp            │  │
 │  └───────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
 
-**Why this is better than exposing 8 raw MCP tools:**
+**Why this is better than exposing raw MCP tools:**
 
 1. **Fewer tokens wasted.** One skill teaches the agent the whole governance
-   model. Without it, the agent sees 8 disconnected tools and has to figure
+   model. Without it, the agent sees a list of disconnected tools and has to figure
    out when/how to use each one every single call.
 2. **Permissions are set.** The skill hardwires rules like "never auto-crystallize"
-   and "contradictions don't overwrite." Without the skill, nothing prevents
-   an agent from calling `confirm` on its own output.
+   and "contradictions don't overwrite." On the MCP tool surface the server
+   backs the crystallization rule: `POST /mcp` does not offer `confirm`,
+   `revert`, `consolidate` or `freeze`, so an agent using only its MCP tools
+   cannot crystallize, restore or protect its own output, even without the
+   skill. That guarantee covers the MCP tools only. The REST routes, including
+   `POST /mcp/confirm`, check no caller (no inbound authentication yet,
+   MED-234), so any process with HTTP access to the port can still confirm a
+   memory directly. So can a web page the user visits: those routes accept a
+   `text/plain` body and check no `Origin`, so a page can send a plain
+   `fetch` to `http://localhost:9999/mcp/confirm` without a CORS preflight
+   and the confirm runs (cross-site request forgery; loopback binding does
+   not stop it). Until MED-234 lands, run the server only where no browser
+   that visits untrusted sites can reach it, or put an authenticating proxy
+   in front.
 3. **No RL training needed.** MemSkill (NeurIPS 2024) needs millions of RL
    steps to learn which memory operations to apply. The skill pre-loads the
    governance — the agent just follows instructions.

@@ -24,7 +24,7 @@ The plugin ships **one governance skill** (`crystallization-memory`) that teache
 
 ### The MCP server: the hands
 
-The plugin wires in the **Memibrium MCP Server**. Its manifest (`GET /mcp/tools`) lists **18 tools**: the 8 core governance tools (retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard), 4 context tools (prefetch, self_model_observe, context_packet, decision_trace) and 6 ingestion tools. The server registers 26 HTTP routes in all; [api.md](api.md#counts) maps each tool to its route. That is the execution layer for storing, retrieving, confirming, freezing, and reverting knowledge.
+The plugin wires in the **Memibrium MCP Server**. Its manifest (`GET /mcp/tools`) lists **18 tools**: the 8 core governance tools (retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard), 4 context tools (prefetch, self_model_observe, context_packet, decision_trace) and 6 ingestion tools. The server registers 27 HTTP routes in all; [api.md](api.md#counts) maps each tool to its route. MCP clients connect to `POST /mcp`, which serves 10 of those tools by default, always withholds the human-only governance tools `confirm`, `revert`, `consolidate` and `freeze`, and serves the four path tools only inside `MCP_INGEST_ROOTS` ([api.md](api.md#mcp-endpoint)). That is the execution layer for storing, retrieving, confirming, freezing, and reverting knowledge.
 
 ### Why this plugin is different
 
@@ -157,7 +157,7 @@ Every other memory system stores everything and hopes retrieval sorts it out. Th
 
 ```
 memibrium/
-├── server.py                               # CT memory server (26 routes, 18 manifest tools)
+├── server.py                               # CT memory server (27 routes, 18 manifest tools)
 ├── ingest_engine.py                        # Document/JSONL ingestion + wiki compiler
 ├── knowledge_taxonomy.py                   # 30-category classifier with CT tier mapping
 ├── plugins/

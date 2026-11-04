@@ -72,6 +72,9 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: MCP endpoint tests (initialize, tools/list, tools/call; confirm withheld) (MED-254)
+        run: python test_mcp_endpoint.py -v
+
       - name: Check the database service (pgvector loads, user may create databases)
         env:
           MEMIBRIUM_TEST_DSN: postgresql://memibrium:memibrium@localhost:5432/memibrium_test
@@ -105,7 +108,8 @@ jobs:
         run: |
           for t in \
             test_retain_idempotency.py \
-            test_hybrid_retrieval_tiebreak_db.py
+            test_hybrid_retrieval_tiebreak_db.py \
+            test_review_preservation_db.py
           do
             echo "::group::$t"
             python "$t" -v 2>&1 | tee "$RUNNER_TEMP/$t.log"

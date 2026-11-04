@@ -33,9 +33,11 @@ Agent (any: Claude Code, Cursor, Copilot, etc.)
   ├─ This skill (SKILL.md) — behavioral rules, loaded into system prompt
   │   "How to think about memory"
   │
-  └─ Memibrium MCP Server — 8 tools, via .mcp.json bundled with this plugin
+  └─ Memibrium MCP Server — 10 tools at POST /mcp by default, via .mcp.json bundled with this plugin
+      (the file-ingest tools appear only if the operator sets MCP_INGEST_ROOTS)
       "How to store/retrieve/govern memory"
-      retain, recall, reflect, confirm, freeze, revert, consolidate, dashboard
+      core: retain, recall, reflect, dashboard
+      (confirm, freeze, revert and consolidate are human-only and not offered over MCP)
 ```
 
 The skill is the **governance layer**. The MCP is the **execution layer**.
@@ -65,7 +67,13 @@ When retrieving knowledge via `recall`:
 ### Rule 3: Human Confirmation is the ONLY Crystallization Path
 
 - When a user validates, corrects, or explicitly confirms a piece of knowledge,
-  call `confirm` with the memory_id
+  give them the memory_id and ask them to confirm it themselves. `confirm` is
+  the human's signal: the MCP server does not offer it to agents, and you must
+  never call `POST /mcp/confirm` on the user's behalf
+- A confirmation does not by itself crystallize anything: the memory must be
+  ACCEPTED, reach the required number of confirmations, and have a validation
+  score of at least 0.5. Never tell the user a memory is crystallized until
+  `recall` shows its state as CRYSTALLIZED
 - NEVER assume knowledge is crystallized because it "seems right" or has been
   repeated — only `confirm` can crystallize
 - This is the architectural distinction: ML confidence ≠ human consensus
@@ -87,7 +95,7 @@ When `recall` returns knowledge that contradicts new information:
    explicitly confirms the new information
 4. Store the new contradicting information as a new OBSERVATION — let the
    lifecycle engine resolve it through human confirmation
-5. If both are CRYSTALLIZED and contradict, flag for manual review via `freeze`
+5. If both are CRYSTALLIZED and contradict, flag them to the user for manual review (the user can `freeze` them; you cannot)
 
 ### Rule 6: Use Reflect for Synthesis, Not Recall
 
@@ -99,9 +107,10 @@ When `recall` returns knowledge that contradicts new information:
 ### Rule 7: Freeze Before Destructive Changes
 
 When the user is about to make a major decision based on stored knowledge:
-- Call `freeze` on the relevant memories before proceeding
-- This creates a snapshot and exempts memories from δ-decay
-- If the decision turns out wrong, `revert` restores the pre-decision state
+- Suggest that the user `freeze` the relevant memories before proceeding, and give
+  them the memory_ids. `freeze` is a human action, not an MCP tool: it creates a
+  snapshot and exempts memories from δ-decay, so an agent must not freeze its own memories
+- If the decision turns out wrong, the user can `revert` to the snapshot (also a human action, not an MCP tool)
 
 ### Rule 8: Proactive Consolidation Awareness
 
@@ -119,10 +128,10 @@ When the user is about to make a major decision based on stored knowledge:
 | `retain` | Storing new information | `content` (required), `source`, `domain` |
 | `recall` | Finding specific memories | `query` (required), `top_k`, `domain` |
 | `reflect` | Synthesizing knowledge about a topic | `topic` (required), `top_k`, `domain` |
-| `confirm` | User validates/confirms knowledge | `memory_id` (required), `weight` |
-| `freeze` | Protecting knowledge from decay | `memory_id` (required), `reason` |
-| `revert` | Restoring from snapshot | `memory_id` (required), `snapshot_id` |
-| `consolidate` | Manual decay/promote cycle | (none) |
+| `confirm` | Human only, not an MCP tool: the user confirms knowledge | `memory_id` (required), `weight` |
+| `freeze` | Human only, not an MCP tool: protect knowledge from decay | `memory_id` (required), `reason` |
+| `revert` | Human only, not an MCP tool: restore from snapshot | `memory_id` (required), `snapshot_id` |
+| `consolidate` | Human only, not an MCP tool; runs on its own every 30 minutes | (none) |
 | `dashboard` | System health/status | (none) |
 
 ## MCP Connection
@@ -134,9 +143,10 @@ bundled with this plugin. When installed, your agent gets both the skill
 If running standalone, the server exposes tools at:
 
 ```
-Base URL: http://localhost:9999/mcp
-Tool manifest: GET /mcp/tools
-Each tool:     POST /mcp/{tool_name}
+MCP endpoint:  POST http://localhost:9999/mcp  (what .mcp.json points at)
+Tool manifest: GET /mcp/tools                  (REST; lists all 18, including the human-only ones)
+REST routes:   per tool; paths and HTTP methods vary (e.g. GET /mcp/dashboard,
+               POST /mcp/self_model/observe). See the route map in docs/api.md.
 ```
 
 ## Anti-Patterns (Never Do These)
@@ -160,7 +170,8 @@ Each tool:     POST /mcp/{tool_name}
 User: "Our API rate limit is 1000 req/min on the Pro plan."
 Agent: [calls retain with content="API rate limit: 1000 req/min on Pro plan",
         source="user_statement", domain="project-api"]
-Agent: "Got it — I've stored that. Want me to confirm it as validated knowledge?"
+Agent: "Got it — I've stored that as an observation (memory_id mem_…).
+        If it's settled, you can confirm it; I can't do that for you."
 ```
 
 **User asks about past context:**
@@ -173,8 +184,12 @@ Agent: [synthesizes results, flagging lifecycle states]
 **User confirms knowledge:**
 ```
 User: "Yes, that rate limit is correct."
-Agent: [calls confirm with memory_id from the recall result]
-Agent: "Confirmed — that's now crystallized knowledge."
+Agent: [does NOT call confirm; confirm is not an MCP tool]
+Agent: "Thanks. To record that, confirm memory_id mem_… yourself
+        (POST /mcp/confirm). Each confirmation counts; the memory
+        crystallizes only once it is ACCEPTED, has enough confirmations
+        and its validation score is at least 0.5, so it may stay
+        unconfirmed-but-believed for now."
 ```
 
 **Contradiction detected:**

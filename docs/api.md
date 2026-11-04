@@ -2,7 +2,7 @@
 
 > Relocated from the root `README.md` in the MED-242 docs pass (2026-11-02) and corrected against `server.py`. The [README](../README.md) is the short entry point.
 
-Sections: Counts · Core memory routes · Ingestion routes · Idempotent retain · Other routes · Prompts to Try.
+Sections: Counts · MCP endpoint · Core memory routes · Ingestion routes · Idempotent retain · Other routes · Prompts to Try.
 
 This page gives one line per route. It documents request fields only for idempotent retain and the two list routes; for every tool's input fields, read the `inputSchema` entries served by `GET /mcp/tools` (`handle_mcp_manifest` in `server.py`).
 
@@ -10,10 +10,47 @@ This page gives one line per route. It documents request fields only for idempot
 
 ## Counts
 
-- **26 HTTP routes** are registered in `app = Starlette(routes=[...])` (one route, `/mcp/ingest/taxonomy`, accepts both GET and POST).
+- **27 HTTP routes** are registered in `app = Starlette(routes=[...])`: the MCP protocol endpoint `/mcp` and 26 REST routes (one route, `/mcp/ingest/taxonomy`, accepts both GET and POST).
 - **18 MCP tools** are listed by `GET /mcp/tools`. Each maps to one route: `retain`, `recall`, `reflect`, `confirm`, `freeze`, `revert`, `consolidate`, `dashboard` (the eight core governance tools), `prefetch` → `/mcp/prefetch`, `self_model_observe` → `/mcp/self_model/observe`, `context_packet` → `/mcp/context_packet`, `decision_trace` → `/mcp/decision_trace`, `ingest_file`, `ingest_directory`, `ingest_jsonl`, `ingest_status` → `/mcp/ingest/{file,directory,jsonl,status}`, `compile_wiki` → `/mcp/ingest/compile`, `wiki_read` → `/mcp/wiki`.
-- The other 8 routes have no manifest entry: `/health`, `/mcp/tools`, `/mcp/test_embeddings`, `/mcp/retain/diagnostics`, `/mcp/graph`, `/mcp/self_model/observations`, `/mcp/decision_traces`, `/mcp/ingest/taxonomy`.
-- The plugin's `plugins/memibrium/.mcp.json` describes the server as "8 tools"; that is the core set, not the whole manifest.
+- The other 9 routes have no manifest entry: `/mcp` (the MCP endpoint itself), `/health`, `/mcp/tools`, `/mcp/test_embeddings`, `/mcp/retain/diagnostics`, `/mcp/graph`, `/mcp/self_model/observations`, `/mcp/decision_traces`, `/mcp/ingest/taxonomy`.
+- **10 of the 18 tools are served over MCP** at `POST /mcp` by default: `confirm`, `revert`, `consolidate` and `freeze` are always withheld, and the four path tools (`ingest_file`, `ingest_directory`, `ingest_jsonl`, `compile_wiki`) are served only when `MCP_INGEST_ROOTS` is set (see [MCP endpoint](#mcp-endpoint)).
+
+---
+
+## MCP endpoint
+
+`POST /mcp` is the endpoint the plugin's `.mcp.json` points MCP clients (Claude Code, Codex, other hosts) at. It speaks MCP over stateless streamable HTTP and replies with JSON (`handle_mcp_protocol` / `mcp_dispatch` in `server.py`, MED-254):
+
+- **Protocol versions.** `2026-07-28` (per-request `params._meta` with `io.modelcontextprotocol/protocolVersion` and `io.modelcontextprotocol/clientCapabilities`, `server/discover`, and the `MCP-Protocol-Version` / `Mcp-Method` / `Mcp-Name` headers, which must match the body), plus the legacy `initialize` handshake for `2025-11-25`, `2025-06-18` and `2025-03-26`. An unknown legacy version negotiates `2025-11-25`.
+- **Methods.** `initialize`, `notifications/initialized` (and any other notification: HTTP 202, empty body), `ping`, `tools/list`, `tools/call`, and `server/discover` for 2026-07-28 clients. Anything else is JSON-RPC `-32601`.
+- **Stateless.** No `Mcp-Session-Id`, no server-initiated streams. `GET /mcp` and `DELETE /mcp` return 405 with `Allow: POST`.
+- **Transport refusals.** A request with an `Origin` header, even an empty one, gets 403 (MCP clients send none; a browser page always does, so this blocks DNS-rebinding and cross-site pages). A body whose media type is not exactly `application/json` (parameters such as `charset` are allowed; `application/json-evil` or `text/json` are not) gets 415; invalid JSON, including the non-JSON constants `NaN`, `Infinity` and `-Infinity`, gets 400 with JSON-RPC `-32700`; a batch (JSON array) gets 400 with `-32600`; an unsupported `MCP-Protocol-Version` gets 400 with `-32022`. An unexpected failure inside the endpoint gets HTTP 500 with JSON-RPC `-32603` and the generic message `Internal error`; the details go to the server log only.
+- **Tools.** `tools/list` returns the `GET /mcp/tools` manifest entries (same names, descriptions and `inputSchema`s, except that `compile_wiki` has no `output_dir` over MCP) with MCP `annotations`, minus the withheld and ungated path tools. `tools/call` checks the arguments against that `inputSchema` before dispatch: an undeclared argument, a missing required one, or a value of the wrong JSON type, outside an `enum`, outside `minimum`/`maximum`, not finite, or with array items of the wrong type is JSON-RPC `-32602` (so `skip_duplicates: "false"` is refused, not read as true). `top_k` is bounded to 1–50 (`TOOL_TOP_K_MAX`) on `recall`, `reflect`, `prefetch` and `context_packet`, and `confidence` to 0–1; the REST routes do not enforce these bounds. Then it runs the tool's REST handler with the arguments as its JSON body (or query parameters for the GET routes `dashboard`, `ingest_status`, `wiki_read`). The handler's JSON comes back as a `text` content item, and as `structuredContent` when it is an object; a handler status ≥ 400 or an exception sets `isError: true`. For an exception the client gets only its type (`memibrium error: RuntimeError (see the server log)`); the message is logged server-side.
+
+**Served by default (10):** `retain`, `recall`, `reflect`, `dashboard`, `prefetch`, `self_model_observe`, `context_packet`, `decision_trace`, `ingest_status`, `wiki_read`.
+
+**Path tools, default-deny (4):** `ingest_file`, `ingest_directory`, `ingest_jsonl` and `compile_wiki`. Over MCP an agent that reads untrusted content could otherwise ingest any file the server can read (`.env`, keys) and read it back through `recall`. With `MCP_INGEST_ROOTS` unset or empty (the default), they are not in `tools/list` and `tools/call` refuses them with `-32602` and the reason. With `MCP_INGEST_ROOTS` set (an `os.pathsep`-separated list of directories, canonicalised with `realpath` at import), they are served, and:
+
+- `filepath` (`ingest_file`, `ingest_jsonl`) and `directory` (`ingest_directory`) must resolve, after `realpath` (symlinks and `..` followed), to a root or a path under one; otherwise `-32602`. A path containing a NUL byte, or a directory that cannot be scanned, is also `-32602`. Root entries are stripped, and relative entries are ignored with a warning.
+- For `ingest_directory`, every file it would ingest (the same `rglob`/`glob` selection the engine uses) must also resolve inside the roots, so a symlink inside an allowed directory that points outside it refuses the whole call. The check runs just before the ingest; a process that can write inside a root could still swap a file between the check and the read.
+- `compile_wiki` does not accept `output_dir` over MCP (`-32602`), because that argument re-points the shared `wiki_compiler.output_dir` for every later client. Over MCP the wiki is compiled to its configured location.
+
+The REST routes are not affected by `MCP_INGEST_ROOTS`.
+
+**Withheld (4), the human-only governance tools:** three can move a memory to `crystallized` without a human, and `freeze` would let an agent protect and boost its own memories. They are not in `tools/list`, `tools/call` refuses them with `-32602` and the reason, and they have no entry in the dispatch table (`MCP_TOOL_DISPATCH`). Their REST routes are unchanged for humans and human-operated tools.
+
+| Tool | Why it is not offered to agents |
+|---|---|
+| `confirm` | The human validation signal and the only path to crystallization. An agent calling it would be confirming its own output. |
+| `consolidate` | `ConsolidateAgent.run_cycle` moves `accepted` memories that have reached `CRYSTALLIZE_CONFIRMATIONS` to `crystallized`. It already runs every `CONSOLIDATE_INTERVAL_MIN`. |
+| `revert` | `ColdStore.revert` writes the snapshot's `state` back, which can be `crystallized`, without a confirmation and without a witness entry. |
+| `freeze` | `ColdStore.freeze` sets `frozen = TRUE`, which takes the memory out of `get_active_memories` and so out of decay and shedding, and `handle_freeze` records ranking feedback with weight 2.0. An agent could protect and boost its own memories. Freeze and revert are a paired governance action; freeze stays human-only until Ricky decides otherwise. |
+
+Arguments outside a tool's schema are refused rather than passed through. `self_model_observe`'s REST body also accepts `lifecycle_state` and `user_state`, and over MCP an agent cannot pass them, so everything it writes arrives as `user_state: "unreviewed"`. Over MCP `decision_trace` takes only `status: "proposed"` (`MCP_SCHEMA_OVERRIDES`).
+
+That alone did not protect a human review: both record ids are content hashes, so an agent re-submitting the same observation or trace hit the upsert, which overwrote `user_state`, `lifecycle_state` and `status` and raised `confidence`. A human's `confirmed` or `rejected` went back to `unreviewed`, and confidence could be pushed to 1.0. The upserts now keep a reviewed row: when the stored observation has a `user_state` other than `unreviewed` and the incoming write is unreviewed, they keep its state, confidence, evidence and metadata (only `last_seen` and `surfaced_count` change). Likewise a trace whose status is not `proposed` keeps its status, `outcome_signal` and metadata against a `proposed` re-submission (`SELF_MODEL_REVIEW_KEPT_SQL`, `DECISION_TRACE_REVIEW_KEPT_SQL`). An explicit review write, which is the REST body with `user_state` or `status` set, still updates the row, so a human can change a review. `test_review_preservation_db.py` checks this against Postgres. `test_mcp_endpoint.py` (in CI, no database) covers the handshake, `tools/list`, a read-only `tools/call`, both eras' header rules, the transport refusals, value validation, the path-tool gate (unset, out-of-root, `..`, symlink escapes, in-root) and the withheld tools in both `tools/list` and `tools/call`.
+
+**No inbound authentication.** `/mcp` inherits the same no-auth exposure as every `/mcp/*` route (MED-234): anyone who can reach the port can call the served tools. Withholding a tool from MCP does not protect its REST route: `POST /mcp/confirm`, `/mcp/freeze`, `/mcp/revert`, `/mcp/consolidate`, the review writes through `/mcp/self_model/observe` and `/mcp/decision_trace`, and the ingest routes check no caller, so any process with HTTP access to the port can still call them directly. A web page the user visits can also reach them: these handlers parse the body with `request.json()` and check neither `Content-Type` nor `Origin`, so a page can send a plain `text/plain` `fetch` to `http://localhost:9999/mcp/confirm` (a CORS "simple request", sent without a preflight) and the confirm runs, even though the page cannot read the reply. That is cross-site request forgery against the governance routes; the fix is tracked with inbound authentication under MED-234. Loopback binding does not stop it, since the browser runs on the same machine. Keep the server on loopback or a private network, and do not run it where a browser that visits untrusted sites can reach it until MED-234 lands.
 
 ---
 
@@ -29,6 +66,7 @@ This page gives one line per route. It documents request fields only for idempot
 | `/mcp/revert` | POST | Restore from snapshot | STG Claim 7 |
 | `/mcp/consolidate` | POST | Manual trigger: δ-decay + shed + auto-promote | CT δ-decay |
 | `/mcp/dashboard` | GET | Lifecycle counts, CT parameters, architecture | — |
+| `/mcp` | POST | MCP protocol endpoint for plugin clients (see [MCP endpoint](#mcp-endpoint)); GET and DELETE return 405 | — |
 | `/mcp/tools` | GET | MCP tool manifest for auto-discovery (not itself a tool) | — |
 
 ## Ingestion routes
@@ -127,7 +165,7 @@ The routes not listed above, with a one-line description taken from each handler
 
 Request bodies are JSON. Handlers return HTTP 400 with `{"error": ...}` when a required field is missing (`content`, `query`, `topic`, `memory_id`). This page has no per-route field tables; the manifest served at `GET /mcp/tools` is the authoritative list of tool names and input schemas.
 
-**Inbound authentication:** none of these routes check a credential today; the server trusts the network it is bound to (`0.0.0.0:9999` when started with `python server.py`; `127.0.0.1:9999` from the compose stack unless `MEMIBRIUM_BIND` is set). Tracked as MED-234.
+**Inbound authentication:** none of these routes (nor `POST /mcp`) check a credential today; the server trusts the network it is bound to (`0.0.0.0:9999` when started with `python server.py`; `127.0.0.1:9999` from the compose stack unless `MEMIBRIUM_BIND` is set). Tracked as MED-234.
 
 ---
 
@@ -137,7 +175,7 @@ Once the plugin is installed, try prompts like these:
 
 - `Remember that our API rate limit is 1000 req/min.`
 - `What do you know about the deployment architecture?`
-- `Confirm that the rate limit information is correct.`
-- `Freeze the deployment architecture memories before we change things.`
+- `Is the rate limit information confirmed yet?` (the agent reports the memory's state; confirming it is yours to do with `POST /mcp/confirm`, which is not an MCP tool)
+- `Which memories should I freeze before we change the deployment architecture?` (freezing them is yours to do with `POST /mcp/freeze`, which is not an MCP tool)
 - `Show me the memory dashboard.`
 - `What's the lifecycle state of what you know about our auth system?`
