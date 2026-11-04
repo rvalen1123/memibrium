@@ -71,6 +71,7 @@ python test_ingest_unit.py           # 34 tests, no DB or LLM
 MEMIBRIUM_TEST_DSN=postgresql://memibrium:memibrium@localhost:5432/memibrium_test \
   python test_retain_idempotency.py -v          # 18 tests
 MEMIBRIUM_TEST_DSN=... python test_hybrid_retrieval_tiebreak_db.py -v   # 4 tests
+MEMIBRIUM_TEST_DSN=... python test_review_preservation_db.py -v         # 3 tests
 ```
 
 CI (`.github/workflows/ci.yml`, Python 3.11–3.13, `shell: bash` with pipefail) runs all of these against a digest-pinned `pgvector/pgvector:0.8.7-pg16` service and fails if a DB-backed test skips. The `docker run` line for a local test database and the end-to-end tests that need a running server are in [docs/operations.md](docs/operations.md#testing).

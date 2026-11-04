@@ -150,7 +150,7 @@ Names only; never commit values. Most settings are module-level constants read a
 | CT parameters | `IMPORTANCE_THRESHOLD` (`0.4`), `SHEDDING_THRESHOLD` (`0.05`), `CONSOLIDATE_INTERVAL_MIN` (`30`), `DECAY_RATE` (`0.02`), `CRYSTALLIZE_CONFIRMATIONS` (`3`) | `server.py` |
 | CT ranker | `CT_RANKER_RETRIEVAL_WEIGHT` (`0.55`), `CT_RANKER_CT_WEIGHT` (`0.45`), `CT_RANKER_CT_HEAVY_RETRIEVAL_WEIGHT` (`0.40`), `CT_RANKER_CT_HEAVY_CT_WEIGHT` (`0.60`), `CT_RANKER_SHED_PENALTY` (`0.20`), `CT_RANKER_FROZEN_BONUS` (`0.05`), `CT_RANKER_FEEDBACK_SCALE` (`0.05`), `CT_RANKER_MAX_FEEDBACK_BONUS` (`0.30`); parsed by `parse_env_float`, which falls back to the default on an unparsable value | `ct_ranker.py` |
 | Background work | `ENABLE_BACKGROUND_SCORING`, `ENABLE_CONTRADICTION_DETECTION`, `ENABLE_HIERARCHY_PROCESSING` (all `true`), `SCORE_BATCH_SIZE` (`5`), `SCORE_BATCH_TIMEOUT` (`1.0`), `RETAIN_DIAGNOSTICS_MAX_PENDING` (`50`) | `server.py` |
-| MCP endpoint | `MCP_INGEST_ROOTS` (unset): `os.pathsep`-separated directories that the path tools may use over `POST /mcp`, canonicalised with `realpath` at import. Unset or empty: `ingest_file`, `ingest_directory`, `ingest_jsonl` and `compile_wiki` are not served over MCP. Does not affect the REST routes. | `server.py` |
+| MCP endpoint | `MCP_INGEST_ROOTS` (unset): `os.pathsep`-separated directories that the path tools may use over `POST /mcp`, canonicalised with `realpath` at import. Entries are stripped; a relative entry is ignored with a warning in the log (use absolute paths). Unset or empty: `ingest_file`, `ingest_directory`, `ingest_jsonl` and `compile_wiki` are not served over MCP. Does not affect the REST routes. | `server.py` |
 | Ingestion | `INGEST_MAX_CHUNK_CHARS` (`2000`), `INGEST_MIN_CHUNK_CHARS` (`100`), `INGEST_OVERLAP_CHARS` (`200`) | `ingest_engine.py` |
 | Tests only | `MEMIBRIUM_TEST_DSN` (a disposable Postgres; see [Testing](#testing)) | the DB-backed test files |
 
@@ -182,6 +182,7 @@ docker run --rm -d --name memibrium-test-pg -p 5432:5432 \
 export MEMIBRIUM_TEST_DSN=postgresql://memibrium:memibrium@localhost:5432/memibrium_test
 python test_retain_idempotency.py -v           # 18 tests; with the DSN set none may skip
 python test_hybrid_retrieval_tiebreak_db.py -v # 4 tests; with the DSN set none may skip
+python test_review_preservation_db.py -v      # 3 tests; with the DSN set none may skip
 docker stop memibrium-test-pg
 ```
 
@@ -200,7 +201,7 @@ python test_leann_e2e.py         # needs pip install leann
 
 ## Network exposure
 
-`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234), including the MCP endpoint `POST /mcp`. Over MCP the file-ingest tools are off unless `MCP_INGEST_ROOTS` is set and then confined to those roots, but the REST ingest routes still read any path the process can read, and the REST governance routes (`/mcp/confirm`, `/mcp/freeze`, `/mcp/revert`, `/mcp/consolidate`) check no caller. `POST /mcp` refuses requests that carry an `Origin` header, which stops browser pages, not other clients. The compose stack publishes its ports on `127.0.0.1` for the same reason. Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
+`python server.py` binds `0.0.0.0:9999` and no route checks a credential (MED-234), including the MCP endpoint `POST /mcp`. Over MCP the file-ingest tools are off unless `MCP_INGEST_ROOTS` is set and then confined to those roots, but the REST ingest routes still read any path the process can read, and the REST governance routes (`/mcp/confirm`, `/mcp/freeze`, `/mcp/revert`, `/mcp/consolidate`) check no caller. A web page the user visits can also reach them: these handlers parse the body with `request.json()` and check neither `Content-Type` nor `Origin`, so a page can send a plain `text/plain` `fetch` to `http://localhost:9999/mcp/confirm` (a CORS "simple request", sent without a preflight) and the confirm runs, even though the page cannot read the reply. That is cross-site request forgery against the governance routes; the fix is tracked with inbound authentication under MED-234. Binding to `127.0.0.1` does not prevent this, because the browser runs on the same machine. `POST /mcp` itself refuses any request that carries an `Origin` header (even an empty one) and any body that is not exactly `application/json`, which stops browser pages there, but not other clients. The compose stack publishes its ports on `127.0.0.1` for the same reason. Bind it to a private network or put an authenticating proxy in front; do not expose port 9999 publicly. The repo's `Caddyfile` is legacy Azure configuration (both its site blocks point at Azure hosts) and is not a supported edge; see below.
 
 ---
 
