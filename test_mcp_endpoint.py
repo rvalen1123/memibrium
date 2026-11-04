@@ -34,7 +34,8 @@ DEFAULT_SERVED = {"retain", "recall", "reflect", "dashboard", "prefetch", "self_
 
 class McpEndpointTest(unittest.TestCase):
     def setUp(self):
-        self.client = TestClient(server.app)  # no `with`: startup (DB, embedder) does not run
+        # base_url: TestClient's default Host, "testserver", is refused by HostAllowlistGuard (MED-276).
+        self.client = TestClient(server.app, base_url="http://localhost:9999")  # no `with`: startup does not run
         # Every test starts with MCP_INGEST_ROOTS unset (the default), whatever the environment says.
         roots = patch.object(server, "MCP_INGEST_ROOTS", ())
         roots.start()

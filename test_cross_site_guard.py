@@ -16,13 +16,15 @@ from unittest.mock import patch
 
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
-from starlette.routing import Route
+from starlette.endpoints import HTTPEndpoint
+from starlette.routing import Mount, Route
 from starlette.testclient import TestClient
 
 import server
 
 UNSAFE = ("POST", "PUT", "PATCH", "DELETE")
 JSON = {"content-type": "application/json"}
+LOCAL = "http://localhost:9999"  # TestClient's default Host, "testserver", is refused by HostAllowlistGuard
 
 # The routes that change state, or run work on the server's behalf, through a method other than GET.
 # Pinned so that adding a POST/PUT/PATCH/DELETE route is a visible, reviewed change to this list.
@@ -51,9 +53,41 @@ EXPECTED_UNSAFE_ROUTES = {
 }
 
 
+_ALL_METHODS = ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+
+
+def route_table(routes, prefix=""):
+    """(path, methods) for every HTTP route, so that no kind of route is invisible to the pinned inventory.
+
+    A function Route has `methods`. A Route to an HTTPEndpoint class has methods=None and serves whatever
+    handlers the class defines. A Mount with a route table is walked with its prefix; a Mount of an opaque app
+    takes any method, recorded as "*" under "<prefix>/{path:path}". WebSocket routes are not HTTP and are skipped.
+    """
+    table = []
+    for r in routes:
+        if isinstance(r, Mount):
+            sub = getattr(r, "routes", None) or []
+            if sub:
+                table.extend(route_table(sub, prefix + r.path))
+            else:
+                table.append((prefix + r.path + "/{path:path}", frozenset({"*"})))
+        elif isinstance(r, Route):
+            if r.methods is not None:
+                methods = frozenset(r.methods)
+            else:
+                methods = frozenset(m for m in _ALL_METHODS if hasattr(r.endpoint, m.lower()))
+            table.append((prefix + r.path, methods))
+    return table
+
+
 def unsafe_routes(app):
-    """Every (path, method) of `app` whose method is not GET, HEAD or OPTIONS."""
-    return {(r.path, m) for r in app.routes for m in (r.methods or ()) if m not in server.SAFE_METHODS}
+    """Every (path, method) of `app` whose method is not GET, HEAD or OPTIONS ("*" for an opaque Mount)."""
+    return {(path, m) for path, methods in route_table(app.routes) for m in methods if m not in server.SAFE_METHODS}
+
+
+def concrete(path, method):
+    """A URL and an HTTP method that reach the route: path parameters filled in, "*" sent as POST."""
+    return path.replace("{path:path}", "x"), ("POST" if method == "*" else method)
 
 
 class SpyApp:
@@ -68,8 +102,10 @@ class SpyApp:
                 return JSONResponse({"spy": path})
             return spy
 
-        routes = [Route(r.path, spy_for(r.path), methods=sorted(r.methods or ())) for r in server.app.routes]
-        self.client = TestClient(Starlette(routes=routes, middleware=server.app.user_middleware))
+        routes = [Route(path, spy_for(path), methods=sorted(methods))
+                  for path, methods in route_table(server.app.routes) if "*" not in methods]
+        self.client = TestClient(Starlette(routes=routes, middleware=server.app.user_middleware),
+                                 base_url=LOCAL)
 
 
 class CrossSiteGuardTest(unittest.TestCase):
@@ -78,7 +114,7 @@ class CrossSiteGuardTest(unittest.TestCase):
         allow.start()
         self.addCleanup(allow.stop)
         self.spy = SpyApp()
-        self.client = TestClient(server.app)  # no `with`: startup (DB, embedder) does not run
+        self.client = TestClient(server.app, base_url=LOCAL)  # no `with`: startup (DB, embedder) does not run
 
     def post(self, path, headers, body='{"memory_id": "m1"}'):
         return self.spy.client.post(path, content=body, headers=headers)
@@ -96,18 +132,22 @@ class CrossSiteGuardTest(unittest.TestCase):
     def test_every_unsafe_route_refuses_text_plain_on_the_real_app(self):
         for path, method in sorted(unsafe_routes(server.app)):
             with self.subTest(route=f"{method} {path}"):
-                r = self.client.request(method, path, content='{"x": 1}', headers={"content-type": "text/plain"})
+                url, verb = concrete(path, method)
+                r = self.client.request(verb, url, content='{"x": 1}', headers={"content-type": "text/plain"})
                 self.assertEqual(r.status_code, 415)
 
     def test_every_unsafe_route_refuses_a_foreign_origin_on_the_real_app(self):
         for path, method in sorted(unsafe_routes(server.app)):
             with self.subTest(route=f"{method} {path}"):
-                r = self.client.request(method, path, content="{}",
+                url, verb = concrete(path, method)
+                r = self.client.request(verb, url, content="{}",
                                         headers={**JSON, "origin": "http://evil.example"})
                 self.assertEqual(r.status_code, 403)
 
     def test_every_unsafe_route_refuses_without_calling_its_handler_and_passes_json(self):
         for path, method in sorted(unsafe_routes(server.app)):
+            if method == "*":
+                continue  # an opaque Mount has no spy; the two real-app tests above still cover it
             with self.subTest(route=f"{method} {path}"):
                 self.spy.calls.clear()
                 for headers, status in (({"content-type": "text/plain"}, 415),
@@ -201,8 +241,8 @@ class CrossSiteGuardTest(unittest.TestCase):
             self.assertEqual(server._parse_allowed_origins("http://[::1, http://x.example:notaport, http://ok.example"),
                              ("http://ok.example",))
         self.assertEqual(len(logs.records), 2)
-        self.assertIn("entry 1 (not a parseable URL)", logs.output[0])
-        self.assertIn("entry 2 (not a parseable URL)", logs.output[1])
+        self.assertIn("entry 1 (not a parseable URL", logs.output[0])
+        self.assertIn("entry 2 (not a parseable URL", logs.output[1])
 
     def test_rejected_entry_is_never_logged(self):
         with self.assertLogs(server.log, "WARNING") as logs:
@@ -211,6 +251,62 @@ class CrossSiteGuardTest(unittest.TestCase):
         self.assertIn("credentials are not allowed", text)
         for secret in ("s3cr3t-pa55", "admin", "console.example"):
             self.assertNotIn(secret, text)
+
+    def test_allowlist_entries_are_serialized_like_browser_origins(self):
+        parse = server._parse_allowed_origins
+        self.assertEqual(parse("http://localhost:80, https://console.example:443/, http://localhost:3000"),
+                         ("http://localhost", "https://console.example", "http://localhost:3000"))
+        self.assertEqual(parse("https://Bücher.example"), ("https://xn--bcher-kva.example",))
+        self.assertEqual(parse("http://[::1]:9999, http://[::1]:80"), ("http://[::1]:9999", "http://[::1]"))
+        self.assertEqual(parse("http://localhost, http://LOCALHOST:80/"), ("http://localhost",))  # deduplicated
+        with patch.object(server, "MEMIBRIUM_ALLOWED_ORIGINS", parse("https://console.example:443")):
+            # A browser sends the default port omitted, so the normalized entry is what it must match.
+            self.assertEqual(self.post("/mcp/confirm", {**JSON, "origin": "https://console.example"}).status_code, 200)
+
+    def test_allowlist_entries_with_query_fragment_or_bad_port_are_skipped(self):
+        for entry, reason in (("http://x.example#frag", "query or fragment"), ("http://x.example?a=1", "query or fragment"),
+                              ("http://x.example?", "query or fragment"), ("http://x.example:abc", "invalid port"),
+                              ("http://x.example:99999", "invalid port"), ("http://x.example:0", "invalid port")):
+            with self.subTest(entry=entry), self.assertLogs(server.log, "WARNING") as logs:
+                self.assertEqual(server._parse_allowed_origins(entry), ())
+            self.assertIn(reason, logs.output[0])
+            self.assertNotIn("x.example", logs.output[0])
+
+    def test_content_type_must_be_exactly_one_header(self):
+        r = self.spy.client.post("/mcp/confirm", content="{}", headers=[
+            ("content-type", "application/json"), ("content-type", "text/plain")])
+        self.assertEqual(r.status_code, 415)
+        r = self.spy.client.post("/mcp/confirm", content="{}", headers=[
+            ("content-type", "application/json"), ("content-type", "application/json")])
+        self.assertEqual(r.status_code, 415)
+        self.assertEqual(self.spy.calls, [])
+
+    def test_route_inventory_sees_endpoint_classes_and_mounts(self):
+        class Thing(HTTPEndpoint):
+            async def get(self, request):
+                return JSONResponse({})
+
+            async def post(self, request):
+                return JSONResponse({})
+
+        async def plain(request):
+            return JSONResponse({})
+
+        async def opaque(scope, receive, send):
+            await JSONResponse({"opaque": True})(scope, receive, send)
+
+        app = Starlette(routes=[
+            Route("/thing", Thing),
+            Route("/plain", plain),
+            Mount("/sub", routes=[Route("/write", plain, methods=["PUT"])]),
+            Mount("/raw", app=opaque),
+        ], middleware=server.app.user_middleware)
+        self.assertEqual(unsafe_routes(app), {("/thing", "POST"), ("/sub/write", "PUT"), ("/raw/{path:path}", "*")})
+        client = TestClient(app, base_url=LOCAL)
+        for path, method in sorted(unsafe_routes(app)):
+            url, verb = concrete(path, method)
+            r = client.request(verb, url, content="{}", headers={"content-type": "text/plain"})
+            self.assertEqual(r.status_code, 415, f"{method} {path}")
 
     # ── what the guard leaves alone ──
 
