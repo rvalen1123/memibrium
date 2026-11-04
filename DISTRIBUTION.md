@@ -39,13 +39,16 @@
    skill. That guarantee covers the MCP tools only. The REST routes, including
    `POST /mcp/confirm`, check no caller (no inbound authentication yet,
    MED-234), so any process with HTTP access to the port can still confirm a
-   memory directly. So can a web page the user visits: those routes accept a
-   `text/plain` body and check no `Origin`, so a page can send a plain
-   `fetch` to `http://localhost:9999/mcp/confirm` without a CORS preflight
-   and the confirm runs (cross-site request forgery; loopback binding does
-   not stop it). Until MED-234 lands, run the server only where no browser
-   that visits untrusted sites can reach it, or put an authenticating proxy
-   in front.
+   memory directly. A web page the user visits cannot: since MED-271 every
+   state-changing route refuses a request that carries an `Origin` header
+   (unless `MEMIBRIUM_ALLOWED_ORIGINS` lists it) or a cross-site
+   `Sec-Fetch-Site`, and refuses a body that is not `application/json`, so a
+   plain `fetch` from another site to `http://localhost:9999/mcp/confirm`
+   gets 403 or 415 and the handler never runs. That is cross-site request
+   refusal, not authentication: any local process, script or proxy that does
+   not behave like a browser can still call every route until MED-234 lands.
+   Run the server on loopback or a private network, or put an authenticating
+   proxy in front.
 3. **No RL training needed.** MemSkill (NeurIPS 2024) needs millions of RL
    steps to learn which memory operations to apply. The skill pre-loads the
    governance — the agent just follows instructions.

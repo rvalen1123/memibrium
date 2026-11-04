@@ -75,6 +75,9 @@ jobs:
       - name: MCP endpoint tests (initialize, tools/list, tools/call; confirm withheld) (MED-254)
         run: python test_mcp_endpoint.py -v
 
+      - name: Cross-site request refusal on every state-changing route (MED-271)
+        run: python test_cross_site_guard.py -v
+
       - name: Check the database service (pgvector loads, user may create databases)
         env:
           MEMIBRIUM_TEST_DSN: postgresql://memibrium:memibrium@localhost:5432/memibrium_test
