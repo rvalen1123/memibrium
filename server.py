@@ -320,8 +320,8 @@ DECISION_TRACE_STATUSES = {"proposed", "accepted", "rejected", "corrected", "sup
 # trace status other than 'proposed') and the incoming write is an unreviewed one (what an agent sends, and all the
 # MCP endpoint can send), the upsert keeps the reviewed state, confidence, evidence and metadata. An explicit review
 # write (REST with user_state / status set) still updates the row.
-SELF_MODEL_REVIEW_KEPT_SQL = ("(self_model_observations.user_state <> 'unreviewed' "
-                              "AND EXCLUDED.user_state = 'unreviewed')")
+# The guard is written out literally in both upserts (create_self_model_observation, create_decision_trace).
+SELF_MODEL_REVIEW_KEPT_SQL = "(self_model_observations.user_state <> 'unreviewed' AND EXCLUDED.user_state = 'unreviewed')"
 DECISION_TRACE_REVIEW_KEPT_SQL = "(decision_traces.status <> 'proposed' AND EXCLUDED.status = 'proposed')"
 
 
@@ -1243,20 +1243,20 @@ class ColdStore:
                 ) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb,
                           $8, $9, $10, $11, $12, $13::jsonb, $14, $15, $16)
                 ON CONFLICT (observation_id) DO UPDATE SET
-                    confidence = CASE WHEN {kept} THEN self_model_observations.confidence
+                    confidence = CASE WHEN (self_model_observations.user_state <> 'unreviewed' AND EXCLUDED.user_state = 'unreviewed') THEN self_model_observations.confidence
                         ELSE GREATEST(self_model_observations.confidence, EXCLUDED.confidence) END,
-                    evidence_memory_ids = CASE WHEN {kept} THEN self_model_observations.evidence_memory_ids
+                    evidence_memory_ids = CASE WHEN (self_model_observations.user_state <> 'unreviewed' AND EXCLUDED.user_state = 'unreviewed') THEN self_model_observations.evidence_memory_ids
                         ELSE EXCLUDED.evidence_memory_ids END,
-                    evidence_artifact_ids = CASE WHEN {kept} THEN self_model_observations.evidence_artifact_ids
+                    evidence_artifact_ids = CASE WHEN (self_model_observations.user_state <> 'unreviewed' AND EXCLUDED.user_state = 'unreviewed') THEN self_model_observations.evidence_artifact_ids
                         ELSE EXCLUDED.evidence_artifact_ids END,
-                    entity_ids = CASE WHEN {kept} THEN self_model_observations.entity_ids ELSE EXCLUDED.entity_ids END,
-                    lifecycle_state = CASE WHEN {kept} THEN self_model_observations.lifecycle_state
+                    entity_ids = CASE WHEN (self_model_observations.user_state <> 'unreviewed' AND EXCLUDED.user_state = 'unreviewed') THEN self_model_observations.entity_ids ELSE EXCLUDED.entity_ids END,
+                    lifecycle_state = CASE WHEN (self_model_observations.user_state <> 'unreviewed' AND EXCLUDED.user_state = 'unreviewed') THEN self_model_observations.lifecycle_state
                         ELSE EXCLUDED.lifecycle_state END,
-                    user_state = CASE WHEN {kept} THEN self_model_observations.user_state ELSE EXCLUDED.user_state END,
-                    metadata = CASE WHEN {kept} THEN self_model_observations.metadata ELSE EXCLUDED.metadata END,
+                    user_state = CASE WHEN (self_model_observations.user_state <> 'unreviewed' AND EXCLUDED.user_state = 'unreviewed') THEN self_model_observations.user_state ELSE EXCLUDED.user_state END,
+                    metadata = CASE WHEN (self_model_observations.user_state <> 'unreviewed' AND EXCLUDED.user_state = 'unreviewed') THEN self_model_observations.metadata ELSE EXCLUDED.metadata END,
                     last_seen = NOW(),
                     surfaced_count = self_model_observations.surfaced_count + EXCLUDED.surfaced_count
-            """.format(kept=SELF_MODEL_REVIEW_KEPT_SQL), record["observation_id"], record["engine"], record["observation_type"], record["claim_text"],
+            """, record["observation_id"], record["engine"], record["observation_type"], record["claim_text"],
                 json.dumps(record["evidence_memory_ids"]), json.dumps(record["evidence_artifact_ids"]),
                 json.dumps(record["entity_ids"]), record["confidence"], record["sensitivity"],
                 record["lifecycle_state"], record["user_state"], record["decay_rate"],
@@ -1308,11 +1308,11 @@ class ColdStore:
                 ) VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb,
                           $8, $9::jsonb, $10::jsonb, $11, $12)
                 ON CONFLICT (trace_id) DO UPDATE SET
-                    status = CASE WHEN {kept} THEN decision_traces.status ELSE EXCLUDED.status END,
-                    outcome_signal = CASE WHEN {kept} THEN decision_traces.outcome_signal ELSE EXCLUDED.outcome_signal END,
-                    metadata = CASE WHEN {kept} THEN decision_traces.metadata ELSE EXCLUDED.metadata END,
+                    status = CASE WHEN (decision_traces.status <> 'proposed' AND EXCLUDED.status = 'proposed') THEN decision_traces.status ELSE EXCLUDED.status END,
+                    outcome_signal = CASE WHEN (decision_traces.status <> 'proposed' AND EXCLUDED.status = 'proposed') THEN decision_traces.outcome_signal ELSE EXCLUDED.outcome_signal END,
+                    metadata = CASE WHEN (decision_traces.status <> 'proposed' AND EXCLUDED.status = 'proposed') THEN decision_traces.metadata ELSE EXCLUDED.metadata END,
                     updated_at = NOW()
-            """.format(kept=DECISION_TRACE_REVIEW_KEPT_SQL), record["trace_id"], record["query"], record["answer"],
+            """, record["trace_id"], record["query"], record["answer"],
                 json.dumps(record["evidence_memory_ids"]), json.dumps(record["self_model_observation_ids"]),
                 json.dumps(record["entity_ids"]), json.dumps(record["values_invoked"]), record["status"],
                 json.dumps(record["outcome_signal"]), json.dumps(record["metadata"]),
